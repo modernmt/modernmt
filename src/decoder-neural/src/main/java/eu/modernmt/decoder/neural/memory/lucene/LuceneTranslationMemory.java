@@ -30,7 +30,9 @@ import org.apache.lucene.util.Version;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -165,8 +167,10 @@ public class LuceneTranslationMemory implements TranslationMemory {
         boolean success = false;
 
         try {
-            for (Map.Entry<Memory, MultilingualCorpus> entry : batch.entrySet())
-                bulkInsert(entry.getKey().getId(), entry.getValue());
+            for (Map.Entry<Memory, MultilingualCorpus> entry : batch.entrySet()) {
+                Memory memory = entry.getKey();
+                bulkInsert(memory.getOwner(), memory.getId(), entry.getValue());
+            }
 
             this.indexWriter.commit();
 
@@ -183,7 +187,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         boolean success = false;
 
         try {
-            bulkInsert(memory.getId(), corpus);
+            bulkInsert(memory.getOwner(), memory.getId(), corpus);
 
             this.indexWriter.commit();
 
@@ -194,7 +198,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         }
     }
 
-    private void bulkInsert(long memory, MultilingualCorpus corpus) throws IOException {
+    private void bulkInsert(long owner, long memory, MultilingualCorpus corpus) throws IOException {
         MultilingualCorpus.MultilingualLineReader reader = null;
 
         try {
@@ -204,7 +208,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
             MultilingualCorpus.StringPair pair;
             while ((pair = reader.read()) != null) {
-                Document document = DocumentBuilder.newInstance(pair.language, memory, pair.source, pair.target);
+                Document document = DocumentBuilder.newInstance(pair.language, owner, memory, pair.source, pair.target);
                 this.indexWriter.addDocument(document);
             }
 
@@ -219,21 +223,21 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     @Override
-    public ScoreEntry[] search(LanguagePair direction, Sentence source, int limit) throws IOException {
-        return search(direction, source, null, this.rescorer, limit);
+    public ScoreEntry[] search(long user, LanguagePair direction, Sentence source, int limit) throws IOException {
+        return search(user, direction, source, null, this.rescorer, limit);
     }
 
-    public ScoreEntry[] search(LanguagePair direction, Sentence source, Rescorer rescorer, int limit) throws IOException {
-        return this.search(direction, source, null, rescorer, limit);
+    public ScoreEntry[] search(long user, LanguagePair direction, Sentence source, Rescorer rescorer, int limit) throws IOException {
+        return search(user, direction, source, null, rescorer, limit);
     }
 
     @Override
-    public ScoreEntry[] search(LanguagePair direction, Sentence source, ContextVector contextVector, int limit) throws IOException {
-        return this.search(direction, source, contextVector, this.rescorer, limit);
+    public ScoreEntry[] search(long user, LanguagePair direction, Sentence source, ContextVector contextVector, int limit) throws IOException {
+        return search(user, direction, source, contextVector, this.rescorer, limit);
     }
 
-    public ScoreEntry[] search(LanguagePair direction, Sentence source, ContextVector contextVector, Rescorer rescorer, int limit) throws IOException {
-        Query query = this.queryBuilder.bestMatchingSuggestion(direction, source);
+    public ScoreEntry[] search(long user, LanguagePair direction, Sentence source, ContextVector contextVector, Rescorer rescorer, int limit) throws IOException {
+        Query query = this.queryBuilder.bestMatchingSuggestion(user, direction, source, contextVector);
 
         IndexSearcher searcher = getIndexSearcher();
 

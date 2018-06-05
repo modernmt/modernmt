@@ -2,6 +2,7 @@ package eu.modernmt.context.lucene.analysis;
 
 import eu.modernmt.context.lucene.analysis.rescoring.CosineSimilarityRescorer;
 import eu.modernmt.context.lucene.analysis.rescoring.Rescorer;
+import eu.modernmt.data.DataManager;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.corpus.Corpus;
@@ -11,10 +12,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.similarities.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -130,11 +128,11 @@ public class ContextAnalyzerIndex implements Closeable {
         this.indexWriter.commit();
     }
 
-    public ContextVector getContextVector(LanguagePair direction, Corpus queryDocument, int limit) throws IOException {
-        return this.getContextVector(direction, queryDocument, limit, this.rescorer);
+    public ContextVector getContextVector(long user, LanguagePair direction, Corpus queryDocument, int limit) throws IOException {
+        return this.getContextVector(user, direction, queryDocument, limit, this.rescorer);
     }
 
-    public ContextVector getContextVector(LanguagePair direction, Corpus queryDocument, int limit, Rescorer rescorer) throws IOException {
+    public ContextVector getContextVector(long user, LanguagePair direction, Corpus queryDocument, int limit, Rescorer rescorer) throws IOException {
         String contentFieldName = DocumentBuilder.makeContentFieldName(direction);
 
         IndexSearcher searcher = this.getIndexSearcher();
@@ -157,7 +155,18 @@ public class ContextAnalyzerIndex implements Closeable {
         Reader queryDocumentReader = queryDocument.getRawContentReader();
 
         try {
-            Query query = mlt.like(contentFieldName, queryDocumentReader);
+            Query mltQuery = mlt.like(contentFieldName, queryDocumentReader);
+            BooleanQuery ownerQuery = new BooleanQuery();
+
+            if (user == DataManager.PUBLIC) {
+                ownerQuery.add(new TermQuery(DocumentBuilder.makeOwnerTerm(DataManager.PUBLIC)), BooleanClause.Occur.MUST);
+            } else {
+                ownerQuery.add(new TermQuery(DocumentBuilder.makeOwnerTerm(DataManager.PUBLIC)), BooleanClause.Occur.SHOULD);
+                ownerQuery.add(new TermQuery(DocumentBuilder.makeOwnerTerm(user)), BooleanClause.Occur.SHOULD);
+                ownerQuery.setMinimumNumberShouldMatch(1);
+            }
+
+            FilteredQuery query = new FilteredQuery(mltQuery, new QueryWrapperFilter(ownerQuery));
             searcher.search(query, collector);
         } finally {
             IOUtils.closeQuietly(queryDocumentReader);

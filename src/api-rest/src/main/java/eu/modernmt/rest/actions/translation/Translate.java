@@ -2,6 +2,7 @@ package eu.modernmt.rest.actions.translation;
 
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.context.ContextAnalyzerException;
+import eu.modernmt.data.DataManager;
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.facade.TranslationFacade;
@@ -33,12 +34,12 @@ public class Translate extends ObjectAction<TranslationResponse> {
         result.verbose = params.verbose;
 
         if (params.context != null) {
-            result.translation = ModernMT.translation.get(params.direction, params.query, params.context, params.nbest, params.priority);
+            result.translation = ModernMT.translation.get(params.user, params.direction, params.query, params.context, params.nbest, params.priority);
         } else if (params.contextString != null) {
-            result.context = ModernMT.translation.getContextVector(params.direction, params.contextString, params.contextLimit);
-            result.translation = ModernMT.translation.get(params.direction, params.query, result.context, params.nbest, params.priority);
+            result.context = ModernMT.translation.getContextVector(params.user, params.direction, params.contextString, params.contextLimit);
+            result.translation = ModernMT.translation.get(params.user, params.direction, params.query, result.context, params.nbest, params.priority);
         } else {
-            result.translation = ModernMT.translation.get(params.direction, params.query, params.nbest, params.priority);
+            result.translation = ModernMT.translation.get(params.user, params.direction, params.query, params.nbest, params.priority);
         }
 
 
@@ -55,6 +56,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
 
     public static class Params extends Parameters {
 
+        public final long user;
         public final LanguagePair direction;
         public final String query;
         public final ContextVector context;
@@ -66,6 +68,8 @@ public class Translate extends ObjectAction<TranslationResponse> {
 
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
+
+            this.user = getLong("user", DataManager.PUBLIC);
 
             query = getString("q", true);
             if (query.length() > MAX_QUERY_LENGTH)

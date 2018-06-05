@@ -3,6 +3,7 @@ package eu.modernmt.decoder.phrasebased;
 import eu.modernmt.config.DecoderConfig;
 import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.DataListener;
+import eu.modernmt.data.DataManager;
 import eu.modernmt.decoder.*;
 import eu.modernmt.io.Paths;
 import eu.modernmt.io.UTF8Charset;
@@ -137,22 +138,25 @@ public class MosesDecoder extends Decoder implements DecoderWithFeatures, Decode
     }
 
     @Override
-    public Translation translate(LanguagePair direction, Sentence text) throws DecoderException {
-        return translate(direction, text, null, 0);
+    public Translation translate(long user, LanguagePair direction, Sentence text) throws DecoderException {
+        return translate(user, direction, text, null, 0);
     }
 
     @Override
-    public Translation translate(LanguagePair direction, Sentence text, ContextVector contextVector) throws DecoderException {
-        return translate(direction, text, contextVector, 0);
+    public Translation translate(long user, LanguagePair direction, Sentence text, ContextVector contextVector) throws DecoderException {
+        return translate(user, direction, text, contextVector, 0);
     }
 
     @Override
-    public Translation translate(LanguagePair direction, Sentence text, int nbestListSize) throws DecoderException {
-        return translate(direction, text, null, nbestListSize);
+    public Translation translate(long user, LanguagePair direction, Sentence text, int nbestListSize) throws DecoderException {
+        return translate(user, direction, text, null, nbestListSize);
     }
 
     @Override
-    public Translation translate(LanguagePair direction, Sentence sentence, ContextVector contextVector, int nbestListSize) throws DecoderException {
+    public Translation translate(long user, LanguagePair direction, Sentence sentence, ContextVector contextVector, int nbestListSize) throws DecoderException {
+        if (user != DataManager.PUBLIC)
+            throw new UnsupportedOperationException("Private memory feature not available with PhraseBased decoder");
+
         if (!this.language.equals(direction))
             throw new UnsupportedLanguageException(direction);
 

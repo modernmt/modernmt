@@ -112,22 +112,22 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
     }
 
     @Override
-    public Translation translate(LanguagePair direction, Sentence text) throws DecoderException {
-        return translate(direction, text, null, 0);
+    public Translation translate(long user, LanguagePair direction, Sentence text) throws DecoderException {
+        return translate(user, direction, text, null, 0);
     }
 
     @Override
-    public Translation translate(LanguagePair direction, Sentence text, int nbestListSize) throws DecoderException {
-        return translate(direction, text, null, nbestListSize);
+    public Translation translate(long user, LanguagePair direction, Sentence text, int nbestListSize) throws DecoderException {
+        return translate(user, direction, text, null, nbestListSize);
     }
 
     @Override
-    public Translation translate(LanguagePair direction, Sentence text, ContextVector contextVector) throws DecoderException {
-        return translate(direction, text, contextVector, 0);
+    public Translation translate(long user, LanguagePair direction, Sentence text, ContextVector contextVector) throws DecoderException {
+        return translate(user, direction, text, contextVector, 0);
     }
 
     @Override
-    public Translation translate(LanguagePair direction, Sentence text, ContextVector contextVector, int nbestListSize) throws DecoderException {
+    public Translation translate(long user, LanguagePair direction, Sentence text, ContextVector contextVector, int nbestListSize) throws DecoderException {
         if (!this.directions.contains(direction))
             throw new UnsupportedLanguageException(direction);
 
@@ -137,7 +137,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
             ScoreEntry[] suggestions;
 
             try {
-                suggestions = memory.search(direction, text, contextVector, this.suggestionsLimit);
+                suggestions = memory.search(user, direction, text, contextVector, this.suggestionsLimit);
             } catch (IOException e) {
                 throw new DecoderException("Failed to retrieve suggestions from memory", e);
             }

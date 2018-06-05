@@ -1,5 +1,6 @@
 package eu.modernmt.decoder.neural.memory;
 
+import eu.modernmt.data.DataManager;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.lang.Language;
@@ -119,8 +120,13 @@ public class TestData {
         return tu(channel, channelPosition, memory, language, source, target, null, null, timestamp);
     }
 
+
     public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguagePair language, String source, String target, String previousSource, String previousTarget, Date timestamp) {
-        return new TranslationUnit((short) channel, channelPosition, language, memory,
+        return tu(channel, channelPosition, DataManager.PUBLIC, memory, language, source, target, previousSource, previousTarget, timestamp);
+    }
+
+    public static TranslationUnit tu(int channel, long channelPosition, long owner, long memory, LanguagePair language, String source, String target, String previousSource, String previousTarget, Date timestamp) {
+        return new TranslationUnit((short) channel, channelPosition, owner, language, memory,
                 source, target, previousSource, previousTarget, timestamp,
                 sentence(source), sentence(target), null);
     }

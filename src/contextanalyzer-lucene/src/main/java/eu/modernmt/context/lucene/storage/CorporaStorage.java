@@ -70,11 +70,11 @@ public class CorporaStorage {
             if (!index.shouldAcceptData(unit.channel, unit.channelPosition))
                 continue;
 
-            CorpusBucket fwdBucket = index.getBucket(DocumentBuilder.makeId(unit.memory, unit.direction));
+            CorpusBucket fwdBucket = index.getBucket(DocumentBuilder.makeId(unit.owner, unit.memory, unit.direction));
             fwdBucket.append(unit.rawSentence);
             pendingUpdatesBuckets.add(fwdBucket);
 
-            CorpusBucket bwdBucket = index.getBucket(DocumentBuilder.makeId(unit.memory, unit.direction.reversed()));
+            CorpusBucket bwdBucket = index.getBucket(DocumentBuilder.makeId(unit.owner, unit.memory, unit.direction.reversed()));
             bwdBucket.append(unit.rawTranslation);
             pendingUpdatesBuckets.add(bwdBucket);
         }
@@ -133,7 +133,7 @@ public class CorporaStorage {
         logger.debug("CorporaStorage index successfully written to disk");
     }
 
-    public void bulkInsert(long memory, MultilingualCorpus corpus) throws IOException {
+    public void bulkInsert(long owner, long memory, MultilingualCorpus corpus) throws IOException {
         MultilingualCorpus.MultilingualLineReader reader = null;
 
         try {
@@ -141,11 +141,11 @@ public class CorporaStorage {
 
             MultilingualCorpus.StringPair pair;
             while ((pair = reader.read()) != null) {
-                CorpusBucket fwdBucket = index.getBucket(DocumentBuilder.makeId(memory, pair.language));
+                CorpusBucket fwdBucket = index.getBucket(DocumentBuilder.makeId(owner, memory, pair.language));
                 fwdBucket.append(pair.source);
                 pendingUpdatesBuckets.add(fwdBucket);
 
-                CorpusBucket bwdBucket = index.getBucket(DocumentBuilder.makeId(memory, pair.language.reversed()));
+                CorpusBucket bwdBucket = index.getBucket(DocumentBuilder.makeId(owner, memory, pair.language.reversed()));
                 bwdBucket.append(pair.target);
                 pendingUpdatesBuckets.add(bwdBucket);
             }

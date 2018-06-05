@@ -21,16 +21,19 @@ public class ContextVector implements Iterable<ContextVector.Entry>, Serializabl
             entries = new HashMap<>();
         }
 
-        public void setLimit(int limit) {
+        public Builder setLimit(int limit) {
             this.limit = limit;
+            return this;
         }
 
-        public void add(long memory, float score) {
+        public Builder add(long memory, float score) {
             this.add(new Memory(memory), score);
+            return this;
         }
 
-        public void add(Memory memory, float score) {
+        public Builder add(Memory memory, float score) {
             entries.put(memory, score);
+            return this;
         }
 
         public ContextVector build() {

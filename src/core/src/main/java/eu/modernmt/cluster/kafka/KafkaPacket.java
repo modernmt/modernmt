@@ -25,6 +25,7 @@ public class KafkaPacket {
     private long position = -1;
 
     private final byte type;
+    private final long owner;
     private final long memory;
     private final LanguagePair direction;
     private final String sentence;
@@ -34,15 +35,15 @@ public class KafkaPacket {
     private final Date timestamp;
 
     public static KafkaPacket createDeletion(long memory) {
-        return new KafkaPacket(TYPE_DELETION, null, memory, null, null, null, null, null);
+        return new KafkaPacket(TYPE_DELETION, 0L, memory, null, null, null, null, null, null);
     }
 
-    public static KafkaPacket createAddition(LanguagePair direction, long memory, String sentence, String translation, Date timestamp) {
-        return new KafkaPacket(TYPE_ADDITION, direction, memory, sentence, translation, null, null, timestamp);
+    public static KafkaPacket createAddition(LanguagePair direction, long owner, long memory, String sentence, String translation, Date timestamp) {
+        return new KafkaPacket(TYPE_ADDITION, owner, memory, direction, sentence, translation, null, null, timestamp);
     }
 
-    public static KafkaPacket createOverwrite(LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp) {
-        return new KafkaPacket(TYPE_OVERWRITE, direction, memory, sentence, translation, previousSentence, previousTranslation, timestamp);
+    public static KafkaPacket createOverwrite(LanguagePair direction, long owner, long memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp) {
+        return new KafkaPacket(TYPE_OVERWRITE, owner, memory, direction, sentence, translation, previousSentence, previousTranslation, timestamp);
     }
 
     /**
@@ -56,6 +57,7 @@ public class KafkaPacket {
         byte type = buffer.get();
         long memory = buffer.getLong();
 
+        long owner = 0L;
         LanguagePair direction = null;
         String sentence = null;
         String translation = null;
@@ -68,6 +70,8 @@ public class KafkaPacket {
                 break;
             case TYPE_ADDITION:
             case TYPE_OVERWRITE:
+                owner = buffer.getLong();
+
                 Charset charset = UTF8Charset.get();
 
                 Language source = Language.fromString(deserializeString(buffer, charset));
@@ -90,13 +94,15 @@ public class KafkaPacket {
                 throw new IllegalArgumentException("Invalid packet received, unknown type: " + (int) type);
         }
 
-        return new KafkaPacket(type, direction, memory, sentence, translation, previousSentence, previousTranslation, timestamp);
+        return new KafkaPacket(type, owner, memory, direction, sentence, translation, previousSentence, previousTranslation, timestamp);
     }
 
-    private KafkaPacket(byte type, LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp) {
+    public KafkaPacket(byte type, long owner, long memory, LanguagePair direction,
+                       String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp) {
         this.type = type;
-        this.direction = direction;
+        this.owner = owner;
         this.memory = memory;
+        this.direction = direction;
         this.sentence = sentence;
         this.translation = translation;
         this.previousSentence = previousSentence;
@@ -129,18 +135,6 @@ public class KafkaPacket {
         return translation;
     }
 
-    public String getPreviousSentence() {
-        return previousSentence;
-    }
-
-    public String getPreviousTranslation() {
-        return previousTranslation;
-    }
-
-    public Date getTimestamp() {
-        return timestamp;
-    }
-
     public Deletion asDeletion() {
         if (channel < 0 || position < 0)
             throw new IllegalStateException("Call setChannelInfo() before parsing methods.");
@@ -152,7 +146,7 @@ public class KafkaPacket {
         if (channel < 0 || position < 0)
             throw new IllegalStateException("Call setChannelInfo() before parsing methods.");
 
-        return new TranslationUnit(channel, position, direction, memory,
+        return new TranslationUnit(channel, position, owner, direction, memory,
                 sentence, translation, previousSentence, previousTranslation, timestamp,
                 sSentence, sTranslation, alignment);
     }
@@ -165,9 +159,6 @@ public class KafkaPacket {
      */
     public byte[] toBytes() {
         int size = 1 + 8 + 8;   //type (enum: 1 byte) + memory (long: 8 bytes)
-
-        byte type = this.type;
-        long memory = this.memory;
 
         byte[] directionSource = null;
         byte[] directionTarget = null;
@@ -212,6 +203,9 @@ public class KafkaPacket {
 
         buffer.put(type);
         buffer.putLong(memory);
+
+        if (type != TYPE_DELETION)
+            buffer.putLong(owner);
 
         serializeString(buffer, directionSource);
         serializeString(buffer, directionTarget);

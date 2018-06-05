@@ -11,8 +11,6 @@ import com.datastax.driver.core.schemabuilder.SchemaBuilder;
 import eu.modernmt.persistence.*;
 import org.apache.commons.io.IOUtils;
 
-import java.io.IOException;
-
 /**
  * Created by andrearossi on 08/03/17.
  * A CassandraDatabase object represents the access point
@@ -173,7 +171,7 @@ public class CassandraDatabase extends Database {
 
             SimpleStatement createMemoriesTable = new SimpleStatement(
                     "CREATE TABLE IF NOT EXISTS " + MEMORIES_TABLE +
-                            " (id bigint PRIMARY KEY, name varchar);");
+                            " (id bigint PRIMARY KEY, owner bigint, name varchar);");
 
             SimpleStatement createImportJobsTable = new SimpleStatement(
                     "CREATE TABLE IF NOT EXISTS " + IMPORT_JOBS_TABLE +
@@ -205,15 +203,14 @@ public class CassandraDatabase extends Database {
      * This method states if the current keyspace exists or not
      *
      * @return True if the current keyspace exists in the DB; else, false
-     * @throws PersistenceException
      */
     @Override
-    public boolean exists() throws PersistenceException {
+    public boolean exists() {
         return getKeyspaceMetadata() != null;
     }
 
     @Override
-    public String getName() throws PersistenceException {
+    public String getName() {
         return this.keyspace;
     }
 
@@ -242,7 +239,7 @@ public class CassandraDatabase extends Database {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         this.cluster.close();
     }
 

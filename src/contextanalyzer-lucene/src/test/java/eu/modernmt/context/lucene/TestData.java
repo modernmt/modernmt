@@ -156,7 +156,11 @@ public class TestData {
     }
 
     public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguagePair language, String source, String target, Date timestamp) {
-        return new TranslationUnit((short) channel, channelPosition, language, memory,
+        return tu(channel, channelPosition, 0L, memory, language, source, target, timestamp);
+    }
+
+    public static TranslationUnit tu(int channel, long channelPosition, long owner, long memory, LanguagePair language, String source, String target, Date timestamp) {
+        return new TranslationUnit((short) channel, channelPosition, owner, language, memory,
                 source, target, null, null, timestamp,
                 sentence(source), sentence(target), null);
     }

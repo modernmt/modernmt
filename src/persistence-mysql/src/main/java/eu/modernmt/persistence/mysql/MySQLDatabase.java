@@ -6,7 +6,6 @@ import eu.modernmt.persistence.mysql.utils.SQLUtils;
 import org.apache.commons.io.IOUtils;
 
 import javax.sql.DataSource;
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -63,22 +62,22 @@ public class MySQLDatabase extends Database {
     }
 
     @Override
-    public void create() throws PersistenceException {
+    public void create() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean exists() throws PersistenceException {
+    public boolean exists() {
         return true;
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         //do nothing
     }
 
     @Override
-    public String getName() throws PersistenceException {
+    public String getName() {
         return this.name;
     }
 

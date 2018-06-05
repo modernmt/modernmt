@@ -21,11 +21,11 @@ public interface ContextAnalyzer extends Closeable, DataListener {
 
     void add(Map<Memory, MultilingualCorpus> corpora) throws ContextAnalyzerException;
 
-    ContextVector getContextVector(LanguagePair direction, String query, int limit) throws ContextAnalyzerException;
+    ContextVector getContextVector(long user, LanguagePair direction, String query, int limit) throws ContextAnalyzerException;
 
-    ContextVector getContextVector(LanguagePair direction, File source, int limit) throws ContextAnalyzerException;
+    ContextVector getContextVector(long user, LanguagePair direction, File source, int limit) throws ContextAnalyzerException;
 
-    ContextVector getContextVector(LanguagePair direction, Corpus query, int limit) throws ContextAnalyzerException;
+    ContextVector getContextVector(long user, LanguagePair direction, Corpus query, int limit) throws ContextAnalyzerException;
 
     @Override
     void onDataReceived(DataBatch batch) throws ContextAnalyzerException;

@@ -22,28 +22,30 @@ public class DocumentBuilder {
     // Factory methods
 
     public static Document newInstance(LanguagePair direction, Corpus corpus) throws IOException {
-        return newInstance(0L, direction, corpus);
+        return newInstance(0L, 0L, direction, corpus);
     }
 
-    public static Document newInstance(long memory, LanguagePair direction, Corpus corpus) throws IOException {
-        return newInstance(memory, direction, corpus.getRawContentReader());
+    public static Document newInstance(long owner, long memory, LanguagePair direction, Corpus corpus) throws IOException {
+        return newInstance(owner, memory, direction, corpus.getRawContentReader());
     }
 
     public static Document updatedInstance(String docId, Reader contentReader) {
         String[] parts = docId.split("_");
-        if (parts.length != 3)
+        if (parts.length != 4)
             throw new IllegalArgumentException("Invalid Document ID: " + docId);
 
-        long memory = Long.parseLong(parts[0]);
-        LanguagePair direction = new LanguagePair(new Language(parts[1]), new Language(parts[2]));
+        long owner = Long.parseLong(parts[0]);
+        long memory = Long.parseLong(parts[1]);
+        LanguagePair direction = new LanguagePair(new Language(parts[2]), new Language(parts[3]));
 
-        return newInstance(memory, direction, contentReader);
+        return newInstance(owner, memory, direction, contentReader);
     }
 
-    public static Document newInstance(long memory, LanguagePair direction, Reader contentReader) {
+    public static Document newInstance(long owner, long memory, LanguagePair direction, Reader contentReader) {
         Document document = new Document();
-        document.add(new StringField(DOC_ID_FIELD, makeId(memory, direction), Field.Store.NO));
+        document.add(new StringField(DOC_ID_FIELD, makeId(owner, memory, direction), Field.Store.NO));
         document.add(new LongField(MEMORY_FIELD, memory, Field.Store.YES));
+        document.add(new LongField(OWNER_FIELD, owner, Field.Store.NO));
         document.add(new CorpusContentField(makeContentFieldName(direction), contentReader));
 
         return document;
@@ -51,6 +53,7 @@ public class DocumentBuilder {
 
     private static final String DOC_ID_FIELD = "cid";
     private static final String MEMORY_FIELD = "memory";
+    private static final String OWNER_FIELD = "owner";
     private static final String CONTENT_PREFIX_FIELD = "content_";
 
     // Getters
@@ -63,8 +66,12 @@ public class DocumentBuilder {
         return Long.parseLong(self.get(MEMORY_FIELD));
     }
 
-    public static long getMemory(String documentId) {
-        return Long.parseLong(documentId.substring(0, documentId.indexOf('_')));
+    public static long getMemory(String docId) {
+        String[] parts = docId.split("_");
+        if (parts.length != 4)
+            throw new IllegalArgumentException("Invalid Document ID: " + docId);
+
+        return Long.parseLong(parts[1]);
     }
 
     public static String getLanguageForContentField(String field) {
@@ -87,10 +94,18 @@ public class DocumentBuilder {
         return new Term(MEMORY_FIELD, builder.toBytesRef());
     }
 
+    public static Term makeOwnerTerm(long owner) {
+        BytesRefBuilder builder = new BytesRefBuilder();
+        NumericUtils.longToPrefixCoded(owner, 0, builder);
+
+        return new Term(OWNER_FIELD, builder.toBytesRef());
+    }
+
     // Value builders
 
-    public static String makeId(long memory, LanguagePair direction) {
-        return Long.toString(memory) + '_' + direction.source.getLanguage() + '_' + direction.target.getLanguage();
+    public static String makeId(long owner, long memory, LanguagePair direction) {
+        return Long.toString(owner) + '_' + Long.toString(memory) + '_' +
+                direction.source.getLanguage() + '_' + direction.target.getLanguage();
     }
 
     // Fields builders

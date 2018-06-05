@@ -1,18 +1,17 @@
 package eu.modernmt.decoder.neural.memory.lucene.query;
 
+import eu.modernmt.data.DataManager;
 import eu.modernmt.decoder.neural.memory.lucene.Analyzers;
 import eu.modernmt.decoder.neural.memory.lucene.DocumentBuilder;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.search.*;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.NumericUtils;
 
 import java.io.IOException;
 
@@ -37,7 +36,7 @@ public class DefaultQueryBuilder implements QueryBuilder {
     }
 
     @Override
-    public Query bestMatchingSuggestion(LanguagePair direction, Sentence sentence) {
+    public Query bestMatchingSuggestion(long user, LanguagePair direction, Sentence sentence, ContextVector context) {
         int length = sentence.getWords().length;
         boolean isLongQuery = length > 4;
 
@@ -49,7 +48,26 @@ public class DefaultQueryBuilder implements QueryBuilder {
         loadTerms(DocumentBuilder.makeContentFieldName(direction), sentence, analyzer, termsQuery);
         termsQuery.setMinimumNumberShouldMatch(minMatches);
 
-        return termsQuery;
+        // Owner filter
+        BooleanQuery privacyQuery = new BooleanQuery();
+
+        if (user == DataManager.PUBLIC) {
+            privacyQuery.add(new TermQuery(DocumentBuilder.makeOwnerTerm(DataManager.PUBLIC)), BooleanClause.Occur.SHOULD);
+        } else {
+            privacyQuery.add(new TermQuery(DocumentBuilder.makeOwnerTerm(DataManager.PUBLIC)), BooleanClause.Occur.SHOULD);
+            privacyQuery.add(new TermQuery(DocumentBuilder.makeOwnerTerm(user)), BooleanClause.Occur.SHOULD);
+        }
+
+        if (context != null) {
+            for (ContextVector.Entry entry : context) {
+                privacyQuery.add(new TermQuery(DocumentBuilder.makeMemoryTerm(entry.memory.getId())), BooleanClause.Occur.SHOULD);
+            }
+        }
+
+        privacyQuery.setMinimumNumberShouldMatch(1);
+
+        // Result
+        return new FilteredQuery(termsQuery, new QueryWrapperFilter(privacyQuery));
     }
 
     private static void loadTerms(String fieldName, Sentence sentence, Analyzer analyzer, BooleanQuery output) {

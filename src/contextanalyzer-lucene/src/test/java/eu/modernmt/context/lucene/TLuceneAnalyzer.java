@@ -8,6 +8,7 @@ import eu.modernmt.context.lucene.storage.CorporaStorage;
 import eu.modernmt.context.lucene.storage.CorpusBucket;
 import eu.modernmt.context.lucene.storage.Options;
 import eu.modernmt.data.DataBatch;
+import eu.modernmt.data.DataManager;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.io.UTF8Charset;
@@ -61,12 +62,16 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
     }
 
     public Entry getEntry(long memory, LanguagePair direction) throws IOException {
+        return getEntry(DataManager.PUBLIC, memory, direction);
+    }
+
+    public Entry getEntry(long owner, long memory, LanguagePair direction) throws IOException {
         ContextAnalyzerIndex index = getIndex();
         CorporaStorage storage = getStorage();
 
         this.flush();
 
-        String docId = DocumentBuilder.makeId(memory, direction);
+        String docId = DocumentBuilder.makeId(owner, memory, direction);
 
         // Bucket for content
 

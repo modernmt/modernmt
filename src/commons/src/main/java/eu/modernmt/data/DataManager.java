@@ -14,6 +14,8 @@ import java.util.concurrent.TimeUnit;
  */
 public interface DataManager extends Closeable {
 
+    long PUBLIC = 0L;
+
     short MEMORY_UPLOAD_CHANNEL_ID = 0;
     short CONTRIBUTIONS_CHANNEL_ID = 1;
 
@@ -31,17 +33,17 @@ public interface DataManager extends Closeable {
 
     void addDataListener(DataListener listener);
 
-    ImportJob upload(long memory, MultilingualCorpus corpus, short channel) throws DataManagerException;
+    ImportJob upload(long owner, long memory, MultilingualCorpus corpus, short channel) throws DataManagerException;
 
-    ImportJob upload(long memory, MultilingualCorpus corpus, DataChannel channel) throws DataManagerException;
+    ImportJob upload(long owner, long memory, MultilingualCorpus corpus, DataChannel channel) throws DataManagerException;
 
-    ImportJob upload(LanguagePair direction, long memory, String sentence, String translation, Date timestamp, short channel) throws DataManagerException;
+    ImportJob upload(long owner, LanguagePair direction, long memory, String sentence, String translation, Date timestamp, short channel) throws DataManagerException;
 
-    ImportJob upload(LanguagePair direction, long memory, String sentence, String translation, Date timestamp, DataChannel channel) throws DataManagerException;
+    ImportJob upload(long owner, LanguagePair direction, long memory, String sentence, String translation, Date timestamp, DataChannel channel) throws DataManagerException;
 
-    ImportJob replace(LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, short channel) throws DataManagerException;
+    ImportJob replace(long owner, LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, short channel) throws DataManagerException;
 
-    ImportJob replace(LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, DataChannel channel) throws DataManagerException;
+    ImportJob replace(long owner, LanguagePair direction, long memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, DataChannel channel) throws DataManagerException;
 
     void delete(long memory) throws DataManagerException;
 

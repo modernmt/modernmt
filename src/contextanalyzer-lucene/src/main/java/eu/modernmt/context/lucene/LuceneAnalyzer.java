@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -68,12 +67,12 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     @Override
     public void add(Map<Memory, MultilingualCorpus> corpora) throws ContextAnalyzerException {
         for (Map.Entry<Memory, MultilingualCorpus> entry : corpora.entrySet()) {
-            long id = entry.getKey().getId();
+            Memory memory = entry.getKey();
 
             try {
-                this.storage.bulkInsert(id, entry.getValue());
+                this.storage.bulkInsert(memory.getOwner(), memory.getId(), entry.getValue());
             } catch (IOException e) {
-                throw new ContextAnalyzerException("Unable to add memory " + id, e);
+                throw new ContextAnalyzerException("Unable to add memory " + memory.getId(), e);
             }
         }
 
@@ -85,19 +84,19 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     }
 
     @Override
-    public ContextVector getContextVector(LanguagePair direction, String query, int limit) throws ContextAnalyzerException {
-        return getContextVector(direction, new StringCorpus(null, direction.source, query), limit);
+    public ContextVector getContextVector(long user, LanguagePair direction, String query, int limit) throws ContextAnalyzerException {
+        return getContextVector(user, direction, new StringCorpus(null, direction.source, query), limit);
     }
 
     @Override
-    public ContextVector getContextVector(LanguagePair direction, File source, int limit) throws ContextAnalyzerException {
-        return getContextVector(direction, new FileCorpus(source, null, direction.source), limit);
+    public ContextVector getContextVector(long user, LanguagePair direction, File source, int limit) throws ContextAnalyzerException {
+        return getContextVector(user, direction, new FileCorpus(source, null, direction.source), limit);
     }
 
     @Override
-    public ContextVector getContextVector(LanguagePair direction, Corpus query, int limit) throws ContextAnalyzerException {
+    public ContextVector getContextVector(long user, LanguagePair direction, Corpus query, int limit) throws ContextAnalyzerException {
         try {
-            return this.index.getContextVector(direction, query, limit);
+            return this.index.getContextVector(user, direction, query, limit);
         } catch (IOException e) {
             throw new ContextAnalyzerException("Failed to calculate context-vector due an internal error", e);
         }

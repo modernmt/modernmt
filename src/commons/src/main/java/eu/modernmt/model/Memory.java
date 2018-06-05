@@ -8,14 +8,20 @@ import java.io.Serializable;
 public class Memory implements Serializable {
 
     private long id;
+    private long owner;
     private String name;
 
     public Memory(long id) {
-        this(id, null);
+        this(id, 0L, null);
     }
 
     public Memory(long id, String name) {
+        this(id, 0L, name);
+    }
+
+    public Memory(long id, long owner, String name) {
         this.id = id;
+        this.owner = owner;
         this.name = name;
     }
 
@@ -25,6 +31,14 @@ public class Memory implements Serializable {
 
     public void setId(long id) {
         this.id = id;
+    }
+
+    public long getOwner() {
+        return owner;
+    }
+
+    public void setOwner(long owner) {
+        this.owner = owner;
     }
 
     public String getName() {
@@ -43,7 +57,6 @@ public class Memory implements Serializable {
         Memory memory = (Memory) o;
 
         return id == memory.id;
-
     }
 
     @Override
@@ -55,7 +68,9 @@ public class Memory implements Serializable {
     public String toString() {
         return "Memory{" +
                 "id=" + id +
+                ", owner=" + owner +
                 ", name='" + name + '\'' +
                 '}';
     }
+
 }

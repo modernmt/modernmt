@@ -29,9 +29,9 @@ public interface TranslationMemory extends Closeable, DataListener {
     /* This method does not store segments hash. Update of content inserted with this method is not possible */
     void bulkInsert(Memory memory, MultilingualCorpus corpus) throws IOException;
 
-    ScoreEntry[] search(LanguagePair direction, Sentence source, int limit) throws IOException;
+    ScoreEntry[] search(long user, LanguagePair direction, Sentence source, int limit) throws IOException;
 
-    ScoreEntry[] search(LanguagePair direction, Sentence source, ContextVector contextVector, int limit) throws IOException;
+    ScoreEntry[] search(long user, LanguagePair direction, Sentence source, ContextVector contextVector, int limit) throws IOException;
 
     void setDataFilter(DataFilter filter);
 

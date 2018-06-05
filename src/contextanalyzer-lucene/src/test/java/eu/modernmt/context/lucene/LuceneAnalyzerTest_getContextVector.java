@@ -1,6 +1,7 @@
 package eu.modernmt.context.lucene;
 
 import eu.modernmt.context.ContextAnalyzerException;
+import eu.modernmt.data.DataManager;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Memory;
@@ -67,7 +68,7 @@ public class LuceneAnalyzerTest_getContextVector {
     }
 
     private void test(LanguagePair lang, String query, int... memories) throws ContextAnalyzerException {
-        ContextVector result = analyzer.getContextVector(lang, query, 100);
+        ContextVector result = analyzer.getContextVector(DataManager.PUBLIC, lang, query, 100);
 
         assertEquals(memories == null ? 0 : memories.length, result.size());
         if (memories != null) {

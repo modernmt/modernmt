@@ -1,6 +1,7 @@
 package eu.modernmt.rest.actions.translation;
 
 import eu.modernmt.context.ContextAnalyzerException;
+import eu.modernmt.data.DataManager;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.io.FileProxy;
 import eu.modernmt.lang.Language;
@@ -53,7 +54,7 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
         try {
 
             if (params.text != null) {
-                contexts = ModernMT.translation.getContextVectors(params.text, params.limit, params.source, params.targets);
+                contexts = ModernMT.translation.getContextVectors(params.user, params.text, params.limit, params.source, params.targets);
             } else {
                 boolean gzipped = params.compression != null;
                 File file;
@@ -67,7 +68,7 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
                     temp = file = copy(new ParameterFileProxy(params.content, gzipped));
                 }
 
-                contexts = ModernMT.translation.getContextVectors(file, params.limit, params.source, params.targets);
+                contexts = ModernMT.translation.getContextVectors(params.user, file, params.limit, params.source, params.targets);
             }
         } finally {
             if (temp != null)
@@ -91,6 +92,7 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
 
         public static final int DEFAULT_LIMIT = 10;
 
+        public final long user;
         public final Language source;
         public final Language[] targets;
         public final int limit;
@@ -103,6 +105,7 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
 
+            this.user = getLong("user", DataManager.PUBLIC);
             this.limit = getInt("limit", DEFAULT_LIMIT);
 
             Language sourceLanguage = getLanguage("source", null);

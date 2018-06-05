@@ -3,7 +3,6 @@ package eu.modernmt.decoder.neural.memory;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.neural.memory.lucene.DocumentBuilder;
 import eu.modernmt.decoder.neural.memory.lucene.query.DefaultQueryBuilder;
-import eu.modernmt.lang.LanguagePair;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -41,11 +40,11 @@ public class LuceneTranslationMemoryTest_hash {
     @Test
     public void queryWithMisleadingHashes() throws Throwable {
         IndexWriter indexWriter = memory.getIndexWriter();
-        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 2, "2-1", "2-1", "A B C D"));
-        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 1, "1-1", "1-1", "A B C D"));
-        indexWriter.addDocument(DocumentBuilder.newInstance(EN__FR, 1, "1-1F", "1-1F", "A B C D"));
-        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 1, "1-2", "1-2", "D C B A"));
-        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 1, "1-3", "1-3", "D C B Z"));
+        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 0, 2, "2-1", "2-1", "A B C D"));
+        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 0, 1, "1-1", "1-1", "A B C D"));
+        indexWriter.addDocument(DocumentBuilder.newInstance(EN__FR, 0, 1, "1-1F", "1-1F", "A B C D"));
+        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 0, 1, "1-2", "1-2", "D C B A"));
+        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 0, 1, "1-3", "1-3", "D C B Z"));
         indexWriter.commit();
 
         Query query = new DefaultQueryBuilder().getByHash(1, "A B C D");

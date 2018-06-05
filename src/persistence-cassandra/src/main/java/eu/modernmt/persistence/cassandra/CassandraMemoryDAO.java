@@ -72,8 +72,9 @@ public class CassandraMemoryDAO implements MemoryDAO {
         try {
             long id = row.getLong("id");
             String name = row.getString("name");
+            long owner = row.getLong("owner");
 
-            return new Memory(id, name);
+            return new Memory(id, owner, name);
         } catch (IllegalArgumentException e) {
             throw new PersistenceException("code name not valid for this object", e);
         } catch (CodecNotFoundException e) {
@@ -149,7 +150,7 @@ public class CassandraMemoryDAO implements MemoryDAO {
      */
     @Override
     public Memory store(Memory memory) throws PersistenceException {
-        return this.store(memory, false);
+        return store(memory, false);
     }
 
     /**
@@ -174,8 +175,8 @@ public class CassandraMemoryDAO implements MemoryDAO {
             CassandraIdGenerator.advanceCounter(connection, CassandraDatabase.MEMORIES_TABLE_ID, id);
         }
 
-        String[] columns = {"id", "name"};
-        Object[] values = {id, memory.getName()};
+        String[] columns = {"id", "owner", "name"};
+        Object[] values = {id, memory.getOwner(), memory.getName()};
 
         BuiltStatement statement = QueryBuilder
                 .insertInto(CassandraDatabase.MEMORIES_TABLE)
@@ -207,10 +208,10 @@ public class CassandraMemoryDAO implements MemoryDAO {
      */
     @Override
     public Memory update(Memory memory) throws PersistenceException {
-        BuiltStatement built = QueryBuilder.update(CassandraDatabase.MEMORIES_TABLE).
-                with(QueryBuilder.set("name", memory.getName())).
-                where(QueryBuilder.eq("id", memory.getId())).
-                ifExists();
+        BuiltStatement built = QueryBuilder.update(CassandraDatabase.MEMORIES_TABLE)
+                .with(QueryBuilder.set("name", memory.getName()))
+                .where(QueryBuilder.eq("id", memory.getId()))
+                .ifExists();
 
         ResultSet result = CassandraUtils.checkedExecute(connection, built);
 

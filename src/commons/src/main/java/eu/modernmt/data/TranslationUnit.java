@@ -12,6 +12,7 @@ import java.util.Date;
 public class TranslationUnit extends DataMessage {
 
     public final long memory;
+    public final long owner;
 
     public final LanguagePair direction;
     public final String rawSentence;
@@ -24,11 +25,12 @@ public class TranslationUnit extends DataMessage {
     public final Sentence translation;
     public final Alignment alignment;
 
-    public TranslationUnit(short channel, long channelPosition, LanguagePair direction, long memory, String rawSentence,
-                           String rawTranslation, String rawPreviousSentence, String rawPreviousTranslation, Date timestamp,
-                           Sentence sentence, Sentence translation, Alignment alignment) {
+    public TranslationUnit(short channel, long channelPosition, long owner, LanguagePair direction, long memory,
+                           String rawSentence, String rawTranslation, String rawPreviousSentence, String rawPreviousTranslation,
+                           Date timestamp, Sentence sentence, Sentence translation, Alignment alignment) {
         super(channel, channelPosition);
         this.memory = memory;
+        this.owner = owner;
         this.direction = direction;
         this.rawSentence = rawSentence;
         this.rawTranslation = rawTranslation;

@@ -28,16 +28,17 @@ public class DocumentBuilder {
         String translation = TokensOutputStream.serialize(unit.translation, false, true);
         String hash = HashGenerator.hash(unit.rawSentence, unit.rawTranslation);
 
-        return newInstance(unit.direction, unit.memory, sentence, translation, hash);
+        return newInstance(unit.direction, unit.owner, unit.memory, sentence, translation, hash);
     }
 
-    public static Document newInstance(LanguagePair direction, long memory, String sentence, String translation) {
-        return newInstance(direction, memory, sentence, translation, null);
+    public static Document newInstance(LanguagePair direction, long owner, long memory, String sentence, String translation) {
+        return newInstance(direction, owner, memory, sentence, translation, null);
     }
 
-    public static Document newInstance(LanguagePair direction, long memory, String sentence, String translation, String hash) {
+    public static Document newInstance(LanguagePair direction, long owner, long memory, String sentence, String translation, String hash) {
         Document document = new Document();
         document.add(new LongField(MEMORY_FIELD, memory, Field.Store.YES));
+        document.add(new LongField(OWNER_FIELD, owner, Field.Store.NO));
 
         if (hash != null)
             document.add(new HashField(HASH_FIELD, hash, Field.Store.NO));
@@ -66,6 +67,7 @@ public class DocumentBuilder {
 
     private static final String CHANNELS_FIELD = "channels";
     private static final String MEMORY_FIELD = "memory";
+    private static final String OWNER_FIELD = "owner";
     private static final String HASH_FIELD = "hash";
     private static final String LANGUAGE_PREFIX_FIELD = "lang_";
     private static final String CONTENT_PREFIX_FIELD = "content_";
@@ -160,6 +162,13 @@ public class DocumentBuilder {
         NumericUtils.longToPrefixCoded(memory, 0, builder);
 
         return new Term(MEMORY_FIELD, builder.toBytesRef());
+    }
+
+    public static Term makeOwnerTerm(long owner) {
+        BytesRefBuilder builder = new BytesRefBuilder();
+        NumericUtils.longToPrefixCoded(owner, 0, builder);
+
+        return new Term(OWNER_FIELD, builder.toBytesRef());
     }
 
     public static Term makeChannelsTerm() {

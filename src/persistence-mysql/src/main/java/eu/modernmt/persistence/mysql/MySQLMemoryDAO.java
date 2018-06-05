@@ -40,7 +40,6 @@ public class MySQLMemoryDAO implements MemoryDAO {
      */
     @Override
     public Memory retrieve(long id) throws PersistenceException {
-
         String query = "SELECT * FROM mmt_memories WHERE id = ?;";
 
         PreparedStatement statement = null;
@@ -50,9 +49,8 @@ public class MySQLMemoryDAO implements MemoryDAO {
             statement = this.connection.prepareStatement(query);
             statement.setLong(1, id);
             result = statement.executeQuery();
-            /*if result.next() is not null return readResource(result), else null*/
-            return result.next() ? read(result) : null;
 
+            return result.next() ? read(result) : null;
         } catch (SQLException e) {
             throw new PersistenceException(e);
         } finally {
@@ -70,12 +68,11 @@ public class MySQLMemoryDAO implements MemoryDAO {
      */
     @Override
     public Map<Long, Memory> retrieve(Collection<Long> ids) throws PersistenceException {
-
-        Map<Long, Memory> map = new HashMap<>(ids.size());
+        Map<Long, Memory> memories = new HashMap<>(ids.size());
 
         /*if the list is empty, return an empty map*/
         if (ids.isEmpty())
-            return map;
+            return memories;
 
         String query = "SELECT * FROM mmt_memories "
                 + "WHERE id IN (" + StringUtils.join(ids.toArray(new Long[ids.size()]), ',') + ") ";
@@ -87,11 +84,12 @@ public class MySQLMemoryDAO implements MemoryDAO {
             statement = this.connection.createStatement();
             result = statement.executeQuery(query);
 
-            Collection<Memory> memories = readAll(result);
-            for (Memory current : memories)
-                map.put(current.getId(), current);
-            return map;
+            while (result.next()) {
+                Memory memory = read(result);
+                memories.put(memory.getId(), memory);
+            }
 
+            return memories;
         } catch (SQLException e) {
             throw new PersistenceException(e);
         } finally {
@@ -118,8 +116,10 @@ public class MySQLMemoryDAO implements MemoryDAO {
             statement = this.connection.createStatement();
             result = statement.executeQuery(query);
 
-            return readAll(result);
-
+            ArrayList<Memory> memories = new ArrayList<>();
+            while (result.next())
+                memories.add(read(result));
+            return memories;
         } catch (SQLException e) {
             throw new PersistenceException(e);
         } finally {
@@ -127,7 +127,6 @@ public class MySQLMemoryDAO implements MemoryDAO {
             SQLUtils.closeQuietly(result);
         }
     }
-
 
     /**
      * This method stores a Memory object in the DB
@@ -138,7 +137,7 @@ public class MySQLMemoryDAO implements MemoryDAO {
      */
     @Override
     public Memory store(Memory memory) throws PersistenceException {
-        return this.store(memory, false);
+        return store(memory, false);
     }
 
     /**
@@ -151,39 +150,33 @@ public class MySQLMemoryDAO implements MemoryDAO {
      */
     @Override
     public Memory store(Memory memory, boolean forceId) throws PersistenceException {
-
-        String query = forceId ? "INSERT INTO mmt_memories (name, id) values (?, ?)" :
-                "INSERT INTO mmt_memories (name) values (?)";
-
+        String query = forceId ? "INSERT INTO mmt_memories (owner, name, id) values (?, ?)" :
+                "INSERT INTO mmt_memories (owner, name) values (?)";
 
         PreparedStatement statement = null;
         ResultSet generatedKeys = null;
         try {
             statement = forceId ? this.connection.prepareStatement(query) :
                     this.connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
-            int i = 1;
 
+            int i = 1;
+            statement.setLong(i++, memory.getOwner());
             statement.setString(i++, memory.getName());
             if (forceId)
                 statement.setLong(i, memory.getId());
 
-            int affectedRows = statement.executeUpdate();
-
-            /*if the store failed*/
-            if (affectedRows == 0)
+            if (statement.executeUpdate() == 0)
                 throw new PersistenceException("Memory store failed, no rows affected.");
 
-            /*if the store succeeded and it did not use forceId, set the memory Id as the newly generated one*/
             if (!forceId) {
                 generatedKeys = statement.getGeneratedKeys();
-                if (generatedKeys.next()) {
+
+                if (generatedKeys.next())
                     memory.setId(generatedKeys.getLong(1));
-                    return memory;
-                } else {
+                else
                     throw new PersistenceException("ImportJob store creation failed, no ID obtained.");
-                }
             }
-            /*if the store succeeded and it did use forceId, just return the stored memory*/
+
             return memory;
         } catch (SQLException e) {
             throw new PersistenceException(e);
@@ -204,7 +197,6 @@ public class MySQLMemoryDAO implements MemoryDAO {
      */
     @Override
     public Memory update(Memory memory) throws PersistenceException {
-
         String query = "UPDATE TABLE mmt_memories SET name = ? WHERE id = ? ";
 
         /*execute query and read resources from its result*/
@@ -213,12 +205,11 @@ public class MySQLMemoryDAO implements MemoryDAO {
         int affectedRows;
         try {
             statement = connection.prepareStatement(query);
-            int i = 1;
-            statement.setString(i++, memory.getName());
-            statement.setLong(i, memory.getId());
+            statement.setString(1, memory.getName());
+            statement.setLong(2, memory.getId());
 
             affectedRows = statement.executeUpdate();
-            /*if no row was affected it means that no Memory with the passed id is in the DB*/
+
             return (affectedRows != 0) ? memory : null;
         } catch (SQLException e) {
             throw new PersistenceException(e);
@@ -241,8 +232,7 @@ public class MySQLMemoryDAO implements MemoryDAO {
         try {
             statement = connection.prepareStatement(query);
             statement.setLong(1, id);
-            int deletedResources = statement.executeUpdate();
-            return (deletedResources == 1);
+            return (statement.executeUpdate() == 1);
         } catch (SQLException e) {
             throw new PersistenceException(e);
         } finally {
@@ -250,70 +240,20 @@ public class MySQLMemoryDAO implements MemoryDAO {
         }
     }
 
-
-    /**
-     * This method reads the fields of a ResultSet from table "memories" and creates a new Memory object
-     *
-     * @param result a resultSet obtained by a query
-     * @return the new Memory object obtained by the ResultSet
-     * @throws PersistenceException if a required field is not found
-     */
     private static Memory read(ResultSet result) throws PersistenceException {
-        return read(result, "mmt_memories");
-    }
-
-
-    /**
-     * This method reads the fields of a ResultSet from the table with given name and creates a new Memory object
-     *
-     * @param result a resultSet obtained by a query
-     * @return the new Memory object obtained by the ResultSet
-     * @throws PersistenceException if a required field is not found
-     */
-    private static Memory read(ResultSet result, String table) throws PersistenceException {
         if (result == null)
             return null;
+
         Memory memory;
         try {
-            long id = result.getLong(table + ".id");
-            String name = result.getString(table + ".name");
-            memory = new Memory(id, name);
+            long id = result.getLong("id");
+            long owner = result.getLong("owner");
+            String name = result.getString("name");
+            memory = new Memory(id, owner, name);
         } catch (SQLException e) {
             throw new PersistenceException(e);
         }
         return memory;
     }
 
-
-    /**
-     * This method reads the fields and rows of a ResultSet from table "memories"
-     * and returns a collection with the parsed Memory objects
-     *
-     * @param result a resultSet obtained by a query
-     * @return the collection containing the Memory objects obtained by the ResultSet
-     * @throws PersistenceException if a required field is not found
-     */
-    private static Collection<Memory> readAll(ResultSet result) throws PersistenceException {
-        return readAll(result, "mmt_memories");
-    }
-
-    /**
-     * This method reads the fields and rows of a ResultSet from the table with given name
-     * and returns a collection with the parsed Memory objects
-     *
-     * @param result a resultSet obtained by a query
-     * @return the collection containing the Memory objects obtained by the ResultSet
-     * @throws PersistenceException if a required field is not found
-     */
-    private static Collection<Memory> readAll(ResultSet result, String table) throws PersistenceException {
-
-        Collection<Memory> memories = new ArrayList<>();
-        try {
-            while (result.next())
-                memories.add(read(result, table));
-        } catch (SQLException e) {
-            throw new PersistenceException(e);
-        }
-        return memories;
-    }
 }
