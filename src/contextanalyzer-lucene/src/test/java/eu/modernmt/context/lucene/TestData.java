@@ -36,6 +36,7 @@ public class TestData {
     public static final LanguagePair EN_US__IT_CH = new LanguagePair(TestData.EN_US, TestData.IT_CH);
     public static final LanguagePair IT_CH__EN_US = new LanguagePair(TestData.IT_CH, TestData.EN_US);
     public static final LanguagePair IT__EN_US = new LanguagePair(TestData.IT, TestData.EN_US);
+    public static final LanguagePair FR_CA__EN_US = new LanguagePair(TestData.FR_CA, TestData.EN_US);
 
     private static final HashMap<String, String> EXAMPLE_SENTENCES = new HashMap<>();
     private static final HashMap<String, String> EXAMPLE_CONTENTS = new HashMap<>();
