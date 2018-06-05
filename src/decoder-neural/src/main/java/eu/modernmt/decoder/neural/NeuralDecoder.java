@@ -157,7 +157,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
                 translation = decoderImpl.translate(direction, text, nbestListSize);
             }
 
-            if (logger.isTraceEnabled()) {
+            if (logger.isDebugEnabled()) {
                 String sourceText = TokensOutputStream.serialize(text, false, true);
                 String targetText = TokensOutputStream.serialize(translation, false, true);
 
@@ -173,7 +173,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
                 log.append("   ]");
 
-                logger.trace(log);
+                logger.debug(log);
             }
         } else {
             translation = Translation.emptyTranslation(text);

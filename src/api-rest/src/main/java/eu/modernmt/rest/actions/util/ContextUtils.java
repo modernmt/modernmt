@@ -38,6 +38,7 @@ public class ContextUtils {
     }
 
     private static void copy(Memory from, Memory to) {
+        to.setOwner(from.getOwner());
         to.setName(from.getName());
     }
 

@@ -13,6 +13,7 @@ from distutils.dir_util import copy_tree
 MMT_HOME = os.path.abspath(os.path.join(__file__, os.pardir, os.pardir, os.pardir))
 sys.path.insert(0, MMT_HOME)
 
+# noinspection PyUnresolvedReferences
 from cli.mmt.cluster import ClusterNode, ApiException
 from cli.libs.shell import ShellError
 from cli import MMT_JAR
@@ -130,13 +131,17 @@ class ModernMT(object):
             shutil.rmtree(self.engine_path + '_BAK', ignore_errors=True)
             shutil.copytree(self.engine_path, self.engine_path + '_BAK')
 
-    def start(self):
+    def start(self, verbosity=None):
         _exe('./mmt stop -e ' + self.engine_name)
 
         runtime = os.path.join(MMT_HOME, 'runtime', self.engine_name)
         shutil.rmtree(runtime, ignore_errors=True)
 
-        _exe('./mmt start -e ' + self.engine_name)
+        cmd = './mmt start -e ' + self.engine_name
+        if verbosity is not None:
+            cmd = cmd + ' -v %d' % verbosity
+
+        _exe(cmd)
 
     def stop(self):
         _exe('./mmt stop -e ' + self.engine_name)
@@ -166,14 +171,17 @@ class ModernMT(object):
         if wait:
             self.wait_job(job)
 
-    def import_corpus(self, tmx=None, compact=None, wait=True):
-        content_path = tmx if tmx is not None else compact
-        name, _ = os.path.splitext(content_path)
-        _, name = os.path.split(name)
+    def import_corpus(self, tmx=None, compact=None, wait=True, memory=None):
+        if memory is None:
+            content_path = tmx if tmx is not None else compact
+            name, _ = os.path.splitext(content_path)
+            _, name = os.path.split(name)
 
-        memory = self.api.create_memory(name)
+            memory = self.api.create_memory(name)
+        else:
+            memory = {'id': memory}
+
         memory_id = memory['id']
-
         job = self.api.import_into_memory(memory_id, tmx=tmx, compact=compact)
 
         if wait:

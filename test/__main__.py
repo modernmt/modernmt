@@ -2,7 +2,10 @@ import argparse
 
 # noinspection PyUnresolvedReferences
 from testcases.onlinelearning import *
+# noinspection PyUnresolvedReferences
 from testcases.training import *
+# noinspection PyUnresolvedReferences
+from testcases.privacy import *
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Test suite for ModernMT',

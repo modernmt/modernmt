@@ -94,9 +94,16 @@ class ClusterNode(object):
         @staticmethod
         def _unpack(r):
             if r.status_code != requests.codes.ok:
-                raise ApiException('HTTP request failed with code ' + str(r.status_code) + ': ' + r.url)
-            content = r.json()
+                msg = r.text
+                try:
+                    error = r.json()['error']
+                    msg = '(%s) %s' % (error['type'], error['message'])
+                except:
+                    pass
 
+                raise ApiException('HTTP request "%s" failed with code %d: %s' % (r.url, r.status_code, msg))
+
+            content = r.json()
             return content['data'] if 'data' in content else None
 
         def _get(self, endpoint, params=None):
@@ -150,16 +157,20 @@ class ClusterNode(object):
         def get_features(self):
             return self._get('decoder/features')
 
-        def get_context_f(self, source, target, document, limit=None):
+        def get_context_f(self, source, target, document, limit=None, user=None):
             params = {'local_file': document, 'source': source, 'targets': target}
             if limit is not None:
                 params['limit'] = limit
+            if user is not None:
+                params['user'] = user
             return self._unpack_context(self._get('context-vector', params=params))
 
-        def get_context_s(self, source, target, text, limit=None):
+        def get_context_s(self, source, target, text, limit=None, user=None):
             params = {'text': text, 'source': source, 'targets': target}
             if limit is not None:
                 params['limit'] = limit
+            if user is not None:
+                params['user'] = user
             return self._unpack_context(self._get('context-vector', params=params))
 
         @staticmethod
@@ -167,7 +178,7 @@ class ClusterNode(object):
             result = data['vectors']
             return None if len(result) != 1 else result.values()[0]
 
-        def translate(self, source, target, text, context=None, nbest=None, verbose=False, priority=None):
+        def translate(self, source, target, text, context=None, nbest=None, verbose=False, priority=None, user=None):
             p = {'q': text, 'source': source, 'target': target}
             if nbest is not None:
                 p['nbest'] = nbest
@@ -177,11 +188,15 @@ class ClusterNode(object):
                 p['verbose'] = 'true'
             if priority is not None:
                 p['priority'] = priority
+            if user is not None:
+                p['user'] = user
 
             return self._get('translate', params=p)
 
-        def create_memory(self, name):
+        def create_memory(self, name, owner=None):
             params = {'name': name}
+            if owner is not None:
+                params['owner'] = owner
             return self._post('memories', params=params)
 
         def delete_memory(self, memory_id):
