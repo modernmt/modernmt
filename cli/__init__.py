@@ -19,7 +19,7 @@ BIN_DIR = os.path.join(BUILD_DIR, 'bin')
 
 def mmt_jar(pattern):
     jars = [f for f in glob.glob(pattern)]
-    jars.sort(key=lambda x: os.path.getmtime(x))
+    jars.sort(key=lambda e: os.path.getmtime(e))
     return jars[-1]
 
 
