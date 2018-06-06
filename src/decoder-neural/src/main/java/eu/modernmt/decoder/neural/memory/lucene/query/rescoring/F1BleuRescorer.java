@@ -2,13 +2,13 @@ package eu.modernmt.decoder.neural.memory.lucene.query.rescoring;
 
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Created by davide on 06/08/17.
@@ -18,7 +18,7 @@ public class F1BleuRescorer implements Rescorer {
     private static final float MAX_SUGGESTION_EXPANSION = 2.f;
 
     @Override
-    public ScoreEntry[] rescore(Sentence input, ScoreEntry[] entries, ContextVector context) {
+    public ScoreEntry[] rescore(LanguagePair direction, Sentence input, ScoreEntry[] entries, ContextVector context) {
         String[] inputWords = TokensOutputStream.tokens(input, false, true);
         F1BleuCalculator calculator = new F1BleuCalculator(inputWords);
 

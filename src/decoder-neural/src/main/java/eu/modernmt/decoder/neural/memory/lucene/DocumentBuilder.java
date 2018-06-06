@@ -43,8 +43,8 @@ public class DocumentBuilder {
         if (hash != null)
             document.add(new HashField(HASH_FIELD, hash, Field.Store.NO));
 
-        document.add(new StoredField(makeLanguageFieldName(direction.source), direction.source.toLanguageTag()));
-        document.add(new StoredField(makeLanguageFieldName(direction.target), direction.target.toLanguageTag()));
+        document.add(new StringField(makeLanguageFieldName(direction.source), direction.source.toLanguageTag(), Field.Store.YES));
+        document.add(new StringField(makeLanguageFieldName(direction.target), direction.target.toLanguageTag(), Field.Store.YES));
         document.add(new TextField(makeContentFieldName(direction), sentence, Field.Store.YES));
         document.add(new TextField(makeContentFieldName(direction.reversed()), translation, Field.Store.YES));
 
@@ -173,6 +173,10 @@ public class DocumentBuilder {
 
     public static Term makeChannelsTerm() {
         return makeMemoryTerm(0L);
+    }
+
+    public static Term makeLanguageTerm(Language language) {
+        return new Term(makeLanguageFieldName(language), language.toLanguageTag());
     }
 
     // Fields builders

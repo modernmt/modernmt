@@ -251,7 +251,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         }
 
         if (rescorer != null)
-            entries = rescorer.rescore(source, entries, contextVector);
+            entries = rescorer.rescore(direction, source, entries, contextVector);
 
         if (entries.length > limit) {
             ScoreEntry[] temp = new ScoreEntry[limit];
