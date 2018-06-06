@@ -44,11 +44,17 @@ public class DefaultQueryBuilder implements QueryBuilder {
         Analyzer analyzer = isLongQuery ? Analyzers.getLongQueryAnalyzer() : Analyzers.getShortQueryAnalyzer();
 
         // Content query
-        BooleanQuery termsQuery = new BooleanQuery();
-        loadTerms(DocumentBuilder.makeContentFieldName(direction), sentence, analyzer, termsQuery);
+        BooleanQuery termsQuery = makeTermsQuery(direction, sentence, analyzer);
         termsQuery.setMinimumNumberShouldMatch(minMatches);
 
         // Owner filter
+        BooleanQuery privacyQuery = makePrivacyQuery(user, context);
+
+        // Result
+        return new FilteredQuery(termsQuery, new QueryWrapperFilter(privacyQuery));
+    }
+
+    protected static BooleanQuery makePrivacyQuery(long user, ContextVector context) {
         BooleanQuery privacyQuery = new BooleanQuery();
 
         if (user == DataManager.PUBLIC) {
@@ -66,8 +72,13 @@ public class DefaultQueryBuilder implements QueryBuilder {
 
         privacyQuery.setMinimumNumberShouldMatch(1);
 
-        // Result
-        return new FilteredQuery(termsQuery, new QueryWrapperFilter(privacyQuery));
+        return privacyQuery;
+    }
+
+    protected static BooleanQuery makeTermsQuery(LanguagePair direction, Sentence sentence, Analyzer analyzer) {
+        BooleanQuery termsQuery = new BooleanQuery();
+        loadTerms(DocumentBuilder.makeContentFieldName(direction), sentence, analyzer, termsQuery);
+        return termsQuery;
     }
 
     private static void loadTerms(String fieldName, Sentence sentence, Analyzer analyzer, BooleanQuery output) {
