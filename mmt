@@ -334,6 +334,10 @@ def main_tune(argv):
 def main_evaluate(argv):
     parser = argparse.ArgumentParser(description='Evaluate MMT engine')
     parser.prog = 'mmt evaluate'
+    parser.add_argument('-s', '--source', dest='source_lang', metavar='SOURCE_LANGUAGE', default=None,
+                        help='the source language (ISO 639-1). Can be omitted if engine is monolingual.')
+    parser.add_argument('-t', '--target', dest='target_lang', metavar='TARGET_LANGUAGE', default=None,
+                        help='the target language (ISO 639-1). Can be omitted if engine is monolingual.')
     parser.add_argument('--path', dest='corpora_path', metavar='CORPORA', default=None,
                         help='the path to the test corpora (default is the automatically splitted sample)')
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
@@ -358,7 +362,8 @@ def main_evaluate(argv):
     ensure_api(node)
 
     # perform evaluation
-    evaluator = Evaluator(node, google_key=args.gt_key, google_nmt=args.gt_nmt)
+    evaluator = Evaluator(node, source_lang=args.source_lang, target_lang=args.target_lang,
+                          google_key=args.gt_key, google_nmt=args.gt_nmt)
     corpora = BilingualCorpus.list(args.corpora_path) if args.corpora_path is not None \
         else BilingualCorpus.list(os.path.join(node.engine.data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
     evaluator.evaluate(corpora=corpora, heval_output=args.heval_output, debug=args.debug)
@@ -471,6 +476,10 @@ def main_translate(argv):
     parser = argparse.ArgumentParser(description='Translate text with ModernMT')
 
     parser.add_argument('text', metavar='TEXT', help='text to be translated (optional)', default=None, nargs='?')
+    parser.add_argument('-s', '--source', dest='source_lang', metavar='SOURCE_LANGUAGE', default=None,
+                        help='the source language (ISO 639-1). Can be omitted if engine is monolingual.')
+    parser.add_argument('-t', '--target', dest='target_lang', metavar='TARGET_LANGUAGE', default=None,
+                        help='the target language (ISO 639-1). Can be omitted if engine is monolingual.')
 
     # Context arguments
     parser.add_argument('--context', metavar='CONTEXT', dest='context',
@@ -504,15 +513,21 @@ def main_translate(argv):
     ensure_api(node)
 
     # choose the which translator to use, depending on the input format
+    source_lang = args.source_lang if args.source_lang is not None else node.engine.source_lang
+    target_lang = args.target_lang if args.target_lang is not None else node.engine.target_lang
+
     if args.is_xliff:
-        translator = XLIFFTranslator(node, context_string=args.context, context_file=args.context_file,
+        translator = XLIFFTranslator(node, source_lang, target_lang,
+                                     context_string=args.context, context_file=args.context_file,
                                      context_vector=args.context_vector)
     elif args.batch:
-        translator = BatchTranslator(node, context_string=args.context, context_file=args.context_file,
+        translator = BatchTranslator(node, source_lang, target_lang,
+                                     context_string=args.context, context_file=args.context_file,
                                      context_vector=args.context_vector, print_nbest=args.nbest,
                                      nbest_file=args.nbest_file)
     else:
-        translator = InteractiveTranslator(node, context_string=args.context, context_file=args.context_file,
+        translator = InteractiveTranslator(node, source_lang, target_lang,
+                                           context_string=args.context, context_file=args.context_file,
                                            context_vector=args.context_vector, print_nbest=args.nbest,
                                            nbest_file=args.nbest_file)
 

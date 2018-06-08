@@ -15,6 +15,7 @@ from cli.mmt.processing import XMLEncoder
 
 DEFAULT_GOOGLE_KEY = 'AIzaSyBl9WAoivTkEfRdBBSCs4CruwnGL_aV74c'
 
+
 class TranslateError(Exception):
     def __init__(self, *args, **kwargs):
         super(TranslateError, self).__init__(*args, **kwargs)
@@ -137,8 +138,8 @@ class BingTranslator(Translator):
 
 
 class MMTTranslator(Translator):
-    def __init__(self, node):
-        Translator.__init__(self, node.engine.source_lang, node.engine.target_lang, threads=100)
+    def __init__(self, node, source_lang, target_lang):
+        Translator.__init__(self, source_lang, target_lang, threads=100)
         self._api = node.api
         self._contexts = {}
 
@@ -302,6 +303,7 @@ class BLEUScore(Score):
 
         return float(stdout)
 
+
 class CharCutScore(Score):
     def __init__(self):
         Score.__init__(self)
@@ -311,7 +313,7 @@ class CharCutScore(Score):
 
     def calculate(self, document, reference):
         script = os.path.join(cli.PYOPT_DIR, 'charcut.py')
-        command = ['python', script, '-c','/dev/stdin','-r',reference]
+        command = ['python', script, '-c', '/dev/stdin', '-r', reference]
 
         with open(document) as input_stream:
             stdout, _ = shell.execute(command, stdin=input_stream)
@@ -464,25 +466,28 @@ class _EvaluationResult:
 
 
 class Evaluator:
-    def __init__(self, node, google_key=None, google_nmt=False):
+    def __init__(self, node, source_lang=None, target_lang=None, google_key=None, google_nmt=False):
         self._engine = node.engine
         self._node = node
 
         self._heval_outputter = HumanEvaluationFileOutputter()
         self._xmlencoder = XMLEncoder()
+
+        self._source_lang = source_lang if source_lang is not None else self._engine.source_lang
+        self._target_lang = target_lang if target_lang is not None else self._engine.target_lang
+
         self._translators = [
-            GoogleTranslate(self._engine.source_lang, self._engine.target_lang, key=google_key, nmt=google_nmt),
-            # BingTranslator(source_lang, target_lang),
-            MMTTranslator(self._node)
+            GoogleTranslate(self._source_lang, self._target_lang, key=google_key, nmt=google_nmt),
+            # BingTranslator(self._source_lang, self._target_lang),
+            MMTTranslator(self._node, self._source_lang, self._target_lang)
         ]
 
     def evaluate(self, corpora, heval_output=None, debug=False):
-        target_lang = self._engine.target_lang
-        source_lang = self._engine.source_lang
-
-        corpora = [corpus for corpus in corpora if source_lang in corpus.langs and target_lang in corpus.langs]
+        corpora = [corpus for corpus in corpora
+                   if self._source_lang in corpus.langs and self._target_lang in corpus.langs]
         if len(corpora) == 0:
-            raise IllegalArgumentException('No %s > %s corpora found into specified path' % (source_lang, target_lang))
+            raise IllegalArgumentException(
+                'No %s > %s corpora found into specified path' % (self._source_lang, self._target_lang))
 
         if heval_output is not None:
             fileutils.makedirs(heval_output, exist_ok=True)
@@ -500,16 +505,17 @@ class Evaluator:
                 corpora_path = os.path.join(working_dir, 'corpora')
                 corpora = self._xmlencoder.encode(corpora, corpora_path)
 
-                reference = os.path.join(working_dir, 'reference.' + target_lang)
-                source = os.path.join(working_dir, 'source.' + source_lang)
-                fileutils.merge([corpus.get_file(target_lang) for corpus in corpora], reference)
-                fileutils.merge([corpus.get_file(source_lang) for corpus in corpora], source)
+                reference = os.path.join(working_dir, 'reference.' + self._target_lang)
+                source = os.path.join(working_dir, 'source.' + self._source_lang)
+                fileutils.merge([corpus.get_file(self._target_lang) for corpus in corpora], reference)
+                fileutils.merge([corpus.get_file(self._source_lang) for corpus in corpora], source)
 
                 if heval_output is not None:
-                    self._heval_outputter.write(lang=target_lang, input_file=reference,
-                                                output_file=os.path.join(heval_output, 'reference.' + target_lang))
-                    self._heval_outputter.write(lang=source_lang, input_file=source,
-                                                output_file=os.path.join(heval_output, 'source.' + source_lang))
+                    self._heval_outputter.write(lang=self._target_lang, input_file=reference,
+                                                output_file=os.path.join(heval_output,
+                                                                         'reference.' + self._target_lang))
+                    self._heval_outputter.write(lang=self._source_lang, input_file=source,
+                                                output_file=os.path.join(heval_output, 'source.' + self._source_lang))
 
             # Translate
             for translator in self._translators:
@@ -525,18 +531,18 @@ class Evaluator:
 
                     try:
                         translated, mtt, parallelism = translator.translate(corpora, translations_path)
-                        filename = result.id + '.' + target_lang
+                        filename = result.id + '.' + self._target_lang
 
                         result.mtt = mtt
                         result.parallelism = parallelism
                         result.translated_corpora = self._xmlencoder.encode(translated, xmltranslations_path)
                         result.merge = os.path.join(working_dir, filename)
 
-                        fileutils.merge([corpus.get_file(target_lang)
+                        fileutils.merge([corpus.get_file(self._target_lang)
                                          for corpus in result.translated_corpora], result.merge)
 
                         if heval_output is not None:
-                            self._heval_outputter.write(lang=target_lang, input_file=result.merge,
+                            self._heval_outputter.write(lang=self._target_lang, input_file=result.merge,
                                                         output_file=os.path.join(heval_output, filename))
                     except TranslateError as e:
                         result.error = e

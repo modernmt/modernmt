@@ -14,10 +14,10 @@ __author__ = 'Davide Caroselli'
 
 
 class Translator:
-    def __init__(self, node, context_string=None, context_file=None, context_vector=None,
+    def __init__(self, node, source_lang, target_lang, context_string=None, context_file=None, context_vector=None,
                  print_nbest=None, nbest_file=None):
-        self.source_lang = node.engine.source_lang
-        self.target_lang = node.engine.target_lang
+        self.source_lang = source_lang
+        self.target_lang = target_lang
         self._priority = ClusterNode.Api.PRIORITY_BACKGROUND
         self._api = node.api
         self._print_nbest = print_nbest
@@ -91,9 +91,10 @@ class Translator:
 
 
 class BatchTranslator(Translator):
-    def __init__(self, node, context_string=None, context_file=None, context_vector=None,
+    def __init__(self, node, source_lang, target_lang, context_string=None, context_file=None, context_vector=None,
                  print_nbest=False, nbest_file=None, pool_size=100):
-        Translator.__init__(self, node, context_string, context_file, context_vector, print_nbest, nbest_file)
+        Translator.__init__(self, node, source_lang, target_lang,
+                            context_string, context_file, context_vector, print_nbest, nbest_file)
         self._pool = multithread.Pool(pool_size)
         self._jobs = Queue.Queue(pool_size)
         self._line_id = 0
@@ -185,8 +186,8 @@ class XLIFFTranslator(Translator):
         def __iter__(self):
             return (x for x in self._entries)
 
-    def __init__(self, node, context_string=None, context_file=None, context_vector=None):
-        Translator.__init__(self, node, context_string, context_file, context_vector)
+    def __init__(self, node, source_lang, target_lang, context_string=None, context_file=None, context_vector=None):
+        Translator.__init__(self, node, source_lang, target_lang, context_string, context_file, context_vector)
         self._target_lang = node.engine.target_lang
         self._content = []
         self._pool = multithread.Pool(100)
@@ -296,9 +297,10 @@ class XLIFFTranslator(Translator):
 
 
 class InteractiveTranslator(Translator):
-    def __init__(self, node, context_string=None, context_file=None, context_vector=None,
+    def __init__(self, node, source_lang, target_lang, context_string=None, context_file=None, context_vector=None,
                  print_nbest=False, nbest_file=None):
-        Translator.__init__(self, node, context_string, context_file, context_vector, print_nbest, nbest_file)
+        Translator.__init__(self, node, source_lang, target_lang,
+                            context_string, context_file, context_vector, print_nbest, nbest_file)
         self._priority = ClusterNode.Api.PRIORITY_NORMAL
 
         print '\nModernMT Translate command line'
