@@ -15,6 +15,7 @@ import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.decoder.neural.memory.TranslationMemory;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.decoder.neural.natv.NativeProcess;
+import eu.modernmt.decoder.neural.natv.NativeProcessImpl;
 import eu.modernmt.io.FileConst;
 import eu.modernmt.io.Paths;
 import eu.modernmt.io.TokensOutputStream;
@@ -96,7 +97,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
     protected DecoderQueue loadDecoderQueue(ModelConfig modelConfig, NeuralDecoderConfig decoderConfig, File model) throws DecoderException {
         File pythonExec = Paths.join(FileConst.getLibPath(), "pynmt", "main_loop.py");
-        NativeProcess.Builder builder = new NativeProcess.Builder(pythonExec, model);
+        NativeProcess.Builder builder = new NativeProcessImpl.Builder(pythonExec, model);
 
         if (decoderConfig.isUsingGPUs())
             return DecoderQueueImpl.newGPUInstance(builder, decoderConfig.getGPUs());
