@@ -11,6 +11,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -114,7 +115,7 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
         }
     }
 
-    protected abstract NativeProcess startProcess(NativeProcess.Builder processBuilder) throws DecoderException;
+    protected abstract NativeProcess startProcess(NativeProcess.Builder processBuilder) throws IOException;
 
     protected abstract void onProcessDied(NativeProcess process);
 
@@ -144,7 +145,7 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
             try {
                 logger.info("Starting native decoder process");
                 process = startProcess(processBuilder);
-            } catch (DecoderException e) {
+            } catch (IOException e) {
                 logger.error("Failed to start new decoder process", e);
                 System.exit(2);
 

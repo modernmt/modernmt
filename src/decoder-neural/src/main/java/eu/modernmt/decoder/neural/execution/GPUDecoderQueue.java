@@ -1,6 +1,5 @@
 package eu.modernmt.decoder.neural.execution;
 
-import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.neural.natv.NativeProcess;
 
 import java.io.IOException;
@@ -18,18 +17,14 @@ class GPUDecoderQueue extends DecoderQueueImpl {
     }
 
     @Override
-    protected final NativeProcess startProcess(NativeProcess.Builder builder) throws DecoderException {
+    protected final NativeProcess startProcess(NativeProcess.Builder builder) throws IOException {
         int gpu;
 
         synchronized (this) {
             gpu = this.gpus[this.idx--];
         }
 
-        try {
-            return builder.startOnGPU(gpu);
-        } catch (IOException e) {
-            throw new DecoderException("Failed to start decoder process on GPU " + gpu, e);
-        }
+        return builder.startOnGPU(gpu);
     }
 
     @Override
