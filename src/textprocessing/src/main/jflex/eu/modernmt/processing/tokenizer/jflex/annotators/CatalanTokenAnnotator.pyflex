@@ -8,7 +8,11 @@ import eu.modernmt.processing.tokenizer.jflex.JFlexTokenAnnotator;
 
 //pyflex prefixes ../prefixes/ca.txt
 
+CatalanContractions = [:letter:]\'[:letter:]
+
 %%
 
 /* Default Ignore */
 .                                                                                                       { /* ignore */ }
+
+{CatalanContractions}                                                                 { yypushback(1); return PROTECT; }
