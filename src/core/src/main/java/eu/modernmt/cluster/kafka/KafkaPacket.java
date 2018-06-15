@@ -162,7 +162,7 @@ public class KafkaPacket {
      * @return the array of bytes obtained from the original KafkaPacket
      */
     public byte[] toBytes() {
-        int size = 1 + 8 + 8;   //type (enum: 1 byte) + memory (long: 8 bytes)
+        int size = 1 + 8;   //type (enum: 1 byte) + memory (long: 8 bytes)
 
         byte[] directionSource = null;
         byte[] directionTarget = null;
@@ -178,6 +178,8 @@ public class KafkaPacket {
                 break;
             case TYPE_ADDITION:
             case TYPE_OVERWRITE:
+                size += 16; // owner (UUID: 16 bytes)
+
                 Charset charset = UTF8Charset.get();
 
                 directionSource = this.direction.source.toLanguageTag().getBytes(charset);

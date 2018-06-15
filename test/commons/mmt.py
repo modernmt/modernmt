@@ -56,6 +56,8 @@ class ContextAnalyzer(object):
                 for line in stream:
                     result.append(line.strip().decode('utf-8'))
 
+        return result
+
 
 class Memory(object):
     class Content(object):

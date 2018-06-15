@@ -11,6 +11,9 @@ RES_FOLDER = os.path.abspath(os.path.join(__file__, os.pardir, 'res', 'privacy')
 
 
 class _PrivacyTest(unittest.TestCase):
+    USER_1 = '00000000-0000-0000-0000-000000000001'
+    USER_2 = '00000000-0000-0000-0000-000000000002'
+
     mmt = ModernMT('PrivacyTest')
     _engine_tar = os.path.join(RES_FOLDER, 'engine.tar.gz')
 
@@ -29,12 +32,12 @@ class _PrivacyTest(unittest.TestCase):
 
     def _setup_with_memories(self):
         a = self.mmt.api.create_memory('A')
-        b = self.mmt.api.create_memory('B', owner=1)
-        c = self.mmt.api.create_memory('B', owner=2)
+        b = self.mmt.api.create_memory('B', owner=self.USER_1)
+        c = self.mmt.api.create_memory('B', owner=self.USER_2)
 
-        self.assertEqual(0, a['owner'])
-        self.assertEqual(1, b['owner'])
-        self.assertEqual(2, c['owner'])
+        self.assertNotIn('owner', a)
+        self.assertEqual(self.USER_1, b['owner'])
+        self.assertEqual(self.USER_2, c['owner'])
 
         self.mmt.import_corpus(compact=CompactCorpus(os.path.join(RES_FOLDER, 'Memory.A.cpt')).path, memory=a['id'])
         self.mmt.import_corpus(compact=CompactCorpus(os.path.join(RES_FOLDER, 'Memory.B.cpt')).path, memory=b['id'])
@@ -42,12 +45,12 @@ class _PrivacyTest(unittest.TestCase):
 
     def _setup_with_contributions(self):
         a = self.mmt.api.create_memory('A')
-        b = self.mmt.api.create_memory('B', owner=1)
-        c = self.mmt.api.create_memory('B', owner=2)
+        b = self.mmt.api.create_memory('B', owner=self.USER_1)
+        c = self.mmt.api.create_memory('B', owner=self.USER_2)
 
-        self.assertEqual(0, a['owner'])
-        self.assertEqual(1, b['owner'])
-        self.assertEqual(2, c['owner'])
+        self.assertNotIn('owner', a)
+        self.assertEqual(self.USER_1, b['owner'])
+        self.assertEqual(self.USER_2, c['owner'])
 
         with CompactCorpus(os.path.join(RES_FOLDER, 'Memory.A.cpt')).reader() as reader:
             for s, t, sentence, translation in reader:
@@ -72,12 +75,12 @@ class ContextAnalyzerPrivacyTest(_PrivacyTest):
         self.assertEqual(1, len(public_context))
         self.assertIn(1, public_context)
 
-        user1_context = self._get_context('This is an example', user=1)
+        user1_context = self._get_context('This is an example', user=self.USER_1)
         self.assertEqual(2, len(user1_context))
         self.assertIn(1, user1_context)
         self.assertIn(2, user1_context)
 
-        user2_context = self._get_context('This is an example', user=2)
+        user2_context = self._get_context('This is an example', user=self.USER_2)
         self.assertEqual(2, len(user2_context))
         self.assertIn(1, user2_context)
         self.assertIn(3, user2_context)
@@ -153,14 +156,14 @@ class TranslationMemoryPrivacyTest(_PrivacyTest):
 
         # User 1
         with self._listen_for_translation() as translation:
-            self._translate('This is an example', user=1)
+            self._translate('This is an example', user=self.USER_1)
 
         self.assertEqual(2, len(translation.suggestions))
         self.assertIn((1, u'This is an example A', u'Questo è un esempio A'), translation.suggestions)
         self.assertIn((2, u'This is an example B', u'Questo è un esempio B'), translation.suggestions)
 
         with self._listen_for_translation() as translation:
-            self._translate('This is an example', user=1, context={3: 1})
+            self._translate('This is an example', user=self.USER_1, context={3: 1})
 
         self.assertEqual(3, len(translation.suggestions))
         self.assertIn((1, u'This is an example A', u'Questo è un esempio A'), translation.suggestions)
@@ -169,14 +172,14 @@ class TranslationMemoryPrivacyTest(_PrivacyTest):
 
         # User 2
         with self._listen_for_translation() as translation:
-            self._translate('This is an example', user=2)
+            self._translate('This is an example', user=self.USER_2)
 
         self.assertEqual(2, len(translation.suggestions))
         self.assertIn((1, u'This is an example A', u'Questo è un esempio A'), translation.suggestions)
         self.assertIn((3, u'This is an example C', u'Questo è un esempio C'), translation.suggestions)
 
         with self._listen_for_translation() as translation:
-            self._translate('This is an example', user=2, context={2: 1})
+            self._translate('This is an example', user=self.USER_2, context={2: 1})
 
         self.assertEqual(3, len(translation.suggestions))
         self.assertIn((1, u'This is an example A', u'Questo è un esempio A'), translation.suggestions)
