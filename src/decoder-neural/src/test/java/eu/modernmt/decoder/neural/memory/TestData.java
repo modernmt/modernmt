@@ -122,10 +122,10 @@ public class TestData {
 
 
     public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguagePair language, String source, String target, String previousSource, String previousTarget, Date timestamp) {
-        return tu(channel, channelPosition, DataManager.PUBLIC, memory, language, source, target, previousSource, previousTarget, timestamp);
+        return tu(channel, channelPosition, null, memory, language, source, target, previousSource, previousTarget, timestamp);
     }
 
-    public static TranslationUnit tu(int channel, long channelPosition, long owner, long memory, LanguagePair language, String source, String target, String previousSource, String previousTarget, Date timestamp) {
+    public static TranslationUnit tu(int channel, long channelPosition, UUID owner, long memory, LanguagePair language, String source, String target, String previousSource, String previousTarget, Date timestamp) {
         return new TranslationUnit((short) channel, channelPosition, owner, language, memory,
                 source, target, previousSource, previousTarget, timestamp,
                 sentence(source), sentence(target), null);

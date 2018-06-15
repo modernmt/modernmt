@@ -8,6 +8,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.UUID;
+
 import static eu.modernmt.context.lucene.TestData.DummyBilingualCorpus;
 import static eu.modernmt.context.lucene.TestData.EN__IT;
 import static org.junit.Assert.assertEquals;
@@ -17,6 +19,9 @@ import static org.junit.Assert.assertTrue;
  * Created by davide on 07/08/17.
  */
 public class LuceneAnalyzerTest_getContextVectorWithOwners {
+
+    private static final UUID owner1 = new UUID(0, 1);
+    private static final UUID owner2 = new UUID(0, 2);
 
     private TLuceneAnalyzer analyzer;
 
@@ -29,10 +34,10 @@ public class LuceneAnalyzerTest_getContextVectorWithOwners {
 
         this.analyzer.add(new Memory(1), corpus1);
         this.analyzer.add(new Memory(2), corpus2);
-        this.analyzer.add(new Memory(11, 1, "none"), corpus1);
-        this.analyzer.add(new Memory(12, 1, "none"), corpus2);
-        this.analyzer.add(new Memory(21, 2, "none"), corpus1);
-        this.analyzer.add(new Memory(22, 2, "none"), corpus2);
+        this.analyzer.add(new Memory(11, owner1, "none"), corpus1);
+        this.analyzer.add(new Memory(12, owner1, "none"), corpus2);
+        this.analyzer.add(new Memory(21, owner2, "none"), corpus1);
+        this.analyzer.add(new Memory(22, owner2, "none"), corpus2);
 
         this.analyzer.flush();
     }
@@ -53,7 +58,7 @@ public class LuceneAnalyzerTest_getContextVectorWithOwners {
         return false;
     }
 
-    private void test(long owner, int... memories) throws ContextAnalyzerException {
+    private void test(UUID owner, int... memories) throws ContextAnalyzerException {
         ContextVector result = analyzer.getContextVector(owner, EN__IT, "hello world", 100);
 
         assertEquals(memories == null ? 0 : memories.length, result.size());
@@ -65,17 +70,17 @@ public class LuceneAnalyzerTest_getContextVectorWithOwners {
 
     @Test
     public void publicOnly() throws Throwable {
-        test(DataManager.PUBLIC, 1, 2);
+        test(null, 1, 2);
     }
 
     @Test
     public void userOne() throws Throwable {
-        test(1, 1, 2, 11, 12);
+        test(owner1, 1, 2, 11, 12);
     }
 
     @Test
     public void userTwo() throws Throwable {
-        test(2, 1, 2, 21, 22);
+        test(owner2, 1, 2, 21, 22);
     }
 
 }

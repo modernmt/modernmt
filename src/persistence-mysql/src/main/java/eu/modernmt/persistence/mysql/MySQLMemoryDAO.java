@@ -7,10 +7,7 @@ import eu.modernmt.persistence.mysql.utils.SQLUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by andrea on 29/09/17.
@@ -150,8 +147,9 @@ public class MySQLMemoryDAO implements MemoryDAO {
      */
     @Override
     public Memory store(Memory memory, boolean forceId) throws PersistenceException {
-        String query = forceId ? "INSERT INTO mmt_memories (owner, name, id) values (?, ?)" :
-                "INSERT INTO mmt_memories (owner, name) values (?)";
+        String query = forceId ?
+                "INSERT INTO mmt_memories (owner_msb, owner_lsb, name, id) values (?, ?, ?, ?)" :
+                "INSERT INTO mmt_memories (owner_msb, owner_lsb, name) values (?, ?, ?)";
 
         PreparedStatement statement = null;
         ResultSet generatedKeys = null;
@@ -159,8 +157,11 @@ public class MySQLMemoryDAO implements MemoryDAO {
             statement = forceId ? this.connection.prepareStatement(query) :
                     this.connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
 
+            UUID owner = memory.getOwner();
+
             int i = 1;
-            statement.setLong(i++, memory.getOwner());
+            statement.setLong(i++, owner == null ? 0L : owner.getMostSignificantBits());
+            statement.setLong(i++, owner == null ? 0L : owner.getLeastSignificantBits());
             statement.setString(i++, memory.getName());
             if (forceId)
                 statement.setLong(i, memory.getId());
@@ -247,8 +248,12 @@ public class MySQLMemoryDAO implements MemoryDAO {
         Memory memory;
         try {
             long id = result.getLong("id");
-            long owner = result.getLong("owner");
+            long ownerMsb = result.getLong("owner_msb");
+            long ownerLsb = result.getLong("owner_lsb");
             String name = result.getString("name");
+
+            UUID owner = (ownerMsb + ownerLsb) == 0 ? null : new UUID(ownerMsb, ownerLsb);
+
             memory = new Memory(id, owner, name);
         } catch (SQLException e) {
             throw new PersistenceException(e);

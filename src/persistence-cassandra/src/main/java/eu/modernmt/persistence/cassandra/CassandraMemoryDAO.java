@@ -9,10 +9,7 @@ import eu.modernmt.model.Memory;
 import eu.modernmt.persistence.MemoryDAO;
 import eu.modernmt.persistence.PersistenceException;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by andrea on 08/03/17.
@@ -72,7 +69,10 @@ public class CassandraMemoryDAO implements MemoryDAO {
         try {
             long id = row.getLong("id");
             String name = row.getString("name");
-            long owner = row.getLong("owner");
+            long ownerMsb = row.getLong("owner_msb");
+            long ownerLsb = row.getLong("owner_lsb");
+
+            UUID owner = (ownerMsb + ownerLsb) == 0 ? null : new UUID(ownerMsb, ownerLsb);
 
             return new Memory(id, owner, name);
         } catch (IllegalArgumentException e) {
@@ -175,8 +175,14 @@ public class CassandraMemoryDAO implements MemoryDAO {
             CassandraIdGenerator.advanceCounter(connection, CassandraDatabase.MEMORIES_TABLE_ID, id);
         }
 
-        String[] columns = {"id", "owner", "name"};
-        Object[] values = {id, memory.getOwner(), memory.getName()};
+        UUID owner = memory.getOwner();
+
+        String[] columns = {"id", "owner_msb", "owner_lsb", "name"};
+        Object[] values = {
+                id,
+                owner == null ? 0L : owner.getMostSignificantBits(),
+                owner == null ? 0L : owner.getLeastSignificantBits(),
+                memory.getName()};
 
         BuiltStatement statement = QueryBuilder
                 .insertInto(CassandraDatabase.MEMORIES_TABLE)

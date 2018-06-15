@@ -37,7 +37,7 @@ class AnalysisTask implements Callable<Void> {
 
         try {
             Reader reader = new InputStreamReader(bucket.getContentStream(), UTF8Charset.get());
-            Document document = DocumentBuilder.updatedInstance(id, reader);
+            Document document = DocumentBuilder.updatedInstance(bucket.getOwner(), id, reader);
             index.update(document);
 
             bucket.onAnalysisCompleted();

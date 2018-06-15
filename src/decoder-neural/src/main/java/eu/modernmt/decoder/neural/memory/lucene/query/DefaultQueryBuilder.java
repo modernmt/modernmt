@@ -1,6 +1,5 @@
 package eu.modernmt.decoder.neural.memory.lucene.query;
 
-import eu.modernmt.data.DataManager;
 import eu.modernmt.decoder.neural.memory.lucene.Analyzers;
 import eu.modernmt.decoder.neural.memory.lucene.DocumentBuilder;
 import eu.modernmt.io.TokensOutputStream;
@@ -14,6 +13,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 
 import java.io.IOException;
+import java.util.UUID;
 
 /**
  * Created by davide on 24/05/17.
@@ -36,7 +36,7 @@ public class DefaultQueryBuilder implements QueryBuilder {
     }
 
     @Override
-    public Query bestMatchingSuggestion(long user, LanguagePair direction, Sentence sentence, ContextVector context) {
+    public Query bestMatchingSuggestion(UUID user, LanguagePair direction, Sentence sentence, ContextVector context) {
         int length = sentence.getWords().length;
         boolean isLongQuery = length > 4;
 
@@ -54,14 +54,14 @@ public class DefaultQueryBuilder implements QueryBuilder {
         return new FilteredQuery(termsQuery, new QueryWrapperFilter(privacyQuery));
     }
 
-    protected static BooleanQuery makePrivacyQuery(long user, ContextVector context) {
+    protected static BooleanQuery makePrivacyQuery(UUID user, ContextVector context) {
         BooleanQuery privacyQuery = new BooleanQuery();
 
-        if (user == DataManager.PUBLIC) {
-            privacyQuery.add(new TermQuery(DocumentBuilder.makeOwnerTerm(DataManager.PUBLIC)), BooleanClause.Occur.SHOULD);
+        if (user == null) {
+            privacyQuery.add(DocumentBuilder.makePublicOwnerMatchingQuery(), BooleanClause.Occur.SHOULD);
         } else {
-            privacyQuery.add(new TermQuery(DocumentBuilder.makeOwnerTerm(DataManager.PUBLIC)), BooleanClause.Occur.SHOULD);
-            privacyQuery.add(new TermQuery(DocumentBuilder.makeOwnerTerm(user)), BooleanClause.Occur.SHOULD);
+            privacyQuery.add(DocumentBuilder.makePublicOwnerMatchingQuery(), BooleanClause.Occur.SHOULD);
+            privacyQuery.add(DocumentBuilder.makeOwnerMatchingQuery(user), BooleanClause.Occur.SHOULD);
         }
 
         if (context != null) {

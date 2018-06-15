@@ -1,6 +1,7 @@
 package eu.modernmt.model;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 /**
  * Created by davide on 06/09/16.
@@ -8,18 +9,18 @@ import java.io.Serializable;
 public class Memory implements Serializable {
 
     private long id;
-    private long owner;
+    private UUID owner;
     private String name;
 
     public Memory(long id) {
-        this(id, 0L, null);
+        this(id, null, null);
     }
 
     public Memory(long id, String name) {
-        this(id, 0L, name);
+        this(id, null, name);
     }
 
-    public Memory(long id, long owner, String name) {
+    public Memory(long id, UUID owner, String name) {
         this.id = id;
         this.owner = owner;
         this.name = name;
@@ -33,11 +34,11 @@ public class Memory implements Serializable {
         this.id = id;
     }
 
-    public long getOwner() {
+    public UUID getOwner() {
         return owner;
     }
 
-    public void setOwner(long owner) {
+    public void setOwner(UUID owner) {
         this.owner = owner;
     }
 

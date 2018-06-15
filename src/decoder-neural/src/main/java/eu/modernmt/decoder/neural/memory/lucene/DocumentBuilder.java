@@ -8,6 +8,10 @@ import eu.modernmt.lang.LanguagePair;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.NumericUtils;
@@ -15,6 +19,7 @@ import org.apache.lucene.util.NumericUtils;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Created by davide on 23/05/17.
@@ -31,14 +36,21 @@ public class DocumentBuilder {
         return newInstance(unit.direction, unit.owner, unit.memory, sentence, translation, hash);
     }
 
-    public static Document newInstance(LanguagePair direction, long owner, long memory, String sentence, String translation) {
+    public static Document newInstance(LanguagePair direction, UUID owner, long memory, String sentence, String translation) {
         return newInstance(direction, owner, memory, sentence, translation, null);
     }
 
-    public static Document newInstance(LanguagePair direction, long owner, long memory, String sentence, String translation, String hash) {
+    public static Document newInstance(LanguagePair direction, UUID owner, long memory, String sentence, String translation, String hash) {
         Document document = new Document();
         document.add(new LongField(MEMORY_FIELD, memory, Field.Store.YES));
-        document.add(new LongField(OWNER_FIELD, owner, Field.Store.NO));
+
+        if (owner == null) {
+            document.add(new LongField(OWNER_MSB_FIELD, 0L, Field.Store.NO));
+            document.add(new LongField(OWNER_LSB_FIELD, 0L, Field.Store.NO));
+        } else {
+            document.add(new LongField(OWNER_MSB_FIELD, owner.getMostSignificantBits(), Field.Store.NO));
+            document.add(new LongField(OWNER_LSB_FIELD, owner.getLeastSignificantBits(), Field.Store.NO));
+        }
 
         if (hash != null)
             document.add(new HashField(HASH_FIELD, hash, Field.Store.NO));
@@ -67,7 +79,8 @@ public class DocumentBuilder {
 
     private static final String CHANNELS_FIELD = "channels";
     private static final String MEMORY_FIELD = "memory";
-    private static final String OWNER_FIELD = "owner";
+    private static final String OWNER_MSB_FIELD = "owner_msb";
+    private static final String OWNER_LSB_FIELD = "owner_lsb";
     private static final String HASH_FIELD = "hash";
     private static final String LANGUAGE_PREFIX_FIELD = "lang_";
     private static final String CONTENT_PREFIX_FIELD = "content_";
@@ -158,17 +171,24 @@ public class DocumentBuilder {
     }
 
     public static Term makeMemoryTerm(long memory) {
-        BytesRefBuilder builder = new BytesRefBuilder();
-        NumericUtils.longToPrefixCoded(memory, 0, builder);
-
-        return new Term(MEMORY_FIELD, builder.toBytesRef());
+        return makeLongTerm(memory, MEMORY_FIELD);
     }
 
-    public static Term makeOwnerTerm(long owner) {
-        BytesRefBuilder builder = new BytesRefBuilder();
-        NumericUtils.longToPrefixCoded(owner, 0, builder);
+    public static Query makePublicOwnerMatchingQuery() {
+        return makeOwnerMatchingQuery(null);
+    }
 
-        return new Term(OWNER_FIELD, builder.toBytesRef());
+    public static Query makeOwnerMatchingQuery(UUID owner) {
+        long msb = (owner == null) ? 0L : owner.getMostSignificantBits();
+        long lsb = (owner == null) ? 0L : owner.getLeastSignificantBits();
+
+        Term msbTerm = makeLongTerm(msb, OWNER_MSB_FIELD);
+        Term lsbTerm = makeLongTerm(lsb, OWNER_LSB_FIELD);
+
+        BooleanQuery query = new BooleanQuery();
+        query.add(new TermQuery(msbTerm), BooleanClause.Occur.MUST);
+        query.add(new TermQuery(lsbTerm), BooleanClause.Occur.MUST);
+        return query;
     }
 
     public static Term makeChannelsTerm() {
@@ -191,6 +211,15 @@ public class DocumentBuilder {
 
     public static String makeContentFieldName(LanguagePair direction) {
         return CONTENT_PREFIX_FIELD + direction.source.getLanguage() + '_' + direction.target.getLanguage();
+    }
+
+    // Utils
+
+    private static Term makeLongTerm(long value, String field) {
+        BytesRefBuilder builder = new BytesRefBuilder();
+        NumericUtils.longToPrefixCoded(value, 0, builder);
+
+        return new Term(field, builder.toBytesRef());
     }
 
 }

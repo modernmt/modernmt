@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
@@ -198,7 +199,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         }
     }
 
-    private void bulkInsert(long owner, long memory, MultilingualCorpus corpus) throws IOException {
+    private void bulkInsert(UUID owner, long memory, MultilingualCorpus corpus) throws IOException {
         MultilingualCorpus.MultilingualLineReader reader = null;
 
         try {
@@ -223,20 +224,20 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     @Override
-    public ScoreEntry[] search(long user, LanguagePair direction, Sentence source, int limit) throws IOException {
+    public ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, int limit) throws IOException {
         return search(user, direction, source, null, this.rescorer, limit);
     }
 
-    public ScoreEntry[] search(long user, LanguagePair direction, Sentence source, Rescorer rescorer, int limit) throws IOException {
+    public ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, Rescorer rescorer, int limit) throws IOException {
         return search(user, direction, source, null, rescorer, limit);
     }
 
     @Override
-    public ScoreEntry[] search(long user, LanguagePair direction, Sentence source, ContextVector contextVector, int limit) throws IOException {
+    public ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, ContextVector contextVector, int limit) throws IOException {
         return search(user, direction, source, contextVector, this.rescorer, limit);
     }
 
-    public ScoreEntry[] search(long user, LanguagePair direction, Sentence source, ContextVector contextVector, Rescorer rescorer, int limit) throws IOException {
+    public ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, ContextVector contextVector, Rescorer rescorer, int limit) throws IOException {
         Query query = this.queryBuilder.bestMatchingSuggestion(user, direction, source, contextVector);
 
         IndexSearcher searcher = getIndexSearcher();

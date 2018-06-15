@@ -11,6 +11,7 @@ import eu.modernmt.model.corpus.MultilingualCorpus;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Created by davide on 23/05/17.
@@ -29,9 +30,9 @@ public interface TranslationMemory extends Closeable, DataListener {
     /* This method does not store segments hash. Update of content inserted with this method is not possible */
     void bulkInsert(Memory memory, MultilingualCorpus corpus) throws IOException;
 
-    ScoreEntry[] search(long user, LanguagePair direction, Sentence source, int limit) throws IOException;
+    ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, int limit) throws IOException;
 
-    ScoreEntry[] search(long user, LanguagePair direction, Sentence source, ContextVector contextVector, int limit) throws IOException;
+    ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, ContextVector contextVector, int limit) throws IOException;
 
     void setDataFilter(DataFilter filter);
 

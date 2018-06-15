@@ -8,12 +8,14 @@ import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.rest.framework.routing.RouteTemplate;
 
+import java.util.UUID;
+
 public class Parameters {
 
     protected final RouteTemplate template;
     protected final RESTRequest req;
 
-    public Parameters(RESTRequest req) throws ParameterParsingException {
+    public Parameters(RESTRequest req) {
         this.template = req.getTemplate();
         this.req = req;
     }
@@ -95,6 +97,29 @@ public class Parameters {
         try {
             return Double.valueOf(value);
         } catch (NumberFormatException e) {
+            throw new ParameterParsingException(name, value);
+        }
+    }
+
+    public UUID getUUID(String name) throws ParameterParsingException {
+        String value = getString(name, false);
+
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException e) {
+            throw new ParameterParsingException(name, value);
+        }
+    }
+
+    public UUID getUUID(String name, UUID def) throws ParameterParsingException {
+        String value = getString(name, false, null);
+
+        if (value == null)
+            return def;
+
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException e) {
             throw new ParameterParsingException(name, value);
         }
     }

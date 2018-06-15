@@ -10,6 +10,7 @@ import org.apache.commons.io.IOUtils;
 import java.io.*;
 import java.nio.channels.FileChannel;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Created by davide on 22/09/16.
@@ -17,7 +18,14 @@ import java.util.Objects;
 public class CorpusBucket implements Closeable {
 
     public static void serialize(CorpusBucket bucket, Writer writer) throws IOException {
+        long ownerMsb = bucket.owner == null ? 0L : bucket.owner.getMostSignificantBits();
+        long ownerLsb = bucket.owner == null ? 0L : bucket.owner.getLeastSignificantBits();
+
         writer.append(bucket.documentId);
+        writer.append(',');
+        writer.append(Long.toHexString(ownerMsb));
+        writer.append(',');
+        writer.append(Long.toHexString(ownerLsb));
         writer.append(',');
         writer.append(Long.toHexString(bucket.analyzerOffset));
         writer.append(',');
@@ -32,10 +40,14 @@ public class CorpusBucket implements Closeable {
             String[] parts = line.split(",");
 
             String documentId = parts[0];
-            long analyzerOffset = Long.parseUnsignedLong(parts[1], 16);
-            long currentOffset = Long.parseUnsignedLong(parts[2], 16);
+            long ownerMsb = Long.parseUnsignedLong(parts[1], 16);
+            long ownerLsb = Long.parseUnsignedLong(parts[2], 16);
+            long analyzerOffset = Long.parseUnsignedLong(parts[3], 16);
+            long currentOffset = Long.parseUnsignedLong(parts[4], 16);
 
-            return new CorpusBucket(analysisOptions, folder, documentId, analyzerOffset, currentOffset);
+            UUID owner = (ownerMsb + ownerLsb) == 0 ? null : new UUID(ownerMsb, ownerLsb);
+
+            return new CorpusBucket(analysisOptions, folder, owner, documentId, analyzerOffset, currentOffset);
         } catch (RuntimeException e) {
             throw new IOException("Unexpected CorpusBucket serialized data: " + line, e);
         }
@@ -43,6 +55,7 @@ public class CorpusBucket implements Closeable {
 
     private final Options.AnalysisOptions analysisOptions;
 
+    private final UUID owner;
     private final String documentId;
     private final long memory;
 
@@ -53,11 +66,12 @@ public class CorpusBucket implements Closeable {
     private final File path;
     private FileOutputStream stream = null;
 
-    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, String documentId) {
-        this(analysisOptions, folder, documentId, 0L, 0L);
+    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, UUID owner, String documentId) {
+        this(analysisOptions, folder, owner, documentId, 0L, 0L);
     }
 
-    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, String documentId, long analyzerOffset, long currentOffset) {
+    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, UUID owner, String documentId, long analyzerOffset, long currentOffset) {
+        this.owner = owner;
         this.documentId = documentId;
         this.memory = DocumentBuilder.getMemory(documentId);
         this.path = new File(folder, documentId);
@@ -102,6 +116,10 @@ public class CorpusBucket implements Closeable {
         stream = null;
         analyzerOffset = 0L;
         currentOffset = 0L;
+    }
+
+    public UUID getOwner() {
+        return owner;
     }
 
     public long getMemory() {

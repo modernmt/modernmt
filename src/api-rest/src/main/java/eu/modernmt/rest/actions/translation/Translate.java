@@ -18,6 +18,8 @@ import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
 import eu.modernmt.rest.model.TranslationResponse;
 
+import java.util.UUID;
+
 /**
  * Created by davide on 17/12/15.
  */
@@ -56,7 +58,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
 
     public static class Params extends Parameters {
 
-        public final long user;
+        public final UUID user;
         public final LanguagePair direction;
         public final String query;
         public final ContextVector context;
@@ -69,7 +71,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
 
-            this.user = getLong("user", DataManager.PUBLIC);
+            user = getUUID("user", null);
 
             query = getString("q", true);
             if (query.length() > MAX_QUERY_LENGTH)

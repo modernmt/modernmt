@@ -96,18 +96,18 @@ public class CorporaIndex implements Closeable {
         }
     }
 
-    public CorpusBucket getBucket(String docId) throws IOException {
-        return getBucket(docId, true);
+    public CorpusBucket getBucket(UUID owner, String docId) throws IOException {
+        return getBucket(owner, docId, true);
     }
 
-    public CorpusBucket getBucket(String docId, boolean createIfAbsent) throws IOException {
+    public CorpusBucket getBucket(UUID owner, String docId, boolean createIfAbsent) throws IOException {
         CorpusBucket bucket = bucketById.get(docId);
 
         if (bucket == null) {
             if (!createIfAbsent)
                 return null;
 
-            bucket = new CorpusBucket(analysisOptions, bucketsFolder, docId);
+            bucket = new CorpusBucket(analysisOptions, bucketsFolder, owner, docId);
 
             this.bucketById.put(docId, bucket);
             this.bucketsByMemory.computeIfAbsent(bucket.getMemory(), k -> new HashSet<>()).add(bucket);

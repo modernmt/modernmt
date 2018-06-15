@@ -11,6 +11,7 @@ import eu.modernmt.model.Sentence;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Date;
+import java.util.UUID;
 
 /**
  * Created by davide on 06/09/16.
@@ -25,7 +26,7 @@ public class KafkaPacket {
     private long position = -1;
 
     private final byte type;
-    private final long owner;
+    private final UUID owner;
     private final long memory;
     private final LanguagePair direction;
     private final String sentence;
@@ -35,14 +36,14 @@ public class KafkaPacket {
     private final Date timestamp;
 
     public static KafkaPacket createDeletion(long memory) {
-        return new KafkaPacket(TYPE_DELETION, 0L, memory, null, null, null, null, null, null);
+        return new KafkaPacket(TYPE_DELETION, null, memory, null, null, null, null, null, null);
     }
 
-    public static KafkaPacket createAddition(LanguagePair direction, long owner, long memory, String sentence, String translation, Date timestamp) {
+    public static KafkaPacket createAddition(LanguagePair direction, UUID owner, long memory, String sentence, String translation, Date timestamp) {
         return new KafkaPacket(TYPE_ADDITION, owner, memory, direction, sentence, translation, null, null, timestamp);
     }
 
-    public static KafkaPacket createOverwrite(LanguagePair direction, long owner, long memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp) {
+    public static KafkaPacket createOverwrite(LanguagePair direction, UUID owner, long memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp) {
         return new KafkaPacket(TYPE_OVERWRITE, owner, memory, direction, sentence, translation, previousSentence, previousTranslation, timestamp);
     }
 
@@ -57,7 +58,7 @@ public class KafkaPacket {
         byte type = buffer.get();
         long memory = buffer.getLong();
 
-        long owner = 0L;
+        UUID owner = null;
         LanguagePair direction = null;
         String sentence = null;
         String translation = null;
@@ -70,7 +71,10 @@ public class KafkaPacket {
                 break;
             case TYPE_ADDITION:
             case TYPE_OVERWRITE:
-                owner = buffer.getLong();
+                long ownerMsb = buffer.getLong();
+                long ownerLsb = buffer.getLong();
+
+                owner = (ownerMsb + ownerLsb) == 0 ? null : new UUID(ownerMsb, ownerLsb);
 
                 Charset charset = UTF8Charset.get();
 
@@ -97,7 +101,7 @@ public class KafkaPacket {
         return new KafkaPacket(type, owner, memory, direction, sentence, translation, previousSentence, previousTranslation, timestamp);
     }
 
-    public KafkaPacket(byte type, long owner, long memory, LanguagePair direction,
+    public KafkaPacket(byte type, UUID owner, long memory, LanguagePair direction,
                        String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp) {
         this.type = type;
         this.owner = owner;
@@ -204,8 +208,10 @@ public class KafkaPacket {
         buffer.put(type);
         buffer.putLong(memory);
 
-        if (type != TYPE_DELETION)
-            buffer.putLong(owner);
+        if (type != TYPE_DELETION) {
+            buffer.putLong(owner == null ? 0L : owner.getMostSignificantBits());
+            buffer.putLong(owner == null ? 0L : owner.getLeastSignificantBits());
+        }
 
         serializeString(buffer, directionSource);
         serializeString(buffer, directionTarget);

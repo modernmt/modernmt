@@ -43,20 +43,18 @@ class ContextAnalyzer(object):
 
         for name in os.listdir(self._storage_path):
             if name != 'index':
-                domains.add(int(name.split('_')[1]))
+                domains.add(int(name.split('_')[0]))
 
         return domains
 
     def get_content(self, memory_id, source, target):
-        file_pattern = os.path.join(self._storage_path, '*_%d_%s_%s' % (memory_id, source, target))
+        file_path = os.path.join(self._storage_path, '%d_%s_%s' % (memory_id, source, target))
 
         result = []
-        for file_path in glob.glob(file_pattern):
+        if os.path.isfile(file_path):
             with open(file_path, 'rb') as stream:
                 for line in stream:
                     result.append(line.strip().decode('utf-8'))
-
-        return result
 
 
 class Memory(object):

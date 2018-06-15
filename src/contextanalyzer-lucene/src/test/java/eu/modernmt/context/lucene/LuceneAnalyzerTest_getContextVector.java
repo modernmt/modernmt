@@ -68,7 +68,7 @@ public class LuceneAnalyzerTest_getContextVector {
     }
 
     private void test(LanguagePair lang, String query, int... memories) throws ContextAnalyzerException {
-        ContextVector result = analyzer.getContextVector(DataManager.PUBLIC, lang, query, 100);
+        ContextVector result = analyzer.getContextVector(null, lang, query, 100);
 
         assertEquals(memories == null ? 0 : memories.length, result.size());
         if (memories != null) {

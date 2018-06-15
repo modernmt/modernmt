@@ -171,7 +171,7 @@ public class CassandraDatabase extends Database {
 
             SimpleStatement createMemoriesTable = new SimpleStatement(
                     "CREATE TABLE IF NOT EXISTS " + MEMORIES_TABLE +
-                            " (id bigint PRIMARY KEY, owner bigint, name varchar);");
+                            " (id bigint PRIMARY KEY, owner_msb bigint, owner_lsb bigint, name varchar);");
 
             SimpleStatement createImportJobsTable = new SimpleStatement(
                     "CREATE TABLE IF NOT EXISTS " + IMPORT_JOBS_TABLE +

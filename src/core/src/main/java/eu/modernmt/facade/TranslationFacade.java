@@ -83,19 +83,19 @@ public class TranslationFacade {
     //  Translation
     // =============================
 
-    public Translation get(long user, LanguagePair direction, String sentence, Priority priority) throws ProcessingException, DecoderException, AlignerException {
+    public Translation get(UUID user, LanguagePair direction, String sentence, Priority priority) throws ProcessingException, DecoderException, AlignerException {
         return get(user, direction, sentence, null, 0, priority);
     }
 
-    public Translation get(long user, LanguagePair direction, String sentence, ContextVector translationContext, Priority priority) throws ProcessingException, DecoderException, AlignerException {
+    public Translation get(UUID user, LanguagePair direction, String sentence, ContextVector translationContext, Priority priority) throws ProcessingException, DecoderException, AlignerException {
         return get(user, direction, sentence, translationContext, 0, priority);
     }
 
-    public Translation get(long user, LanguagePair direction, String sentence, int nbest, Priority priority) throws ProcessingException, DecoderException, AlignerException {
+    public Translation get(UUID user, LanguagePair direction, String sentence, int nbest, Priority priority) throws ProcessingException, DecoderException, AlignerException {
         return get(user, direction, sentence, null, nbest, priority);
     }
 
-    public Translation get(long user, LanguagePair direction, String sentence, ContextVector translationContext, int nbest, Priority priority) throws ProcessingException, DecoderException, AlignerException {
+    public Translation get(UUID user, LanguagePair direction, String sentence, ContextVector translationContext, int nbest, Priority priority) throws ProcessingException, DecoderException, AlignerException {
         direction = mapLanguagePair(direction);
         if (nbest > 0)
             ensureDecoderSupportsNBest();
@@ -137,7 +137,7 @@ public class TranslationFacade {
         LanguagePair language = selectForTest();
         String text = "Translation test " + new Random().nextInt();
 
-        TranslationTaskImpl task = new TranslationTaskImpl(DataManager.PUBLIC, language, text, null, 0, TranslationFacade.Priority.HIGH);
+        TranslationTaskImpl task = new TranslationTaskImpl(null, language, text, null, 0, TranslationFacade.Priority.HIGH);
         Translation translation = task.call();
         if (!translation.hasWords())
             throw new DecoderException("Empty translation for test sentence '" + text + "'");
@@ -180,7 +180,7 @@ public class TranslationFacade {
     //  Context Vector
     // =============================
 
-    public ContextVector getContextVector(long user, LanguagePair direction, File context, int limit) throws ContextAnalyzerException {
+    public ContextVector getContextVector(UUID user, LanguagePair direction, File context, int limit) throws ContextAnalyzerException {
         direction = mapLanguagePair(direction);
 
         Engine engine = ModernMT.getNode().getEngine();
@@ -189,7 +189,7 @@ public class TranslationFacade {
         return analyzer.getContextVector(user, direction, context, limit);
     }
 
-    public ContextVector getContextVector(long user, LanguagePair direction, String context, int limit) throws ContextAnalyzerException {
+    public ContextVector getContextVector(UUID user, LanguagePair direction, String context, int limit) throws ContextAnalyzerException {
         direction = mapLanguagePair(direction);
 
         Engine engine = ModernMT.getNode().getEngine();
@@ -198,7 +198,7 @@ public class TranslationFacade {
         return analyzer.getContextVector(user, direction, context, limit);
     }
 
-    public Map<Language, ContextVector> getContextVectors(long user, File context, int limit, Language source, Language... targets) throws ContextAnalyzerException {
+    public Map<Language, ContextVector> getContextVectors(UUID user, File context, int limit, Language source, Language... targets) throws ContextAnalyzerException {
         List<LanguagePair> languages = mapLanguagePairs(source, targets);
 
         if (languages.isEmpty())
@@ -216,7 +216,7 @@ public class TranslationFacade {
         return result;
     }
 
-    public Map<Language, ContextVector> getContextVectors(long user, String context, int limit, Language source, Language... targets) throws ContextAnalyzerException {
+    public Map<Language, ContextVector> getContextVectors(UUID user, String context, int limit, Language source, Language... targets) throws ContextAnalyzerException {
         List<LanguagePair> languages = mapLanguagePairs(source, targets);
 
         if (languages.isEmpty())
@@ -273,14 +273,14 @@ public class TranslationFacade {
 
     private static class TranslationTaskImpl implements TranslationTask {
 
-        public final long user;
+        public final UUID user;
         public final LanguagePair direction;
         public final String text;
         public final ContextVector context;
         public final int nbest;
         public final Priority priority;
 
-        public TranslationTaskImpl(long user, LanguagePair direction, String text, ContextVector context, int nbest, Priority priority) {
+        public TranslationTaskImpl(UUID user, LanguagePair direction, String text, ContextVector context, int nbest, Priority priority) {
             this.user = user;
             this.direction = direction;
             this.text = text;

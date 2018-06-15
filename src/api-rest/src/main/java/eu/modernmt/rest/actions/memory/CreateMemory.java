@@ -1,6 +1,5 @@
 package eu.modernmt.rest.actions.memory;
 
-import eu.modernmt.data.DataManager;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.model.Memory;
 import eu.modernmt.persistence.PersistenceException;
@@ -9,6 +8,8 @@ import eu.modernmt.rest.framework.Parameters;
 import eu.modernmt.rest.framework.RESTRequest;
 import eu.modernmt.rest.framework.actions.ObjectAction;
 import eu.modernmt.rest.framework.routing.Route;
+
+import java.util.UUID;
 
 /**
  * Created by davide on 15/12/15.
@@ -30,13 +31,13 @@ public class CreateMemory extends ObjectAction<Memory> {
     public static class Params extends Parameters {
 
         private final String name;
-        private final long owner;
+        private final UUID owner;
 
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
 
             name = getString("name", false);
-            owner = getLong("owner", DataManager.PUBLIC);
+            owner = getUUID("owner", null);
         }
     }
 

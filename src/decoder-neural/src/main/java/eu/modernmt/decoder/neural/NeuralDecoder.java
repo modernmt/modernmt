@@ -31,10 +31,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by davide on 22/05/17.
@@ -113,22 +110,22 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
     }
 
     @Override
-    public Translation translate(long user, LanguagePair direction, Sentence text) throws DecoderException {
+    public Translation translate(UUID user, LanguagePair direction, Sentence text) throws DecoderException {
         return translate(user, direction, text, null, 0);
     }
 
     @Override
-    public Translation translate(long user, LanguagePair direction, Sentence text, int nbestListSize) throws DecoderException {
+    public Translation translate(UUID user, LanguagePair direction, Sentence text, int nbestListSize) throws DecoderException {
         return translate(user, direction, text, null, nbestListSize);
     }
 
     @Override
-    public Translation translate(long user, LanguagePair direction, Sentence text, ContextVector contextVector) throws DecoderException {
+    public Translation translate(UUID user, LanguagePair direction, Sentence text, ContextVector contextVector) throws DecoderException {
         return translate(user, direction, text, contextVector, 0);
     }
 
     @Override
-    public Translation translate(long user, LanguagePair direction, Sentence text, ContextVector contextVector, int nbestListSize) throws DecoderException {
+    public Translation translate(UUID user, LanguagePair direction, Sentence text, ContextVector contextVector, int nbestListSize) throws DecoderException {
         if (!this.directions.contains(direction))
             throw new UnsupportedLanguageException(direction);
 

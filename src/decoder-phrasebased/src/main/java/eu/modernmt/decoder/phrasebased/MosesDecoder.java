@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Created by davide on 26/11/15.
@@ -138,23 +139,23 @@ public class MosesDecoder extends Decoder implements DecoderWithFeatures, Decode
     }
 
     @Override
-    public Translation translate(long user, LanguagePair direction, Sentence text) throws DecoderException {
+    public Translation translate(UUID user, LanguagePair direction, Sentence text) throws DecoderException {
         return translate(user, direction, text, null, 0);
     }
 
     @Override
-    public Translation translate(long user, LanguagePair direction, Sentence text, ContextVector contextVector) throws DecoderException {
+    public Translation translate(UUID user, LanguagePair direction, Sentence text, ContextVector contextVector) throws DecoderException {
         return translate(user, direction, text, contextVector, 0);
     }
 
     @Override
-    public Translation translate(long user, LanguagePair direction, Sentence text, int nbestListSize) throws DecoderException {
+    public Translation translate(UUID user, LanguagePair direction, Sentence text, int nbestListSize) throws DecoderException {
         return translate(user, direction, text, null, nbestListSize);
     }
 
     @Override
-    public Translation translate(long user, LanguagePair direction, Sentence sentence, ContextVector contextVector, int nbestListSize) throws DecoderException {
-        if (user != DataManager.PUBLIC)
+    public Translation translate(UUID user, LanguagePair direction, Sentence sentence, ContextVector contextVector, int nbestListSize) throws DecoderException {
+        if (user != null)
             throw new UnsupportedOperationException("Private memory feature not available with PhraseBased decoder");
 
         if (!this.language.equals(direction))

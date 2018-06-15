@@ -18,6 +18,7 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Created by davide on 15/12/15.
@@ -92,7 +93,7 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
 
         public static final int DEFAULT_LIMIT = 10;
 
-        public final long user;
+        public final UUID user;
         public final Language source;
         public final Language[] targets;
         public final int limit;
@@ -105,7 +106,7 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
 
-            this.user = getLong("user", DataManager.PUBLIC);
+            this.user = getUUID("user", null);
             this.limit = getInt("limit", DEFAULT_LIMIT);
 
             Language sourceLanguage = getLanguage("source", null);

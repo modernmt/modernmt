@@ -10,6 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.UUID;
 
 import static eu.modernmt.decoder.neural.memory.TestData.EN__IT;
 import static org.junit.Assert.assertEquals;
@@ -19,6 +20,9 @@ import static org.junit.Assert.assertTrue;
  * Created by davide on 03/08/17.
  */
 public class LuceneTranslationMemoryTest_searchWithOwners {
+
+    private static UUID owner1 = new UUID(0, 1);
+    private static UUID owner2 = new UUID(0, 2);
 
     private TLuceneTranslationMemory memory;
 
@@ -33,10 +37,10 @@ public class LuceneTranslationMemoryTest_searchWithOwners {
 
         memory.bulkInsert(new Memory(1), corpus1);
         memory.bulkInsert(new Memory(2), corpus2);
-        memory.bulkInsert(new Memory(11, 1, "none"), corpus1);
-        memory.bulkInsert(new Memory(12, 1, "none"), corpus2);
-        memory.bulkInsert(new Memory(21, 2, "none"), corpus1);
-        memory.bulkInsert(new Memory(22, 2, "none"), corpus2);
+        memory.bulkInsert(new Memory(11, owner1, "none"), corpus1);
+        memory.bulkInsert(new Memory(12, owner1, "none"), corpus2);
+        memory.bulkInsert(new Memory(21, owner2, "none"), corpus1);
+        memory.bulkInsert(new Memory(22, owner2, "none"), corpus2);
     }
 
     @After
@@ -58,7 +62,7 @@ public class LuceneTranslationMemoryTest_searchWithOwners {
 
     @Test
     public void publicOnly() throws Throwable {
-        ScoreEntry[] result = memory.search(DataManager.PUBLIC, EN__IT, TestData.sentence("Hello world"), 100);
+        ScoreEntry[] result = memory.search(null, EN__IT, TestData.sentence("Hello world"), 100);
 
         assertEquals(2, result.length);
         assertTrue(contains(result, 1, EN__IT, "Hello world 1", "Ciao mondo 1"));
@@ -67,7 +71,7 @@ public class LuceneTranslationMemoryTest_searchWithOwners {
 
     @Test
     public void userOne() throws Throwable {
-        ScoreEntry[] result = memory.search(1L, EN__IT, TestData.sentence("Hello world"), 100);
+        ScoreEntry[] result = memory.search(owner1, EN__IT, TestData.sentence("Hello world"), 100);
 
         assertEquals(4, result.length);
         assertTrue(contains(result, 1, EN__IT, "Hello world 1", "Ciao mondo 1"));
@@ -78,7 +82,7 @@ public class LuceneTranslationMemoryTest_searchWithOwners {
 
     @Test
     public void userTwo() throws Throwable {
-        ScoreEntry[] result = memory.search(2L, EN__IT, TestData.sentence("Hello world"), 100);
+        ScoreEntry[] result = memory.search(owner2, EN__IT, TestData.sentence("Hello world"), 100);
 
         assertEquals(4, result.length);
         assertTrue(contains(result, 1, EN__IT, "Hello world 1", "Ciao mondo 1"));
@@ -93,7 +97,7 @@ public class LuceneTranslationMemoryTest_searchWithOwners {
                 .add(21, .5f)
                 .build();
 
-        ScoreEntry[] result = memory.search(1L, EN__IT, TestData.sentence("Hello world"), vector, 100);
+        ScoreEntry[] result = memory.search(owner1, EN__IT, TestData.sentence("Hello world"), vector, 100);
 
         assertEquals(5, result.length);
         assertTrue(contains(result, 1, EN__IT, "Hello world 1", "Ciao mondo 1"));
@@ -110,7 +114,7 @@ public class LuceneTranslationMemoryTest_searchWithOwners {
                 .add(22, 1.f)
                 .build();
 
-        ScoreEntry[] result = memory.search(1L, EN__IT, TestData.sentence("Hello world"), vector, 100);
+        ScoreEntry[] result = memory.search(owner1, EN__IT, TestData.sentence("Hello world"), vector, 100);
 
         assertEquals(6, result.length);
         assertTrue(contains(result, 1, EN__IT, "Hello world 1", "Ciao mondo 1"));

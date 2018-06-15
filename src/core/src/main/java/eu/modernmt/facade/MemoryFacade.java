@@ -75,7 +75,7 @@ public class MemoryFacade {
         }
     }
 
-    public Memory create(long owner, String name) throws PersistenceException {
+    public Memory create(UUID owner, String name) throws PersistenceException {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
@@ -150,7 +150,7 @@ public class MemoryFacade {
                 return null;
 
             DataManager dataManager = ModernMT.getNode().getDataManager();
-            ImportJob job = dataManager.upload(memory.getOwner(), direction, memoryId, source, target, new Date(), DataManager.CONTRIBUTIONS_CHANNEL_ID);
+            ImportJob job = dataManager.upload(direction, memory, source, target, new Date(), DataManager.CONTRIBUTIONS_CHANNEL_ID);
 
             if (job == null)
                 return null;
@@ -200,7 +200,7 @@ public class MemoryFacade {
                 return null;
 
             DataManager dataManager = ModernMT.getNode().getDataManager();
-            ImportJob job = dataManager.replace(memory.getOwner(), direction, memoryId, sentence, translation,
+            ImportJob job = dataManager.replace(direction, memory, sentence, translation,
                     previousSentence, previousTranslation, new Date(), DataManager.CONTRIBUTIONS_CHANNEL_ID);
 
             if (job == null)
@@ -230,7 +230,7 @@ public class MemoryFacade {
             corpus = CorporaCleaning.wrap(corpus);
 
             DataManager dataManager = ModernMT.getNode().getDataManager();
-            ImportJob job = dataManager.upload(memory.getOwner(), memoryId, corpus, DataManager.MEMORY_UPLOAD_CHANNEL_ID);
+            ImportJob job = dataManager.upload(memory, corpus, DataManager.MEMORY_UPLOAD_CHANNEL_ID);
 
             if (job == null)
                 throw new EmptyCorpusException();

@@ -40,11 +40,11 @@ public class LuceneTranslationMemoryTest_hash {
     @Test
     public void queryWithMisleadingHashes() throws Throwable {
         IndexWriter indexWriter = memory.getIndexWriter();
-        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 0, 2, "2-1", "2-1", "A B C D"));
-        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 0, 1, "1-1", "1-1", "A B C D"));
-        indexWriter.addDocument(DocumentBuilder.newInstance(EN__FR, 0, 1, "1-1F", "1-1F", "A B C D"));
-        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 0, 1, "1-2", "1-2", "D C B A"));
-        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 0, 1, "1-3", "1-3", "D C B Z"));
+        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, null, 2, "2-1", "2-1", "A B C D"));
+        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, null, 1, "1-1", "1-1", "A B C D"));
+        indexWriter.addDocument(DocumentBuilder.newInstance(EN__FR, null, 1, "1-1F", "1-1F", "A B C D"));
+        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, null, 1, "1-2", "1-2", "D C B A"));
+        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, null, 1, "1-3", "1-3", "D C B Z"));
         indexWriter.commit();
 
         Query query = new DefaultQueryBuilder().getByHash(1, "A B C D");

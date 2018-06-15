@@ -4,7 +4,8 @@ USE mmt;
 
 CREATE TABLE mmt_memories (
   id    BIGINT       NOT NULL AUTO_INCREMENT,
-  owner BIGINT       NOT NULL DEFAULT 0,
+  owner_msb BIGINT       DEFAULT NULL,
+  owner_lsb BIGINT       DEFAULT NULL,
   name  VARCHAR(255) NOT NULL,
   PRIMARY KEY (id)
 )

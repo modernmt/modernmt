@@ -8,11 +8,16 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.NumericUtils;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.UUID;
 
 /**
  * Created by davide on 23/09/15.
@@ -22,30 +27,37 @@ public class DocumentBuilder {
     // Factory methods
 
     public static Document newInstance(LanguagePair direction, Corpus corpus) throws IOException {
-        return newInstance(0L, 0L, direction, corpus);
+        return newInstance(null, 0L, direction, corpus);
     }
 
-    public static Document newInstance(long owner, long memory, LanguagePair direction, Corpus corpus) throws IOException {
+    public static Document newInstance(UUID owner, long memory, LanguagePair direction, Corpus corpus) throws IOException {
         return newInstance(owner, memory, direction, corpus.getRawContentReader());
     }
 
-    public static Document updatedInstance(String docId, Reader contentReader) {
+    public static Document updatedInstance(UUID owner, String docId, Reader contentReader) {
         String[] parts = docId.split("_");
-        if (parts.length != 4)
+        if (parts.length != 3)
             throw new IllegalArgumentException("Invalid Document ID: " + docId);
 
-        long owner = Long.parseLong(parts[0]);
-        long memory = Long.parseLong(parts[1]);
-        LanguagePair direction = new LanguagePair(new Language(parts[2]), new Language(parts[3]));
+        long memory = Long.parseLong(parts[0]);
+        LanguagePair direction = new LanguagePair(new Language(parts[1]), new Language(parts[2]));
 
         return newInstance(owner, memory, direction, contentReader);
     }
 
-    public static Document newInstance(long owner, long memory, LanguagePair direction, Reader contentReader) {
+    public static Document newInstance(UUID owner, long memory, LanguagePair direction, Reader contentReader) {
         Document document = new Document();
-        document.add(new StringField(DOC_ID_FIELD, makeId(owner, memory, direction), Field.Store.NO));
+        document.add(new StringField(DOC_ID_FIELD, makeId(memory, direction), Field.Store.NO));
         document.add(new LongField(MEMORY_FIELD, memory, Field.Store.YES));
-        document.add(new LongField(OWNER_FIELD, owner, Field.Store.NO));
+
+        if (owner != null) {
+            document.add(new LongField(OWNER_MSB_FIELD, owner.getMostSignificantBits(), Field.Store.NO));
+            document.add(new LongField(OWNER_LSB_FIELD, owner.getLeastSignificantBits(), Field.Store.NO));
+        } else {
+            document.add(new LongField(OWNER_MSB_FIELD, 0L, Field.Store.NO));
+            document.add(new LongField(OWNER_LSB_FIELD, 0L, Field.Store.NO));
+        }
+
         document.add(new CorpusContentField(makeContentFieldName(direction), contentReader));
 
         return document;
@@ -53,7 +65,8 @@ public class DocumentBuilder {
 
     private static final String DOC_ID_FIELD = "cid";
     private static final String MEMORY_FIELD = "memory";
-    private static final String OWNER_FIELD = "owner";
+    private static final String OWNER_MSB_FIELD = "owner_msb";
+    private static final String OWNER_LSB_FIELD = "owner_lsb";
     private static final String CONTENT_PREFIX_FIELD = "content_";
 
     // Getters
@@ -68,10 +81,10 @@ public class DocumentBuilder {
 
     public static long getMemory(String docId) {
         String[] parts = docId.split("_");
-        if (parts.length != 4)
+        if (parts.length != 3)
             throw new IllegalArgumentException("Invalid Document ID: " + docId);
 
-        return Long.parseLong(parts[1]);
+        return Long.parseLong(parts[0]);
     }
 
     public static String getLanguageForContentField(String field) {
@@ -88,30 +101,45 @@ public class DocumentBuilder {
     }
 
     public static Term makeMemoryTerm(long memory) {
-        BytesRefBuilder builder = new BytesRefBuilder();
-        NumericUtils.longToPrefixCoded(memory, 0, builder);
-
-        return new Term(MEMORY_FIELD, builder.toBytesRef());
+        return makeLongTerm(memory, MEMORY_FIELD);
     }
 
-    public static Term makeOwnerTerm(long owner) {
-        BytesRefBuilder builder = new BytesRefBuilder();
-        NumericUtils.longToPrefixCoded(owner, 0, builder);
+    public static Query makePublicOwnerMatchingQuery() {
+        return makeOwnerMatchingQuery(null);
+    }
 
-        return new Term(OWNER_FIELD, builder.toBytesRef());
+    public static Query makeOwnerMatchingQuery(UUID owner) {
+        long msb = (owner != null) ? owner.getMostSignificantBits() : 0L;
+        long lsb = (owner != null) ? owner.getLeastSignificantBits() : 0L;
+
+        Term msbTerm = makeLongTerm(msb, OWNER_MSB_FIELD);
+        Term lsbTerm = makeLongTerm(lsb, OWNER_LSB_FIELD);
+
+        BooleanQuery query = new BooleanQuery();
+        query.add(new TermQuery(msbTerm), BooleanClause.Occur.MUST);
+        query.add(new TermQuery(lsbTerm), BooleanClause.Occur.MUST);
+        return query;
     }
 
     // Value builders
 
-    public static String makeId(long owner, long memory, LanguagePair direction) {
-        return Long.toString(owner) + '_' + Long.toString(memory) + '_' +
-                direction.source.getLanguage() + '_' + direction.target.getLanguage();
+    public static String makeId(long memory, LanguagePair direction) {
+        return Long.toString(memory) + '_' + direction.source.getLanguage() + '_' + direction.target.getLanguage();
     }
 
     // Fields builders
 
     public static String makeContentFieldName(LanguagePair direction) {
         return CONTENT_PREFIX_FIELD + direction.source.getLanguage() + '_' + direction.target.getLanguage();
+    }
+
+    // Utils
+
+    private static Term makeLongTerm(long value, String field) {
+        BytesRefBuilder builder = new BytesRefBuilder();
+        NumericUtils.longToPrefixCoded(value, 0, builder);
+
+        return new Term(field, builder.toBytesRef());
     }
 
 }

@@ -56,7 +56,8 @@ public class CorporaStorage {
     }
 
     public CorpusBucket getBucket(String docId) throws IOException {
-        return this.index.getBucket(docId, false);
+        // createIfAbsent == false, so owner can only be read and not created (null is acceptable)
+        return this.index.getBucket(null, docId, false);
     }
 
     public int size() {
@@ -70,11 +71,11 @@ public class CorporaStorage {
             if (!index.shouldAcceptData(unit.channel, unit.channelPosition))
                 continue;
 
-            CorpusBucket fwdBucket = index.getBucket(DocumentBuilder.makeId(unit.owner, unit.memory, unit.direction));
+            CorpusBucket fwdBucket = index.getBucket(unit.owner, DocumentBuilder.makeId(unit.memory, unit.direction));
             fwdBucket.append(unit.rawSentence);
             pendingUpdatesBuckets.add(fwdBucket);
 
-            CorpusBucket bwdBucket = index.getBucket(DocumentBuilder.makeId(unit.owner, unit.memory, unit.direction.reversed()));
+            CorpusBucket bwdBucket = index.getBucket(unit.owner, DocumentBuilder.makeId(unit.memory, unit.direction.reversed()));
             bwdBucket.append(unit.rawTranslation);
             pendingUpdatesBuckets.add(bwdBucket);
         }
@@ -133,7 +134,7 @@ public class CorporaStorage {
         logger.debug("CorporaStorage index successfully written to disk");
     }
 
-    public void bulkInsert(long owner, long memory, MultilingualCorpus corpus) throws IOException {
+    public void bulkInsert(UUID owner, long memory, MultilingualCorpus corpus) throws IOException {
         MultilingualCorpus.MultilingualLineReader reader = null;
 
         try {
@@ -141,11 +142,11 @@ public class CorporaStorage {
 
             MultilingualCorpus.StringPair pair;
             while ((pair = reader.read()) != null) {
-                CorpusBucket fwdBucket = index.getBucket(DocumentBuilder.makeId(owner, memory, pair.language));
+                CorpusBucket fwdBucket = index.getBucket(owner, DocumentBuilder.makeId(memory, pair.language));
                 fwdBucket.append(pair.source);
                 pendingUpdatesBuckets.add(fwdBucket);
 
-                CorpusBucket bwdBucket = index.getBucket(DocumentBuilder.makeId(owner, memory, pair.language.reversed()));
+                CorpusBucket bwdBucket = index.getBucket(owner, DocumentBuilder.makeId(memory, pair.language.reversed()));
                 bwdBucket.append(pair.target);
                 pendingUpdatesBuckets.add(bwdBucket);
             }

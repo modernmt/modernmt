@@ -22,6 +22,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.UUID;
 
 /**
  * Created by davide on 10/07/15.
@@ -128,11 +129,11 @@ public class ContextAnalyzerIndex implements Closeable {
         this.indexWriter.commit();
     }
 
-    public ContextVector getContextVector(long user, LanguagePair direction, Corpus queryDocument, int limit) throws IOException {
+    public ContextVector getContextVector(UUID user, LanguagePair direction, Corpus queryDocument, int limit) throws IOException {
         return this.getContextVector(user, direction, queryDocument, limit, this.rescorer);
     }
 
-    public ContextVector getContextVector(long user, LanguagePair direction, Corpus queryDocument, int limit, Rescorer rescorer) throws IOException {
+    public ContextVector getContextVector(UUID user, LanguagePair direction, Corpus queryDocument, int limit, Rescorer rescorer) throws IOException {
         String contentFieldName = DocumentBuilder.makeContentFieldName(direction);
 
         IndexSearcher searcher = this.getIndexSearcher();
@@ -158,11 +159,11 @@ public class ContextAnalyzerIndex implements Closeable {
             Query mltQuery = mlt.like(contentFieldName, queryDocumentReader);
             BooleanQuery ownerQuery = new BooleanQuery();
 
-            if (user == DataManager.PUBLIC) {
-                ownerQuery.add(new TermQuery(DocumentBuilder.makeOwnerTerm(DataManager.PUBLIC)), BooleanClause.Occur.MUST);
+            if (user == null) {
+                ownerQuery.add(DocumentBuilder.makePublicOwnerMatchingQuery(), BooleanClause.Occur.MUST);
             } else {
-                ownerQuery.add(new TermQuery(DocumentBuilder.makeOwnerTerm(DataManager.PUBLIC)), BooleanClause.Occur.SHOULD);
-                ownerQuery.add(new TermQuery(DocumentBuilder.makeOwnerTerm(user)), BooleanClause.Occur.SHOULD);
+                ownerQuery.add(DocumentBuilder.makePublicOwnerMatchingQuery(), BooleanClause.Occur.SHOULD);
+                ownerQuery.add(DocumentBuilder.makeOwnerMatchingQuery(user), BooleanClause.Occur.SHOULD);
                 ownerQuery.setMinimumNumberShouldMatch(1);
             }
 

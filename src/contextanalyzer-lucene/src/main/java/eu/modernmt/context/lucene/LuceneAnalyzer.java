@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -84,17 +85,17 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     }
 
     @Override
-    public ContextVector getContextVector(long user, LanguagePair direction, String query, int limit) throws ContextAnalyzerException {
+    public ContextVector getContextVector(UUID user, LanguagePair direction, String query, int limit) throws ContextAnalyzerException {
         return getContextVector(user, direction, new StringCorpus(null, direction.source, query), limit);
     }
 
     @Override
-    public ContextVector getContextVector(long user, LanguagePair direction, File source, int limit) throws ContextAnalyzerException {
+    public ContextVector getContextVector(UUID user, LanguagePair direction, File source, int limit) throws ContextAnalyzerException {
         return getContextVector(user, direction, new FileCorpus(source, null, direction.source), limit);
     }
 
     @Override
-    public ContextVector getContextVector(long user, LanguagePair direction, Corpus query, int limit) throws ContextAnalyzerException {
+    public ContextVector getContextVector(UUID user, LanguagePair direction, Corpus query, int limit) throws ContextAnalyzerException {
         try {
             return this.index.getContextVector(user, direction, query, limit);
         } catch (IOException e) {
