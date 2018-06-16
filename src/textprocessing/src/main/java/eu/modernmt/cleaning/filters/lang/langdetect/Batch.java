@@ -64,12 +64,12 @@ class Batch {
     }
 
     public String getSourceLanguage() {
-        List<DetectedLanguage> languages = LanguageFilter.getLanguageDetector().getProbabilities(sourceBuffer);
+        List<DetectedLanguage> languages = OptimaizeLanguageFilter.getLanguageDetector().getProbabilities(sourceBuffer);
         return detectLanguage(languages);
     }
 
     public String getTargetLanguage() {
-        List<DetectedLanguage> languages = LanguageFilter.getLanguageDetector().getProbabilities(targetBuffer);
+        List<DetectedLanguage> languages = OptimaizeLanguageFilter.getLanguageDetector().getProbabilities(targetBuffer);
         return detectLanguage(languages);
     }
 

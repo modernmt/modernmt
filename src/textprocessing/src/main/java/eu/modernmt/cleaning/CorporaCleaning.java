@@ -2,7 +2,7 @@ package eu.modernmt.cleaning;
 
 import eu.modernmt.cleaning.filters.*;
 import eu.modernmt.cleaning.filters.draft.DraftFilter;
-import eu.modernmt.cleaning.filters.lang.cld2.CLD2LanguageFilter;
+import eu.modernmt.cleaning.filters.lang.langdetect.OptimaizeLanguageFilter;
 import eu.modernmt.cleaning.filters.ngrams.RareNgramFilter;
 import eu.modernmt.cleaning.normalizers.ControlCharsStripper;
 import eu.modernmt.cleaning.normalizers.XMLStripper;
@@ -93,7 +93,7 @@ public class CorporaCleaning {
         if (options.filterBySentenceLength)
             builder.add(new SentenceLengthFilter());
         if (options.filterByLanguage)
-            builder.add(new CLD2LanguageFilter(cld2AcceptUnknown));
+            builder.add(new OptimaizeLanguageFilter());
 
         return builder.build();
     }

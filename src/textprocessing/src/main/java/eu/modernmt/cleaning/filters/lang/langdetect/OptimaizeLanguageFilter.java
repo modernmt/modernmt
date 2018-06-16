@@ -10,20 +10,26 @@ import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by davide on 27/12/17.
  */
-public class LanguageFilter implements Filter {
+public class OptimaizeLanguageFilter implements Filter {
+
+    private static final HashSet<String> SUPPORTED_LANGUAGES = new HashSet<>(
+            Arrays.asList("af", "an", "ar", "ast", "be", "br", "ca", "bg", "bn", "cs", "cy", "da", "de", "el", "en",
+                    "es", "et", "eu", "fa", "fi", "fr", "ga", "gl", "gu", "he", "hi", "hr", "ht", "hu", "id", "is",
+                    "it", "ja", "km", "kn", "ko", "lt", "lv", "mk", "ml", "mr", "ms", "mt", "ne", "nl", "no", "oc",
+                    "pa", "pl", "pt", "ro", "ru", "sk", "sl", "so", "sq", "sr", "sv", "sw", "ta", "te", "th", "tl",
+                    "tr", "uk", "ur", "vi", "wa", "yi", "zh"));
 
     private static final int MIN_SIZE = 50;
     private static LanguageDetector detectorInstance = null;
 
     public static LanguageDetector getLanguageDetector() {
         if (detectorInstance == null) {
-            synchronized (LanguageFilter.class) {
+            synchronized (OptimaizeLanguageFilter.class) {
                 if (detectorInstance == null) {
                     try {
                         detectorInstance = LanguageDetectorBuilder.create(NgramExtractors.standard())
@@ -42,6 +48,11 @@ public class LanguageFilter implements Filter {
 
     private final HashMap<LanguagePair, Blacklist> blacklists = new HashMap<>();
 
+    private static boolean isSupported(LanguagePair language) {
+        return SUPPORTED_LANGUAGES.contains(language.source.getLanguage()) &&
+                SUPPORTED_LANGUAGES.contains(language.target.getLanguage());
+    }
+
     @Override
     public Initializer getInitializer() {
         return new Initializer() {
@@ -55,11 +66,13 @@ public class LanguageFilter implements Filter {
 
             @Override
             public void onPair(MultilingualCorpus corpus, MultilingualCorpus.StringPair pair, int index) {
-                Batch batch = batches.computeIfAbsent(pair.language, (key) -> new Batch());
-                batch.add(pair.source, pair.target, index);
+                if (isSupported(pair.language)) {
+                    Batch batch = batches.computeIfAbsent(pair.language, (key) -> new Batch());
+                    batch.add(pair.source, pair.target, index);
 
-                if (batch.isFull())
-                    analyze(pair.language, batch);
+                    if (batch.isFull())
+                        analyze(pair.language, batch);
+                }
             }
 
             private void analyze(LanguagePair direction, Batch batch) {
