@@ -199,36 +199,35 @@ public class TranslationFacade {
     }
 
     public Map<Language, ContextVector> getContextVectors(UUID user, File context, int limit, Language source, Language... targets) throws ContextAnalyzerException {
-        List<LanguagePair> languages = mapLanguagePairs(source, targets);
-
-        if (languages.isEmpty())
-            return Collections.emptyMap();
-
         Engine engine = ModernMT.getNode().getEngine();
         ContextAnalyzer analyzer = engine.getContextAnalyzer();
 
-        HashMap<Language, ContextVector> result = new HashMap<>(languages.size());
-        for (LanguagePair direction : languages) {
-            ContextVector contextVector = analyzer.getContextVector(user, direction, context, limit);
-            result.put(direction.target, contextVector);
+        HashMap<Language, ContextVector> result = new HashMap<>(targets.length);
+        for (Language target : targets) {
+            LanguagePair direction = mapLanguagePair(new LanguagePair(source, target));
+
+            if (direction != null) {
+                ContextVector contextVector = analyzer.getContextVector(user, direction, context, limit);
+                result.put(target, contextVector);
+            }
         }
 
         return result;
     }
 
     public Map<Language, ContextVector> getContextVectors(UUID user, String context, int limit, Language source, Language... targets) throws ContextAnalyzerException {
-        List<LanguagePair> languages = mapLanguagePairs(source, targets);
-
-        if (languages.isEmpty())
-            return Collections.emptyMap();
-
         Engine engine = ModernMT.getNode().getEngine();
         ContextAnalyzer analyzer = engine.getContextAnalyzer();
 
-        HashMap<Language, ContextVector> result = new HashMap<>(languages.size());
-        for (LanguagePair direction : languages) {
+        HashMap<Language, ContextVector> result = new HashMap<>(targets.length);
+        for (Language target : targets) {
+            LanguagePair direction = mapLanguagePair(new LanguagePair(source, target));
+
+            if (direction == null)
+                continue;
+
             ContextVector contextVector = analyzer.getContextVector(user, direction, context, limit);
-            result.put(direction.target, contextVector);
+            result.put(target, contextVector);
         }
 
         return result;
@@ -252,19 +251,6 @@ public class TranslationFacade {
             throw new UnsupportedLanguageException(pair);
 
         return mapped;
-    }
-
-    private List<LanguagePair> mapLanguagePairs(Language source, Language[] targets) {
-        ArrayList<LanguagePair> result = new ArrayList<>(targets.length);
-
-        LanguageIndex index = ModernMT.getNode().getEngine().getLanguageIndex();
-        for (Language target : targets) {
-            LanguagePair language = index.map(new LanguagePair(source, target), true);
-            if (language != null)
-                result.add(language);
-        }
-
-        return result;
     }
 
     // -----------------------------
