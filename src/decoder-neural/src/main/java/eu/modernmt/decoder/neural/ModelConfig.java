@@ -32,6 +32,15 @@ public class ModelConfig {
         this.config = config;
     }
 
+    public boolean isEchoServer() {
+        try {
+            SubnodeConfiguration settings = config.configurationAt("settings");
+            return settings.getBoolean("echo_server", false);
+        } catch (IllegalArgumentException iex) {
+            return false;
+        }
+    }
+
     public Set<LanguagePair> getAvailableTranslationDirections() {
         HashSet<LanguagePair> result = new HashSet<>();
 

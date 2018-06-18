@@ -40,6 +40,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
     private final Logger logger = LogManager.getLogger(getClass());
 
+    private final boolean echoServer;
     private final int suggestionsLimit;
     private final TranslationMemory memory;
     private final Set<LanguagePair> directions;
@@ -74,6 +75,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         this.memory = memory;
         this.directions = modelConfig.getAvailableTranslationDirections();
         this.decoderImpl = queue;
+        this.echoServer = modelConfig.isEchoServer();
     }
 
     protected ModelConfig loadModelConfig(File filepath) throws IOException {
@@ -142,7 +144,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
             if (suggestions != null && suggestions.length > 0) {
                 // if perfect match, return suggestion instead
-                if (suggestions[0].score == 1.f) {
+                if (this.echoServer || suggestions[0].score == 1.f) {
                     Word[] words = new Word[suggestions[0].translation.length];
                     for (int i = 0; i < words.length; i++)
                         words[i] = new Word(suggestions[0].translation[i], " ");
