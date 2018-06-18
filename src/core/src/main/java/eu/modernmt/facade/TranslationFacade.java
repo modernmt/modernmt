@@ -18,6 +18,9 @@ import eu.modernmt.model.Alignment;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
+import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.corpus.impl.StringCorpus;
+import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
@@ -199,35 +202,26 @@ public class TranslationFacade {
     }
 
     public Map<Language, ContextVector> getContextVectors(UUID user, File context, int limit, Language source, Language... targets) throws ContextAnalyzerException {
-        Engine engine = ModernMT.getNode().getEngine();
-        ContextAnalyzer analyzer = engine.getContextAnalyzer();
-
-        HashMap<Language, ContextVector> result = new HashMap<>(targets.length);
-        for (Language target : targets) {
-            LanguagePair direction = mapLanguagePair(new LanguagePair(source, target));
-
-            if (direction != null) {
-                ContextVector contextVector = analyzer.getContextVector(user, direction, context, limit);
-                result.put(target, contextVector);
-            }
-        }
-
-        return result;
+        return getContextVectors(user, new FileCorpus(context, null, source), limit, source, targets);
     }
 
     public Map<Language, ContextVector> getContextVectors(UUID user, String context, int limit, Language source, Language... targets) throws ContextAnalyzerException {
+        return getContextVectors(user, new StringCorpus(null, source, context), limit, source, targets);
+    }
+
+    private Map<Language, ContextVector> getContextVectors(UUID user, Corpus context, int limit, Language source, Language... targets) throws ContextAnalyzerException {
         Engine engine = ModernMT.getNode().getEngine();
         ContextAnalyzer analyzer = engine.getContextAnalyzer();
 
         HashMap<Language, ContextVector> result = new HashMap<>(targets.length);
         for (Language target : targets) {
-            LanguagePair direction = mapLanguagePair(new LanguagePair(source, target));
-
-            if (direction == null)
-                continue;
-
-            ContextVector contextVector = analyzer.getContextVector(user, direction, context, limit);
-            result.put(target, contextVector);
+            try {
+                LanguagePair direction = mapLanguagePair(new LanguagePair(source, target));
+                ContextVector contextVector = analyzer.getContextVector(user, direction, context, limit);
+                result.put(target, contextVector);
+            } catch (UnsupportedLanguageException e) {
+                // ignore it
+            }
         }
 
         return result;
