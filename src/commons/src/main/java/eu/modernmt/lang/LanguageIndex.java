@@ -44,7 +44,15 @@ public class LanguageIndex {
     private final Map<LanguageKey, List<LanguageEntry>> index;
     private final Map<String, List<LanguageRule>> rules;
     private final Set<Language> rulesSkipList;
-    private final ConcurrentHashMap<LanguagePair, CacheEntry> mappingCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<LanguagePair, CacheEntry> mappingCache;
+
+    protected LanguageIndex() {
+        this.languages = null;
+        this.index = null;
+        this.rules = null;
+        this.rulesSkipList = null;
+        this.mappingCache = null;
+    }
 
     private LanguageIndex(Set<LanguagePair> languages, Map<LanguageKey, List<LanguageEntry>> index, Map<String, List<LanguageRule>> rules) {
         this.languages = Collections.unmodifiableSet(languages);
@@ -58,6 +66,8 @@ public class LanguageIndex {
             if (pair.target.getRegion() != null)
                 this.rulesSkipList.add(pair.target);
         }
+
+        this.mappingCache = new ConcurrentHashMap<>();
     }
 
     public Set<LanguagePair> getLanguages() {
