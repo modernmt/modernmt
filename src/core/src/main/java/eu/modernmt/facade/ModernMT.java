@@ -10,6 +10,7 @@ import eu.modernmt.config.NodeConfig;
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.facade.exceptions.TestFailedException;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.persistence.Database;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.processing.ProcessingException;
@@ -17,6 +18,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -56,11 +58,12 @@ public class ModernMT {
     }
 
     public static ServerInfo info() {
+        Set<LanguagePair> languages = node.getEngine().getAvailableLanguagePairs();
         Collection<NodeInfo> nodes = cluster.getNodes();
         String buildVersion = Pom.getProperty("mmt.version");
         long buildNumber = Long.parseLong(Pom.getProperty("mmt.build.number"));
 
-        return new ServerInfo(new ServerInfo.ClusterInfo(nodes), new ServerInfo.BuildInfo(buildVersion, buildNumber));
+        return new ServerInfo(new ServerInfo.ClusterInfo(nodes), new ServerInfo.BuildInfo(buildVersion, buildNumber), languages);
     }
 
     public static void test() throws TestFailedException {

@@ -7,7 +7,6 @@ import eu.modernmt.cluster.TranslationTask;
 import eu.modernmt.cluster.error.SystemShutdownException;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.data.DataManager;
 import eu.modernmt.decoder.*;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.lang.Language;
@@ -169,14 +168,6 @@ public class TranslationFacade {
 
     private synchronized void setLastTranslationLanguage(LanguagePair lastTranslationLanguage) {
         this.lastTranslationLanguage = lastTranslationLanguage;
-    }
-
-    // =============================
-    //  Languages
-    // =============================
-
-    public Set<LanguagePair> getAvailableLanguagePairs() {
-        return ModernMT.getNode().getEngine().getAvailableLanguagePairs();
     }
 
     // =============================

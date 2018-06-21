@@ -2,6 +2,7 @@ package eu.modernmt.rest;
 
 import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.Language;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.rest.framework.JSONSerializer;
@@ -32,6 +33,7 @@ public class RESTServer {
         JSONSerializer.registerCustomSerializer(Alignment.class, new AlignmentSerializer());
         JSONSerializer.registerCustomSerializer(ContextVectorResult.class, new ContextVectorResultSerializer());
         JSONSerializer.registerCustomSerializer(Language.class, new LanguageSerializer());
+        JSONSerializer.registerCustomSerializer(LanguagePair.class, new LanguagePairSerializer());
         JSONSerializer.registerCustomSerializer(ImportJob.class, new ImportJobSerializer());
     }
 
