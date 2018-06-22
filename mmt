@@ -212,6 +212,7 @@ def main_start(argv):
     parser.add_argument('-d', '--remote-debug', action='store_true', dest='remote_debug',
                         help='setting this option allows Java to connect for remote debug '
                              '(intended only for development purpose)')
+    parser.add_argument('--log-file', dest='log_file', default=None, help='custom location for node log file')
 
     # Parse args
     args = parser.parse_args(argv)
@@ -231,7 +232,8 @@ def main_start(argv):
                    db_port=args.db_port,
                    leader=args.leader,
                    verbosity=args.verbosity,
-                   remote_debug=args.remote_debug)
+                   remote_debug=args.remote_debug,
+                   log_file=args.log_file)
 
         # wait for the node to start
         node.wait('JOINED')

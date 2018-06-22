@@ -290,7 +290,9 @@ class ClusterNode(object):
         self._update_properties()
 
     def start(self, api_port=None, cluster_port=None, datastream_port=None,
-              db_port=None, leader=None, verbosity=None, remote_debug=False):
+              db_port=None, leader=None, verbosity=None, remote_debug=False, log_file=None):
+        if log_file is not None:
+            self._log_file = log_file
 
         success = False
         process = self._start_process(api_port, cluster_port, datastream_port, db_port, leader, verbosity, remote_debug)
@@ -299,12 +301,8 @@ class ClusterNode(object):
         if pid > 0:
             self._set_pid(pid)
 
-            for _ in range(0, 5):
-                success = self.is_running()
-                if success:
-                    break
-
-                time.sleep(1)
+            time.sleep(1)
+            success = process.poll() is None
 
         if not success:
             raise Exception('failed to start node, check log file for more details: ' + self._log_file)
@@ -312,11 +310,10 @@ class ClusterNode(object):
     def _start_process(self, api_port, cluster_port, datastream_port, db_port, leader, verbosity, remote_debug):
         if not os.path.isdir(self.engine.runtime_path):
             fileutils.makedirs(self.engine.runtime_path, exist_ok=True)
-        logs_folder = os.path.abspath(os.path.join(self._log_file, os.pardir))
 
         args = ['-e', self.engine.name,
                 '--status-file', self._status_file,
-                '--logs', logs_folder]
+                '--log-file', self._log_file]
 
         if cluster_port is not None:
             args.append('--cluster-port')
@@ -342,6 +339,7 @@ class ClusterNode(object):
             args.append('--leader')
             args.append(leader)
 
+        logs_folder = os.path.abspath(os.path.join(self._log_file, os.pardir))
         command = mmt_javamain('eu.modernmt.cli.ClusterNodeMain', args,
                                hserr_path=logs_folder, remote_debug=remote_debug)
 
@@ -370,8 +368,10 @@ class ClusterNode(object):
                 for service_pid in self._properties["embedded_services"]:
                     daemon.kill(service_pid, ignore_errors=True)
 
-        os.remove(self._status_file)
-        os.remove(self._pidfile)
+        if os.path.isfile(self._status_file):
+            os.remove(self._status_file)
+        if os.path.isfile(self._pidfile):
+            os.remove(self._pidfile)
 
     # Lazy Load Api getter:
     # the api are only initialized when they are needed

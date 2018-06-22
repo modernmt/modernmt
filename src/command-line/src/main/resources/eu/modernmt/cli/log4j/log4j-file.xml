@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="%level" name="ModernMT" packages="">
+<Configuration status="%%LEVEL%%" name="ModernMT" packages="">
     <Appenders>
-        <RollingRandomAccessFile name="RollingRandomAccessFile" fileName="%root/node.log"
-                                 filePattern="%root/node.%i.log.gz">
+        <RollingRandomAccessFile name="RollingRandomAccessFile" fileName="%%LOG_FILE%%"
+                                 filePattern="%%LOG_FILE%%.%i.gz">
             <PatternLayout>
                 <Pattern>%d %-5level %c [%t] %msg%n%throwable</Pattern>
             </PatternLayout>
             <Policies>
-                <SizeBasedTriggeringPolicy size="1GB"/>
+                <SizeBasedTriggeringPolicy size="100MB"/>
             </Policies>
             <DefaultRolloverStrategy max="20"/>
         </RollingRandomAccessFile>
     </Appenders>
     <Loggers>
-        <Root level="%level">
+        <Root level="%%LEVEL%%">
             <AppenderRef ref="RollingRandomAccessFile"/>
         </Root>
     </Loggers>

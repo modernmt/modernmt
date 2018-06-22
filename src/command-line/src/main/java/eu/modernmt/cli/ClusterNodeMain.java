@@ -37,7 +37,7 @@ public class ClusterNodeMain {
         static {
             Option engine = Option.builder("e").longOpt("engine").hasArg().required().build();
             Option statusFile = Option.builder().longOpt("status-file").hasArg().required().build();
-            Option logsFolder = Option.builder().longOpt("logs").hasArg().required().build();
+            Option logFile = Option.builder().longOpt("log-file").hasArg().required().build();
 
             Option apiPort = Option.builder("a").longOpt("api-port").hasArg().type(Integer.class).required(false).build();
             Option clusterPort = Option.builder("p").longOpt("cluster-port").hasArg().type(Integer.class).required(false).build();
@@ -55,14 +55,14 @@ public class ClusterNodeMain {
             cliOptions.addOption(statusFile);
             cliOptions.addOption(verbosity);
             cliOptions.addOption(leader);
-            cliOptions.addOption(logsFolder);
+            cliOptions.addOption(logFile);
             cliOptions.addOption(datastreamPort);
             cliOptions.addOption(databasePort);
         }
 
         public final String engine;
         public final File statusFile;
-        public final File logsFolder;
+        public final File logFile;
         public final int verbosity;
         public final NodeConfig config;
 
@@ -87,7 +87,7 @@ public class ClusterNodeMain {
 
             this.engine = cli.getOptionValue("engine");
             this.statusFile = new File(cli.getOptionValue("status-file"));
-            this.logsFolder = new File(cli.getOptionValue("logs"));
+            this.logFile = new File(cli.getOptionValue("log-file"));
 
             String verbosity = cli.getOptionValue("verbosity");
             this.verbosity = verbosity == null ? 1 : Integer.parseInt(verbosity);
@@ -159,7 +159,7 @@ public class ClusterNodeMain {
         // parse the arguments
         Args args = new Args(_args);
 
-        Log4jConfiguration.setup(args.verbosity, args.logsFolder);
+        Log4jConfiguration.setup(args.logFile, args.verbosity);
 
         FileStatusListener listener = new FileStatusListener(args.statusFile,
                 args.config);
