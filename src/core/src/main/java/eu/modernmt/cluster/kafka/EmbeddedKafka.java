@@ -5,9 +5,9 @@ import eu.modernmt.cluster.EmbeddedService;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.hw.NetworkUtils;
-import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.io.FileConst;
 import eu.modernmt.io.Paths;
+import eu.modernmt.io.UTF8Charset;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -169,7 +169,7 @@ public class EmbeddedKafka extends EmbeddedService {
                 while (lines.hasNext()) {
                     String line = lines.next();
 
-                    if (line.contains("INFO [Kafka Server 0], started (kafka.server.KafkaServer)")) {
+                    if (line.contains("INFO [KafkaServer id=0] started (kafka.server.KafkaServer)")) {
                         success = true;
                         return kafka;
                     }

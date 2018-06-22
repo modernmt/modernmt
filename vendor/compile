@@ -12,8 +12,8 @@ import os
 import multiprocessing
 
 CASSANDRA_VERSION = '3.11.2'
-KAFKA_VERSION = '0.10.2.1'
-KAFKA_SCALA_VERSION = '2.12'
+KAFKA_VERSION = '1.1.0'
+KAFKA_SCALA_VERSION = '2.11'
 
 vendor_dir = os.path.dirname(os.path.realpath(__file__))
 mmt_home = os.path.join(vendor_dir, os.path.pardir)
