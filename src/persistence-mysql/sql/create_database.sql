@@ -1,7 +1,3 @@
-CREATE DATABASE IF NOT EXISTS mmt;
-
-USE mmt;
-
 CREATE TABLE mmt_memories (
   id    BIGINT       NOT NULL AUTO_INCREMENT,
   owner_msb BIGINT       DEFAULT NULL,
