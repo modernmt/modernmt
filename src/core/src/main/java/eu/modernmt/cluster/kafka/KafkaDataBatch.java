@@ -172,6 +172,9 @@ class KafkaDataBatch implements DataBatch {
 
                     output.add(packets.get(i).asTranslationUnit(direction, sentence, translation, alignment));
                 }
+            } else {
+                for (int i = 0; i < packets.size(); i++)
+                    output.add(packets.get(i).asTranslationUnit(direction));
             }
         }
     }
