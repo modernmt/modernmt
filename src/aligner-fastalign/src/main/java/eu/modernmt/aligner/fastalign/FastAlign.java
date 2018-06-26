@@ -3,9 +3,7 @@ package eu.modernmt.aligner.fastalign;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 import org.apache.commons.io.FilenameUtils;
@@ -15,10 +13,8 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.*;
 
-/**
- * Created by lucamastrostefano on 15/03/16.
- */
 public class FastAlign implements Aligner {
 
     private static final Logger logger = LogManager.getLogger(FastAlign.class);
@@ -35,13 +31,56 @@ public class FastAlign implements Aligner {
     private SymmetrizationStrategy strategy = SymmetrizationStrategy.GROW_DIAGONAL_FINAL_AND;
     private final HashMap<LanguageKey, Long> models;
 
-    private static LanguagePair getLanguagePairFromFilename(File file) throws IOException {
+    private static Collection<LanguagePair> parseLanguagesFromFilename(File file) throws IOException {
         String encoded = FilenameUtils.removeExtension(file.getName());
         String[] parts = encoded.split("__");
         if (parts.length != 2)
             throw new IOException("Invalid FastAlign model: " + file);
 
-        return new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1]));
+        String[] sources = parts[0].split("_");
+        String[] targets = parts[1].split("_");
+        HashSet<LanguagePair> languages = new HashSet<>();
+
+        for (String source : sources) {
+            for (String target : targets) {
+                languages.add(new LanguagePair(Language.fromString(source), Language.fromString(target)));
+            }
+        }
+
+        return languages;
+    }
+
+    private Map<File, Long> load(File[] paths) {
+        int nproc = Runtime.getRuntime().availableProcessors();
+        int threads = Math.min(paths.length, nproc);
+        int alignerThreads = Math.max(1, (int) (nproc * 3. / 4.));
+
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+
+        try {
+            Future<?>[] futures = new Future[paths.length];
+            for (int i = 0; i < futures.length; i++)
+                futures[i] = executor.submit(new InitTask(paths[i], alignerThreads));
+
+            HashMap<File, Long> models = new HashMap<>(paths.length);
+            for (int i = 0; i < futures.length; i++) {
+                try {
+                    models.put(paths[i], (Long) futures[i].get());
+                } catch (InterruptedException e) {
+                    throw new RuntimeException("Interrupted execution", e);
+                } catch (ExecutionException e) {
+                    Throwable cause = e.getCause();
+                    if (cause instanceof RuntimeException)
+                        throw (RuntimeException) cause;
+                    else
+                        throw new Error("Unexpected exception", cause);
+                }
+            }
+
+            return models;
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
     public FastAlign(File modelPath) throws IOException {
@@ -53,18 +92,22 @@ public class FastAlign implements Aligner {
         if (paths == null || paths.length == 0)
             throw new IOException("Could not load any FastAlign model from path " + modelPath);
 
-        int threads = Runtime.getRuntime().availableProcessors();
+        logger.info("Loading FastAlign models");
+        long now = System.currentTimeMillis();
+        Map<File, Long> handlers = load(paths);
+        logger.info("Loaded " + handlers.size() + " FastAlign models in " + (int) ((System.currentTimeMillis() - now) / 1000) + "s");
 
         this.models = new HashMap<>(paths.length);
+        for (Map.Entry<File, Long> entry : handlers.entrySet()) {
+            File path = entry.getKey();
+            Long nativeHandle = entry.getValue();
 
-        for (File path : paths) {
-            long nativeHandle = instantiate(path.getAbsolutePath(), threads);
-            LanguagePair pair = getLanguagePairFromFilename(path);
+            for (LanguagePair pair : parseLanguagesFromFilename(path)) {
+                if (pair.source.getRegion() != null || pair.target.getRegion() != null)
+                    throw new IOException("Cannot specify region for model language tag in model: " + path);
 
-            if (pair.source.getRegion() != null || pair.target.getRegion() != null)
-                throw new IOException("Cannot specify region for model language tag in model: " + path);
-
-            this.models.put(LanguageKey.parse(pair), nativeHandle);
+                this.models.put(LanguageKey.parse(pair), nativeHandle);
+            }
         }
     }
 
@@ -205,5 +248,22 @@ public class FastAlign implements Aligner {
             result = 31 * result + target.hashCode();
             return result;
         }
+    }
+
+    private final class InitTask implements Callable<Long> {
+
+        private final File path;
+        private final int threads;
+
+        private InitTask(File path, int threads) {
+            this.path = path;
+            this.threads = threads;
+        }
+
+        @Override
+        public Long call() {
+            return instantiate(path.getAbsolutePath(), threads);
+        }
+
     }
 }
