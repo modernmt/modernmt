@@ -193,14 +193,12 @@ class GoogleServerError(TranslateError):
 
 
 class GoogleTranslate(Translator):
-    def __init__(self, source_lang, target_lang, key=None, nmt=False):
+    def __init__(self, source_lang, target_lang, key=None):
         Translator.__init__(self, source_lang, target_lang, threads=5)
         self._key = key if key is not None else DEFAULT_GOOGLE_KEY
-        self._nmt = nmt
         self._delay = 0
 
-        self._url = 'https://translation.googleapis.com/language/translate/v2' if self._nmt \
-            else 'https://www.googleapis.com/language/translate/v2'
+        self._url = 'https://translation.googleapis.com/language/translate/v2'
 
     def name(self):
         return 'Google Translate'
@@ -236,15 +234,13 @@ class GoogleTranslate(Translator):
 
     def _get_translation(self, line, corpus):
         data = {
+            'model': 'nmt',
             'source': self.source_lang,
             'target': self.target_lang,
             'q': line,
             'key': self._key,
             'userip': '.'.join(map(str, (random.randint(0, 200) for _ in range(4))))
         }
-
-        if self._nmt:
-            data['model'] = 'nmt'
 
         headers = {
             'X-HTTP-Method-Override': 'GET'
@@ -466,7 +462,7 @@ class _EvaluationResult:
 
 
 class Evaluator:
-    def __init__(self, node, source_lang=None, target_lang=None, google_key=None, google_nmt=False):
+    def __init__(self, node, source_lang=None, target_lang=None, google_key=None):
         self._engine = node.engine
         self._node = node
 
@@ -477,7 +473,7 @@ class Evaluator:
         self._target_lang = target_lang if target_lang is not None else self._engine.target_lang
 
         self._translators = [
-            GoogleTranslate(self._source_lang, self._target_lang, key=google_key, nmt=google_nmt),
+            GoogleTranslate(self._source_lang, self._target_lang, key=google_key),
             # BingTranslator(self._source_lang, self._target_lang),
             MMTTranslator(self._node, self._source_lang, self._target_lang)
         ]

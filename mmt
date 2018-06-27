@@ -346,9 +346,6 @@ def main_evaluate(argv):
                         default='default')
     parser.add_argument('--gt-key', dest='gt_key', metavar='GT_API_KEY', default=None,
                         help='A custom Google Translate API Key to use during evaluation')
-    parser.add_argument('--gt-nmt', action='store_true', dest='gt_nmt', default=False,
-                        help='Use Neural Google Translate API during evaluation, '
-                             'you have to specify a valid key with --gt-key')
     parser.add_argument('--human-eval', dest='heval_output', metavar='OUTPUT', default=None,
                         help='the output folder for the tab-spaced files needed to setup a Human Evaluation benchmark')
     parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='if debug is set, it enables verbose '
@@ -364,8 +361,7 @@ def main_evaluate(argv):
     ensure_api(node)
 
     # perform evaluation
-    evaluator = Evaluator(node, source_lang=args.source_lang, target_lang=args.target_lang,
-                          google_key=args.gt_key, google_nmt=args.gt_nmt)
+    evaluator = Evaluator(node, source_lang=args.source_lang, target_lang=args.target_lang, google_key=args.gt_key)
     corpora = BilingualCorpus.list(args.corpora_path) if args.corpora_path is not None \
         else BilingualCorpus.list(os.path.join(node.engine.data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
     evaluator.evaluate(corpora=corpora, heval_output=args.heval_output, debug=args.debug)
