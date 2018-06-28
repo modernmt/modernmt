@@ -339,9 +339,17 @@ class ClusterNode(object):
             args.append('--leader')
             args.append(leader)
 
+        # read memory size
+        mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')  # e.g. 4015976448
+        mem_mb = mem_bytes / (1024. ** 2)  # e.g. 3.74
+
+        heap_mb = max(min(mem_mb / 4, 16 * 1024), 1024)
+        heap_mb = int(heap_mb / 1024) * 1024
+
         logs_folder = os.path.abspath(os.path.join(self._log_file, os.pardir))
         command = mmt_javamain('eu.modernmt.cli.ClusterNodeMain', args,
-                               hserr_path=logs_folder, remote_debug=remote_debug)
+                               logs_path=logs_folder, remote_debug=remote_debug,
+                               max_heap_mb=heap_mb, server=True)
 
         if os.path.isfile(self._status_file):
             os.remove(self._status_file)

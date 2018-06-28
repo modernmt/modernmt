@@ -33,7 +33,7 @@ os.environ['LC_ALL'] = 'en_US.UTF-8'
 os.environ['LANG'] = 'en_US.UTF-8'
 
 
-def mmt_javamain(main_class, args=None, hserr_path=None, remote_debug=False, max_heap_mb=None):
+def mmt_javamain(main_class, args=None, remote_debug=False, max_heap_mb=None, server=False, logs_path=None):
     classpath = [MMT_JAR]
 
     if os.path.isdir(PLUGINS_DIR):
@@ -43,19 +43,38 @@ def mmt_javamain(main_class, args=None, hserr_path=None, remote_debug=False, max
 
     classpath = ':'.join(classpath)
 
-    command = ['java', '-cp', classpath, '-Dmmt.home=' + MMT_ROOT, '-Djava.library.path=' + LIB_DIR, main_class]
-
+    java_ops = []
     if remote_debug:
-        command.insert(1, '-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005')
+        java_ops.append('-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005')
 
-    if hserr_path is not None:
-        command.insert(1, '-XX:ErrorFile=' + os.path.join(hserr_path, 'hs_err_pid%p.log'))
+    if server:
+        java_ops.append('-server')
 
+        if max_heap_mb is not None:
+            java_ops.append('-Xms' + str(max_heap_mb) + 'm')
+            java_ops.append('-Xmx' + str(max_heap_mb) + 'm')
+
+        if logs_path is not None:
+            java_ops += ['-XX:ErrorFile=' + os.path.join(logs_path, 'hs_err_pid%p.log')]
+
+            java_ops += ['-XX:+PrintGCDateStamps', '-verbose:gc', '-XX:+PrintGCDetails',
+                         '-Xloggc:' + os.path.join(logs_path, 'gc.log')]
+
+            java_ops += ['-XX:+HeapDumpOnOutOfMemoryError', '-XX:HeapDumpPath=' + logs_path]
+
+        java_ops += ['-XX:+CMSClassUnloadingEnabled', '-XX:+UseConcMarkSweepGC', '-XX:+CMSParallelRemarkEnabled',
+                     '-XX:+UseCMSInitiatingOccupancyOnly', '-XX:CMSInitiatingOccupancyFraction=70',
+                     '-XX:+ScavengeBeforeFullGC', '-XX:+CMSScavengeBeforeRemark', '-XX:+CMSClassUnloadingEnabled',
+                     '-XX:+ExplicitGCInvokesConcurrentAndUnloadsClasses']
+    else:
+        if max_heap_mb is not None:
+            java_ops.append('-Xmx' + str(max_heap_mb) + 'm')
+
+    java_cmd = ['java'] + java_ops
+
+    command = java_cmd + ['-cp', classpath, '-Dmmt.home=' + MMT_ROOT, '-Djava.library.path=' + LIB_DIR, main_class]
     if args is not None:
         command += args
-
-    if max_heap_mb is not None:
-        command.insert(1, '-Xmx' + str(max_heap_mb) + 'm')
 
     return command
 
