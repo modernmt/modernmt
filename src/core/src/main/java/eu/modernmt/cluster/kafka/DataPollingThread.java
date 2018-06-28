@@ -143,6 +143,8 @@ class DataPollingThread extends Thread {
                     align |= listener.needsAlignment();
                 }
 
+                if (logger.isDebugEnabled())
+                    logger.debug("Loading batch of " + records.count() + " records: process=" + process + ", align=" + align);
                 batch.load(records, process, align);
 
                 if (logger.isDebugEnabled())
