@@ -19,17 +19,19 @@ public class ModelConfig {
     private final int DEFAULT_QUERY_MIN_RESULTS = 10;
 
     private final HierarchicalINIConfiguration config;
+    private final File basePath;
 
     public static ModelConfig load(File path) throws IOException {
         try {
-            return new ModelConfig(new HierarchicalINIConfiguration(path));
+            return new ModelConfig(new HierarchicalINIConfiguration(path), path.getParentFile());
         } catch (ConfigurationException e) {
             throw new IOException(e);
         }
     }
 
-    private ModelConfig(HierarchicalINIConfiguration config) {
+    private ModelConfig(HierarchicalINIConfiguration config, File basePath) {
         this.config = config;
+        this.basePath = basePath;
     }
 
     public boolean isEchoServer() {
@@ -41,8 +43,8 @@ public class ModelConfig {
         }
     }
 
-    public Set<LanguagePair> getAvailableTranslationDirections() {
-        HashSet<LanguagePair> result = new HashSet<>();
+    public Map<LanguagePair, File> getAvailableModels() {
+        HashMap<LanguagePair, File> result = new HashMap<>();
 
         SubnodeConfiguration models;
 
@@ -56,9 +58,11 @@ public class ModelConfig {
         Iterator<String> keyIterator = models.getKeys();
         while (keyIterator.hasNext()) {
             String key = keyIterator.next();
-
             String[] parts = key.split("__");
-            result.add(new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1])));
+            LanguagePair language = new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1]));
+            File model = new File(basePath, models.getString(key));
+
+            result.put(language, model);
         }
 
         return result;

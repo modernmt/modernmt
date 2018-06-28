@@ -73,7 +73,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         // Init class fields
         this.suggestionsLimit = modelConfig.getSuggestionsLimit();
         this.memory = memory;
-        this.directions = modelConfig.getAvailableTranslationDirections();
+        this.directions = new HashSet<>(modelConfig.getAvailableModels().keySet());
         this.decoderImpl = queue;
         this.echoServer = modelConfig.isEchoServer();
     }
