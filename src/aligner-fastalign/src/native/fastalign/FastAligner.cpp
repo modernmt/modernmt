@@ -103,17 +103,9 @@ void FastAligner::GetAlignments(const std::vector<std::pair<wordvec_t, wordvec_t
 
     outAlignments.resize(batch.size());
 
-    vector<SymAlignment> symals((size_t) threads);
+    SymAlignment symal;
 
-#pragma omp parallel for schedule(dynamic)
     for (size_t i = 0; i < batch.size(); ++i) {
-#ifdef _OPENMP
-        SymAlignment &symal = symals[omp_get_thread_num()];
-#else
-        SymAlignment &symal = symals[0];
-#endif
-
-
         symal.Reset(batch[i].first.size(), batch[i].second.size());
 
         alignment_t &forward = forwards[i];
