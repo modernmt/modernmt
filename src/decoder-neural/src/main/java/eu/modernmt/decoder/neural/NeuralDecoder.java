@@ -142,7 +142,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
             }
 
             if (this.echoServer) {
-                if (suggestions != null && suggestions.length > 0 && suggestions[0].score == 1.f) {
+                if (suggestions != null && suggestions.length > 0) {
                     translation = Translation.fromTokens(text, suggestions[0].translation);
                 } else {
                     translation = Translation.fromTokens(text, TokensOutputStream.tokens(text, false, true));
