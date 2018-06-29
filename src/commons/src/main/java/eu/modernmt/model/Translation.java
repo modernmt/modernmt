@@ -11,6 +11,14 @@ public class Translation extends Sentence {
         return new Translation(new Word[0], source, new Alignment(new int[0], new int[0]));
     }
 
+    public static Translation fromTokens(Sentence source, String[] tokens) {
+        Word[] words = new Word[tokens.length];
+        for (int i = 0; i < words.length; i++)
+            words[i] = new Word(tokens[i], " ");
+
+        return new Translation(words, source, null);
+    }
+
     protected final Sentence source;
     private Alignment wordAlignment;
     private Alignment sentenceAlignment = null;

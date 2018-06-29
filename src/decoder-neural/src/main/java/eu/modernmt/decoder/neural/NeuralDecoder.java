@@ -24,7 +24,6 @@ import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
-import eu.modernmt.model.Word;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -142,19 +141,23 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
                 throw new DecoderException("Failed to retrieve suggestions from memory", e);
             }
 
-            if (suggestions != null && suggestions.length > 0) {
-                // if perfect match, return suggestion instead
-                if (this.echoServer || suggestions[0].score == 1.f) {
-                    Word[] words = new Word[suggestions[0].translation.length];
-                    for (int i = 0; i < words.length; i++)
-                        words[i] = new Word(suggestions[0].translation[i], " ");
-
-                    translation = new Translation(words, text, null);
+            if (this.echoServer) {
+                if (suggestions != null && suggestions.length > 0 && suggestions[0].score == 1.f) {
+                    translation = Translation.fromTokens(text, suggestions[0].translation);
                 } else {
-                    translation = decoderImpl.translate(direction, text, suggestions, nbestListSize);
+                    translation = Translation.fromTokens(text, TokensOutputStream.tokens(text, false, true));
                 }
             } else {
-                translation = decoderImpl.translate(direction, text, nbestListSize);
+                if (suggestions != null && suggestions.length > 0) {
+                    // if perfect match, return suggestion instead
+                    if (suggestions[0].score == 1.f) {
+                        translation = Translation.fromTokens(text, suggestions[0].translation);
+                    } else {
+                        translation = decoderImpl.translate(direction, text, suggestions, nbestListSize);
+                    }
+                } else {
+                    translation = decoderImpl.translate(direction, text, nbestListSize);
+                }
             }
 
             if (logger.isDebugEnabled()) {
