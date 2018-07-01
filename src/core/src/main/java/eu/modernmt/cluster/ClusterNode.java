@@ -361,13 +361,17 @@ public class ClusterNode {
 
                 setStatus(Status.UPDATING);
 
-                timer.reset();
-                try {
-                    logger.info("Starting sync from data stream");
-                    this.dataManager.waitChannelPositions(positions);
-                    logger.info("Data stream sync completed in " + (timer.time() / 1000.) + "s");
-                } catch (InterruptedException e) {
-                    throw new BootstrapException("Data stream sync interrupted", e);
+                if (hasAtLeastOneClusterPair(nodeConfig)) {
+                    timer.reset();
+                    try {
+                        logger.info("Starting sync from data stream");
+                        this.dataManager.waitChannelPositions(positions);
+                        logger.info("Data stream sync completed in " + (timer.time() / 1000.) + "s");
+                    } catch (InterruptedException e) {
+                        throw new BootstrapException("Data stream sync interrupted", e);
+                    }
+                } else {
+                    logger.info("Data stream sync running in background, force single node cluster start");
                 }
 
                 setStatus(Status.UPDATED);
@@ -415,6 +419,11 @@ public class ClusterNode {
         setStatus(Status.READY);
 
         logger.info("Node started in " + (globalTimer.time() / 1000.) + "s");
+    }
+
+    private static boolean hasAtLeastOneClusterPair(NodeConfig config) {
+        JoinConfig.Member[] members = config.getNetworkConfig().getJoinConfig().getMembers();
+        return members != null && members.length > 0;
     }
 
     public List<EmbeddedService> getServices() {
