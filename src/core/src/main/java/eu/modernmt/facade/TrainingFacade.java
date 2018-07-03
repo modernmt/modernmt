@@ -7,19 +7,18 @@ import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.processing.ProcessingException;
-import eu.modernmt.training.*;
+import eu.modernmt.training.BatchCopyProcess;
+import eu.modernmt.training.LazyWriterMultilingualCorpus;
+import eu.modernmt.training.PreprocessingPipeline;
 import eu.modernmt.training.filters.CorporaBloomFilter;
 import eu.modernmt.training.partitioning.FilesCorporaPartition;
 import eu.modernmt.training.preprocessing.CorpusWriter;
 import eu.modernmt.training.preprocessing.PlainTextWriter;
-import eu.modernmt.training.preprocessing.TermsCollectorWriter;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by davide on 17/08/16.
@@ -34,7 +33,6 @@ public class TrainingFacade {
         public int partitionSize = DEFAULT_PARTITION_SIZE;
         public File developmentPartition = null;
         public File testPartition = null;
-        public File vocabulary = null;
 
     }
 
@@ -77,12 +75,7 @@ public class TrainingFacade {
     public void preprocess(LanguagePair language, List<MultilingualCorpus> multilingualCorpora, List<Corpus> monolingualCorpora, File destFolder, TrainingOptions options) throws ProcessingException, IOException {
         FilesCorporaPartition mainPartition = new FilesCorporaPartition(destFolder);
 
-        CorpusWriter writer;
-        if (options.vocabulary == null)
-            writer = new PlainTextWriter();
-        else
-            writer = new TermsCollectorWriter(options.vocabulary);
-
+        CorpusWriter writer = new PlainTextWriter();
         PreprocessingPipeline pipeline = new PreprocessingPipeline(language, mainPartition, writer);
 
         FileUtils.deleteDirectory(destFolder);
@@ -98,28 +91,6 @@ public class TrainingFacade {
         }
 
         pipeline.process(multilingualCorpora, monolingualCorpora);
-    }
-
-    public void reduce(LanguagePair language, List<MultilingualCorpus> originalCorpora, File outputDirectory, long maxWordCount) throws IOException {
-        ArrayList<ReducedMultilingualCorpus> corpora = new ArrayList<>(originalCorpora.size());
-        for (MultilingualCorpus corpus : originalCorpora)
-            corpora.add(new ReducedMultilingualCorpus(new MultilingualCorpusMask(language, corpus)));
-
-        Map<LanguagePair, Long> counts = IOCorporaUtils.wordCount(corpora, Runtime.getRuntime().availableProcessors());
-        long count = counts.get(language);
-
-        if (count > maxWordCount) {
-            double reduction = maxWordCount / ((double) count);
-            for (ReducedMultilingualCorpus corpus : corpora)
-                corpus.reduce(language, reduction);
-        }
-
-        FileUtils.deleteDirectory(outputDirectory);
-        FileUtils.forceMkdir(outputDirectory);
-
-        BatchCopyProcess copyProcess = new BatchCopyProcess(corpus -> Corpora.rename(corpus, outputDirectory));
-        copyProcess.addAll(corpora);
-        copyProcess.run();
     }
 
     public void deduplicate(List<MultilingualCorpus> corpora, File outputDirectory, int lengthThreshold) throws IOException {

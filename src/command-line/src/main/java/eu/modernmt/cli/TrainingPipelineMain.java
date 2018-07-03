@@ -4,7 +4,6 @@ import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.facade.TrainingFacade;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
@@ -27,7 +26,6 @@ public class TrainingPipelineMain {
         static {
             Option sourceLanguage = Option.builder("s").hasArg().required().build();
             Option targetLanguage = Option.builder("t").hasArg().required().build();
-            Option vocabularyPath = Option.builder("v").hasArgs().required(false).build();
             Option inputPath = Option.builder().longOpt("input").hasArgs().required().build();
             Option outputPath = Option.builder().longOpt("output").hasArg().required().build();
             Option devPath = Option.builder().longOpt("dev").hasArg().required(false).build();
@@ -36,7 +34,6 @@ public class TrainingPipelineMain {
             cliOptions = new Options();
             cliOptions.addOption(sourceLanguage);
             cliOptions.addOption(targetLanguage);
-            cliOptions.addOption(vocabularyPath);
             cliOptions.addOption(inputPath);
             cliOptions.addOption(outputPath);
             cliOptions.addOption(devPath);
@@ -45,7 +42,6 @@ public class TrainingPipelineMain {
 
         public final Language sourceLanguage;
         public final Language targetLanguage;
-        public final File vocabulary;
         public final File[] inputRoots;
         public final File outputRoot;
         public final File devRoot;
@@ -57,7 +53,6 @@ public class TrainingPipelineMain {
 
             sourceLanguage = Language.fromString(cli.getOptionValue('s'));
             targetLanguage = Language.fromString(cli.getOptionValue('t'));
-            vocabulary = cli.hasOption('v') ? new File(cli.getOptionValue('v')) : null;
 
             String[] roots = cli.getOptionValues("input");
             inputRoots = new File[roots.length];
@@ -93,10 +88,6 @@ public class TrainingPipelineMain {
 
         if (args.testRoot != null)
             options.testPartition = args.testRoot;
-
-        if (args.vocabulary != null)
-            options.vocabulary = args.vocabulary;
-
 
         ModernMT.training.preprocess(language, bilingualCorpora, monolingualCorpora, args.outputRoot, options);
     }
