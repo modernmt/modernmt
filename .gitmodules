@@ -1,3 +1,0 @@
-[submodule "vendor/rocksdb"]
-	path = vendor/rocksdb
-	url = https://github.com/facebook/rocksdb.git
