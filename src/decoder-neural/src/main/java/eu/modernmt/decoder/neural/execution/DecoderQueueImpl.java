@@ -18,15 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Created by davide on 22/05/17.
  */
-public abstract class DecoderQueueImpl implements DecoderQueue {
-
-    public static DecoderQueueImpl newGPUInstance(NativeProcess.Builder builder, int[] gpus) throws DecoderException {
-        return new GPUDecoderQueue(builder, gpus).init();
-    }
-
-    public static DecoderQueueImpl newCPUInstance(NativeProcess.Builder builder, int cpus) throws DecoderException {
-        return new CPUDecoderQueue(builder, cpus).init();
-    }
+public class DecoderQueueImpl implements DecoderQueue {
 
     protected final Logger logger = LogManager.getLogger(getClass());
 
@@ -34,15 +26,21 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
     private final NativeProcess.Builder processBuilder;
     private final BlockingQueue<NativeProcess> queue;
     private final ExecutorService initExecutor;
+    private final int[] gpus;
+    private int idx;
 
     private final AtomicInteger aliveProcesses = new AtomicInteger(0);
     private boolean active = true;
 
-    protected DecoderQueueImpl(NativeProcess.Builder processBuilder, int capacity) {
-        this.capacity = capacity;
+    public DecoderQueueImpl(NativeProcess.Builder processBuilder, int[] gpus) throws DecoderException {
+        this.capacity = gpus.length;
         this.processBuilder = processBuilder;
-        this.queue = new ArrayBlockingQueue<>(capacity);
-        this.initExecutor = capacity > 1 ? Executors.newCachedThreadPool() : Executors.newSingleThreadExecutor();
+        this.queue = new ArrayBlockingQueue<>(gpus.length);
+        this.initExecutor = gpus.length > 1 ? Executors.newCachedThreadPool() : Executors.newSingleThreadExecutor();
+        this.gpus = gpus;
+        this.idx = gpus.length - 1;
+
+        this.init();
     }
 
     protected final DecoderQueueImpl init() throws DecoderException {
@@ -115,9 +113,21 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
         }
     }
 
-    protected abstract NativeProcess startProcess(NativeProcess.Builder processBuilder) throws IOException;
+    private NativeProcess startProcess(NativeProcess.Builder processBuilder) throws IOException {
+        int gpu;
 
-    protected abstract void onProcessDied(NativeProcess process);
+        synchronized (this) {
+            gpu = this.gpus[this.idx--];
+        }
+
+        return processBuilder.start(gpu);
+    }
+
+    private void onProcessDied(NativeProcess process) {
+        synchronized (this) {
+            this.gpus[++this.idx] = process.getGPU();
+        }
+    }
 
     @Override
     public void close() {

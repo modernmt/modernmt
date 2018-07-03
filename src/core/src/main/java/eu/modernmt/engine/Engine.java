@@ -11,7 +11,6 @@ import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.neural.NeuralDecoder;
-import eu.modernmt.decoder.phrasebased.MosesDecoder;
 import eu.modernmt.io.FileConst;
 import eu.modernmt.io.Paths;
 import eu.modernmt.lang.LanguageIndex;
@@ -95,14 +94,7 @@ public class Engine implements Closeable, DataListenerProvider {
                 String decoderClass = decoderConfig.getDecoderClass();
 
                 if (decoderClass == null) {
-                    EngineConfig.Type decoderType = config.getType();
-
-                    if (decoderType == EngineConfig.Type.NEURAL)
-                        decoder = new NeuralDecoder(decoderModel, decoderConfig);
-                    else if (decoderType == EngineConfig.Type.PHRASE_BASED)
-                        decoder = new MosesDecoder(decoderModel, decoderConfig);
-                    else
-                        throw new BootstrapException("Missing engine type (neural|phrase-based)");
+                    decoder = new NeuralDecoder(decoderModel, decoderConfig);
                 } else {
                     ClassLoader classLoader = ClassLoader.getSystemClassLoader();
                     Class<?> decoderCls = classLoader.loadClass(decoderClass);

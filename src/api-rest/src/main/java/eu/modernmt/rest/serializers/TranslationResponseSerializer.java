@@ -1,13 +1,10 @@
 package eu.modernmt.rest.serializers;
 
 import com.google.gson.*;
-import eu.modernmt.decoder.DecoderFeature;
-import eu.modernmt.decoder.HasFeatureScores;
 import eu.modernmt.model.*;
 import eu.modernmt.rest.model.TranslationResponse;
 
 import java.lang.reflect.Type;
-import java.util.Map;
 
 /**
  * Created by davide on 30/12/15.
@@ -50,26 +47,6 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
         if (verbose) {
             json.add("translationTokens", serializeTokens(translation));
             json.add("alignment", context.serialize(translation.getSentenceAlignment(), Alignment.class));
-
-            if (translation instanceof HasFeatureScores) {
-                HasFeatureScores src = (HasFeatureScores) translation;
-                json.addProperty("totalScore", src.getTotalScore());
-                json.add("scores", serializeScores(context, src.getScores()));
-            }
-        }
-
-        return json;
-
-    }
-
-    private static JsonElement serializeScores(JsonSerializationContext context, Map<DecoderFeature, float[]> scores) {
-        JsonObject json = new JsonObject();
-
-        for (Map.Entry<DecoderFeature, float[]> entry : scores.entrySet()) {
-            String name = entry.getKey().getName();
-            JsonElement value = context.serialize(entry.getValue());
-
-            json.add(name, value);
         }
 
         return json;

@@ -1,4 +1,4 @@
-package eu.modernmt.rest.actions.admin;
+package eu.modernmt.rest.actions;
 
 
 import eu.modernmt.facade.ModernMT;

@@ -12,7 +12,6 @@
         <module>textprocessing</module>
         <module>aligner-fastalign</module>
         <module>contextanalyzer-lucene</module>
-        <module>decoder-phrasebased</module>
         <module>decoder-neural</module>
         <module>persistence-cassandra</module>
         <module>persistence-mysql</module>

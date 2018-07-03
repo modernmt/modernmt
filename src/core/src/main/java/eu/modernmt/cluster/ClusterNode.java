@@ -3,7 +3,9 @@ package eu.modernmt.cluster;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.config.XmlConfigBuilder;
-import com.hazelcast.core.*;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.Member;
 import eu.modernmt.cluster.db.DatabaseLoader;
 import eu.modernmt.cluster.db.EmbeddedCassandra;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
@@ -16,8 +18,6 @@ import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.data.DataManager;
 import eu.modernmt.data.HostUnreachableException;
-import eu.modernmt.decoder.DecoderFeature;
-import eu.modernmt.decoder.DecoderWithFeatures;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.hw.NetworkUtils;
@@ -67,7 +67,6 @@ public class ClusterNode {
     private HazelcastInstance hazelcast;
     private DataManager dataManager;
     private Database database;
-    private ITopic<Map<String, float[]>> decoderWeightsTopic;
 
     private TranslationServiceProxy translationService;
 
@@ -76,13 +75,6 @@ public class ClusterNode {
     private final Thread shutdownThread = new Thread() {
         @Override
         public void run() {
-            //TODO: must reintroduce valid model syncing
-//            StorageService memory = StorageService.getInstance();
-//            try {
-//                memory.close();
-//            } catch (IOException e) {
-//                // Ignore exception
-//            }
             forcefullyClose(hazelcast);
 
             // Close engine resources
@@ -286,24 +278,6 @@ public class ClusterNode {
             }
         }));
 
-        // ===========  Model syncing - not used  =============
-
-        //TODO: must reintroduce valid model syncing
-        logger.warn("Model syncing not supported in this version!");
-//        if (args.member != null) {
-        //        setStatus(Status.SYNCING);
-//            InetAddress host = InetAddress.getByName(args.member);
-//            File localPath = Engine.getRootPath(args.engine);
-//
-//            StorageService memory = StorageService.getInstance();
-//            DirectorySynchronizer synchronizer = memory.getDirectorySynchronizer();
-//            synchronizer.synchronize(host, args.dataPort, localPath);
-//
-//            status.onStatusChange(StatusManager.Status.SYNCHRONIZED);
-//        setStatus(Status.SYNCED);
-//        }
-
-
         // ===========  Model loading  =============
 
         setStatus(Status.LOADING);
@@ -413,9 +387,6 @@ public class ClusterNode {
         translationService = hazelcast.getDistributedObject(TranslationService.SERVICE_NAME,
                 ClusterConstants.TRANSLATION_SERVICE_NAME);
 
-        decoderWeightsTopic = hazelcast.getTopic(ClusterConstants.DECODER_WEIGHTS_TOPIC_NAME);
-        decoderWeightsTopic.addMessageListener(this::onDecoderWeightsChanged);
-
         setStatus(Status.READY);
 
         logger.info("Node started in " + (globalTimer.time() / 1000.) + "s");
@@ -438,27 +409,6 @@ public class ClusterNode {
     private void updateDecoderTranslationDirections(Set<LanguagePair> directions) {
         Member localMember = hazelcast.getCluster().getLocalMember();
         NodeInfo.updateTranslationDirections(localMember, directions);
-    }
-
-    public void notifyDecoderWeightsChanged(Map<String, float[]> weights) {
-        this.decoderWeightsTopic.publish(weights);
-    }
-
-    private void onDecoderWeightsChanged(Message<Map<String, float[]>> message) {
-        logger.info("Received decoder weights changed notification");
-
-        Map<String, float[]> weights = message.getMessageObject();
-
-        // Updating decoder weights
-        DecoderWithFeatures decoder = (DecoderWithFeatures) engine.getDecoder();
-        Map<DecoderFeature, float[]> map = new HashMap<>();
-
-        for (DecoderFeature feature : decoder.getFeatures()) {
-            if (feature.isTunable())
-                map.put(feature, weights.get(feature.getName()));
-        }
-
-        decoder.setDefaultFeatureWeights(map);
     }
 
     public Collection<NodeInfo> getClusterNodes() {

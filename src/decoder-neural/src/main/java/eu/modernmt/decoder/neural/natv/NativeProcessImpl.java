@@ -46,16 +46,7 @@ public class NativeProcessImpl implements NativeProcess {
         }
 
         @Override
-        public NativeProcessImpl startOnCPU() throws IOException {
-            return start(-1);
-        }
-
-        @Override
-        public NativeProcessImpl startOnGPU(int gpu) throws IOException {
-            return start(gpu);
-        }
-
-        private NativeProcessImpl start(int gpu) throws IOException {
+        public NativeProcessImpl start(int gpu) throws IOException {
             ArrayList<String> command = new ArrayList<>(5);
             command.add("python");
             command.add(pythonExec.getAbsolutePath());
@@ -70,10 +61,8 @@ public class NativeProcessImpl implements NativeProcess {
                 command.add(logLevel);
             }
 
-            if (gpu >= 0) {
-                command.add("--gpu");
-                command.add(Integer.toString(gpu));
-            }
+            command.add("--gpu");
+            command.add(Integer.toString(gpu));
 
             ProcessBuilder builder = new ProcessBuilder(command);
 

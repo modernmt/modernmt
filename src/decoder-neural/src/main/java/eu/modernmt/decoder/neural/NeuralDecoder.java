@@ -1,7 +1,6 @@
 package eu.modernmt.decoder.neural;
 
 import eu.modernmt.config.DecoderConfig;
-import eu.modernmt.config.NeuralDecoderConfig;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.Decoder;
@@ -45,10 +44,8 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
     private final Set<LanguagePair> directions;
     private final DecoderQueue decoderImpl;
 
-    public NeuralDecoder(File model, DecoderConfig _config) throws DecoderException {
-        super(model, _config);
-
-        NeuralDecoderConfig config = (NeuralDecoderConfig) _config;
+    public NeuralDecoder(File model, DecoderConfig config) throws DecoderException {
+        super(model, config);
 
         // Load ModelConfig
         ModelConfig modelConfig;
@@ -93,14 +90,10 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         return memory;
     }
 
-    protected DecoderQueue loadDecoderQueue(ModelConfig modelConfig, NeuralDecoderConfig decoderConfig, File model) throws DecoderException {
+    protected DecoderQueue loadDecoderQueue(ModelConfig modelConfig, DecoderConfig decoderConfig, File model) throws DecoderException {
         File pythonExec = Paths.join(FileConst.getLibPath(), "pynmt", "main_loop.py");
         NativeProcess.Builder builder = new NativeProcessImpl.Builder(pythonExec, model);
-
-        if (decoderConfig.isUsingGPUs())
-            return DecoderQueueImpl.newGPUInstance(builder, decoderConfig.getGPUs());
-        else
-            return DecoderQueueImpl.newCPUInstance(builder, decoderConfig.getThreads());
+        return new DecoderQueueImpl(builder, decoderConfig.getGPUs());
     }
 
     // Decoder
@@ -200,8 +193,4 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         IOUtils.closeQuietly(this.memory);
     }
 
-    @Override
-    public boolean supportsSentenceSplit() {
-        return true;
-    }
 }

@@ -25,12 +25,4 @@ public abstract class Decoder implements Closeable {
 
     public abstract Translation translate(UUID user, LanguagePair direction, Sentence text, ContextVector contextVector) throws DecoderException;
 
-    /**
-     * This method states whether this decoder supports the sentence splitting feature or not.
-     * The sentence split feature checks if a passed sentence is actually a period with multiple separate sentences;
-     * if it is, a decoder supporting the sentence split feature will handle each sentence separately.
-     *
-     * @return TRUE if this decoder supports the Sentence Split feature, FALSE otherwise
-     */
-    public abstract boolean supportsSentenceSplit();
 }

@@ -20,9 +20,7 @@ public interface NativeProcess extends Closeable {
 
     interface Builder {
 
-        NativeProcess startOnCPU() throws IOException;
-
-        NativeProcess startOnGPU(int gpu) throws IOException;
+        NativeProcess start(int gpu) throws IOException;
 
     }
 

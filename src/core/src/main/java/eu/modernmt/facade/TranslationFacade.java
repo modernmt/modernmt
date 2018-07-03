@@ -7,7 +7,9 @@ import eu.modernmt.cluster.TranslationTask;
 import eu.modernmt.cluster.error.SystemShutdownException;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.decoder.*;
+import eu.modernmt.decoder.Decoder;
+import eu.modernmt.decoder.DecoderException;
+import eu.modernmt.decoder.DecoderWithNBest;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageIndex;
@@ -49,36 +51,6 @@ public class TranslationFacade {
         Priority(int value) {
             this.intValue = value;
         }
-    }
-
-    // =============================
-    //  Decoder Weights
-    // =============================
-
-    private DecoderWithFeatures getDecoderWithFeatures() {
-        Decoder decoder = ModernMT.getNode().getEngine().getDecoder();
-        if (!(decoder instanceof DecoderWithFeatures))
-            throw new UnsupportedOperationException("Decoder '" + decoder.getClass().getSimpleName() + "' does not support features.");
-        return (DecoderWithFeatures) decoder;
-    }
-
-    public Map<DecoderFeature, float[]> getDecoderWeights() {
-        // Invoke on local decoder instance because it's just a matter of
-        // properties reading and not a real computation
-        DecoderWithFeatures decoder = getDecoderWithFeatures();
-
-        HashMap<DecoderFeature, float[]> result = new HashMap<>();
-        for (DecoderFeature feature : decoder.getFeatures()) {
-            float[] weights = feature.isTunable() ? decoder.getFeatureWeights(feature) : null;
-            result.put(feature, weights);
-        }
-
-        return result;
-    }
-
-    public void setDecoderWeights(Map<String, float[]> weights) {
-        getDecoderWithFeatures(); // Ensure decoder supports features
-        ModernMT.getNode().notifyDecoderWeightsChanged(weights);
     }
 
     // =============================
@@ -276,14 +248,11 @@ public class TranslationFacade {
             Sentence sentence = preprocessor.process(direction, text);
             Translation translation;
 
-            if (decoder.supportsSentenceSplit()) {
-                Sentence[] sentencePieces = SentenceSplitter.forLanguage(direction.source).split(sentence);
-                Translation[] translationPieces = translate(sentencePieces, decoder);
+            // Sentence splitter
+            Sentence[] sentencePieces = SentenceSplitter.forLanguage(direction.source).split(sentence);
+            Translation[] translationPieces = translate(sentencePieces, decoder);
 
-                translation = this.merge(sentence, sentencePieces, translationPieces);
-            } else {
-                translation = translate(sentence, decoder);
-            }
+            translation = this.merge(sentence, sentencePieces, translationPieces);
 
             postprocessor.process(direction, translation);
 

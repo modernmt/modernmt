@@ -1,6 +1,9 @@
 package eu.modernmt.config.xml;
 
-import eu.modernmt.config.*;
+import eu.modernmt.config.AlignerConfig;
+import eu.modernmt.config.ConfigException;
+import eu.modernmt.config.DecoderConfig;
+import eu.modernmt.config.EngineConfig;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
@@ -40,9 +43,6 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
 
         if (config.getLanguageIndex() == null)
             throw new ConfigException("Missing language specification for <engine> element");
-
-        if (hasAttribute("type"))
-            config.setType(getEnumAttribute("type", EngineConfig.Type.class));
 
         decoderConfigBuilder.build(config.getDecoderConfig());
         alignerConfigBuilder.build(config.getAlignerConfig());
@@ -114,7 +114,7 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
             super(element);
         }
 
-        public AlignerConfig build(AlignerConfig config) throws ConfigException {
+        public AlignerConfig build(AlignerConfig config) {
             if (hasAttribute("enabled"))
                 config.setEnabled(getBooleanAttribute("enabled"));
 
@@ -132,19 +132,15 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
             if (hasAttribute("enabled"))
                 config.setEnabled(getBooleanAttribute("enabled"));
 
-            if (hasAttribute("threads"))
-                config.setThreads(getIntAttribute("threads"));
-
             if (hasAttribute("class"))
                 config.setDecoderClass(getStringAttribute("class"));
 
-            if (config instanceof NeuralDecoderConfig) {
-                NeuralDecoderConfig neuralConfig = (NeuralDecoderConfig) config;
-                if (hasAttribute("gpus"))
-                    neuralConfig.setGPUs(getIntArrayAttribute("gpus"));
-
-                if (neuralConfig.isUsingGPUs() && hasAttribute("threads"))
-                    throw new ConfigException("In order to specify 'threads', you have to add gpus='none'");
+            if (hasAttribute("gpus")) {
+                try {
+                    config.setGPUs(getIntArrayAttribute("gpus"));
+                } catch (IllegalArgumentException e) {
+                    throw new ConfigException("Invalid 'gpus' option", e);
+                }
             }
 
             return config;

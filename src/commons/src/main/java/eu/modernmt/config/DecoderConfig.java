@@ -1,22 +1,20 @@
 package eu.modernmt.config;
 
+import eu.modernmt.hw.Graphics;
+import eu.modernmt.io.RuntimeIOException;
+
+import java.io.IOException;
+
 /**
  * Created by davide on 04/01/17.
  */
-public abstract class DecoderConfig {
+public class DecoderConfig {
 
-    protected static final int DEFAULT_THREADS;
+    private static final int[] DEFAULT_GPUS = new int[0];
 
-    static {
-        int cores = Runtime.getRuntime().availableProcessors();
-        cores = cores > 1 ? (cores * 2) / 3 : cores;
-
-        DEFAULT_THREADS = cores;
-    }
-
-    protected int threads = DEFAULT_THREADS;
-    protected String decoderClass = null;
-    protected boolean enabled = true;
+    private int[] gpus = DEFAULT_GPUS;
+    private String decoderClass = null;
+    private boolean enabled = true;
 
     public boolean isEnabled() {
         return enabled;
@@ -24,14 +22,6 @@ public abstract class DecoderConfig {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
-    }
-
-    public int getThreads() {
-        return threads;
-    }
-
-    public void setThreads(int threads) {
-        this.threads = threads;
     }
 
     public String getDecoderClass() {
@@ -42,6 +32,41 @@ public abstract class DecoderConfig {
         this.decoderClass = decoderClass;
     }
 
-    public abstract int getParallelismDegree();
+    public int getParallelismDegree() {
+        return getGPUs().length;
+    }
+
+    public int[] getGPUs() {
+        if (gpus == DEFAULT_GPUS) {
+            try {
+                gpus = Graphics.getAvailableGPUs();
+            } catch (IOException e) {
+                throw new RuntimeIOException(e);
+            }
+        }
+        return gpus;
+    }
+
+    // exclude gpus, specified in the config file, but not available
+    // multiple occurrences of the same gpu are allowed
+    public void setGPUs(int[] gpus) {
+        int[] availableGPUs;
+        try {
+            availableGPUs = Graphics.getAvailableGPUs();
+        } catch (IOException e) {
+            throw new RuntimeIOException(e);
+        }
+
+        if (gpus == null || gpus.length == 0) {
+            throw new IllegalArgumentException("Empty GPU list specified");
+        } else {
+            for (int gpu : gpus) {
+                if (gpu < 0 || gpu >= availableGPUs.length)
+                    throw new IllegalArgumentException("Invalid GPU index: " + gpu);
+            }
+
+            this.gpus = gpus;
+        }
+    }
 
 }
