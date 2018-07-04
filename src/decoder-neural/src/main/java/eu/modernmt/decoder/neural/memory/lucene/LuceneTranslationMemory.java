@@ -11,9 +11,7 @@ import eu.modernmt.decoder.neural.memory.lucene.query.rescoring.F1BleuRescorer;
 import eu.modernmt.decoder.neural.memory.lucene.query.rescoring.Rescorer;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
-import eu.modernmt.model.Memory;
 import eu.modernmt.model.Sentence;
-import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -161,67 +159,6 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     // TranslationMemory
-
-    @Override
-    public void bulkInsert(Map<Memory, MultilingualCorpus> batch) throws IOException {
-        /* This method does not store segments hash. Update of content inserted with this method is not possible */
-        boolean success = false;
-
-        try {
-            for (Map.Entry<Memory, MultilingualCorpus> entry : batch.entrySet()) {
-                Memory memory = entry.getKey();
-                bulkInsert(memory.getOwner(), memory.getId(), entry.getValue());
-            }
-
-            this.indexWriter.commit();
-
-            success = true;
-        } finally {
-            if (!success)
-                this.indexWriter.rollback();
-        }
-    }
-
-    @Override
-    public void bulkInsert(Memory memory, MultilingualCorpus corpus) throws IOException {
-        /* This method does not store segments hash. Update of content inserted with this method is not possible */
-        boolean success = false;
-
-        try {
-            bulkInsert(memory.getOwner(), memory.getId(), corpus);
-
-            this.indexWriter.commit();
-
-            success = true;
-        } finally {
-            if (!success)
-                this.indexWriter.rollback();
-        }
-    }
-
-    private void bulkInsert(UUID owner, long memory, MultilingualCorpus corpus) throws IOException {
-        MultilingualCorpus.MultilingualLineReader reader = null;
-
-        try {
-            reader = corpus.getContentReader();
-
-            long begin = System.currentTimeMillis();
-
-            MultilingualCorpus.StringPair pair;
-            while ((pair = reader.read()) != null) {
-                Document document = DocumentBuilder.newInstance(pair.language, owner, memory, pair.source, pair.target);
-                this.indexWriter.addDocument(document);
-            }
-
-            double elapsed = System.currentTimeMillis() - begin;
-            elapsed = (int) (elapsed / 100);
-            elapsed /= 10.;
-
-            logger.info("Memory " + memory + " imported in " + elapsed + "s");
-        } finally {
-            IOUtils.closeQuietly(reader);
-        }
-    }
 
     @Override
     public ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, int limit) throws IOException {

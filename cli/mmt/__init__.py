@@ -1,25 +1,8 @@
 import os
 import re
 import shutil
-from operator import attrgetter
-
-from cli.libs import fileutils
 
 __author__ = 'Davide Caroselli'
-
-
-class _CorpusBuilder:
-    def __init__(self, name, tmx=None):
-        self.name = name
-        self.tmx = tmx
-        self.lang2file = {}
-
-    def add(self, lang, f):
-        self.lang2file[lang] = f
-
-    def build(self):
-        return TMXCorpus(self.name, self.tmx) if self.tmx is not None else FileParallelCorpus(self.name,
-                                                                                              self.lang2file)
 
 
 def _parse_lang(lang):
@@ -65,15 +48,21 @@ def _parse_lang(lang):
 
 class BilingualCorpus(object):
     @staticmethod
-    def list(root='.'):
-        corpus_map = {}
+    def list(source_lang, target_lang, roots):
+        if isinstance(roots, basestring):
+            roots = [roots]
 
-        root = os.path.abspath(root)
+        corpora = []
 
-        for filename in os.listdir(root):
-            filepath = os.path.join(root, filename)
+        for root in roots:
+            root = os.path.abspath(root)
 
-            if os.path.isfile(filepath):
+            for filename in os.listdir(root):
+                filepath = os.path.join(root, filename)
+
+                if not os.path.isfile(filepath):
+                    continue
+
                 name, extension = os.path.splitext(filename)
                 extension = extension[1:]
 
@@ -81,49 +70,17 @@ class BilingualCorpus(object):
                     continue
 
                 if extension.lower() == 'tmx':
-                    corpus_map[name] = _CorpusBuilder(name, tmx=filepath)
-                else:
-                    lang = _parse_lang(extension)
+                    corpora.append(TMXCorpus(name, filepath))
+                elif extension == source_lang:
+                    pair_file = os.path.join(root, name + '.' + target_lang)
 
-                    if lang is None:
-                        continue
+                    if os.path.isfile(pair_file):
+                        corpora.append(FileParallelCorpus(name, {
+                            source_lang: filepath,
+                            target_lang: pair_file
+                        }))
 
-                    if name in corpus_map:
-                        builder = corpus_map[name]
-                    else:
-                        builder = _CorpusBuilder(name)
-                        corpus_map[name] = builder
-
-                    builder.add(lang, filepath)
-
-        return sorted([builder.build() for _, builder in corpus_map.iteritems()], key=attrgetter('name'))
-
-    @staticmethod
-    def splitlist(source_lang, target_lang, monolingual_is_target=True, roots=None):
-        if roots is None:
-            roots = ['.']
-        elif not type(roots) is list:
-            roots = [roots]
-
-        monolingual_corpora = []
-        bilingual_corpora = []
-
-        monolingual_lang = target_lang if monolingual_is_target else source_lang
-
-        for directory in roots:
-            corpora = BilingualCorpus.list(directory)
-
-            for corpus in corpora:
-                if isinstance(corpus, TMXCorpus):
-                    bilingual_corpora.append(corpus)
-                elif len(corpus.langs) > 1:
-                    if source_lang in corpus.langs and target_lang in corpus.langs:
-                        bilingual_corpora.append(corpus)
-                elif len(corpus.langs) == 1:
-                    if monolingual_lang in corpus.langs:
-                        monolingual_corpora.append(corpus)
-
-        return bilingual_corpora, monolingual_corpora
+        return sorted(corpora, key=lambda x: x.name)
 
     @staticmethod
     def make_parallel(name, folder, langs):
@@ -186,7 +143,12 @@ class FileParallelCorpus(BilingualCorpus):
 
     def count_lines(self):
         if self._lines_count < 0 < len(self.langs):
-            self._lines_count = fileutils.linecount(self.get_file(self.langs[0]))
+            with open(self.get_file(self.langs[0])) as stream:
+                count = 0
+                for _, line in enumerate(stream):
+                    count += 1
+
+                self._lines_count = count
 
         return self._lines_count
 

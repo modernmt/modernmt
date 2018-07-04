@@ -5,7 +5,6 @@ import eu.modernmt.context.lucene.analysis.DocumentBuilder;
 import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -132,29 +131,6 @@ public class CorporaStorage {
         index.save();
 
         logger.debug("CorporaStorage index successfully written to disk");
-    }
-
-    public void bulkInsert(UUID owner, long memory, MultilingualCorpus corpus) throws IOException {
-        MultilingualCorpus.MultilingualLineReader reader = null;
-
-        try {
-            reader = corpus.getContentReader();
-
-            MultilingualCorpus.StringPair pair;
-            while ((pair = reader.read()) != null) {
-                CorpusBucket fwdBucket = index.getBucket(owner, DocumentBuilder.makeId(memory, pair.language));
-                fwdBucket.append(pair.source);
-                pendingUpdatesBuckets.add(fwdBucket);
-
-                CorpusBucket bwdBucket = index.getBucket(owner, DocumentBuilder.makeId(memory, pair.language.reversed()));
-                bwdBucket.append(pair.target);
-                pendingUpdatesBuckets.add(bwdBucket);
-            }
-        } finally {
-            IOUtils.closeQuietly(reader);
-        }
-
-        logger.info("Bulk insert of memory " + memory);
     }
 
     private void analyzeIfNeeded(Collection<CorpusBucket> buckets) throws IOException {

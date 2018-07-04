@@ -3,7 +3,7 @@ import re
 from HTMLParser import HTMLParser
 
 from cli import mmt_javamain
-from cli.libs import fileutils, shell
+from cli.libs import osutils
 from cli.mmt import BilingualCorpus
 
 __author__ = 'Davide Caroselli'
@@ -15,10 +15,10 @@ class Tokenizer:
         self._target_lang = target_lang
         self._print_tags = print_tags
         self._print_placeholders = print_placeholders
-        self._java_mainclass = 'eu.modernmt.cli.PreprocessorMain'
+        self._java_main = 'eu.modernmt.cli.PreprocessorMain'
 
     def process_corpora(self, corpora, output_folder):
-        fileutils.makedirs(output_folder, exist_ok=True)
+        osutils.makedirs(output_folder, exist_ok=True)
 
         for corpus in corpora:
             output_corpus = BilingualCorpus.make_parallel(corpus.name, output_folder, corpus.langs)
@@ -29,7 +29,7 @@ class Tokenizer:
 
                 self.process_file(input_path, output_path, lang)
 
-        return BilingualCorpus.list(output_folder)
+        return BilingualCorpus.list(self._source_lang, self._target_lang, output_folder)
 
     def process_file(self, input_path, output_path, lang):
         if lang == self._source_lang:
@@ -44,95 +44,11 @@ class Tokenizer:
         if self._print_placeholders:
             args.append('--print-placeholders')
 
-        command = mmt_javamain(self._java_mainclass, args=args)
+        command = mmt_javamain(self._java_main, args=args)
 
         with open(input_path) as input_stream:
             with open(output_path, 'w') as output_stream:
-                shell.execute(command, stdin=input_stream, stdout=output_stream)
-
-
-class TMCleaner:
-    def __init__(self, source_lang, target_lang):
-        self._source_lang = source_lang
-        self._target_lang = target_lang
-
-        self._java_mainclass = 'eu.modernmt.cli.CleaningPipelineMain'
-
-    def clean(self, corpora, output_path, log=None):
-        if log is None:
-            log = shell.DEVNULL
-
-        # read memory size
-        mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')  # e.g. 4015976448
-        mem_mb = mem_bytes / (1024. ** 2)  # e.g. 3.74
-
-        extended_heap_mb = int(mem_mb * 90 / 100)
-
-        args = ['-s', self._source_lang, '-t', self._target_lang,
-                '--output', output_path, '--input']
-
-        input_paths = set([corpus.get_folder() for corpus in corpora])
-
-        for root in input_paths:
-            args.append(root)
-
-        command = mmt_javamain(self._java_mainclass, args=args, max_heap_mb=extended_heap_mb)
-        shell.execute(command, stdout=log, stderr=log)
-
-        return BilingualCorpus.list(output_path)
-
-
-class TrainingPreprocessor:
-    DEV_FOLDER_NAME = 'dev'
-    TEST_FOLDER_NAME = 'test'
-
-    def __init__(self, source_lang, target_lang):
-        self._source_lang = source_lang
-        self._target_lang = target_lang
-
-        self._process_mainclass = 'eu.modernmt.cli.TrainingPipelineMain'
-        self._reduce_mainclass = 'eu.modernmt.cli.ReducingCorporaMain'
-
-    def process(self, corpora, output_path, data_path=None, log=None, vb_path=None):
-        if log is None:
-            log = shell.DEVNULL
-
-        args = ['-s', self._source_lang, '-t', self._target_lang, '--output', output_path]
-        if vb_path:
-            args.append('-v')
-            args.append(vb_path)
-
-        args.append('--input')
-        input_paths = set([corpus.get_folder() for corpus in corpora])
-
-        for root in input_paths:
-            args.append(root)
-
-        if data_path is not None:
-            args.append('--dev')
-            args.append(os.path.join(data_path, TrainingPreprocessor.DEV_FOLDER_NAME))
-            args.append('--test')
-            args.append(os.path.join(data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
-
-        command = mmt_javamain(self._process_mainclass, args)
-        shell.execute(command, stdout=log, stderr=log)
-
-        return BilingualCorpus.splitlist(self._source_lang, self._target_lang, roots=output_path)
-
-    def reduce(self, corpora, output_path, word_limit, log=None):
-        if log is None:
-            log = shell.DEVNULL
-
-        args = ['-s', self._source_lang, '-t', self._target_lang, '--words', str(word_limit),
-                '--output', output_path, '--input']
-
-        for root in set([corpus.get_folder() for corpus in corpora]):
-            args.append(root)
-
-        command = mmt_javamain(self._reduce_mainclass, args=args)
-        shell.execute(command, stdout=log, stderr=log)
-
-        return BilingualCorpus.list(output_path)
+                osutils.shell_exec(command, stdin=input_stream, stdout=output_stream)
 
 
 class XMLEncoder:
@@ -150,8 +66,9 @@ class XMLEncoder:
 
     def encode(self, corpora, dest_folder):
         if not os.path.isdir(dest_folder):
-            fileutils.makedirs(dest_folder, exist_ok=True)
+            osutils.makedirs(dest_folder, exist_ok=True)
 
+        out_corpus = []
         for corpus in corpora:
             for lang in corpus.langs:
                 source = corpus.get_file(lang)
@@ -159,7 +76,9 @@ class XMLEncoder:
 
                 self.encode_file(source, dest_file, delete_nl=True)
 
-        return BilingualCorpus.list(dest_folder)
+            out_corpus.append(BilingualCorpus.make_parallel(corpus.name, dest_folder, corpus.langs))
+
+        return out_corpus
 
     def encode_file(self, source, dest_file, delete_nl=False):
         with open(dest_file, 'wb') as outstream:

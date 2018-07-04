@@ -9,9 +9,7 @@ import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
-import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.Corpus;
-import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.impl.StringCorpus;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
 import org.apache.logging.log4j.LogManager;
@@ -20,7 +18,6 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -55,33 +52,6 @@ public class LuceneAnalyzer implements ContextAnalyzer {
 
     public CorporaStorage getStorage() {
         return storage;
-    }
-
-    @Override
-    public void add(Memory memory, MultilingualCorpus corpus) throws ContextAnalyzerException {
-        HashMap<Memory, MultilingualCorpus> map = new HashMap<>(1);
-        map.put(memory, corpus);
-
-        this.add(map);
-    }
-
-    @Override
-    public void add(Map<Memory, MultilingualCorpus> corpora) throws ContextAnalyzerException {
-        for (Map.Entry<Memory, MultilingualCorpus> entry : corpora.entrySet()) {
-            Memory memory = entry.getKey();
-
-            try {
-                this.storage.bulkInsert(memory.getOwner(), memory.getId(), entry.getValue());
-            } catch (IOException e) {
-                throw new ContextAnalyzerException("Unable to add memory " + memory.getId(), e);
-            }
-        }
-
-        try {
-            this.storage.flushToDisk(false, true);
-        } catch (IOException e) {
-            throw new ContextAnalyzerException("Unable to write memory index to disk", e);
-        }
     }
 
     @Override

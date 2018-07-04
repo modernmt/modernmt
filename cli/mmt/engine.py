@@ -10,39 +10,68 @@ import time
 
 import cli
 from cli import IllegalArgumentException, CorpusNotFoundInFolderException, mmt_javamain
-from cli.libs import fileutils, shell
+from cli.libs import osutils, nvidia_smi
 from cli.mmt import BilingualCorpus
-from cli.mmt.processing import TrainingPreprocessor, TMCleaner
 
 __author__ = 'Davide Caroselli'
 
 
-class ContextAnalyzer:
-    def __init__(self, index, source_lang, target_lang):
-        self._index = index
+class TMCleaner:
+    def __init__(self, source_lang, target_lang):
         self._source_lang = source_lang
         self._target_lang = target_lang
 
-        self._java_mainclass = 'eu.modernmt.cli.ContextAnalyzerMain'
+        self._java_main = 'eu.modernmt.cli.CleaningPipelineMain'
 
-    def create_index(self, corpora, log=None):
+    def clean(self, corpora, output_path, log=None):
         if log is None:
-            log = shell.DEVNULL
+            log = osutils.DEVNULL
 
-        source_paths = set()
+        args = ['-s', self._source_lang, '-t', self._target_lang,
+                '--output', output_path, '--input']
 
-        for corpus in corpora:
-            source_paths.add(corpus.get_folder())
+        input_paths = set([corpus.get_folder() for corpus in corpora])
 
-        shutil.rmtree(self._index, ignore_errors=True)
-        fileutils.makedirs(self._index, exist_ok=True)
+        for root in input_paths:
+            args.append(root)
 
-        args = ['-s', self._source_lang, '-t', self._target_lang, '-i', self._index, '-c']
-        for source_path in source_paths:
-            args.append(source_path)
+        extended_heap_mb = int(osutils.mem_size() * 90 / 100)
 
-        command = mmt_javamain(self._java_mainclass, args)
-        shell.execute(command, stdout=log, stderr=log)
+        command = mmt_javamain(self._java_main, args=args, max_heap_mb=extended_heap_mb)
+        osutils.shell_exec(command, stdout=log, stderr=log)
+
+        return BilingualCorpus.list(self._source_lang, self._target_lang, output_path)
+
+
+class TrainingPreprocessor:
+    DEV_FOLDER_NAME = 'dev'
+    TEST_FOLDER_NAME = 'test'
+
+    def __init__(self, source_lang, target_lang):
+        self._source_lang = source_lang
+        self._target_lang = target_lang
+
+        self._java_main = 'eu.modernmt.cli.TrainingPipelineMain'
+
+    def process(self, corpora, output_path, data_path=None, log=None):
+        if log is None:
+            log = osutils.DEVNULL
+
+        args = ['-s', self._source_lang, '-t', self._target_lang, '--output', output_path, '--input']
+
+        for root in set([corpus.get_folder() for corpus in corpora]):
+            args.append(root)
+
+        if data_path is not None:
+            args.append('--dev')
+            args.append(os.path.join(data_path, TrainingPreprocessor.DEV_FOLDER_NAME))
+            args.append('--test')
+            args.append(os.path.join(data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
+
+        command = mmt_javamain(self._java_main, args)
+        osutils.shell_exec(command, stdout=log, stderr=log)
+
+        return BilingualCorpus.list(self._source_lang, self._target_lang, output_path)
 
 
 class FastAlign:
@@ -58,10 +87,10 @@ class FastAlign:
 
     def build(self, corpora, log=None):
         if log is None:
-            log = shell.DEVNULL
+            log = osutils.DEVNULL
 
         shutil.rmtree(self._model, ignore_errors=True)
-        fileutils.makedirs(self._model, exist_ok=True)
+        osutils.makedirs(self._model, exist_ok=True)
 
         source_path = set([corpus.get_folder() for corpus in corpora])
         assert len(source_path) == 1
@@ -69,64 +98,7 @@ class FastAlign:
 
         command = [self._build_bin, '-s', self._source_lang, '-t', self._target_lang, '-i', source_path,
                    '-m', self._model, '-I', '4']
-        shell.execute(command, stdout=log, stderr=log)
-
-    def align(self, corpora, output_folder, log=None):
-        if log is None:
-            log = shell.DEVNULL
-
-        root = set([corpus.get_folder() for corpus in corpora])
-
-        if len(root) != 1:
-            raise Exception('Aligner corpora must share the same folder: found  ' + str(root))
-
-        root = root.pop()
-
-        command = [self._align_bin, '--model', self._model,
-                   '--input', root, '--output', output_folder,
-                   '--source', self._source_lang, '--target', self._target_lang,
-                   '--strategy', '1']
-        shell.execute(command, stderr=log, stdout=log)
-
-    def export(self, path, log=None):
-        if log is None:
-            log = shell.DEVNULL
-
-        command = [self._export_bin, '--model', self._model, '--output', path]
-        shell.execute(command, stderr=log, stdout=log)
-
-
-class JsonDatabase:
-    class Memory:
-        def __init__(self, _id, name, corpus=None):
-            self.id = _id
-            self.name = name
-            self.corpus = corpus
-
-        def to_json(self):
-            return {'id': self.id, 'name': self.name}
-
-    def __init__(self, path):
-        self._path = path
-        self._json_file = os.path.join(path, 'baseline_memories.json')
-        self.memories = []
-
-    def insert(self, bilingual_corpora):
-        for i in xrange(len(bilingual_corpora)):
-            corpus = bilingual_corpora[i]
-            self.memories.append(
-                JsonDatabase.Memory((i + 1), name=corpus.name, corpus=corpus)
-            )
-
-        # create the necessary folders if they don't already exist
-        if not os.path.isdir(self._path):
-            os.makedirs(self._path)
-
-        # create the json file and stores memories inside it
-        with open(self._json_file, 'w') as out:
-            json.dump([memory.to_json() for memory in self.memories], out)
-
-        return self.memories
+        osutils.shell_exec(command, stdout=log, stderr=log)
 
 
 class Engine(object):
@@ -136,41 +108,45 @@ class Engine(object):
 
     @staticmethod
     def list():
-        return sorted([name for name in os.listdir(cli.ENGINES_DIR)
-                       if os.path.isfile(Engine._get_config_path(name))])
+        return sorted([name for name in os.listdir(cli.ENGINES_DIR) if os.path.isfile(Engine._get_config_path(name))])
 
-    # This method loads an already created engine using its name.
-    # The method figures the configuration file path from the engine name,
-    # parses the source language and target language from the configuration file
-    # and creates and return a new engine with that name, source target and language target
     @staticmethod
     def load(name):
-        # figure the configuration file path from the engine name
+        if os.sep in name:
+            raise IllegalArgumentException('Invalid engine name: "%s"' % name)
+
         config_path = Engine._get_config_path(name)
 
         if not os.path.isfile(config_path):
             raise IllegalArgumentException("Engine '%s' not found" % name)
 
         # parse the source language and target language from the configuration file
-        engine_el = minidom.parse(config_path).documentElement.getElementsByTagName("engine")[0]
-        engine_type = engine_el.getAttribute('type')
-        source_lang = engine_el.getAttribute('source-language')
-        target_lang = engine_el.getAttribute('target-language')
+        def _get_child(root, child_name):
+            elements = root.getElementsByTagName(child_name)
+            return elements[0] if len(elements) > 0 else None
 
-        # create and return a new engine with that name, source target and language target
+        languages = []
 
-        if engine_type == 'neural':
-            from cli.mmt.neural import NeuralEngine
-            return NeuralEngine(name, source_lang, target_lang, bpe_symbols=None)
+        config_root = minidom.parse(config_path).documentElement
+        engine_el = _get_child(config_root, 'engine')
+        lang_el = _get_child(engine_el, 'languages')
+
+        if lang_el is not None:
+            for pair_el in lang_el.getElementsByTagName('pair'):
+                source_lang = pair_el.getAttribute('source')
+                target_lang = pair_el.getAttribute('target')
+                languages.append((source_lang, target_lang))
         else:
-            from cli.mmt.phrasebased import PhraseBasedEngine
-            return PhraseBasedEngine(name, source_lang, target_lang)
+            source_lang = engine_el.getAttribute('source-language')
+            target_lang = engine_el.getAttribute('target-language')
+            languages.append((source_lang, target_lang))
 
-    def __init__(self, name, source_lang, target_lang):
+        return Engine(name, languages)
+
+    def __init__(self, name, languages):
         # properties
         self.name = name if name is not None else 'default'
-        self.source_lang = source_lang
-        self.target_lang = target_lang
+        self.languages = languages
 
         # base paths
         self.config_path = self._get_config_path(self.name)
@@ -180,22 +156,13 @@ class Engine(object):
         self.runtime_path = os.path.join(cli.RUNTIME_DIR, self.name)
         self.logs_path = os.path.join(self.runtime_path, 'logs')
         self.temp_path = os.path.join(self.runtime_path, 'tmp')
-        self.vocabulary_path = None  # Sub-classes must override this if needed
-
-        # common models
-        self.cleaner = TMCleaner(self.source_lang, self.target_lang)
-        self.training_preprocessor = TrainingPreprocessor(self.source_lang, self.target_lang)
-        self.aligner = FastAlign(os.path.join(self.models_path, 'aligner'), self.source_lang, self.target_lang)
-        self.db = JsonDatabase(os.path.join(self.models_path, 'db'))
-        self.analyzer = ContextAnalyzer(os.path.join(self.models_path, 'context'), self.source_lang,
-                                        self.target_lang)
 
     def exists(self):
         return os.path.isfile(self.config_path)
 
     def get_logfile(self, name, ensure=True, append=False):
         if ensure and not os.path.isdir(self.logs_path):
-            fileutils.makedirs(self.logs_path, exist_ok=True)
+            osutils.makedirs(self.logs_path, exist_ok=True)
 
         logfile = os.path.join(self.logs_path, name + '.log')
 
@@ -206,7 +173,7 @@ class Engine(object):
 
     def get_tempdir(self, name, ensure=True):
         if ensure and not os.path.isdir(self.temp_path):
-            fileutils.makedirs(self.temp_path, exist_ok=True)
+            osutils.makedirs(self.temp_path, exist_ok=True)
 
         folder = os.path.join(self.temp_path, name)
 
@@ -218,15 +185,12 @@ class Engine(object):
 
     def get_tempfile(self, name, ensure=True):
         if ensure and not os.path.isdir(self.temp_path):
-            fileutils.makedirs(self.temp_path, exist_ok=True)
+            osutils.makedirs(self.temp_path, exist_ok=True)
         return os.path.join(self.temp_path, name)
 
     def clear_tempdir(self, subdir=None):
         path = os.path.join(self.temp_path, subdir) if subdir is not None else self.temp_path
         shutil.rmtree(path, ignore_errors=True)
-
-    def type(self):
-        raise NotImplementedError('abstract method')
 
 
 class EngineBuilder:
@@ -240,7 +204,7 @@ class EngineBuilder:
         def on_hw_constraint_violated(self, message):
             pass
 
-        def on_training_begin(self, steps, engine, bilingual_corpora, monolingual_corpora):
+        def on_training_begin(self, steps, engine, corpora):
             pass
 
         def on_step_begin(self, step, name):
@@ -259,7 +223,7 @@ class EngineBuilder:
             self._hidden = hidden
 
         def __call__(self, *_args, **_kwargs):
-            class _:
+            class _Inner:
                 def __init__(self, f, name, optional, hidden):
                     self.id = f.__name__.strip('_')
                     self.name = name
@@ -286,7 +250,7 @@ class EngineBuilder:
 
                     self._f(*args, **kwargs)
 
-            return _(_args[0], self._name, self._optional, self._hidden)
+            return _Inner(_args[0], self._name, self._optional, self._hidden)
 
     class __Args(object):
         def __init__(self):
@@ -318,7 +282,7 @@ class EngineBuilder:
             return len(self._scheduled_steps)
 
         def __iter__(self):
-            class _:
+            class __Inner:
                 def __init__(self, plan):
                     self._plan = plan
                     self._idx = 0
@@ -330,7 +294,7 @@ class EngineBuilder:
                     else:
                         raise StopIteration
 
-            return _([el for el in self._plan if el.id in self._scheduled_steps or not el.is_optional()])
+            return __Inner([el for el in self._plan if el.id in self._scheduled_steps or not el.is_optional()])
 
         def visible_steps(self):
             return [x.id for x in self._plan if x.id in self._scheduled_steps and not x.is_hidden()]
@@ -355,53 +319,42 @@ class EngineBuilder:
         def is_completed(self, step):
             return step in self._passed_steps
 
-    # an EngineBuilder is initialized with several command line arguments
-    # of the mmt create method:
-    # - the engine
-    # - the path where to find the corpora to employ in training (roots)
-    # - the debug boolean flag (debug)
-    # - the steps to perform (steps) (if None, perform all)
-    # - the set splitting boolean flag (split_trainingset): if it is set to false,
-    #   MMT will not extract dev and test sets out of the provided training corpora
-    def __init__(self, engine, roots, debug=False, steps=None, split_trainingset=True, max_training_words=None):
-        self._engine = engine
-        self._roots = roots
+    def __init__(self, engine_name, source_lang, target_lang, roots, debug=False, steps=None, split_train=True):
+        self.source_lang = source_lang
+        self.target_lang = target_lang
+        self.roots = roots
+
+        self._engine = Engine(engine_name, [(source_lang, target_lang)])
         self._delete_on_exit = not debug
-        self._split_trainingset = split_trainingset
-        self._max_training_words = max_training_words
+        self._split_train = split_train
 
         self._temp_dir = None
 
         self._schedule = EngineBuilder.__Schedule(self._build_schedule(), steps)
+        self._cleaner = TMCleaner(self.source_lang, self.target_lang)
+        self._training_preprocessor = TrainingPreprocessor(self.source_lang, self.target_lang)
+        self._aligner = FastAlign(os.path.join(self._engine.models_path, 'aligner'), self.source_lang, self.target_lang)
 
     def _build_schedule(self):
-        return [self._clean_tms] + \
-               ([self._reduce_train] if self._max_training_words > 0 else []) + \
-               [self._create_db, self._preprocess, self._train_context, self._train_aligner, self._write_config]
+        return [self._clean_tms, self._preprocess, self._train_aligner, self._write_config]
 
     def _get_tempdir(self, name, delete_if_exists=False):
         path = os.path.join(self._temp_dir, name)
         if delete_if_exists:
             shutil.rmtree(path, ignore_errors=True)
         if not os.path.isdir(path):
-            fileutils.makedirs(path, exist_ok=True)
+            osutils.makedirs(path, exist_ok=True)
         return path
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~ Engine creation management ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    # This method launches the initialization of a new engine from scratch
-    # Used when "resume" is False.
     def build(self, listener=None):
         self._build(resume=False, listener=listener)
 
-    # Launch re-activation of a previous not successful engine training process.
-    # Used when "resume" is True.
     def resume(self, listener=None):
         self._build(resume=True, listener=listener)
 
-    # Depending on the resume value, either train a new engine from scratch
-    # or resume a not successfully finished training process
-    def _build(self, resume, listener):
+    def _build(self, resume, listener=None):
         self._temp_dir = self._engine.get_tempdir('training', ensure=(not resume))
 
         checkpoint_path = os.path.join(self._temp_dir, 'checkpoint.json')
@@ -410,18 +363,11 @@ class EngineBuilder:
         else:
             self._schedule.store(checkpoint_path)
 
-        source_lang = self._engine.source_lang
-        target_lang = self._engine.target_lang
+        corpora = BilingualCorpus.list(self.source_lang, self.target_lang, self.roots)
 
-        # separate bilingual and monolingual corpora in separate lists, reading them from roots
-        bilingual_corpora, monolingual_corpora = BilingualCorpus.splitlist(source_lang, target_lang,
-                                                                           roots=self._roots)
-
-        # if no bilingual corpora are found, it is not possible to train the translation system
-        if len(bilingual_corpora) == 0:
-            raise CorpusNotFoundInFolderException(
-                'Could not find %s-%s corpora in path %s' %
-                (source_lang.upper(), target_lang.upper(), ', '.join(self._roots)))
+        if len(corpora) == 0:
+            raise CorpusNotFoundInFolderException('Could not find %s > %s corpora in path %s' %
+                                                  (self.source_lang, self.target_lang, ', '.join(self.roots)))
 
         # if no old engines (i.e. engine folders) can be found, create a new one from scratch
         # if we are not trying to resume an old one, create from scratch anyway
@@ -438,13 +384,11 @@ class EngineBuilder:
 
         # Start the engine building (training) phases
         try:
-            logger.log(logging.INFO, 'Training started: engine=%s, bilingual=%d, monolingual=%d, langpair=%s-%s' %
-                       (self._engine.name, len(bilingual_corpora), len(monolingual_corpora),
-                        self._engine.source_lang, self._engine.target_lang))
+            logger.log(logging.INFO, 'Training started: engine=%s, corpora=%d, lang_pair=%s-%s' %
+                       (self._engine.name, len(corpora), self.source_lang, self.target_lang))
 
             if listener:
-                listener.on_training_begin(self._schedule.visible_steps(), self._engine, bilingual_corpora,
-                                           monolingual_corpora)
+                listener.on_training_begin(self._schedule.visible_steps(), self._engine, corpora)
 
             # Check if all requirements are fulfilled before actual engine training
             try:
@@ -454,8 +398,7 @@ class EngineBuilder:
                     listener.on_hw_constraint_violated(e.cause)
 
             args = EngineBuilder.__Args()
-            args.bilingual_corpora = bilingual_corpora
-            args.monolingual_corpora = monolingual_corpora
+            args.corpora = corpora
 
             # ~~~~~~~~~~~~~~~~~~~~~ RUN ALL STEPS ~~~~~~~~~~~~~~~~~~~~~
             # Note: if resume is true, a step is only run if it was not in the previous attempt
@@ -491,7 +434,7 @@ class EngineBuilder:
 
             if self._delete_on_exit:
                 self._engine.clear_tempdir('training')
-        except:
+        except Exception:
             logger.exception('Unexpected exception')
             raise
         finally:
@@ -501,11 +444,21 @@ class EngineBuilder:
         def __init__(self, cause):
             self.cause = cause
 
-    # This method checks if memory and disk space requirements
-    # for engine initialization are fulfilled.
-    # It is therefore called just before starting the engine training.
     def _check_constraints(self):
-        raise NotImplementedError('abstract method')
+        gpus = nvidia_smi.list_gpus()
+        if len(gpus) == 0:
+            raise EngineBuilder.HWConstraintViolated(
+                'No GPU for Neural engine training, the process will take very long time to complete.')
+
+        recommended_gpu_ram = 8 * self._GB
+
+        for gpu in gpus:
+            gpus_ram = nvidia_smi.get_ram(gpu)
+
+            if gpus_ram < recommended_gpu_ram:
+                raise EngineBuilder.HWConstraintViolated(
+                    'The RAM of GPU %d is only %.fG. More than %.fG of RAM recommended for each GPU.' %
+                    (gpu, gpus_ram / self._GB, recommended_gpu_ram / self._GB))
 
     # ~~~~~~~~~~~~~~~~~~~~~ Training step functions ~~~~~~~~~~~~~~~~~~~~~
 
@@ -514,69 +467,30 @@ class EngineBuilder:
         folder = self._get_tempdir('clean_corpora')
 
         if skip:
-            args.bilingual_corpora = BilingualCorpus.list(folder)
+            args.corpora = BilingualCorpus.list(self.source_lang, self.target_lang, folder)
         else:
-            args.bilingual_corpora = self._engine.cleaner.clean(args.bilingual_corpora, folder, log=log)
-
-    @Step('Reducing training corpora')
-    def _reduce_train(self, args, skip=False, log=None):
-        folder = self._get_tempdir('reduced_corpora')
-
-        if skip:
-            args.bilingual_corpora = BilingualCorpus.list(folder)
-        else:
-            args.bilingual_corpora = self._engine.training_preprocessor.reduce(
-                args.bilingual_corpora, folder, self._max_training_words, log=log)
-
-    @Step('Database create', optional=False, hidden=True)
-    def _create_db(self, args, skip=False):
-        training_folder = self._get_tempdir('training_corpora')
-
-        if skip:
-            b, m = BilingualCorpus.splitlist(self._engine.source_lang, self._engine.target_lang, roots=training_folder)
-        else:
-            memories = self._engine.db.insert(args.bilingual_corpora)
-
-            b = [memory.corpus.symlink(training_folder, name=str(memory.id)) for memory in memories]
-            m = [corpus.symlink(training_folder) for corpus in args.monolingual_corpora]
-
-        args.bilingual_corpora = b
-        args.monolingual_corpora = m
+            args.corpora = self._cleaner.clean(args.corpora, folder, log=log)
 
     @Step('Corpora pre-processing')
     def _preprocess(self, args, skip=False, log=None):
         preprocessed_folder = self._get_tempdir('preprocessed_corpora')
 
         if skip:
-            processed_bicorpora, processed_monocorpora = BilingualCorpus.splitlist(self._engine.source_lang,
-                                                                                   self._engine.target_lang,
-                                                                                   roots=preprocessed_folder)
+            args.processed_corpora = BilingualCorpus.list(self.source_lang, self.target_lang, preprocessed_folder)
         else:
-            corpora = args.bilingual_corpora + args.monolingual_corpora
-            if not corpora:
-                raise CorpusNotFoundInFolderException("Could not find any valid %s -> %s segments in your input." %
-                                                      (self._engine.source_lang, self._engine.target_lang))
+            if not args.corpora:
+                raise CorpusNotFoundInFolderException('Could not find any valid %s > %s segments in your input.' %
+                                                      (self.source_lang, self.target_lang))
 
-            processed_bicorpora, processed_monocorpora = self._engine.training_preprocessor.process(
-                corpora,
-                preprocessed_folder,
-                data_path=(self._engine.data_path if self._split_trainingset else None),
-                vb_path=self._engine.vocabulary_path,
-                log=log)
-
-        args.processed_bilingual_corpora = processed_bicorpora
-        args.processed_monolingual_corpora = processed_monocorpora
-
-    @Step('Context Analyzer training')
-    def _train_context(self, args, skip=False, log=None):
-        if not skip:
-            self._engine.analyzer.create_index(args.bilingual_corpora, log=log)
+            data_path = self._engine.data_path if self._split_train else None
+            args.processed_corpora = self._training_preprocessor.process(args.corpora, preprocessed_folder,
+                                                                         data_path=data_path, log=log)
 
     @Step('Aligner training')
-    def _train_aligner(self, args, skip=False, log=None, delete_on_exit=False):
+    def _train_aligner(self, args, skip=False, log=None):
         if not skip:
-            corpora = filter(None, [args.processed_bilingual_corpora, args.bilingual_corpora])[0]
-            self._engine.aligner.build(corpora, log=log)
+            corpora = filter(None, [args.processed_corpora, args.corpora])[0]
+            self._aligner.build(corpora, log=log)
 
     @Step('Writing config', optional=False, hidden=True)
     def _write_config(self, _):
@@ -584,8 +498,8 @@ class EngineBuilder:
             '<node xsi:schemaLocation="http://www.modernmt.eu/schema/config mmt-config-1.0.xsd"\n' \
             '      xmlns="http://www.modernmt.eu/schema/config"\n' \
             '      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">\n' \
-            '   <engine source-language="%s" target-language="%s" type="%s" />\n' \
+            '   <engine source-language="%s" target-language="%s" />\n' \
             '</node>'
 
         with open(self._engine.config_path, 'wb') as out:
-            out.write(xml_template % (self._engine.source_lang, self._engine.target_lang, self._engine.type()))
+            out.write(xml_template % (self.source_lang, self.target_lang))

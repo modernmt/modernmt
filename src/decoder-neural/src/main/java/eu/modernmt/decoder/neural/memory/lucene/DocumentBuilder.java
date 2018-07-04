@@ -36,10 +36,6 @@ public class DocumentBuilder {
         return newInstance(unit.direction, unit.owner, unit.memory, sentence, translation, hash);
     }
 
-    public static Document newInstance(LanguagePair direction, UUID owner, long memory, String sentence, String translation) {
-        return newInstance(direction, owner, memory, sentence, translation, null);
-    }
-
     public static Document newInstance(LanguagePair direction, UUID owner, long memory, String sentence, String translation, String hash) {
         Document document = new Document();
         document.add(new LongField(MEMORY_FIELD, memory, Field.Store.YES));
@@ -52,9 +48,7 @@ public class DocumentBuilder {
             document.add(new LongField(OWNER_LSB_FIELD, owner.getLeastSignificantBits(), Field.Store.NO));
         }
 
-        if (hash != null)
-            document.add(new HashField(HASH_FIELD, hash, Field.Store.NO));
-
+        document.add(new HashField(HASH_FIELD, hash, Field.Store.NO));
         document.add(new StringField(makeLanguageFieldName(direction.source), direction.source.toLanguageTag(), Field.Store.YES));
         document.add(new StringField(makeLanguageFieldName(direction.target), direction.target.toLanguageTag(), Field.Store.YES));
         document.add(new TextField(makeContentFieldName(direction), sentence, Field.Store.YES));
