@@ -197,25 +197,6 @@ class EngineBuilder:
     _MB = (1024 * 1024)
     _GB = (1024 * 1024 * 1024)
 
-    class Listener:
-        def __init__(self):
-            pass
-
-        def on_hw_constraint_violated(self, message):
-            pass
-
-        def on_training_begin(self, steps, engine, corpora):
-            pass
-
-        def on_step_begin(self, step, name):
-            pass
-
-        def on_step_end(self, step, name):
-            pass
-
-        def on_training_end(self, engine):
-            pass
-
     class Step:
         def __init__(self, name, optional=True, hidden=False):
             self._name = name
@@ -348,13 +329,13 @@ class EngineBuilder:
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~ Engine creation management ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    def build(self, listener=None):
-        self._build(resume=False, listener=listener)
+    def build(self):
+        self._build(resume=False)
 
-    def resume(self, listener=None):
-        self._build(resume=True, listener=listener)
+    def resume(self):
+        self._build(resume=True)
 
-    def _build(self, resume, listener=None):
+    def _build(self, resume):
         self._temp_dir = self._engine.get_tempdir('training', ensure=(not resume))
 
         checkpoint_path = os.path.join(self._temp_dir, 'checkpoint.json')
@@ -383,19 +364,25 @@ class EngineBuilder:
         logger = logging.getLogger('EngineBuilder')
 
         # Start the engine building (training) phases
+
+        steps_count = len(self._schedule.visible_steps())
+        log_line_len = 70
+
         try:
             logger.log(logging.INFO, 'Training started: engine=%s, corpora=%d, lang_pair=%s-%s' %
                        (self._engine.name, len(corpora), self.source_lang, self.target_lang))
 
-            if listener:
-                listener.on_training_begin(self._schedule.visible_steps(), self._engine, corpora)
+            print '\n=========== TRAINING STARTED ===========\n'
+            print 'ENGINE:  %s' % self._engine.name
+            print 'CORPORA: %d corpora' % len(corpora)
+            print 'LANGS:   %s > %s' % (self.source_lang, self.target_lang)
+            print
 
             # Check if all requirements are fulfilled before actual engine training
             try:
                 self._check_constraints()
             except EngineBuilder.HWConstraintViolated as e:
-                if listener:
-                    listener.on_hw_constraint_violated(e.cause)
+                print '\033[91mWARNING\033[0m: %s\n' % e.cause
 
             args = EngineBuilder.__Args()
             args.corpora = corpora
@@ -406,31 +393,33 @@ class EngineBuilder:
             step_index = 1
 
             for method in self._schedule:
-                skip = self._schedule.is_completed(method.id)
+                if not method.is_hidden():
+                    print ('INFO: (%d of %d) %s... ' % (step_index, steps_count, method.name)).ljust(log_line_len)
 
-                if listener and not method.is_hidden():
-                    listener.on_step_begin(method.id, method.name)
+                skip = self._schedule.is_completed(method.id)
+                self._step_start_time = time.time()
 
                 logger.log(logging.INFO, 'Training step "%s" (%d/%d) started' %
                            (method.id, step_index, len(self._schedule)))
 
                 start_time = time.time()
                 method(self, args, skip=skip, log=log_stream, delete_on_exit=self._delete_on_exit)
-                elapsed_time = time.time() - start_time
+                elapsed_time_str = self._pretty_print_time(time.time() - start_time)
 
-                if listener and not method.is_hidden():
-                    listener.on_step_end(method.id, method.name)
+                if not method.is_hidden():
+                    print 'DONE (in %s)' % elapsed_time_str
 
-                logger.log(logging.INFO, 'Training step "%s" completed in %d s' %
-                           (method.id, int(elapsed_time)))
+                logger.log(logging.INFO, 'Training step "%s" completed in %s' % (method.id, elapsed_time_str))
 
                 self._schedule.step_completed(method.id)
                 self._schedule.store(checkpoint_path)
 
                 step_index += 1
 
-            if listener:
-                listener.on_training_end(self._engine)
+            print '\n=========== TRAINING SUCCESS ===========\n'
+            print 'You can now start, stop or check the status of the server with command:'
+            print '\t./mmt start|stop|status ' + ('' if self._engine.name == 'default' else '-e %s' % self._engine.name)
+            print
 
             if self._delete_on_exit:
                 self._engine.clear_tempdir('training')
@@ -439,6 +428,27 @@ class EngineBuilder:
             raise
         finally:
             log_stream.close()
+
+    @staticmethod
+    def _pretty_print_time(elapsed):
+        elapsed = int(elapsed)
+        parts = []
+
+        if elapsed > 86400:  # days
+            d = int(elapsed / 86400)
+            elapsed -= d * 86400
+            parts.append('%dd' % d)
+        if elapsed > 3600:  # hours
+            h = int(elapsed / 3600)
+            elapsed -= h * 3600
+            parts.append('%dh' % h)
+        if elapsed > 60:  # minutes
+            m = int(elapsed / 60)
+            elapsed -= m * 60
+            parts.append('%dm' % m)
+        parts.append('%ds' % elapsed)
+
+        return ' '.join(parts)
 
     class HWConstraintViolated(Exception):
         def __init__(self, cause):

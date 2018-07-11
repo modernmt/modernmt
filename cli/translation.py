@@ -7,7 +7,6 @@ import copy
 import requests
 
 from cli import IllegalArgumentException, IllegalStateException
-from cli.libs import multithread
 from cli.mmt.cluster import ClusterNode
 
 __author__ = 'Davide Caroselli'
