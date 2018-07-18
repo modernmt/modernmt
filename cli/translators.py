@@ -428,7 +428,7 @@ class XLIFFTranslator(Translator):
                 content, _ = self._get_source_content(st)
                 yield content
 
-        self._engine.translate_batch(self, generator(), self._append_translation, threads=threads)
+        self._engine.translate_batch(generator(), self._append_translation, threads=threads)
 
         xliff_str = ElementTree.tostring(xliff, encoding='UTF-8', method='xml')
         out_stream.write(xliff_str)

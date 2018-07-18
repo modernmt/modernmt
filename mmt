@@ -11,6 +11,7 @@ from cli.libs.progressbar import Progressbar
 from cli.mmt import BilingualCorpus, TMXCorpus, FileParallelCorpus
 from cli.mmt.cluster import ClusterNode
 from cli.mmt.engine import Engine, TrainingPreprocessor
+from cli.translators import MMTTranslator, XLIFFTranslator, BatchTranslator, InteractiveTranslator
 
 __author__ = 'Davide Caroselli and Andrea Rossi'
 __description = '''\
@@ -323,13 +324,17 @@ def main_evaluate(argv):
     ensure_running(node)
     ensure_api(node)
 
-    # perform evaluation
+    # Infer default arguments
     corpora_path = args.corpora_path or os.path.join(node.engine.data_path, TrainingPreprocessor.TEST_FOLDER_NAME)
 
     source_lang, target_lang = (args.source_lang, args.target_lang)
     if source_lang is None or target_lang is None:
+        if len(node.engine.languages) > 1:
+            raise IllegalArgumentException('Missing language. '
+                                           'Options "-s" and "-t" are mandatory for multilingual engines.')
         source_lang, target_lang = node.engine.languages[0]
 
+    # perform evaluation
     evaluator = Evaluator(node, source_lang=source_lang, target_lang=target_lang, google_key=args.gt_key)
     corpora = BilingualCorpus.list(source_lang, target_lang, corpora_path)
     evaluator.evaluate(corpora=corpora, heval_output=args.heval_output, debug=args.debug)
@@ -356,12 +361,6 @@ def main_translate(argv):
     parser.add_argument('--context-vector', metavar='CONTEXT_VECTOR', dest='context_vector',
                         help='The context vector with format: <document 1>:<score 1>[,<document N>:<score N>]')
 
-    # NBest list arguments
-    parser.add_argument('--nbest', metavar='NBEST', dest='nbest', default=None, type=int,
-                        help='The number of nbest to print')
-    parser.add_argument('--nbest-file', metavar='NBEST_FILE', dest='nbest_file', default=None,
-                        help='The destination file for the NBest, default is stdout')
-
     # Mixed arguments
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
@@ -379,42 +378,32 @@ def main_translate(argv):
     ensure_running(node)
     ensure_api(node)
 
-    # choose the which translator to use, depending on the input format
-    source_lang = args.source_lang if args.source_lang is not None else node.engine.source_lang
-    target_lang = args.target_lang if args.target_lang is not None else node.engine.target_lang
-
-    if args.is_xliff:
-        translator = XLIFFTranslator(node, source_lang, target_lang,
-                                     context_string=args.context, context_file=args.context_file,
-                                     context_vector=args.context_vector)
-    elif args.batch:
-        translator = BatchTranslator(node, source_lang, target_lang,
-                                     context_string=args.context, context_file=args.context_file,
-                                     context_vector=args.context_vector, print_nbest=args.nbest,
-                                     nbest_file=args.nbest_file)
-    else:
-        translator = InteractiveTranslator(node, source_lang, target_lang,
-                                           context_string=args.context, context_file=args.context_file,
-                                           context_vector=args.context_vector, print_nbest=args.nbest,
-                                           nbest_file=args.nbest_file)
+    # Infer default arguments
+    source_lang, target_lang = (args.source_lang, args.target_lang)
+    if source_lang is None or target_lang is None:
+        if len(node.engine.languages) > 1:
+            raise IllegalArgumentException('Missing language. '
+                                           'Options "-s" and "-t" are mandatory for multilingual engines.')
+        source_lang, target_lang = node.engine.languages[0]
 
     # translate
-    try:
-        if args.text is not None:
-            translator.execute(args.text.strip())
-        else:
-            while 1:
-                line = sys.stdin.readline()
-                if not line:
-                    break
-                translator.execute(line.strip())
+    mmt_translator = MMTTranslator(node, source_lang, target_lang, context_string=args.context,
+                                   context_file=args.context_file, context_vector=args.context_vector)
 
-        translator.flush()
-    except KeyboardInterrupt:
-        # exit
-        pass
-    finally:
-        translator.close()
+    if args.text is not None:
+        print mmt_translator.translate_text(args.text.strip())
+    else:
+        if args.is_xliff:
+            translator = XLIFFTranslator(mmt_translator)
+        elif args.batch:
+            translator = BatchTranslator(mmt_translator)
+        else:
+            translator = InteractiveTranslator(mmt_translator)
+
+        try:
+            translator.run(sys.stdin, sys.stdout)
+        except KeyboardInterrupt:
+            pass  # exit
 
 
 def main_add(argv):
@@ -576,6 +565,7 @@ def main():
         exit(1)
     except Exception as e:
         sys.stderr.write('\nERROR Unexpected exception: {message}\n'.format(message=e.message))
+        raise
         exit(1)
 
 
