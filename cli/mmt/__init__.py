@@ -127,12 +127,20 @@ class BilingualCorpus(object):
 
 
 class FileParallelCorpus(BilingualCorpus):
-    def __init__(self, name, lang2file):
-        BilingualCorpus.__init__(self, name, lang2file.keys())
+    @staticmethod
+    def from_files(source_file, target_file):
+        name = os.path.basename(os.path.splitext(source_file)[0])
+        source_lang = os.path.splitext(source_file)[1][1:]
+        target_lang = os.path.splitext(target_file)[1][1:]
 
-        self._lang2file = lang2file
+        return FileParallelCorpus(name, source_lang, target_lang, source_file, target_file)
 
-        files = lang2file.values()
+    def __init__(self, name, source_lang, target_lang, source_file, target_file):
+        BilingualCorpus.__init__(self, name, [source_lang, target_lang])
+
+        self._lang2file = {source_lang: source_file, target_lang: target_file}
+
+        files = self._lang2file.values()
 
         self._root = os.path.abspath(os.path.join(files[0], os.pardir)) if len(files) > 0 else None
         self._lines_count = -1
@@ -224,6 +232,11 @@ class FileParallelCorpus(BilingualCorpus):
 
 
 class TMXCorpus(BilingualCorpus):
+    @staticmethod
+    def from_file(tmx_file):
+        name = os.path.basename(os.path.splitext(tmx_file)[0])
+        return TMXCorpus(name, tmx_file)
+
     def __init__(self, name, f):
         BilingualCorpus.__init__(self, name, None)
         self._tmx_file = f

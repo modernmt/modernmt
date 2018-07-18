@@ -412,8 +412,10 @@ def main_add(argv):
     parser.add_argument('memory', help='The id or name of the memory you want to add the contribution to')
     parser.add_argument('source', metavar='SOURCE_SENTENCE', help='The source sentence of the contribution')
     parser.add_argument('target', metavar='TARGET_SENTENCE', help='The target sentence of the contribution')
-
-    # Mixed arguments
+    parser.add_argument('-s', '--source', dest='source_lang', metavar='SOURCE_LANGUAGE', default=None,
+                        help='the source language (ISO 639-1). Can be omitted if engine is monolingual.')
+    parser.add_argument('-t', '--target', dest='target_lang', metavar='TARGET_LANGUAGE', default=None,
+                        help='the target language (ISO 639-1). Can be omitted if engine is monolingual.')
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
 
@@ -423,7 +425,15 @@ def main_add(argv):
     ensure_running(node)
     ensure_api(node)
 
-    node.append_to_memory(args.memory, args.source, args.target)
+    # Infer default arguments
+    source_lang, target_lang = (args.source_lang, args.target_lang)
+    if source_lang is None or target_lang is None:
+        if len(node.engine.languages) > 1:
+            raise IllegalArgumentException('Missing language. '
+                                           'Options "-s" and "-t" are mandatory for multilingual engines.')
+        source_lang, target_lang = node.engine.languages[0]
+
+    node.append_to_memory(args.memory, source_lang, target_lang, args.source, args.target)
 
     print 'SUCCESS - contribution added to memory "' + args.memory + '"'
 
@@ -455,57 +465,36 @@ def main_import(argv):
     parser.add_argument('-x', '--tmx-file', dest='tmx', metavar='TMX_FILE', help='TMX file to import', default=None)
     parser.add_argument('-p', '--parallel-files', dest='parallel_file', help='Source and target file',
                         default=None, nargs=2)
-    parser.add_argument('--path', dest='path', help='the folder containing the corpora you want to import',
-                        default=None)
-
-    # Mixed arguments
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
 
     args = parser.parse_args(argv)
 
-    if args.tmx is None and args.parallel_file is None and args.path is None:
-        raise CLIArgsException(parser, 'missing one of the following options: "-x", "-p" or "--path"')
+    if args.tmx is None and args.parallel_file is None:
+        raise CLIArgsException(parser, 'missing one of the following options: "-x" or "-p"')
 
     node = ClusterNode.connect(args.engine)
     ensure_running(node)
     ensure_api(node)
 
-    def __import(c):
-        def _import_callback(job):
-            progressbar.set_progress(job['progress'])
-
-        memory = node.new_memory(corpus.name)
-        progressbar = Progressbar(label='Importing %s' % c.name)
-        progressbar.start()
-
-        try:
-            node.import_corpus(memory['id'], corpus, callback=_import_callback)
-            progressbar.complete()
-        except BaseException as e:
-            node.delete_memory(memory['id'])
-            progressbar.abort(repr(e))
-            raise
-
     if args.tmx is not None:
-        corpora = [TMXCorpus(os.path.basename(os.path.splitext(args.tmx)[0]), args.tmx)]
-    elif args.parallel_file is not None:
-        corpora = [FileParallelCorpus(os.path.basename(os.path.splitext(args.parallel_file[0])[0]), {
-            node.engine.source_lang: args.parallel_file[0],
-            node.engine.target_lang: args.parallel_file[1],
-        })]
+        corpus = TMXCorpus.from_file(args.tmx)
     else:
-        corpora, _ = BilingualCorpus.splitlist(node.engine.source_lang, node.engine.target_lang, roots=args.path)
+        corpus = FileParallelCorpus.from_files(args.parallel_file[0], args.parallel_file[1])
 
-    success = True
-    for corpus in corpora:
-        try:
-            __import(corpus)
-        except:
-            success = False
-            pass
+    memory = node.new_memory(corpus.name)
+    progressbar = Progressbar(label='Importing %s' % corpus.name)
+    progressbar.start()
 
-    print 'IMPORT SUCCESS' if success else 'IMPORT FAILED'
+    try:
+        node.import_corpus(memory['id'], corpus, callback=lambda job: progressbar.set_progress(job['progress']))
+        progressbar.complete()
+        print 'IMPORT SUCCESS'
+    except BaseException as e:
+        node.delete_memory(memory['id'])
+        progressbar.abort(repr(e))
+        print 'IMPORT FAILED'
+        raise
 
 
 def main():

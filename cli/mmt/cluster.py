@@ -370,9 +370,7 @@ class ClusterNode(DaemonController):
         if type(corpus) == TMXCorpus:
             job = self.api.import_into_memory(memory_id, tmx=corpus.get_tmx())
         elif type(corpus) == FileParallelCorpus:
-            source_lang = self.engine.source_lang
-            target_lang = self.engine.target_lang
-
+            source_lang, target_lang = corpus.langs
             job = self.api.import_into_memory(memory_id,
                                               source_file=corpus.get_file(source_lang),
                                               target_file=corpus.get_file(target_lang),
@@ -406,9 +404,9 @@ class ClusterNode(DaemonController):
             else:
                 return ids[0]
 
-    def append_to_memory(self, memory, source, target):
+    def append_to_memory(self, memory, source_lang, target_lang, sentence, translation):
         memory = self.get_memory_id_by_name(memory)
-        return self.api.append_to_memory(self.engine.source_lang, self.engine.target_lang, memory, source, target)
+        return self.api.append_to_memory(source_lang, target_lang, memory, sentence, translation)
 
     def rename_memory(self, memory, name):
         memory = self.get_memory_id_by_name(memory)
