@@ -1,8 +1,6 @@
 package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.Memory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,59 +35,59 @@ public class LuceneTranslationMemoryTest_onDelete {
 
     @Test
     public void monolingualMemory() throws Throwable {
-        List<TranslationUnit> units1 = TestData.tuList(1, EN__IT, 10);
-        List<TranslationUnit> units2 = TestData.tuList(2, EN__IT, 10);
+        List<TranslationUnit> units1 = TestData.tuList(0, 0, 1, EN__IT, 10);
+        List<TranslationUnit> units2 = TestData.tuList(0, 10, 2, EN__IT, 10);
 
         Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(units2);
 
-        memory.bulkInsert(new Memory(1), TestData.corpus("none", units1));
-        memory.bulkInsert(new Memory(2), TestData.corpus("none", units2));
-        assertEquals(20, memory.size());
+        memory.onDataReceived(units1);
+        memory.onDataReceived(units2);
+        assertEquals(20 + 1, memory.size());
 
         memory.onDelete(TestData.deletion(1));
 
         assertEquals(10 + 1, memory.size());
-        assertEquals(TestData.channels(1, 0), memory.getLatestChannelPositions());
+        assertEquals(TestData.channels(19L, 0L), memory.getLatestChannelPositions());
         assertEquals(expectedEntries, memory.entrySet());
     }
 
     @Test
     public void multilingualMemory() throws Throwable {
         List<TranslationUnit> units1 = Arrays.asList(
-                TestData.tu(1L, EN__IT, null),
-                TestData.tu(1L, EN__IT, null),
-                TestData.tu(1L, FR__ES, null),
-                TestData.tu(1L, FR__ES, null)
+                TestData.tu(0, 0, 1L, EN__IT, null),
+                TestData.tu(0, 1, 1L, EN__IT, null),
+                TestData.tu(0, 2, 1L, FR__ES, null),
+                TestData.tu(0, 3, 1L, FR__ES, null)
         );
-        List<TranslationUnit> units2 = TestData.tuList(2, EN__IT, 10);
+        List<TranslationUnit> units2 = TestData.tuList(0, 4, 2, EN__IT, 10);
 
         Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(units2);
 
-        memory.bulkInsert(new Memory(1), TestData.corpus("none", units1));
-        memory.bulkInsert(new Memory(2), TestData.corpus("none", units2));
-        assertEquals(14, memory.size());
+        memory.onDataReceived(units1);
+        memory.onDataReceived(units2);
+        assertEquals(14 + 1, memory.size());
 
         memory.onDelete(TestData.deletion(1));
 
         assertEquals(10 + 1, memory.size());
-        assertEquals(TestData.channels(1, 0), memory.getLatestChannelPositions());
+        assertEquals(TestData.channels(13L, 0L), memory.getLatestChannelPositions());
         assertEquals(expectedEntries, memory.entrySet());
     }
 
     @Test
     public void multipleMemories() throws Throwable {
-        List<TranslationUnit> units1 = TestData.tuList(1, EN__IT, 10);
-        List<TranslationUnit> units2 = TestData.tuList(2, EN__IT, 10);
+        List<TranslationUnit> units1 = TestData.tuList(0, 0, 1, EN__IT, 10);
+        List<TranslationUnit> units2 = TestData.tuList(0, 10, 2, EN__IT, 10);
 
-        memory.bulkInsert(new Memory(1), TestData.corpus("none", units1));
-        memory.bulkInsert(new Memory(2), TestData.corpus("none", units2));
-        assertEquals(20, memory.size());
+        memory.onDataReceived(units1);
+        memory.onDataReceived(units2);
+        assertEquals(20 + 1, memory.size());
 
         memory.onDelete(TestData.deletion(0, 1));
         memory.onDelete(TestData.deletion(1, 2));
 
         assertEquals(1, memory.size());
-        assertEquals(TestData.channels(1, 1), memory.getLatestChannelPositions());
+        assertEquals(TestData.channels(19L, 1L), memory.getLatestChannelPositions());
         assertTrue(memory.entrySet().isEmpty());
     }
 

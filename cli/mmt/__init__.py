@@ -2,6 +2,8 @@ import os
 import re
 import shutil
 
+from cli.libs import osutils
+
 __author__ = 'Davide Caroselli'
 
 
@@ -143,12 +145,7 @@ class FileParallelCorpus(BilingualCorpus):
 
     def count_lines(self):
         if self._lines_count < 0 < len(self.langs):
-            with open(self.get_file(self.langs[0])) as stream:
-                count = 0
-                for _, line in enumerate(stream):
-                    count += 1
-
-                self._lines_count = count
+            self._lines_count = osutils.lc(self.get_file(self.langs[0]))
 
         return self._lines_count
 

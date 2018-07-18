@@ -1,7 +1,6 @@
 package eu.modernmt.context.lucene;
 
 import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.data.DataManager;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Memory;
@@ -40,13 +39,13 @@ public class LuceneAnalyzerTest_getContextVector {
         MultilingualCorpus langMixedCorpus = TestData.corpus(enItHelloWorld, enFrHelloWorld);
         MultilingualCorpus contentMixedCorpus = TestData.corpus(enItHelloWorld, enItTheTest);
 
-        this.analyzer.add(new Memory(1), enItHelloWorld);
-        this.analyzer.add(new Memory(2), enFrHelloWorld);
-        this.analyzer.add(new Memory(3), enItTheTest);
-        this.analyzer.add(new Memory(4), enFrTheTest);
+        this.analyzer.onDataReceived(new Memory(1), enItHelloWorld);
+        this.analyzer.onDataReceived(new Memory(2), enFrHelloWorld);
+        this.analyzer.onDataReceived(new Memory(3), enItTheTest);
+        this.analyzer.onDataReceived(new Memory(4), enFrTheTest);
 
-        this.analyzer.add(new Memory(12), langMixedCorpus);
-        this.analyzer.add(new Memory(13), contentMixedCorpus);
+        this.analyzer.onDataReceived(new Memory(12), langMixedCorpus);
+        this.analyzer.onDataReceived(new Memory(13), contentMixedCorpus);
 
         this.analyzer.flush();
     }

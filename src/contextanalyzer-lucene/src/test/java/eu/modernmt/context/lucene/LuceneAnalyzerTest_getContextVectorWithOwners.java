@@ -1,7 +1,6 @@
 package eu.modernmt.context.lucene;
 
 import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.data.DataManager;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Memory;
 import org.junit.After;
@@ -32,12 +31,12 @@ public class LuceneAnalyzerTest_getContextVectorWithOwners {
         DummyBilingualCorpus corpus1 = TestData.corpus("none", EN__IT, "hello world 1", "ciao mondo 1");
         DummyBilingualCorpus corpus2 = TestData.corpus("none", EN__IT, "hello world 2", "ciao mondo 2");
 
-        this.analyzer.add(new Memory(1), corpus1);
-        this.analyzer.add(new Memory(2), corpus2);
-        this.analyzer.add(new Memory(11, owner1, "none"), corpus1);
-        this.analyzer.add(new Memory(12, owner1, "none"), corpus2);
-        this.analyzer.add(new Memory(21, owner2, "none"), corpus1);
-        this.analyzer.add(new Memory(22, owner2, "none"), corpus2);
+        this.analyzer.onDataReceived(new Memory(1), corpus1);
+        this.analyzer.onDataReceived(new Memory(2), corpus2);
+        this.analyzer.onDataReceived(new Memory(11, owner1, "none"), corpus1);
+        this.analyzer.onDataReceived(new Memory(12, owner1, "none"), corpus2);
+        this.analyzer.onDataReceived(new Memory(21, owner2, "none"), corpus1);
+        this.analyzer.onDataReceived(new Memory(22, owner2, "none"), corpus2);
 
         this.analyzer.flush();
     }

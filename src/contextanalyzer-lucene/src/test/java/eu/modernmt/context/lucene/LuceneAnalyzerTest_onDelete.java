@@ -36,8 +36,8 @@ public class LuceneAnalyzerTest_onDelete {
     public void monolingualMemory() throws Throwable {
         DummyBilingualCorpus corpus = TestData.corpus("dummy", EN__IT);
 
-        analyzer.add(new Memory(1), corpus);
-        analyzer.add(new Memory(2), corpus);
+        analyzer.onDataReceived(new Memory(1), corpus);
+        analyzer.onDataReceived(new Memory(2), corpus);
         analyzer.flush();
 
         assertEquals(4, analyzer.getIndexSize());
@@ -49,7 +49,7 @@ public class LuceneAnalyzerTest_onDelete {
 
         assertEquals(2, analyzer.getIndexSize());
         assertEquals(2, analyzer.getStorageSize());
-        assertEquals(TestData.channels(1, 0), analyzer.getLatestChannelPositions());
+        assertEquals(TestData.channels(20L, 0L), analyzer.getLatestChannelPositions());
         assertEquals(TestData.getTerms(EN), entry.terms);
         assertEquals(TestData.getContent(EN), entry.content);
         assertNull(analyzer.getEntry(1, EN__IT));
@@ -61,8 +61,8 @@ public class LuceneAnalyzerTest_onDelete {
         DummyBilingualCorpus frCorpus = TestData.corpus("dummy", EN__FR);
         MultilingualCorpus corpus = TestData.corpus(itCorpus, frCorpus);
 
-        analyzer.add(new Memory(1), corpus);
-        analyzer.add(new Memory(2), itCorpus);
+        analyzer.onDataReceived(new Memory(1), corpus);
+        analyzer.onDataReceived(new Memory(2), itCorpus);
         analyzer.flush();
 
         assertEquals(6, analyzer.getIndexSize());
@@ -74,7 +74,7 @@ public class LuceneAnalyzerTest_onDelete {
 
         assertEquals(2, analyzer.getIndexSize());
         assertEquals(2, analyzer.getStorageSize());
-        assertEquals(TestData.channels(1, 0), analyzer.getLatestChannelPositions());
+        assertEquals(TestData.channels(30L, 0L), analyzer.getLatestChannelPositions());
         assertEquals(TestData.getTerms(EN), entry.terms);
         assertEquals(TestData.getContent(EN), entry.content);
         assertNull(analyzer.getEntry(1, EN__IT));
@@ -85,8 +85,8 @@ public class LuceneAnalyzerTest_onDelete {
     public void multipleMemories() throws Throwable {
         DummyBilingualCorpus corpus = TestData.corpus("dummy", EN__IT);
 
-        analyzer.add(new Memory(1), corpus);
-        analyzer.add(new Memory(2), corpus);
+        analyzer.onDataReceived(new Memory(1), corpus);
+        analyzer.onDataReceived(new Memory(2), corpus);
         analyzer.flush();
 
         assertEquals(4, analyzer.getIndexSize());
@@ -97,7 +97,7 @@ public class LuceneAnalyzerTest_onDelete {
 
         assertEquals(0, analyzer.getIndexSize());
         assertEquals(0, analyzer.getStorageSize());
-        assertEquals(TestData.channels(1, 1), analyzer.getLatestChannelPositions());
+        assertEquals(TestData.channels(20L, 1L), analyzer.getLatestChannelPositions());
         assertNull(analyzer.getEntry(1, EN__IT));
         assertNull(analyzer.getEntry(2, EN__IT));
     }

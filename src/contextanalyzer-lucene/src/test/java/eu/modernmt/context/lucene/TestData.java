@@ -205,6 +205,13 @@ public class TestData {
         return result;
     }
 
+    public static Map<Short, Long> channels(long channel0, long channel1) {
+        Map<Short, Long> result = new HashMap<>(2);
+        result.put((short) 0, channel0);
+        result.put((short) 1, channel1);
+        return result;
+    }
+
     // Deletion
 
     public static Deletion deletion(long memory) {

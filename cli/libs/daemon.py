@@ -71,7 +71,7 @@ class DaemonController(object):
 
     @staticmethod
     def __is_running(pid):
-        if pid < 0:
+        if pid <= 0:
             return False
         try:
             os.kill(pid, 0)
@@ -99,8 +99,8 @@ class DaemonController(object):
         except _TimeoutExpired:
             os.kill(pid, signal.SIGKILL)
             self.__wait(pid)
-        except OSError:
-            if not ignore_errors:
+        except OSError as err:
+            if err.errno != errno.ESRCH and not ignore_errors:
                 raise
 
     def __wait(self, pid, timeout=None):

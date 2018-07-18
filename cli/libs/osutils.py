@@ -1,5 +1,6 @@
 import errno
 import os
+import shutil
 import subprocess
 import logging
 
@@ -66,3 +67,19 @@ def makedirs(name, mode=0777, exist_ok=False):
 def mem_size(megabytes=True):
     mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
     return mem_bytes / (1024. ** 2) if megabytes else mem_bytes
+
+
+def lc(filename):
+    with open(filename) as stream:
+        count = 0
+        for _ in stream:
+            count += 1
+
+        return count
+
+
+def concat(files, output, buffer_size=10 * 1024 * 1024):
+    with open(output, 'wb') as blob:
+        for f in files:
+            with open(f, 'rb') as source:
+                shutil.copyfileobj(source, blob, buffer_size)

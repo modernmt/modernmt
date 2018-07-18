@@ -98,8 +98,6 @@ class XMLEncoder:
         escaped = XMLEncoder.__HTML.unescape(string)
         return escaped \
             .replace('&', '&amp;') \
-            .replace('"', '&quot;') \
-            .replace('\'', '&apos;') \
             .replace('<', '&lt;') \
             .replace('>', '&gt;')
 

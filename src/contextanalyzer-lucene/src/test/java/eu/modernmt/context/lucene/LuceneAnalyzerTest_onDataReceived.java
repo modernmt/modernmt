@@ -108,13 +108,11 @@ public class LuceneAnalyzerTest_onDataReceived {
     @Test
     public void appendToExistingMemory() throws Throwable {
         DummyBilingualCorpus corpus = TestData.corpus("dummy", EN__IT);
-        analyzer.add(new Memory(1), corpus);
+        analyzer.onDataReceived(new Memory(1), corpus);
         analyzer.flush();
 
-        List<TranslationUnit> units = TestData.tuList(EN__IT, 4);
+        List<TranslationUnit> units = TestData.tuList(1, 0L, 1L, EN__IT, 4);
         analyzer.onDataReceived(units);
-
-        Map<Short, Long> expectedChannels = TestData.channels(0, 3);
 
         HashSet<String> expectedTerms = new HashSet<>();
         expectedTerms.addAll(TestData.tuGetTerms(units, true));
@@ -126,7 +124,7 @@ public class LuceneAnalyzerTest_onDataReceived {
 
         assertEquals(2, analyzer.getIndexSize());
         assertEquals(2, analyzer.getStorageSize());
-        assertEquals(expectedChannels, analyzer.getLatestChannelPositions());
+        assertEquals(TestData.channels(10L, 3L), analyzer.getLatestChannelPositions());
         assertEquals(expectedTerms, entry.terms);
         assertEquals(expectedContent, entry.content);
     }

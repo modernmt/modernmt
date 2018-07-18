@@ -12,6 +12,8 @@ import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.model.Memory;
+import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.search.IndexSearcher;
@@ -203,5 +205,32 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
                 return positions;
             }
         });
+    }
+
+    public void onDataReceived(Memory memory, MultilingualCorpus corpus) throws ContextAnalyzerException {
+        Long position = getLatestChannelPositions().getOrDefault((short) 0, 0L);
+        if (position == null)
+            position = 0L;
+        else
+            position++;
+
+        ArrayList<TranslationUnit> units = new ArrayList<>();
+        MultilingualCorpus.MultilingualLineReader reader = null;
+        try {
+            reader = corpus.getContentReader();
+
+            MultilingualCorpus.StringPair pair;
+            while ((pair = reader.read()) != null) {
+                TranslationUnit unit = new TranslationUnit((short) 0, position++, memory.getOwner(), pair.language, memory.getId(),
+                        pair.source, pair.target, null, null, new Date(), null, null, null);
+                units.add(unit);
+            }
+        } catch (IOException e) {
+            throw new ContextAnalyzerException(e);
+        } finally {
+            IOUtils.closeQuietly(reader);
+        }
+
+        onDataReceived(units);
     }
 }

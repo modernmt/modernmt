@@ -325,7 +325,7 @@ class ClusterNode(DaemonController):
         if self._api is None:
             state = self.state
 
-            if state.api_port is not None:
+            if state is not None and state.api_port is not None:
                 self._api = self.Api(port=state.api_port, root=state.api_root)
 
         return self._api

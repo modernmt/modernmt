@@ -1,10 +1,7 @@
 package eu.modernmt.decoder.neural.memory;
 
-import eu.modernmt.data.DataManager;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
-import eu.modernmt.model.Memory;
-import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,17 +27,12 @@ public class LuceneTranslationMemoryTest_searchWithOwners {
     public void setup() throws Throwable {
         this.memory = new TLuceneTranslationMemory();
 
-        MultilingualCorpus corpus1 = TestData.corpus("none",
-                Collections.singletonList(TestData.tu(EN__IT, "Hello world 1", "Ciao mondo 1", null)));
-        MultilingualCorpus corpus2 = TestData.corpus("none",
-                Collections.singletonList(TestData.tu(EN__IT, "Hello world 2", "Ciao mondo 2", null)));
-
-        memory.bulkInsert(new Memory(1), corpus1);
-        memory.bulkInsert(new Memory(2), corpus2);
-        memory.bulkInsert(new Memory(11, owner1, "none"), corpus1);
-        memory.bulkInsert(new Memory(12, owner1, "none"), corpus2);
-        memory.bulkInsert(new Memory(21, owner2, "none"), corpus1);
-        memory.bulkInsert(new Memory(22, owner2, "none"), corpus2);
+        memory.onDataReceived(Collections.singleton(TestData.tu(0, 0L, null, 1L, EN__IT, "Hello world 1", "Ciao mondo 1", null)));
+        memory.onDataReceived(Collections.singleton(TestData.tu(0, 1L, null, 2L, EN__IT, "Hello world 2", "Ciao mondo 2", null)));
+        memory.onDataReceived(Collections.singleton(TestData.tu(0, 2L, owner1, 11L, EN__IT, "Hello world 1", "Ciao mondo 1", null)));
+        memory.onDataReceived(Collections.singleton(TestData.tu(0, 3L, owner1, 12L, EN__IT, "Hello world 2", "Ciao mondo 2", null)));
+        memory.onDataReceived(Collections.singleton(TestData.tu(0, 4L, owner2, 21L, EN__IT, "Hello world 1", "Ciao mondo 1", null)));
+        memory.onDataReceived(Collections.singleton(TestData.tu(0, 5L, owner2, 22L, EN__IT, "Hello world 2", "Ciao mondo 2", null)));
     }
 
     @After
