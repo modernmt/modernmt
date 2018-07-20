@@ -11,10 +11,8 @@ import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
-import eu.modernmt.training.LazyWriterMultilingualCorpus;
 import eu.modernmt.training.MultilingualCorpusMask;
 import org.apache.commons.cli.*;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.Level;
 import org.jetbrains.annotations.NotNull;
@@ -45,8 +43,7 @@ public class AlignerScoreMain {
             cliOptions.addOption(model);
         }
 
-        public final Language sourceLanguage;
-        public final Language targetLanguage;
+        public final LanguagePair language;
         public final File inputRoot;
         public final File model;
 
@@ -54,8 +51,9 @@ public class AlignerScoreMain {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
-            sourceLanguage = Language.fromString(cli.getOptionValue('s'));
-            targetLanguage = Language.fromString(cli.getOptionValue('t'));
+            Language sourceLanguage = Language.fromString(cli.getOptionValue('s'));
+            Language targetLanguage = Language.fromString(cli.getOptionValue('t'));
+            language = new LanguagePair(sourceLanguage, targetLanguage);
             inputRoot = new File(cli.getOptionValue("input"));
             model = new File(cli.getOptionValue("model"));
         }
@@ -67,17 +65,15 @@ public class AlignerScoreMain {
 
         Args args = new Args(_args);
 
-        ArrayList<MultilingualCorpus> bilingualCorpora = new ArrayList<>();
-        Corpora.list(null, true, bilingualCorpora, args.sourceLanguage, args.targetLanguage, args.inputRoot);
-
-        if (bilingualCorpora.isEmpty())
+        List<MultilingualCorpus> corpora = Corpora.list(args.language, args.inputRoot);
+        if (corpora.isEmpty())
             throw new ParseException("Input path does not contains valid bilingual data");
 
         FastAlign aligner = new FastAlign(args.model);
         Preprocessor preprocessor = new Preprocessor();
 
         try {
-            ThresholdCalculator calculator = new ThresholdCalculator(args.sourceLanguage, args.targetLanguage, preprocessor, aligner, args.inputRoot);
+            ThresholdCalculator calculator = new ThresholdCalculator(args.language, preprocessor, aligner, args.inputRoot);
             float threshold = calculator.calculate();
 
             System.out.println(Float.toString(threshold));
@@ -109,13 +105,12 @@ public class AlignerScoreMain {
         private final Preprocessor preprocessor;
         private final FastAlign aligner;
 
-        public ThresholdCalculator(Language source, Language target, Preprocessor preprocessor, FastAlign aligner, File path) throws IOException {
-            this.language = new LanguagePair(source, target);
+        public ThresholdCalculator(LanguagePair language, Preprocessor preprocessor, FastAlign aligner, File path) throws IOException {
+            this.language = language;
             this.preprocessor = preprocessor;
             this.aligner = aligner;
 
-            this.goldCorpora = new ArrayList<>();
-            Corpora.list(null, true, this.goldCorpora, source, target, path);
+            this.goldCorpora = Corpora.list(language, path);
         }
 
         public float calculate() throws IOException {

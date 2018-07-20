@@ -20,7 +20,7 @@ BIN_DIR = os.path.join(BUILD_DIR, 'bin')
 def mmt_jar(pattern):
     jars = [f for f in glob.glob(pattern)]
     jars.sort(key=lambda e: os.path.getmtime(e))
-    return jars[-1]
+    return jars[-1] if len(jars) > 0 else None
 
 
 MMT_JAR = mmt_jar(os.path.join(BUILD_DIR, 'mmt-*.jar'))

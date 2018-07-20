@@ -10,7 +10,6 @@ import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.training.partitioning.CorporaPartition;
 import eu.modernmt.training.partitioning.PartitionWriter;
 import eu.modernmt.training.partitioning.PartitionedLineReader;
-import eu.modernmt.training.preprocessing.CorpusWriter;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -30,19 +29,17 @@ class PreprocessingTask {
     private final List<PartitionWriter> extraPartitions = new ArrayList<>();
 
     private final Preprocessor preprocessor;
-    private final CorpusWriter corpusWriter;
 
-    public PreprocessingTask(Preprocessor preprocessor, LanguagePair language, Corpus corpus, CorporaPartition mainPartition, CorpusWriter corpusWriter) {
-        this(preprocessor, language, corpus, 0, mainPartition, corpusWriter);
+    public PreprocessingTask(Preprocessor preprocessor, LanguagePair language, Corpus corpus, CorporaPartition mainPartition) {
+        this(preprocessor, language, corpus, 0, mainPartition);
     }
 
-    public PreprocessingTask(Preprocessor preprocessor, LanguagePair language, Corpus corpus, int lineCount, CorporaPartition mainPartition, CorpusWriter corpusWriter) {
+    public PreprocessingTask(Preprocessor preprocessor, LanguagePair language, Corpus corpus, int lineCount, CorporaPartition mainPartition) {
         this.language = language;
         this.corpus = corpus;
         this.corpusLines = lineCount;
         this.mainPartition = mainPartition;
         this.preprocessor = preprocessor;
-        this.corpusWriter = corpusWriter;
     }
 
     public void addExtraPartition(CorporaPartition partition, int size) {
@@ -51,7 +48,7 @@ class PreprocessingTask {
 
     public void execute() throws ProcessingException, IOException {
         LineReader reader = null;
-        CorpusWriter.Instance writer = null;
+        AsyncCorpusWriter writer = null;
 
         try {
             // Input
@@ -64,7 +61,7 @@ class PreprocessingTask {
 
             // Output
             Corpus outCorpus = mainPartition.getDestinationCorpus(this.corpus);
-            writer = corpusWriter.forCorpus(outCorpus);
+            writer = new AsyncCorpusWriter(outCorpus);
 
             // Processing
             String[] batch;

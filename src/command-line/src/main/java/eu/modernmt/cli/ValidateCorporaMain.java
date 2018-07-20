@@ -2,6 +2,7 @@ package eu.modernmt.cli;
 
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.lang.Language;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.cli.*;
@@ -9,7 +10,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.Level;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
@@ -36,16 +36,16 @@ public class ValidateCorporaMain {
             cliOptions.addOption(inputPath);
         }
 
-        public final Language sourceLanguage;
-        public final Language targetLanguage;
+        public final LanguagePair language;
         public final File inputRoot;
 
         public Args(String[] args) throws ParseException {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
-            sourceLanguage = Language.fromString(cli.getOptionValue('s'));
-            targetLanguage = Language.fromString(cli.getOptionValue('t'));
+            Language sourceLanguage = Language.fromString(cli.getOptionValue('s'));
+            Language targetLanguage = Language.fromString(cli.getOptionValue('t'));
+            language = new LanguagePair(sourceLanguage, targetLanguage);
             inputRoot = new File(cli.getOptionValue("input"));
         }
 
@@ -55,8 +55,7 @@ public class ValidateCorporaMain {
         Log4jConfiguration.setup(Level.INFO);
         Args args = new Args(_args);
 
-        List<MultilingualCorpus> corpora = new ArrayList<>();
-        Corpora.list(null, true, corpora, args.sourceLanguage, args.targetLanguage, args.inputRoot);
+        List<MultilingualCorpus> corpora = Corpora.list(args.language, args.inputRoot);
 
         ExecutorService executor = Executors.newFixedThreadPool(20);
         CompletionService<Long> service = new ExecutorCompletionService<>(executor);

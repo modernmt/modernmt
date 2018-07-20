@@ -68,17 +68,19 @@ class XMLEncoder:
         if not os.path.isdir(dest_folder):
             osutils.makedirs(dest_folder, exist_ok=True)
 
-        out_corpus = []
+        out_corpora = []
         for corpus in corpora:
+            out_corpus = BilingualCorpus.make_parallel(corpus.name, dest_folder, corpus.langs)
+
             for lang in corpus.langs:
                 source = corpus.get_file(lang)
-                dest_file = BilingualCorpus.make_parallel(corpus.name, dest_folder, [lang]).get_file(lang)
+                dest_file = out_corpus.get_file(lang)
 
                 self.encode_file(source, dest_file, delete_nl=True)
 
-            out_corpus.append(BilingualCorpus.make_parallel(corpus.name, dest_folder, corpus.langs))
+            out_corpora.append(out_corpus)
 
-        return out_corpus
+        return out_corpora
 
     def encode_file(self, source, dest_file, delete_nl=False):
         with open(dest_file, 'wb') as outstream:

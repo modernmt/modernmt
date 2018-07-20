@@ -4,16 +4,14 @@ import eu.modernmt.cleaning.CorporaCleaning;
 import eu.modernmt.io.IOCorporaUtils;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.Corpora;
-import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.training.BatchCopyProcess;
 import eu.modernmt.training.LazyWriterMultilingualCorpus;
 import eu.modernmt.training.PreprocessingPipeline;
 import eu.modernmt.training.filters.CorporaBloomFilter;
-import eu.modernmt.training.partitioning.FilesCorporaPartition;
-import eu.modernmt.training.preprocessing.CorpusWriter;
-import eu.modernmt.training.preprocessing.PlainTextWriter;
+import eu.modernmt.training.partitioning.CorporaPartition;
+import eu.modernmt.training.AsyncCorpusWriter;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -68,29 +66,27 @@ public class TrainingFacade {
         serializedCopyProcess.run();
     }
 
-    public void preprocess(LanguagePair language, List<MultilingualCorpus> multilingualCorpora, List<Corpus> monolingualCorpora, File destFolder) throws ProcessingException, IOException {
-        preprocess(language, multilingualCorpora, monolingualCorpora, destFolder, new TrainingOptions());
+    public void preprocess(LanguagePair language, List<MultilingualCorpus> corpora, File destFolder) throws ProcessingException, IOException {
+        preprocess(language, corpora, destFolder, new TrainingOptions());
     }
 
-    public void preprocess(LanguagePair language, List<MultilingualCorpus> multilingualCorpora, List<Corpus> monolingualCorpora, File destFolder, TrainingOptions options) throws ProcessingException, IOException {
-        FilesCorporaPartition mainPartition = new FilesCorporaPartition(destFolder);
-
-        CorpusWriter writer = new PlainTextWriter();
-        PreprocessingPipeline pipeline = new PreprocessingPipeline(language, mainPartition, writer);
+    public void preprocess(LanguagePair language, List<MultilingualCorpus> corpora, File destFolder, TrainingOptions options) throws ProcessingException, IOException {
+        CorporaPartition mainPartition = new CorporaPartition(destFolder);
+        PreprocessingPipeline pipeline = new PreprocessingPipeline(language, mainPartition);
 
         FileUtils.deleteDirectory(destFolder);
 
         if (options.developmentPartition != null) {
             FileUtils.deleteDirectory(options.developmentPartition);
-            pipeline.addExtraPartition(new FilesCorporaPartition(options.developmentPartition, options.partitionSize));
+            pipeline.addExtraPartition(new CorporaPartition(options.developmentPartition, options.partitionSize));
         }
 
         if (options.testPartition != null) {
             FileUtils.deleteDirectory(options.testPartition);
-            pipeline.addExtraPartition(new FilesCorporaPartition(options.testPartition, options.partitionSize));
+            pipeline.addExtraPartition(new CorporaPartition(options.testPartition, options.partitionSize));
         }
 
-        pipeline.process(multilingualCorpora, monolingualCorpora);
+        pipeline.process(corpora);
     }
 
     public void deduplicate(List<MultilingualCorpus> corpora, File outputDirectory, int lengthThreshold) throws IOException {

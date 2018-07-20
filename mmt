@@ -6,11 +6,11 @@ import sys
 
 from cli import IllegalStateException, IllegalArgumentException, CorpusNotFoundInFolderException
 from cli.evaluation import Evaluator
-from cli.libs import osutils
+from cli.libs import osutils, nvidia_smi
 from cli.libs.progressbar import Progressbar
 from cli.mmt import BilingualCorpus, TMXCorpus, FileParallelCorpus
 from cli.mmt.cluster import ClusterNode
-from cli.mmt.engine import Engine, TrainingPreprocessor
+from cli.mmt.engine import Engine, EngineBuilder
 from cli.translators import MMTTranslator, XLIFFTranslator, BatchTranslator, InteractiveTranslator
 
 __author__ = 'Davide Caroselli and Andrea Rossi'
@@ -60,74 +60,87 @@ def main_create(argv):
     parser.add_argument('source_lang', metavar='SOURCE_LANGUAGE', help='the source language (ISO 639-1)')
     parser.add_argument('target_lang', metavar='TARGET_LANGUAGE', help='the target language (ISO 639-1)')
     parser.add_argument('corpora_paths', metavar='CORPORA', nargs='+',
-                        help='the paths to the training corpora. You can specify more than one path, '
-                             'in every folder you can put mixed monolingual and bilingual corpora')
+                        help='the paths to the training corpora (you can specify more than one path)')
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
     parser.add_argument('-d', '--debug', action='store_true', dest='debug',
                         help='if debug is set, it enables verbose logging and prevents temporary files to be removed '
                              'after execution')
+    parser.add_argument('-s', '--steps', metavar='STEPS', dest='train_steps', choices=EngineBuilder.all_visible_steps(),
+                        nargs='+', help='run only specified training steps (possible values are: %(choices)s)')
+    parser.add_argument('-r', '--resume', action='store_true', dest='resume', default=False,
+                        help='if resume is set, it restores a previously interrupted training')
+    parser.add_argument('-y', '--yes', action='store_true', dest='force_delete', default=False,
+                        help='if set, skip engine overwrite confirmation check')
     parser.add_argument('--no-split', action='store_false', dest='split_corpora', default=True,
                         help='if no-split is set, MMT will not extract dev and test sets out of the provided '
                              'training corpora')
-    parser.add_argument('-s', '--steps', metavar='STEPS', dest='training_steps',
-                        nargs='+', help='run only specified training steps')
-    parser.add_argument('-r', '--resume', action='store_true', dest='resume', default=False,
-                        help='if resume is set, it restores a previously interrupted process')
-    parser.add_argument('--validation-corpora', dest='validation_corpora',
-                        help='if neural is set, you can provide a custom validation corpora with this option '
-                             '(dev set used by default).', default=None)
+    parser.add_argument('--validation-corpora', dest='validation_corpora', default=None,
+                        help='custom validation corpora path (dev set used by default).')
+    parser.add_argument('--batch-size', dest='batch_size', type=int, default=3072,
+                        help='batch size used during training (default is 3072)')
+    parser.add_argument('--train-steps', dest='train_steps', type=int, default=None,
+                        help='maximum number of training steps (default is unlimited)')
+    parser.add_argument('--eval-freq', dest='eval_freq', type=int, default=1000,
+                        help='evaluation frequency during the training (default is 1000)')
+    parser.add_argument('--hparams', dest='hparams', default='transformer_base',
+                        help='HParams set to use for the training (default is "transformer_base")')
+    parser.add_argument('--bpe', dest='bpe_symbols', default=2**15, type=int,
+                        help='number of symbols for BPE (default is 32768)')
     parser.add_argument('--gpus', dest='gpus', nargs='+', type=int, default=None,
-                        help='you can specify the list of GPUs available to MMT. (default is all available GPUs).')
+                        help='the list of GPUs available to MMT (default is all available GPUs, '
+                             'use "-1" to train on CPU).')
 
-    if len(argv) > 0:
-        # Parse args
-        args = parser.parse_args(argv)
+    if len(argv) == 0:
+        parser.print_help()
+        return
 
-        # stop the node with the given engine name if it is already running
-        node = ClusterNode.connect(args.engine, silent=True)
-        if node is not None and node.is_running():
+    # Parse args
+    args = parser.parse_args(argv)
+
+    if not args.split_corpora and args.validation_corpora is None:
+        raise CLIArgsException(parser, 'you must specify a validation set (remove --no-split option or use '
+                                       '--validation-corpora option)')
+
+    if args.gpus is None:
+        args.gpus = nvidia_smi.list_gpus()
+    elif -1 in args.gpus:
+        args.gpus = []
+
+    # Stop the node with the given engine name if it is already running
+    node = ClusterNode.connect(args.engine, silent=True)
+
+    if node is not None:
+        proceed = True
+
+        if not args.force_delete:
+            while True:
+                resp = raw_input('An engine named "%s" already exists, '
+                                 'are you sure you want to overwrite it? [y/N] ' % args.engine)
+                resp = resp.lower()
+                if len(resp) == 0 or resp == 'n':
+                    proceed = False
+                    break
+                elif resp == 'y':
+                    break
+
+        if not proceed:
+            print 'Aborted'
+            exit(0)
+        else:
             node.stop()
 
-        # initialize a builder to create and train a new engine
-        if args.neural:
-            if not args.split_corpora and args.validation_corpora is None:
-                raise CLIArgsException(parser, 'you must specify a validation set (remove --no-split option or use '
-                                               '--validation-corpora option)')
+    # Initialize a builder to create and train a new engine
+    builder = EngineBuilder(args.engine, args.source_lang, args.target_lang, args.corpora_paths, args.gpus,
+                            debug=args.debug, steps=args.train_steps, split_train=args.split_corpora,
+                            validation_path=args.validation_corpora, batch_size=args.batch_size,
+                            n_train_steps=args.train_steps, n_eval_steps=args.eval_freq, hparams=args.hparams,
+                            bpe_symbols=args.bpe_symbols)
 
-            if args.gpus == [-1]:
-                args.gpus = []
-
-            training = Training.neural(name=args.engine,
-                                       source_lang=args.source_lang,
-                                       target_lang=args.target_lang,
-                                       roots=args.corpora_paths,
-                                       debug=args.debug,
-                                       steps=args.training_steps,
-                                       split_trainingset=args.split_corpora,
-                                       validation_corpora=args.validation_corpora,
-                                       checkpoint=args.checkpoint,
-                                       metadata=args.metadata,
-                                       max_training_words=args.max_words,
-                                       gpus=args.gpus,
-                                       training_args=args)
-        else:
-            training = Training.phrase_based(name=args.engine,
-                                             source_lang=args.source_lang,
-                                             target_lang=args.target_lang,
-                                             roots=args.corpora_paths,
-                                             debug=args.debug,
-                                             steps=args.training_steps,
-                                             split_trainingset=args.split_corpora,
-                                             max_training_words=args.max_words)
-
-        # build the engine
-        if args.resume:
-            training.resume()
-        else:
-            training.start()
+    if args.resume:
+        builder.resume()
     else:
-        parser.print_help()
+        builder.build()
 
 
 def main_start(argv):
@@ -325,7 +338,7 @@ def main_evaluate(argv):
     ensure_api(node)
 
     # Infer default arguments
-    corpora_path = args.corpora_path or os.path.join(node.engine.data_path, TrainingPreprocessor.TEST_FOLDER_NAME)
+    corpora_path = args.corpora_path or node.engine.test_data_path
 
     source_lang, target_lang = (args.source_lang, args.target_lang)
     if source_lang is None or target_lang is None:

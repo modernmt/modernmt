@@ -44,16 +44,13 @@ class TMCleaner:
 
 
 class TrainingPreprocessor:
-    DEV_FOLDER_NAME = 'dev'
-    TEST_FOLDER_NAME = 'test'
-
     def __init__(self, source_lang, target_lang):
         self._source_lang = source_lang
         self._target_lang = target_lang
 
         self._java_main = 'eu.modernmt.cli.TrainingPipelineMain'
 
-    def process(self, corpora, output_path, data_path=None, log=None):
+    def process(self, corpora, output_path, test_data_path=None, dev_data_path=None, log=None):
         if log is None:
             log = osutils.DEVNULL
 
@@ -62,11 +59,12 @@ class TrainingPreprocessor:
         for root in set([corpus.get_folder() for corpus in corpora]):
             args.append(root)
 
-        if data_path is not None:
+        if dev_data_path is not None:
             args.append('--dev')
-            args.append(os.path.join(data_path, TrainingPreprocessor.DEV_FOLDER_NAME))
+            args.append(dev_data_path)
+        if test_data_path is not None:
             args.append('--test')
-            args.append(os.path.join(data_path, TrainingPreprocessor.TEST_FOLDER_NAME))
+            args.append(test_data_path)
 
         command = mmt_javamain(self._java_main, args)
         osutils.shell_exec(command, stdout=log, stderr=log)
@@ -99,6 +97,60 @@ class FastAlign:
         command = [self._build_bin, '-s', self._source_lang, '-t', self._target_lang, '-i', source_path,
                    '-m', self._model, '-I', '4']
         osutils.shell_exec(command, stdout=log, stderr=log)
+
+
+class NeuralDecoder(object):
+    def __init__(self, source_lang, target_lang, model, gpus):
+        self.source_lang = source_lang
+        self.target_lang = target_lang
+        self.model = model
+        self._gpus = gpus
+
+    def _get_env(self, train_path=None, eval_path=None, bpe=None):
+        gpus = ','.join([str(x) for x in self._gpus]) if self._gpus is not None and len(self._gpus) > 0 else '-1'
+
+        env = os.environ.copy()
+        env.update({
+            'MMT_PROBLEM_SOURCE_LANG': self.source_lang,
+            'MMT_PROBLEM_TARGET_LANG': self.target_lang,
+            'MMT_PROBLEM_BPE': str(bpe),
+            'MMT_PROBLEM_TRAIN_PATH': str(train_path),
+            'MMT_PROBLEM_DEV_PATH': str(eval_path),
+
+            'CUDA_DEVICE_ORDER': 'PCI_BUS_ID',
+            'CUDA_VISIBLE_DEVICES': gpus
+        })
+
+        return env
+
+    @staticmethod
+    def _get_common_root(corpora):
+        roots = set([corpus.get_folder() for corpus in corpora])
+        if len(roots) > 1:
+            raise ValueError('Corpora must be contained in the same folder: ' + str(corpora))
+        return roots.pop()
+
+    def prepare_data(self, train_corpora, eval_corpora, output_path, log=None, bpe_symbols=2 ** 15):
+        if log is None:
+            log = osutils.DEVNULL
+
+        data_dir = os.path.join(output_path, 'data')
+        tmp_dir = os.path.join(output_path, 'tmp')
+
+        train_path = self._get_common_root(train_corpora)
+        eval_path = self._get_common_root(eval_corpora)
+
+        shutil.rmtree(data_dir, ignore_errors=True)
+        osutils.makedirs(data_dir)
+
+        if not os.path.isdir(tmp_dir):
+            osutils.makedirs(tmp_dir)
+
+        env = self._get_env(train_path, eval_path, bpe=bpe_symbols)
+        command = ['t2t-datagen', '--t2t_usr_dir', os.path.join(cli.LIB_DIR, 't2t'),
+                   '--data_dir=%s' % data_dir, '--tmp_dir=%s' % tmp_dir, '--problem=translate_mmt']
+
+        osutils.shell_exec(command, stdout=log, stderr=log, env=env)
 
 
 class Engine(object):
@@ -151,7 +203,7 @@ class Engine(object):
         # base paths
         self.config_path = self._get_config_path(self.name)
         self.path = os.path.join(cli.ENGINES_DIR, name)
-        self.data_path = os.path.join(self.path, 'data')
+        self.test_data_path = os.path.join(self.path, 'test_data')
         self.models_path = os.path.join(self.path, 'models')
         self.runtime_path = os.path.join(cli.RUNTIME_DIR, self.name)
         self.logs_path = os.path.join(self.runtime_path, 'logs')
@@ -198,40 +250,45 @@ class EngineBuilder:
     _GB = (1024 * 1024 * 1024)
 
     class Step:
-        def __init__(self, name, optional=True, hidden=False):
+        class Instance:
+            def __init__(self, f, seq_num, name, optional, hidden):
+                self.id = f.__name__.strip('_')
+                self.name = name
+
+                self._optional = optional
+                self._hidden = hidden
+                self._f = f
+                self._seq_num = seq_num
+
+            def is_optional(self):
+                return self._optional
+
+            def is_hidden(self):
+                return self._hidden
+
+            def pos(self):
+                return self._seq_num
+
+            def __call__(self, *args, **kwargs):
+                names, _, _, _ = inspect.getargspec(self._f)
+
+                if 'delete_on_exit' not in names:
+                    del kwargs['delete_on_exit']
+                if 'log' not in names:
+                    del kwargs['log']
+                if 'skip' not in names:
+                    del kwargs['skip']
+
+                self._f(*args, **kwargs)
+
+        def __init__(self, seq_num, name, optional=True, hidden=False):
+            self._seq_num = seq_num
             self._name = name
             self._optional = optional
             self._hidden = hidden
 
         def __call__(self, *_args, **_kwargs):
-            class _Inner:
-                def __init__(self, f, name, optional, hidden):
-                    self.id = f.__name__.strip('_')
-                    self.name = name
-
-                    self._optional = optional
-                    self._hidden = hidden
-                    self._f = f
-
-                def is_optional(self):
-                    return self._optional
-
-                def is_hidden(self):
-                    return self._hidden
-
-                def __call__(self, *args, **kwargs):
-                    names, _, _, _ = inspect.getargspec(self._f)
-
-                    if 'delete_on_exit' not in names:
-                        del kwargs['delete_on_exit']
-                    if 'log' not in names:
-                        del kwargs['log']
-                    if 'skip' not in names:
-                        del kwargs['skip']
-
-                    self._f(*args, **kwargs)
-
-            return _Inner(_args[0], self._name, self._optional, self._hidden)
+            return self.Instance(_args[0], self._seq_num, self._name, self._optional, self._hidden)
 
     class __Args(object):
         def __init__(self):
@@ -300,24 +357,44 @@ class EngineBuilder:
         def is_completed(self, step):
             return step in self._passed_steps
 
-    def __init__(self, engine_name, source_lang, target_lang, roots, debug=False, steps=None, split_train=True):
+    @staticmethod
+    def all_visible_steps():
+        entries = [(name, value) for name, value in inspect.getmembers(EngineBuilder)
+                   if isinstance(value, EngineBuilder.Step.Instance) and not value.is_hidden()]
+        return [name[1:] for name, value in sorted(entries, key=lambda x: x[1].pos())]
+
+    @staticmethod
+    def _all_steps_methods():
+        entries = [(name, value) for name, value in inspect.getmembers(EngineBuilder)
+                   if isinstance(value, EngineBuilder.Step.Instance)]
+        return [value for name, value in sorted(entries, key=lambda x: x[1].pos())]
+
+    def __init__(self, engine_name, source_lang, target_lang, roots, gpus,
+                 debug=False, steps=None, split_train=True, validation_path=None, batch_size=1024,
+                 n_train_steps=None, n_eval_steps=1000, hparams='transformer_base', bpe_symbols=2 ** 15):
         self.source_lang = source_lang
         self.target_lang = target_lang
         self.roots = roots
 
+        self._gpus = gpus
         self._engine = Engine(engine_name, [(source_lang, target_lang)])
         self._delete_on_exit = not debug
         self._split_train = split_train
+        self._validation_path = validation_path
+        self._bpe_symbols = bpe_symbols
+        self._batch_size = batch_size
+        self._n_train_steps = n_train_steps
+        self._n_eval_steps = n_eval_steps
+        self._hparams = hparams
 
         self._temp_dir = None
 
-        self._schedule = EngineBuilder.__Schedule(self._build_schedule(), steps)
+        self._schedule = EngineBuilder.__Schedule(self._all_steps_methods(), steps)
         self._cleaner = TMCleaner(self.source_lang, self.target_lang)
         self._training_preprocessor = TrainingPreprocessor(self.source_lang, self.target_lang)
         self._aligner = FastAlign(os.path.join(self._engine.models_path, 'aligner'), self.source_lang, self.target_lang)
-
-    def _build_schedule(self):
-        return [self._clean_tms, self._preprocess, self._train_aligner, self._write_config]
+        self._decoder = NeuralDecoder(self.source_lang, self.target_lang,
+                                      os.path.join(self._engine.models_path, 'decoder'), gpus)
 
     def _get_tempdir(self, name, delete_if_exists=False):
         path = os.path.join(self._temp_dir, name)
@@ -394,7 +471,7 @@ class EngineBuilder:
 
             for method in self._schedule:
                 if not method.is_hidden():
-                    print ('INFO: (%d of %d) %s... ' % (step_index, steps_count, method.name)).ljust(log_line_len)
+                    print ('INFO: (%d of %d) %s... ' % (step_index, steps_count, method.name)).ljust(log_line_len),
 
                 skip = self._schedule.is_completed(method.id)
                 self._step_start_time = time.time()
@@ -455,24 +532,23 @@ class EngineBuilder:
             self.cause = cause
 
     def _check_constraints(self):
-        gpus = nvidia_smi.list_gpus()
-        if len(gpus) == 0:
+        if len(self._gpus) == 0:
             raise EngineBuilder.HWConstraintViolated(
                 'No GPU for Neural engine training, the process will take very long time to complete.')
 
         recommended_gpu_ram = 8 * self._GB
 
-        for gpu in gpus:
-            gpus_ram = nvidia_smi.get_ram(gpu)
+        for gpu in self._gpus:
+            gpu_ram = nvidia_smi.get_ram(gpu)
 
-            if gpus_ram < recommended_gpu_ram:
+            if gpu_ram < recommended_gpu_ram:
                 raise EngineBuilder.HWConstraintViolated(
                     'The RAM of GPU %d is only %.fG. More than %.fG of RAM recommended for each GPU.' %
-                    (gpu, gpus_ram / self._GB, recommended_gpu_ram / self._GB))
+                    (gpu, round(float(gpu_ram) / self._GB), recommended_gpu_ram / self._GB))
 
     # ~~~~~~~~~~~~~~~~~~~~~ Training step functions ~~~~~~~~~~~~~~~~~~~~~
 
-    @Step('Corpora cleaning')
+    @Step(1, 'Corpora cleaning')
     def _clean_tms(self, args, skip=False, log=None):
         folder = self._get_tempdir('clean_corpora')
 
@@ -481,28 +557,42 @@ class EngineBuilder:
         else:
             args.corpora = self._cleaner.clean(args.corpora, folder, log=log)
 
-    @Step('Corpora pre-processing')
+    @Step(2, 'Corpora pre-processing')
     def _preprocess(self, args, skip=False, log=None):
         preprocessed_folder = self._get_tempdir('preprocessed_corpora')
+        train_folder = os.path.join(preprocessed_folder, 'train')
+        valid_folder = os.path.join(preprocessed_folder, 'validation')
+        raw_valid_folder = os.path.join(preprocessed_folder, 'extracted_validation')
 
         if skip:
-            args.processed_corpora = BilingualCorpus.list(self.source_lang, self.target_lang, preprocessed_folder)
+            args.processed_train_corpora = BilingualCorpus.list(self.source_lang, self.target_lang, train_folder)
+            args.processed_valid_corpora = BilingualCorpus.list(self.source_lang, self.target_lang, valid_folder)
         else:
             if not args.corpora:
                 raise CorpusNotFoundInFolderException('Could not find any valid %s > %s segments in your input.' %
                                                       (self.source_lang, self.target_lang))
 
-            data_path = self._engine.data_path if self._split_train else None
-            args.processed_corpora = self._training_preprocessor.process(args.corpora, preprocessed_folder,
-                                                                         data_path=data_path, log=log)
+            test_data_path = self._engine.test_data_path if self._split_train else None
+            dev_data_path = raw_valid_folder if self._split_train else None
+            args.processed_train_corpora = self._training_preprocessor.process(args.corpora, train_folder, log=log,
+                                                                               test_data_path=test_data_path,
+                                                                               dev_data_path=dev_data_path)
+            valid_corpora = BilingualCorpus.list(self.source_lang, self.target_lang,
+                                                 dev_data_path or self._validation_path)
 
-    @Step('Aligner training')
+            if not valid_corpora:
+                raise CorpusNotFoundInFolderException('Could not find any valid %s > %s segments for validation.' %
+                                                      (self.source_lang, self.target_lang))
+
+            args.processed_valid_corpora = self._training_preprocessor.process(valid_corpora, valid_folder, log=log)
+
+    @Step(3, 'Aligner training')
     def _train_aligner(self, args, skip=False, log=None):
         if not skip:
-            corpora = filter(None, [args.processed_corpora, args.corpora])[0]
+            corpora = filter(None, [args.processed_train_corpora, args.corpora])[0]
             self._aligner.build(corpora, log=log)
 
-    @Step('Writing config', optional=False, hidden=True)
+    @Step(4, 'Writing config', optional=False, hidden=True)
     def _write_config(self, _):
         xml_template = \
             '<node xsi:schemaLocation="http://www.modernmt.eu/schema/config mmt-config-1.0.xsd"\n' \
@@ -513,3 +603,14 @@ class EngineBuilder:
 
         with open(self._engine.config_path, 'wb') as out:
             out.write(xml_template % (self.source_lang, self.target_lang))
+
+    @Step(5, 'Preparing data')
+    def _prepare_data(self, args, skip=False, log=None):
+        args.prepared_data_path = self._get_tempdir('neural_train_data')
+
+        if not skip:
+            train_corpora = filter(None, [args.processed_train_corpora, args.corpora])[0]
+            eval_corpora = args.processed_valid_corpora or BilingualCorpus.list(self.source_lang, self.target_lang,
+                                                                                self._validation_path)
+            self._decoder.prepare_data(train_corpora, eval_corpora, args.prepared_data_path,
+                                       log=log, bpe_symbols=self._bpe_symbols)

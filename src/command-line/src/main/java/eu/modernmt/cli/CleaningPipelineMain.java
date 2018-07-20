@@ -5,13 +5,14 @@ import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.cli.utils.FileFormat;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.lang.Language;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.Level;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by davide on 17/12/15.
@@ -43,8 +44,7 @@ public class CleaningPipelineMain {
             cliOptions.addOption(filters);
         }
 
-        public final Language sourceLanguage;
-        public final Language targetLanguage;
+        public final LanguagePair language;
         public final File[] inputRoots;
         public final File outputRoot;
         public final FileFormat outputFormat;
@@ -54,8 +54,9 @@ public class CleaningPipelineMain {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
-            sourceLanguage = Language.fromString(cli.getOptionValue('s'));
-            targetLanguage = Language.fromString(cli.getOptionValue('t'));
+            Language sourceLanguage = Language.fromString(cli.getOptionValue('s'));
+            Language targetLanguage = Language.fromString(cli.getOptionValue('t'));
+            language = new LanguagePair(sourceLanguage, targetLanguage);
 
             String[] roots = cli.getOptionValues("input");
             inputRoots = new File[roots.length];
@@ -83,10 +84,8 @@ public class CleaningPipelineMain {
 
         Args args = new Args(_args);
 
-        ArrayList<MultilingualCorpus> bilingualCorpora = new ArrayList<>();
-        Corpora.list(null, true, bilingualCorpora, args.sourceLanguage, args.targetLanguage, args.inputRoots);
-
-        if (bilingualCorpora.isEmpty())
+        List<MultilingualCorpus> corpora = Corpora.list(args.language, args.inputRoots);
+        if (corpora.isEmpty())
             throw new ParseException("Input path does not contains valid bilingual data");
 
         CorporaCleaning.Options options;
@@ -127,10 +126,10 @@ public class CleaningPipelineMain {
         }
 
         if (args.outputFormat == null) {
-            ModernMT.training.clean(bilingualCorpora, args.outputRoot, options);
+            ModernMT.training.clean(corpora, args.outputRoot, options);
         } else {
-            ModernMT.training.clean(bilingualCorpora, args.outputRoot, options,
-                    corpus -> args.outputFormat.rename(args.sourceLanguage, args.targetLanguage, corpus, args.outputRoot));
+            ModernMT.training.clean(corpora, args.outputRoot, options,
+                    corpus -> args.outputFormat.rename(args.language.source, args.language.target, corpus, args.outputRoot));
         }
     }
 

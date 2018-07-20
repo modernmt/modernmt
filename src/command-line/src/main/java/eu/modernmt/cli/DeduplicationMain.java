@@ -3,13 +3,14 @@ package eu.modernmt.cli;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.lang.Language;
+import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.Level;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.util.List;
 
 public class DeduplicationMain {
 
@@ -32,8 +33,7 @@ public class DeduplicationMain {
             cliOptions.addOption(outputPath);
         }
 
-        public final Language sourceLanguage;
-        public final Language targetLanguage;
+        public final LanguagePair language;
         public final int lengthThreshold;
         public final File[] inputRoots;
         public final File outputRoot;
@@ -42,8 +42,9 @@ public class DeduplicationMain {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
-            sourceLanguage = Language.fromString(cli.getOptionValue('s'));
-            targetLanguage = Language.fromString(cli.getOptionValue('t'));
+            Language sourceLanguage = Language.fromString(cli.getOptionValue('s'));
+            Language targetLanguage = Language.fromString(cli.getOptionValue('t'));
+            language = new LanguagePair(sourceLanguage, targetLanguage);
             lengthThreshold = cli.hasOption("l") ? Integer.parseInt(cli.getOptionValue("l")) : 0;
 
             String[] roots = cli.getOptionValues("input");
@@ -61,12 +62,10 @@ public class DeduplicationMain {
 
         Args args = new Args(_args);
 
-        ArrayList<MultilingualCorpus> bilingualCorpora = new ArrayList<>();
-        Corpora.list(null, true, bilingualCorpora, args.sourceLanguage, args.targetLanguage, args.inputRoots);
-
-        if (bilingualCorpora.isEmpty())
+        List<MultilingualCorpus> corpora = Corpora.list(args.language, args.inputRoots);
+        if (corpora.isEmpty())
             throw new ParseException("Input path does not contains valid bilingual data");
 
-        ModernMT.training.deduplicate(bilingualCorpora, args.outputRoot, args.lengthThreshold);
+        ModernMT.training.deduplicate(corpora, args.outputRoot, args.lengthThreshold);
     }
 }

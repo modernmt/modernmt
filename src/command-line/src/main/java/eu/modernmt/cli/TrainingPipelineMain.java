@@ -6,13 +6,12 @@ import eu.modernmt.facade.TrainingFacade;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.Corpora;
-import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.Level;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by davide on 17/12/15.
@@ -40,8 +39,7 @@ public class TrainingPipelineMain {
             cliOptions.addOption(testPath);
         }
 
-        public final Language sourceLanguage;
-        public final Language targetLanguage;
+        public final LanguagePair language;
         public final File[] inputRoots;
         public final File outputRoot;
         public final File devRoot;
@@ -51,8 +49,9 @@ public class TrainingPipelineMain {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
-            sourceLanguage = Language.fromString(cli.getOptionValue('s'));
-            targetLanguage = Language.fromString(cli.getOptionValue('t'));
+            Language sourceLanguage = Language.fromString(cli.getOptionValue('s'));
+            Language targetLanguage = Language.fromString(cli.getOptionValue('t'));
+            language = new LanguagePair(sourceLanguage, targetLanguage);
 
             String[] roots = cli.getOptionValues("input");
             inputRoots = new File[roots.length];
@@ -71,14 +70,9 @@ public class TrainingPipelineMain {
         Log4jConfiguration.setup(Level.INFO);
 
         Args args = new Args(_args);
-        LanguagePair language = new LanguagePair(args.sourceLanguage, args.targetLanguage);
 
-        ArrayList<Corpus> monolingualCorpora = new ArrayList<>();
-        ArrayList<MultilingualCorpus> bilingualCorpora = new ArrayList<>();
-
-        Corpora.list(monolingualCorpora, true, bilingualCorpora, args.sourceLanguage, args.targetLanguage, args.inputRoots);
-
-        if (bilingualCorpora.isEmpty())
+        List<MultilingualCorpus> corpora = Corpora.list(args.language, args.inputRoots);
+        if (corpora.isEmpty())
             throw new ParseException("Input path does not contains valid bilingual data");
 
         TrainingFacade.TrainingOptions options = new TrainingFacade.TrainingOptions();
@@ -89,7 +83,7 @@ public class TrainingPipelineMain {
         if (args.testRoot != null)
             options.testPartition = args.testRoot;
 
-        ModernMT.training.preprocess(language, bilingualCorpora, monolingualCorpora, args.outputRoot, options);
+        ModernMT.training.preprocess(args.language, corpora, args.outputRoot, options);
     }
 
 }

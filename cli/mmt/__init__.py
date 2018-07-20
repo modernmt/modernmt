@@ -77,22 +77,19 @@ class BilingualCorpus(object):
                     pair_file = os.path.join(root, name + '.' + target_lang)
 
                     if os.path.isfile(pair_file):
-                        corpora.append(FileParallelCorpus(name, {
-                            source_lang: filepath,
-                            target_lang: pair_file
-                        }))
+                        corpora.append(FileParallelCorpus(name, source_lang, target_lang, filepath, pair_file))
 
         return sorted(corpora, key=lambda x: x.name)
 
     @staticmethod
     def make_parallel(name, folder, langs):
         folder = os.path.abspath(folder)
-        lang2file = {}
 
-        for lang in langs:
-            lang2file[lang] = os.path.join(folder, name + '.' + lang)
+        source_lang, target_lang = langs
+        source_file = os.path.join(folder, name + '.' + source_lang)
+        target_file = os.path.join(folder, name + '.' + target_lang)
 
-        return FileParallelCorpus(name, lang2file)
+        return FileParallelCorpus(name, source_lang, target_lang, source_file, target_file)
 
     def __init__(self, name, langs=None):
         self.name = name

@@ -13,7 +13,7 @@ def list_gpus():
 def get_ram(gpu):
     try:
         stdout = subprocess.check_output(
-            ['nvidia-smi', '--query-gpu=memory.total', '--format=csv,noheader,nounits', '--id', gpu])
-        return int(stdout.strip())
+            ['nvidia-smi', '--query-gpu=memory.total', '--format=csv,noheader,nounits', '--id', str(gpu)])
+        return int(stdout.strip()) * 1024 * 1024
     except subprocess.CalledProcessError:
         return 0
