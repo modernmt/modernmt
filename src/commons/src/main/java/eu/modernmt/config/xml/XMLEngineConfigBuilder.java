@@ -132,6 +132,9 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
             if (hasAttribute("enabled"))
                 config.setEnabled(getBooleanAttribute("enabled"));
 
+            if (hasAttribute("threads"))
+                config.setThreads(getIntAttribute("threads"));
+
             if (hasAttribute("class"))
                 config.setDecoderClass(getStringAttribute("class"));
 
@@ -142,6 +145,9 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
                     throw new ConfigException("Invalid 'gpus' option", e);
                 }
             }
+
+            if (config.isUsingGPUs() && hasAttribute("threads"))
+                throw new ConfigException("In order to specify 'threads', you have to add gpus='none'");
 
             return config;
         }

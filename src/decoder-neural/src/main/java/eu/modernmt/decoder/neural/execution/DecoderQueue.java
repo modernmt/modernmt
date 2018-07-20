@@ -1,17 +1,17 @@
 package eu.modernmt.decoder.neural.execution;
 
-import eu.modernmt.decoder.DecoderException;
-import eu.modernmt.decoder.neural.memory.ScoreEntry;
+import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Translation;
 
 import java.io.Closeable;
+import java.util.concurrent.TimeUnit;
 
 public interface DecoderQueue extends Closeable {
 
-    Translation translate(LanguagePair direction, Sentence sentence, int nBest) throws DecoderException;
+    PythonDecoder take(LanguagePair language) throws DecoderUnavailableException;
 
-    Translation translate(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException;
+    PythonDecoder poll(LanguagePair language, long timeout, TimeUnit unit) throws DecoderUnavailableException;
+
+    void release(PythonDecoder decoder);
 
 }

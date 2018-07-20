@@ -1,12 +1,10 @@
-package eu.modernmt.decoder.neural.execution;
+package eu.modernmt.decoder.neural.execution.impl;
 
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.DecoderUnavailableException;
-import eu.modernmt.decoder.neural.memory.ScoreEntry;
-import eu.modernmt.decoder.neural.natv.NativeProcess;
+import eu.modernmt.decoder.neural.execution.DecoderQueue;
+import eu.modernmt.decoder.neural.execution.PythonDecoder;
 import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Translation;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,29 +16,31 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Created by davide on 22/05/17.
  */
-public class DecoderQueueImpl implements DecoderQueue {
+public abstract class DecoderQueueImpl implements DecoderQueue {
+
+    public static DecoderQueueImpl newGPUInstance(PythonDecoder.Builder builder, int[] gpus) throws DecoderException {
+        return new GPUDecoderQueueImpl(builder, gpus).init();
+    }
+
+    public static DecoderQueueImpl newCPUInstance(PythonDecoder.Builder builder, int cpus) throws DecoderException {
+        return new CPUDecoderQueueImpl(builder, cpus).init();
+    }
 
     protected final Logger logger = LogManager.getLogger(getClass());
 
     private final int capacity;
-    private final NativeProcess.Builder processBuilder;
-    private final BlockingQueue<NativeProcess> queue;
+    private final PythonDecoder.Builder processBuilder;
+    private final BlockingQueue<PythonDecoder> queue;
     private final ExecutorService initExecutor;
-    private final int[] gpus;
-    private int idx;
 
     private final AtomicInteger aliveProcesses = new AtomicInteger(0);
     private boolean active = true;
 
-    public DecoderQueueImpl(NativeProcess.Builder processBuilder, int[] gpus) throws DecoderException {
-        this.capacity = gpus.length;
+    protected DecoderQueueImpl(PythonDecoder.Builder processBuilder, int capacity) {
+        this.capacity = capacity;
         this.processBuilder = processBuilder;
-        this.queue = new ArrayBlockingQueue<>(gpus.length);
-        this.initExecutor = gpus.length > 1 ? Executors.newCachedThreadPool() : Executors.newSingleThreadExecutor();
-        this.gpus = gpus;
-        this.idx = gpus.length - 1;
-
-        this.init();
+        this.queue = new ArrayBlockingQueue<>(capacity);
+        this.initExecutor = capacity > 1 ? Executors.newCachedThreadPool() : Executors.newSingleThreadExecutor();
     }
 
     protected final DecoderQueueImpl init() throws DecoderException {
@@ -61,7 +61,8 @@ public class DecoderQueueImpl implements DecoderQueue {
         return this;
     }
 
-    private NativeProcess getProcess() throws DecoderException {
+    @Override
+    public PythonDecoder take(LanguagePair language) throws DecoderUnavailableException {
         if (this.active && this.aliveProcesses.get() > 0) {
             try {
                 return this.queue.take();
@@ -73,7 +74,21 @@ public class DecoderQueueImpl implements DecoderQueue {
         }
     }
 
-    private void releaseProcess(NativeProcess process) {
+    @Override
+    public PythonDecoder poll(LanguagePair language, long timeout, TimeUnit unit) throws DecoderUnavailableException {
+        if (this.active && this.aliveProcesses.get() > 0) {
+            try {
+                return this.queue.poll(timeout, unit);
+            } catch (InterruptedException e) {
+                throw new DecoderUnavailableException("No NMT processes available", e);
+            }
+        } else {
+            throw new DecoderUnavailableException("No alive NMT processes available");
+        }
+    }
+
+    @Override
+    public void release(PythonDecoder process) {
         if (!this.active) {
             IOUtils.closeQuietly(process);
         } else {
@@ -91,43 +106,9 @@ public class DecoderQueueImpl implements DecoderQueue {
         }
     }
 
-    @Override
-    public final Translation translate(LanguagePair direction, Sentence sentence, int nBest) throws DecoderException {
-        NativeProcess process = getProcess();
+    protected abstract PythonDecoder startProcess(PythonDecoder.Builder processBuilder) throws IOException;
 
-        try {
-            return process.translate(direction, sentence, nBest);
-        } finally {
-            releaseProcess(process);
-        }
-    }
-
-    @Override
-    public final Translation translate(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException {
-        NativeProcess process = getProcess();
-
-        try {
-            return process.translate(direction, sentence, suggestions, nBest);
-        } finally {
-            releaseProcess(process);
-        }
-    }
-
-    private NativeProcess startProcess(NativeProcess.Builder processBuilder) throws IOException {
-        int gpu;
-
-        synchronized (this) {
-            gpu = this.gpus[this.idx--];
-        }
-
-        return processBuilder.start(gpu);
-    }
-
-    private void onProcessDied(NativeProcess process) {
-        synchronized (this) {
-            this.gpus[++this.idx] = process.getGPU();
-        }
-    }
+    protected abstract void onProcessDied(PythonDecoder process);
 
     @Override
     public void close() {
@@ -140,7 +121,7 @@ public class DecoderQueueImpl implements DecoderQueue {
             // Ignore it
         }
 
-        NativeProcess process;
+        PythonDecoder process;
         while ((process = this.queue.poll()) != null) {
             IOUtils.closeQuietly(process);
         }
@@ -150,7 +131,7 @@ public class DecoderQueueImpl implements DecoderQueue {
 
         @Override
         public void run() {
-            NativeProcess process;
+            PythonDecoder process;
 
             try {
                 logger.info("Starting native decoder process");

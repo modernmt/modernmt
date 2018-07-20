@@ -14,8 +14,6 @@ import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -39,14 +37,11 @@ import java.util.function.Consumer;
  */
 public class LuceneTranslationMemory implements TranslationMemory {
 
-    private final Logger logger = LogManager.getLogger(LuceneTranslationMemory.class);
-
     private final int minQuerySize;
     private final Directory indexDirectory;
     private final QueryBuilder queryBuilder;
     private final Rescorer rescorer;
     private final IndexWriter indexWriter;
-    private DataFilter filter;
 
     private DirectoryReader _indexReader;
     private IndexSearcher _indexSearcher;
@@ -200,11 +195,6 @@ public class LuceneTranslationMemory implements TranslationMemory {
         return entries;
     }
 
-    @Override
-    public void setDataFilter(DataFilter filter) {
-        this.filter = filter;
-    }
-
     // DataListener
 
     @Override
@@ -249,12 +239,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     private void onTranslationUnitsReceived(Collection<TranslationUnit> units) throws IOException {
-        DataFilter filter = this.filter;
-
         for (TranslationUnit unit : units) {
-            if (filter != null && !filter.accept(unit))
-                continue;
-
             Long currentPosition = this.channels.get(unit.channel);
 
             if (currentPosition == null || currentPosition < unit.channelPosition) {

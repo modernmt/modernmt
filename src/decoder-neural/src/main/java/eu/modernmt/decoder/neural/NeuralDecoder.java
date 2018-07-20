@@ -8,15 +8,12 @@ import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.DecoderListener;
 import eu.modernmt.decoder.DecoderWithNBest;
 import eu.modernmt.decoder.neural.execution.DecoderQueue;
-import eu.modernmt.decoder.neural.execution.DecoderQueueImpl;
-import eu.modernmt.decoder.neural.memory.AlignmentDataFilter;
+import eu.modernmt.decoder.neural.execution.PythonDecoder;
+import eu.modernmt.decoder.neural.execution.impl.DecoderQueueImpl;
+import eu.modernmt.decoder.neural.execution.impl.PythonDecoderImpl;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.decoder.neural.memory.TranslationMemory;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
-import eu.modernmt.decoder.neural.natv.NativeProcess;
-import eu.modernmt.decoder.neural.natv.NativeProcessImpl;
-import eu.modernmt.io.FileConst;
-import eu.modernmt.io.Paths;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
@@ -29,6 +26,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.*;
 
 /**
@@ -36,13 +35,22 @@ import java.util.*;
  */
 public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataListenerProvider {
 
+    private static File getJarPath() throws DecoderException {
+        URL url = Decoder.class.getProtectionDomain().getCodeSource().getLocation();
+        try {
+            return new File(url.toURI());
+        } catch (URISyntaxException e) {
+            throw new DecoderException("Unable to resolve JAR file", e);
+        }
+    }
+
     private final Logger logger = LogManager.getLogger(getClass());
 
     private final boolean echoServer;
     private final int suggestionsLimit;
     private final TranslationMemory memory;
     private final Set<LanguagePair> directions;
-    private final DecoderQueue decoderImpl;
+    private final DecoderQueue decoderQueue;
 
     public NeuralDecoder(File model, DecoderConfig config) throws DecoderException {
         super(model, config);
@@ -55,23 +63,20 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
             throw new DecoderException("Failed to read file model.conf", e);
         }
 
+        this.suggestionsLimit = modelConfig.getSuggestionsLimit();
+        this.directions = new HashSet<>(modelConfig.getAvailableModels().keySet());
+        this.echoServer = modelConfig.isEchoServer();
+
         // Translation Memory
-        TranslationMemory memory;
         try {
-            memory = loadTranslationMemory(modelConfig, new File(model, "memory"));
+            this.memory = loadTranslationMemory(modelConfig, new File(model, "memory"));
         } catch (IOException e) {
             throw new DecoderException("Failed to initialize memory", e);
         }
 
         // Decoder Queue
-        DecoderQueue queue = loadDecoderQueue(modelConfig, config, model);
+        this.decoderQueue = this.echoServer ? null : loadDecoderQueue(modelConfig, config, model);
 
-        // Init class fields
-        this.suggestionsLimit = modelConfig.getSuggestionsLimit();
-        this.memory = memory;
-        this.directions = new HashSet<>(modelConfig.getAvailableModels().keySet());
-        this.decoderImpl = queue;
-        this.echoServer = modelConfig.isEchoServer();
     }
 
     protected ModelConfig loadModelConfig(File filepath) throws IOException {
@@ -79,21 +84,16 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
     }
 
     protected TranslationMemory loadTranslationMemory(ModelConfig config, File model) throws IOException {
-        int queryMinResults = config.getQueryMinimumResults();
-
-        LuceneTranslationMemory memory = new LuceneTranslationMemory(model, queryMinResults);
-
-        Map<LanguagePair, Float> thresholds = config.getAlignmentThresholds();
-        if (thresholds != null && !thresholds.isEmpty())
-            memory.setDataFilter(new AlignmentDataFilter(thresholds));
-
-        return memory;
+        return new LuceneTranslationMemory(model, config.getQueryMinimumResults());
     }
 
     protected DecoderQueue loadDecoderQueue(ModelConfig modelConfig, DecoderConfig decoderConfig, File model) throws DecoderException {
-        File pythonExec = Paths.join(FileConst.getLibPath(), "pynmt", "main_loop.py");
-        NativeProcess.Builder builder = new NativeProcessImpl.Builder(pythonExec, model);
-        return new DecoderQueueImpl(builder, decoderConfig.getGPUs());
+        PythonDecoder.Builder builder = new PythonDecoderImpl.Builder(getJarPath(), model);
+
+        if (decoderConfig.isUsingGPUs())
+            return DecoderQueueImpl.newGPUInstance(builder, decoderConfig.getGPUs());
+        else
+            return DecoderQueueImpl.newCPUInstance(builder, decoderConfig.getThreads());
     }
 
     // Decoder
@@ -141,15 +141,24 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
                     translation = Translation.fromTokens(text, TokensOutputStream.tokens(text, false, true));
                 }
             } else {
-                if (suggestions != null && suggestions.length > 0) {
-                    // if perfect match, return suggestion instead
-                    if (suggestions[0].score == 1.f) {
-                        translation = Translation.fromTokens(text, suggestions[0].translation);
+                PythonDecoder decoder = null;
+
+                try {
+                    if (suggestions != null && suggestions.length > 0) {
+                        // if perfect match, return suggestion instead
+                        if (suggestions[0].score == 1.f) {
+                            translation = Translation.fromTokens(text, suggestions[0].translation);
+                        } else {
+                            decoder = decoderQueue.take(direction);
+                            translation = decoder.translate(direction, text, suggestions, nbestListSize);
+                        }
                     } else {
-                        translation = decoderImpl.translate(direction, text, suggestions, nbestListSize);
+                        decoder = decoderQueue.take(direction);
+                        translation = decoder.translate(direction, text, nbestListSize);
                     }
-                } else {
-                    translation = decoderImpl.translate(direction, text, nbestListSize);
+                } finally {
+                    if (decoder != null)
+                        decoderQueue.release(decoder);
                 }
             }
 
@@ -189,7 +198,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
     @Override
     public void close() {
-        IOUtils.closeQuietly(this.decoderImpl);
+        IOUtils.closeQuietly(this.decoderQueue);
         IOUtils.closeQuietly(this.memory);
     }
 

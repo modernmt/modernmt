@@ -1,6 +1,7 @@
-package eu.modernmt.decoder.neural.natv;
+package eu.modernmt.decoder.neural.execution;
 
 import eu.modernmt.io.UTF8Charset;
+import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -58,6 +59,7 @@ abstract class StreamPollingThread extends Thread {
     @Override
     public void interrupt() {
         this.active = false;
+        IOUtils.closeQuietly(reader);
         super.interrupt();
     }
 

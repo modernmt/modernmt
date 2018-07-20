@@ -8,7 +8,9 @@ import org.apache.commons.configuration.SubnodeConfiguration;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Created by davide on 02/08/17.
@@ -86,29 +88,4 @@ public class ModelConfig {
         }
     }
 
-    public Map<LanguagePair, Float> getAlignmentThresholds() {
-        SubnodeConfiguration thresholds;
-
-        try {
-            thresholds = config.configurationAt("alignment-filter");
-        } catch (IllegalArgumentException iex) {
-            // the passed in key does not map to exactly one node
-            return null;
-        }
-
-        Map<LanguagePair, Float> result = new HashMap<>();
-
-        Iterator<String> keyIterator = thresholds.getKeys();
-        while (keyIterator.hasNext()) {
-            String key = keyIterator.next();
-            float threshold = thresholds.getFloat(key);
-
-            String[] parts = key.split("__");
-            LanguagePair pair = new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1]));
-
-            result.put(pair, threshold);
-        }
-
-        return result;
-    }
 }

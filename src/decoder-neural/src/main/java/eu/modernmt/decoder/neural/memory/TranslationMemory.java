@@ -1,7 +1,6 @@
 package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.DataListener;
-import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
@@ -15,16 +14,8 @@ import java.util.UUID;
  */
 public interface TranslationMemory extends Closeable, DataListener {
 
-    interface DataFilter {
-
-        boolean accept(TranslationUnit unit);
-
-    }
-
     ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, int limit) throws IOException;
 
     ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, ContextVector contextVector, int limit) throws IOException;
-
-    void setDataFilter(DataFilter filter);
 
 }
