@@ -50,10 +50,13 @@ def shell_exec(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
     elif not background:
         return_code = process.wait()
 
-    if return_code != 0:
-        raise ShellError(str_cmd, return_code, stderr_dump)
+    if background:
+        return process
     else:
-        return stdout_dump, stderr_dump
+        if return_code != 0:
+            raise ShellError(str_cmd, return_code, stderr_dump)
+        else:
+            return stdout_dump, stderr_dump
 
 
 def makedirs(name, mode=0777, exist_ok=False):

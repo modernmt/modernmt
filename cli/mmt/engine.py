@@ -11,6 +11,7 @@ import time
 import cli
 from cli import IllegalArgumentException, CorpusNotFoundInFolderException, mmt_javamain
 from cli.libs import osutils, nvidia_smi
+from cli.libs.osutils import ShellError
 from cli.mmt import BilingualCorpus
 
 __author__ = 'Davide Caroselli'
@@ -105,6 +106,7 @@ class NeuralDecoder(object):
         self.target_lang = target_lang
         self.model = model
         self._gpus = gpus
+        self._t2t_dir = os.path.join(cli.LIB_DIR, 't2t')
 
     def _get_env(self, train_path=None, eval_path=None, bpe=None):
         gpus = ','.join([str(x) for x in self._gpus]) if self._gpus is not None and len(self._gpus) > 0 else '-1'
@@ -147,10 +149,127 @@ class NeuralDecoder(object):
             osutils.makedirs(tmp_dir)
 
         env = self._get_env(train_path, eval_path, bpe=bpe_symbols)
-        command = ['t2t-datagen', '--t2t_usr_dir', os.path.join(cli.LIB_DIR, 't2t'),
+        command = ['t2t-datagen', '--t2t_usr_dir', self._t2t_dir,
                    '--data_dir=%s' % data_dir, '--tmp_dir=%s' % tmp_dir, '--problem=translate_mmt']
 
         osutils.shell_exec(command, stdout=log, stderr=log, env=env)
+
+    def train_model(self, train_dir, output_dir, batch_size=1024, n_train_steps=None, n_eval_steps=1000,
+                    hparams='transformer_base', log=None):
+        if log is None:
+            log = osutils.DEVNULL
+
+        if not os.path.isdir(output_dir):
+            osutils.makedirs(output_dir)
+
+        data_dir = os.path.join(train_dir, 'data')
+
+        src_model_vocab = os.path.join(data_dir, 'model.vcb')
+        tgt_model_vocab = os.path.join(output_dir, 'model.vcb')
+
+        if not os.path.isfile(tgt_model_vocab):
+            os.symlink(src_model_vocab, tgt_model_vocab)
+
+        env = self._get_env()
+        hparams_p = 'batch_size=%d' % batch_size
+        command = ['t2t-trainer', '--t2t_usr_dir', self._t2t_dir,
+                   '--data_dir=%s' % data_dir,
+                   '--problem=translate_mmt',
+                   '--model=transformer',
+                   '--hparams_set=%s' % hparams,
+                   '--output_dir=%s' % output_dir,
+                   '--local_eval_frequency=%d' % n_eval_steps,
+                   '--train_steps=%d' % (n_train_steps if n_train_steps is not None else 100000000),
+                   '--worker_gpu=%d' % len(self._gpus),
+                   '--hparams', hparams_p]
+
+        process = osutils.shell_exec(command, stdout=log, stderr=log, env=env, background=True)
+
+        try:
+            return_code = process.wait()
+            if return_code != 0:
+                raise ShellError(' '.join(command), return_code, None)
+        except KeyboardInterrupt:
+            process.kill()
+
+    def finalize_model(self, train_dir, model_dir, n_checkpoints=None):
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', category=FutureWarning)
+
+            import tensorflow as tf
+            import numpy as np
+            import six
+
+            os.environ['TF_CPP_MIN_LOG_LEVEL'] = '9999'
+
+        data_dir = os.path.join(train_dir, 'data')
+
+        # Get checkpoints list
+        checkpoint_paths = {}
+        for checkpoint_path in tf.train.get_checkpoint_state(model_dir).all_model_checkpoint_paths:
+            steps = int(checkpoint_path[checkpoint_path.rfind('-') + 1:])
+            masked_steps = steps - (steps % 100)
+
+            if masked_steps in checkpoint_paths:
+                e_steps, e_checkpoint_path = checkpoint_paths[masked_steps]
+                if steps > e_steps:
+                    checkpoint_paths[masked_steps] = steps, checkpoint_path
+            else:
+                checkpoint_paths[masked_steps] = steps, checkpoint_path
+
+        checkpoint_pairs = [(steps, path) for steps, path in checkpoint_paths.values()]
+        if n_checkpoints is not None and len(checkpoint_pairs) > n_checkpoints:
+            checkpoint_pairs = checkpoint_pairs[:n_checkpoints]
+
+        global_steps = max([(steps - (steps % 100)) for steps, _ in checkpoint_pairs])
+        checkpoints = [path for (_, path) in checkpoint_pairs]
+
+        # Read variables from all checkpoints and average them.
+        var_list = tf.contrib.framework.list_variables(checkpoints[0])
+        var_values = {name: np.zeros(shape) for name, shape in var_list if not name.startswith("global_step")}
+
+        for checkpoint in checkpoints:
+            reader = tf.contrib.framework.load_checkpoint(checkpoint)
+
+            for name in var_values:
+                tensor = reader.get_tensor(name)
+                var_values[name] += tensor
+
+        for name in var_values:  # Average.
+            var_values[name] /= len(checkpoints)
+
+        tf_vars = [tf.get_variable(name, shape=var.shape, dtype=var.dtype) for name, var in var_values.iteritems()]
+        placeholders = [tf.placeholder(v.dtype, shape=v.shape) for v in tf_vars]
+        assign_ops = [tf.assign(v, p) for (v, p) in zip(tf_vars, placeholders)]
+        tf.Variable(0, name="global_step", trainable=False, dtype=tf.int64)
+        saver = tf.train.Saver(tf.global_variables(), save_relative_paths=True)
+
+        # Build a model consisting only of variables, set them to the average values.
+        model_output_path = os.path.join(self.model, '%s__%s' % (self.source_lang, self.target_lang))
+
+        if not os.path.isdir(model_output_path):
+            os.makedirs(model_output_path)
+
+        with tf.Session() as sess:
+            sess.run(tf.initialize_all_variables())
+
+            for p, assign_op, (name, value) in zip(placeholders, assign_ops, six.iteritems(var_values)):
+                sess.run(assign_op, {p: value})
+
+            # Use the built saver to save the averaged checkpoint.
+            saver.save(sess, os.path.join(model_output_path, 'model-avg'), global_step=global_steps)
+
+        # Copy auxiliary files
+        shutil.copyfile(os.path.join(model_dir, 'hparams.json'), os.path.join(model_output_path, 'hparams.json'))
+        shutil.copyfile(os.path.join(data_dir, 'model.vcb'), os.path.join(model_output_path, 'model.vcb'))
+
+        # Write config file
+        with open(os.path.join(self.model, 'model.conf'), 'w') as model_conf:
+            model_conf.write('[models]\n')
+            model_conf.write('%s__%s = %s__%s/\n' %
+                             (self.source_lang, self.target_lang, self.source_lang, self.target_lang))
 
 
 class Engine(object):
@@ -484,14 +603,13 @@ class EngineBuilder:
                 elapsed_time_str = self._pretty_print_time(time.time() - start_time)
 
                 if not method.is_hidden():
+                    step_index += 1
                     print 'DONE (in %s)' % elapsed_time_str
 
                 logger.log(logging.INFO, 'Training step "%s" completed in %s' % (method.id, elapsed_time_str))
 
                 self._schedule.step_completed(method.id)
                 self._schedule.store(checkpoint_path)
-
-                step_index += 1
 
             print '\n=========== TRAINING SUCCESS ===========\n'
             print 'You can now start, stop or check the status of the server with command:'
@@ -614,3 +732,17 @@ class EngineBuilder:
                                                                                 self._validation_path)
             self._decoder.prepare_data(train_corpora, eval_corpora, args.prepared_data_path,
                                        log=log, bpe_symbols=self._bpe_symbols)
+
+    @Step(6, 'Training model')
+    def _train_model(self, args, skip=False, log=None):
+        args.train_model_path = self._get_tempdir('neural_model')
+
+        if not skip:
+            self._decoder.train_model(args.prepared_data_path, args.train_model_path, log=log,
+                                      batch_size=self._batch_size, hparams=self._hparams,
+                                      n_train_steps=self._n_train_steps, n_eval_steps=self._n_eval_steps)
+
+    @Step(7, 'Pack model')
+    def _pack_model(self, args, skip=False):
+        if not skip:
+            self._decoder.finalize_model(args.prepared_data_path, args.train_model_path)

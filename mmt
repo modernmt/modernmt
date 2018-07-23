@@ -79,9 +79,9 @@ def main_create(argv):
                         help='custom validation corpora path (dev set used by default).')
     parser.add_argument('--batch-size', dest='batch_size', type=int, default=3072,
                         help='batch size used during training (default is 3072)')
-    parser.add_argument('--train-steps', dest='train_steps', type=int, default=None,
+    parser.add_argument('--train-steps', dest='n_train_steps', type=int, default=None,
                         help='maximum number of training steps (default is unlimited)')
-    parser.add_argument('--eval-freq', dest='eval_freq', type=int, default=1000,
+    parser.add_argument('--eval-steps', dest='eval_freq', type=int, default=1000,
                         help='evaluation frequency during the training (default is 1000)')
     parser.add_argument('--hparams', dest='hparams', default='transformer_base',
                         help='HParams set to use for the training (default is "transformer_base")')
@@ -113,7 +113,7 @@ def main_create(argv):
     if node is not None:
         proceed = True
 
-        if not args.force_delete:
+        if not args.force_delete and not args.resume:
             while True:
                 resp = raw_input('An engine named "%s" already exists, '
                                  'are you sure you want to overwrite it? [y/N] ' % args.engine)
@@ -134,7 +134,7 @@ def main_create(argv):
     builder = EngineBuilder(args.engine, args.source_lang, args.target_lang, args.corpora_paths, args.gpus,
                             debug=args.debug, steps=args.train_steps, split_train=args.split_corpora,
                             validation_path=args.validation_corpora, batch_size=args.batch_size,
-                            n_train_steps=args.train_steps, n_eval_steps=args.eval_freq, hparams=args.hparams,
+                            n_train_steps=args.n_train_steps, n_eval_steps=args.eval_freq, hparams=args.hparams,
                             bpe_symbols=args.bpe_symbols)
 
     if args.resume:
@@ -567,7 +567,6 @@ def main():
         exit(1)
     except Exception as e:
         sys.stderr.write('\nERROR Unexpected exception: {message}\n'.format(message=e.message))
-        raise
         exit(1)
 
 
