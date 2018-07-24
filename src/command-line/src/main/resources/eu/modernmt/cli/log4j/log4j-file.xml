@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="%%LEVEL%%" name="ModernMT" packages="">
+<Configuration status="%{level}" name="ModernMT" packages="">
     <Appenders>
-        <RollingRandomAccessFile name="RollingRandomAccessFile" fileName="%%LOG_FILE%%"
-                                 filePattern="%%LOG_FILE%%.%i.gz">
+        <RollingRandomAccessFile name="RollingRandomAccessFile" fileName="%{log_file}" filePattern="%{log_file}.%i.gz">
             <PatternLayout>
                 <Pattern>%d %-5level %c [%t] %msg%n%throwable</Pattern>
             </PatternLayout>
@@ -13,7 +12,7 @@
         </RollingRandomAccessFile>
     </Appenders>
     <Loggers>
-        <Root level="%%LEVEL%%">
+        <Root level="%{level}">
             <AppenderRef ref="RollingRandomAccessFile"/>
         </Root>
     </Loggers>

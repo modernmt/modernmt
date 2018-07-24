@@ -3,6 +3,7 @@ package eu.modernmt.cli.log4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,12 +39,16 @@ public class Log4jConfiguration {
     public static void setup(File logFile, Level level) throws IOException {
         String config = loadConfig(level, logFile);
 
-        File file = File.createTempFile("mmt_log4j2", "xml");
-        file.deleteOnExit();
+        File configFile = File.createTempFile("mmt_log4j2", "xml");
 
-        FileUtils.write(file, config, false);
+        try {
+            FileUtils.write(configFile, config, false);
+            System.setProperty("log4j.configurationFile", configFile.getAbsolutePath());
 
-        System.setProperty("log4j.configurationFile", file.getAbsolutePath());
+            LogManager.getLogger(Log4jConfiguration.class); // force log4j initialization
+        } finally {
+            FileUtils.deleteQuietly(configFile);
+        }
     }
 
     private static String loadConfig(Level level, File logFile) throws IOException {
@@ -58,9 +63,9 @@ public class Log4jConfiguration {
             IOUtils.closeQuietly(templateStream);
         }
 
-        template = template.replace("%%LEVEL%%", level.name());
+        template = template.replace("%{level}", level.name());
         if (logFile != null)
-            template = template.replace("%%LOG_FILE%%", logFile.getAbsolutePath());
+            template = template.replace("%{log_file}", logFile.getAbsolutePath());
 
         return template;
     }

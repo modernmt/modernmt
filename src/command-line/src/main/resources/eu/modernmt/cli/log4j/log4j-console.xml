@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="%level" name="ModernMT" packages="">
+<Configuration status="%{level}" name="ModernMT" packages="">
     <Appenders>
         <Console name="Console" target="SYSTEM_ERR">
             <PatternLayout>
@@ -8,7 +8,7 @@
         </Console>
     </Appenders>
     <Loggers>
-        <Root level="%level">
+        <Root level="%{level}">
             <AppenderRef ref="Console"/>
         </Root>
     </Loggers>
