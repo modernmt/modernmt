@@ -219,6 +219,10 @@ def main_stop(argv):
     parser.prog = 'mmt stop'
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
+    parser.add_argument('-f', '--forced', action='store_true', dest='forced', default=False,
+                        help='forced stop. By default ModernMT will run a graceful shutdown trying to minimize the '
+                             'impact on the operations (i.e. fulfilling all pending translation requests before '
+                             'stopping the system). If this flag is specified the system will be forcefully halted.')
 
     # Parse args
     args = parser.parse_args(argv)
@@ -227,7 +231,7 @@ def main_stop(argv):
 
     print
     print 'Stopping MMT engine \'{engine}\'...'.format(engine=node.engine.name),
-    node.stop()
+    node.stop(force=args.forced)
     print 'OK \n'
 
 

@@ -24,7 +24,7 @@ public class CassandraIdGenerator {
      * @throws PersistenceException
      */
     public static long generate(CassandraConnection connection, int tableId) throws PersistenceException {
-        /*the table COUNTERS_TABLE has a row for each other table in our db;
+        /*the table COUNTERS_TABLE has a row for each other table in our cassandra;
         each row holds the table id and a counter marking the last ID
         that has been employed when storing an object in that table.*/
 

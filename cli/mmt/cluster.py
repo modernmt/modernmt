@@ -250,7 +250,7 @@ class ClusterNode(DaemonController):
         return ClusterNode(engine) if engine is not None else None
 
     def __init__(self, engine):
-        super(ClusterNode, self).__init__(os.path.join(engine.runtime_path, 'node.pid'), sigterm_timeout=10)
+        super(ClusterNode, self).__init__(os.path.join(engine.runtime_path, 'node.pid'))
 
         self._status_file = os.path.join(engine.runtime_path, 'node.properties')
         self._log_file = engine.get_logfile('node', ensure=False)
@@ -313,9 +313,9 @@ class ClusterNode(DaemonController):
         if not super(ClusterNode, self)._start(command):
             raise Exception('failed to start node, check log file for more details: %s' % self._log_file)
 
-    def stop(self):
+    def stop(self, force=False):
         if self.running:
-            super(ClusterNode, self)._stop(children=self.state.embedded_services)
+            super(ClusterNode, self)._stop(children=self.state.embedded_services, timeout=10 if force else None)
 
         if os.path.isfile(self._status_file):
             os.remove(self._status_file)

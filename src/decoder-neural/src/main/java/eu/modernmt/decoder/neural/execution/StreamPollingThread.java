@@ -41,6 +41,8 @@ abstract class StreamPollingThread extends Thread {
             }
         }
 
+        IOUtils.closeQuietly(reader);
+
         try {
             onLineRead(null);
         } catch (InterruptedException e) {
@@ -59,8 +61,6 @@ abstract class StreamPollingThread extends Thread {
     @Override
     public void interrupt() {
         this.active = false;
-        IOUtils.closeQuietly(reader);
-        super.interrupt();
     }
 
 }

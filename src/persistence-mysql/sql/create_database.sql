@@ -1,8 +1,8 @@
 CREATE TABLE mmt_memories (
-  id    BIGINT       NOT NULL AUTO_INCREMENT,
-  owner_msb BIGINT       DEFAULT NULL,
-  owner_lsb BIGINT       DEFAULT NULL,
-  name  VARCHAR(255) NOT NULL,
+  id        BIGINT       NOT NULL AUTO_INCREMENT,
+  owner_msb BIGINT                DEFAULT NULL,
+  owner_lsb BIGINT                DEFAULT NULL,
+  name      VARCHAR(255) NOT NULL,
   PRIMARY KEY (id)
 )
   ENGINE InnoDB
@@ -20,13 +20,3 @@ CREATE TABLE mmt_import_jobs (
 )
   ENGINE InnoDB
   DEFAULT CHARSET = utf8;
-
-CREATE TABLE mmt_metadata (
-  id          BIGINT  NOT NULL,
-  initialized BOOLEAN NOT NULL,
-  PRIMARY KEY (id)
-)
-  ENGINE InnoDB
-  DEFAULT CHARSET = utf8;
-
-INSERT INTO mmt_metadata (id, initialized) VALUES (1, FALSE);

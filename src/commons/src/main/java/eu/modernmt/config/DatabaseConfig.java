@@ -12,14 +12,14 @@ public class DatabaseConfig {
     public static final int MYSQL_DEFAULT_PORT = 3306;
     public static final int CASSANDRA_DEFAULT_PORT = 9042;
 
-    public enum TYPE {CASSANDRA, MYSQL}
+    public enum Type {CASSANDRA, MYSQL}
 
     private boolean embedded = true;
     /*if DB enabled, at start MMT launches/connects to a DB process. If disabled, will not use any DBs. By default: enabled*/
     private boolean enabled = true;
 
-    /*db type: either Cassandra (by default) or MySQL*/
-    private TYPE type = TYPE.CASSANDRA;
+    /*cassandra type: either Cassandra (by default) or MySQL*/
+    private Type type = Type.CASSANDRA;
     private int port = CASSANDRA_DEFAULT_PORT;
 
     /*host and port (default localhost:3306)*/
@@ -92,11 +92,11 @@ public class DatabaseConfig {
         this.user = user;
     }
 
-    public TYPE getType() {
+    public Type getType() {
         return type;
     }
 
-    public void setType(TYPE type) {
+    public void setType(Type type) {
         this.type = type;
     }
 

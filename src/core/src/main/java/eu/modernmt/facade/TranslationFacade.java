@@ -79,10 +79,7 @@ public class TranslationFacade {
         try {
             ClusterNode node = ModernMT.getNode();
 
-            Future<Translation> future = node.submit(task, direction);
-            if (future == null)
-                future = node.submit(task);
-
+            Future<Translation> future = node.submit(task);
             Translation translation = future.get();
 
             if (logger.isDebugEnabled())
@@ -342,5 +339,9 @@ public class TranslationFacade {
             return this.priority.intValue;
         }
 
+        @Override
+        public LanguagePair getLanguage() {
+            return direction;
+        }
     }
 }

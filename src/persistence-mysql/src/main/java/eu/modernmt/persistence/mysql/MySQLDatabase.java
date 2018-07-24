@@ -1,12 +1,12 @@
 package eu.modernmt.persistence.mysql;
 
 import com.mysql.cj.jdbc.MysqlDataSource;
+import eu.modernmt.config.DatabaseConfig;
 import eu.modernmt.persistence.*;
 import eu.modernmt.persistence.mysql.utils.SQLUtils;
 import org.apache.commons.io.IOUtils;
 
 import javax.sql.DataSource;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -19,7 +19,12 @@ public class MySQLDatabase extends Database {
     private String name;
     private DataSource dataSource;
 
+    public MySQLDatabase(DatabaseConfig config) {
+        this(config.getHost(), config.getPort(), config.getName(), config.getUser(), config.getPassword());
+    }
+
     public MySQLDatabase(String host, int port, String name, String user, String password) {
+        super(null);
         this.name = name;
 
         String params = "useUnicode=true"
@@ -79,27 +84,6 @@ public class MySQLDatabase extends Database {
     @Override
     public String getName() {
         return this.name;
-    }
-
-    @Override
-    public boolean initialize() throws PersistenceException {
-        java.sql.Connection connection = null;
-        PreparedStatement statement = null;
-        try {
-            String query = "UPDATE mmt_metadata SET initialized = ? WHERE id = ? AND initialized = ?";
-            connection = this.dataSource.getConnection();
-            statement = connection.prepareStatement(query);
-            statement.setShort(1, (short) 1);
-            statement.setLong(2, 1L);
-            statement.setShort(3, (short) 0);
-            int affectedRows = statement.executeUpdate();
-            return affectedRows != 0;
-        } catch (SQLException e) {
-            throw new PersistenceException(e);
-        } finally {
-            SQLUtils.closeQuietly(connection);
-            SQLUtils.closeQuietly(statement);
-        }
     }
 
     @Override

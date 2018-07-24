@@ -41,6 +41,10 @@ public class NodeInfo {
 
     // Utils
 
+    static boolean statusIs(Member member, ClusterNode.Status status) {
+        return status.toString().equalsIgnoreCase(member.getStringAttribute(STATUS_ATTRIBUTE));
+    }
+
     static boolean hasTranslationDirection(Member member, LanguagePair direction) {
         String encoded = member.getStringAttribute(TRANSLATION_DIRECTIONS_ATTRIBUTE);
         if (encoded == null || encoded.isEmpty())

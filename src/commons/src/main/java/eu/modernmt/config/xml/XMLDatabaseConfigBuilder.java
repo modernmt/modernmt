@@ -27,7 +27,7 @@ class XMLDatabaseConfigBuilder extends XMLAbstractBuilder {
 
     /**
      * For each attribute in the DatabaseConfig,
-     * if the xml file element contains that attribute in the node "db"
+     * if the xml file element contains that attribute in the node "cassandra"
      * then write its value in the database configuration java object
      *
      * @param config the configuration java object to fill
@@ -42,10 +42,10 @@ class XMLDatabaseConfigBuilder extends XMLAbstractBuilder {
             config.setEmbedded(this.getBooleanAttribute("embedded"));
         if (this.hasAttribute("type")) {
             if (this.getStringAttribute("type").equals("mysql")) {
-                config.setType(DatabaseConfig.TYPE.MYSQL);
+                config.setType(DatabaseConfig.Type.MYSQL);
                 config.setPort(DatabaseConfig.MYSQL_DEFAULT_PORT);
             } else {
-                config.setType(DatabaseConfig.TYPE.CASSANDRA);
+                config.setType(DatabaseConfig.Type.CASSANDRA);
                 config.setPort(DatabaseConfig.CASSANDRA_DEFAULT_PORT);
             }
         }
@@ -60,7 +60,7 @@ class XMLDatabaseConfigBuilder extends XMLAbstractBuilder {
         if (this.hasAttribute("password"))
             config.setPassword(this.getStringAttribute("password"));
 
-        if (config.getType() != DatabaseConfig.TYPE.CASSANDRA && config.isEmbedded())
+        if (config.getType() != DatabaseConfig.Type.CASSANDRA && config.isEmbedded())
             throw new ConfigException("Bad DBConfiguration: only Cassandra DB can be embedded in MMT");
 
         return config;

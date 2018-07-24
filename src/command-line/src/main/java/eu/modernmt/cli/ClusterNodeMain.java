@@ -10,7 +10,6 @@ import eu.modernmt.config.xml.XMLConfigBuilder;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.io.UTF8Charset;
-import eu.modernmt.rest.RESTServer;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
 
@@ -42,7 +41,7 @@ public class ClusterNodeMain {
             Option apiPort = Option.builder("a").longOpt("api-port").hasArg().type(Integer.class).required(false).build();
             Option clusterPort = Option.builder("p").longOpt("cluster-port").hasArg().type(Integer.class).required(false).build();
             Option datastreamPort = Option.builder().longOpt("datastream-port").hasArg().required(false).build();
-            Option databasePort = Option.builder().longOpt("db-port").hasArg().required(false).build();
+            Option databasePort = Option.builder().longOpt("cassandra-port").hasArg().required(false).build();
 
             Option leader = Option.builder().longOpt("leader").hasArg().required(false).build();
 
@@ -118,7 +117,7 @@ public class ClusterNodeMain {
             String datastreamPort = cli.getOptionValue("datastream-port");
             if (datastreamPort != null)
                 streamConfig.setPort(Integer.parseInt(datastreamPort));
-            String databasePort = cli.getOptionValue("db-port");
+            String databasePort = cli.getOptionValue("cassandra-port");
             if (databasePort != null)
                 dbConfig.setPort(Integer.parseInt(databasePort));
 
@@ -130,7 +129,7 @@ public class ClusterNodeMain {
                 - create a Member with its host and port try to use this Member only to join the cluster
                 - the leader hosts the database and datastream, so set it as the host in datastreamconfig and databaseconfig
 
-            Assume that all the ports that the leader uses (cluster, datastream and db ports) are the same as this node.
+            Assume that all the ports that the leader uses (cluster, datastream and cassandra ports) are the same as this node.
             If they are not, then the configuration is wrong.
 
             If no leader is passed by command line, do nothing.
@@ -148,15 +147,7 @@ public class ClusterNodeMain {
         }
     }
 
-    /**
-     * This main method (usually launched by Python)
-     * is employed to start an already created and trained mmt node
-     *
-     * @param _args the command line args for the node start
-     * @throws Throwable
-     */
     public static void main(String[] _args) throws Throwable {
-        // parse the arguments
         Args args = new Args(_args);
 
         Log4jConfiguration.setup(args.logFile, args.verbosity);
@@ -166,19 +157,7 @@ public class ClusterNodeMain {
 
         try {
             ModernMT.start(args.config, listener);
-
-            ApiConfig apiConfig = args.config.getNetworkConfig().getApiConfig();
-
-            if (apiConfig.isEnabled()) {
-                RESTServer.ServerOptions options = new RESTServer.ServerOptions(apiConfig.getPort());
-                options.contextPath = apiConfig.getApiRoot();
-
-                RESTServer restServer = new RESTServer(options);
-                restServer.start();
-            }
-
             listener.updateStatus(ClusterNode.Status.READY).store();
-
         } catch (Throwable e) {
             listener.onError();
             throw e;

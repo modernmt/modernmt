@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="%{level}" name="ModernMT" packages="">
+<Configuration status="%{level}" name="ModernMT" packages="" shutdownHook="disable">
     <Appenders>
         <RollingRandomAccessFile name="RollingRandomAccessFile" fileName="%{log_file}" filePattern="%{log_file}.%i.gz">
             <PatternLayout>

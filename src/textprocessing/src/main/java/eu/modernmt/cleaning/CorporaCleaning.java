@@ -2,7 +2,7 @@ package eu.modernmt.cleaning;
 
 import eu.modernmt.cleaning.filters.*;
 import eu.modernmt.cleaning.filters.draft.DraftFilter;
-import eu.modernmt.cleaning.filters.lang.langdetect.OptimaizeLanguageFilter;
+import eu.modernmt.cleaning.filters.lang.OptimaizeLanguageFilter;
 import eu.modernmt.cleaning.filters.ngrams.RareNgramFilter;
 import eu.modernmt.cleaning.normalizers.ControlCharsStripper;
 import eu.modernmt.cleaning.normalizers.XMLStripper;

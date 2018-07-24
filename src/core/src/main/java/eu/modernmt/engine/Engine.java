@@ -19,6 +19,8 @@ import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
 import java.io.File;
@@ -40,6 +42,7 @@ public class Engine implements Closeable, DataListenerProvider {
         return new File(FileConst.getEngineRoot(engine), ENGINE_CONFIG_PATH);
     }
 
+    private final Logger logger = LogManager.getLogger(Engine.class);
     private final String name;
     private final LanguageIndex languageIndex;
 
@@ -221,11 +224,38 @@ public class Engine implements Closeable, DataListenerProvider {
     }
 
     @Override
-    public void close() {
-        IOUtils.closeQuietly(decoder);
+    public void close() throws IOException {
+        IOException error = null;
+
+        try {
+            if (decoder != null)
+                decoder.close();
+        } catch (IOException e) {
+            logger.error(e);
+            error = e;
+        }
+
+        try {
+            if (aligner != null)
+                aligner.close();
+        } catch (IOException e) {
+            logger.error(e);
+            error = e;
+        }
+
+        try {
+            if (contextAnalyzer != null)
+                contextAnalyzer.close();
+        } catch (IOException e) {
+            logger.error(e);
+            error = e;
+        }
+
         IOUtils.closeQuietly(preprocessor);
         IOUtils.closeQuietly(postprocessor);
-        IOUtils.closeQuietly(aligner);
-        IOUtils.closeQuietly(contextAnalyzer);
+
+        if (error != null)
+            throw error;
     }
+
 }

@@ -11,9 +11,8 @@ class _TimeoutExpired(Exception):
 
 
 class DaemonController(object):
-    def __init__(self, pid_file, sigterm_timeout=1):
+    def __init__(self, pid_file):
         self._pid_file = pid_file
-        self._sigterm_timeout = sigterm_timeout
 
     @property
     def running(self):
@@ -33,15 +32,15 @@ class DaemonController(object):
 
         return False
 
-    def _stop(self, children=None, timeout_children=2):
+    def _stop(self, children=None, timeout=None):
         pid = self.pid
 
         if self.__is_running(pid):
-            self.__kill(pid, timeout=self._sigterm_timeout)
+            self.__kill(pid, timeout=timeout)
 
             if children is not None:
                 for child_pid in children:
-                    self.__kill(child_pid, timeout=timeout_children)
+                    self.__kill(child_pid, timeout=timeout)
 
         if os.path.isfile(self._pid_file):
             os.remove(self._pid_file)

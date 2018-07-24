@@ -102,7 +102,7 @@ public abstract class PythonProcess implements Closeable {
             process.destroy();
 
             try {
-                process.waitFor(5, TimeUnit.SECONDS);
+                process.waitFor(30, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 // Nothing to do
             }
@@ -114,6 +114,22 @@ public abstract class PythonProcess implements Closeable {
                 process.waitFor();
             } catch (InterruptedException e) {
                 // Nothing to do
+            }
+        }
+
+        if (logThread != null) {
+            try {
+                logThread.join();
+            } catch (InterruptedException e) {
+                // Ignore it
+            }
+        }
+
+        if (stdoutThread != null) {
+            try {
+                stdoutThread.join();
+            } catch (InterruptedException e) {
+                // ignore it
             }
         }
     }
@@ -170,7 +186,7 @@ public abstract class PythonProcess implements Closeable {
         @Override
         protected void onLineRead(String line) throws InterruptedException {
             if (line == null)
-                handoff.put(POISON_PILL);
+                handoff.offer(POISON_PILL);
             else
                 handoff.put(line);
         }

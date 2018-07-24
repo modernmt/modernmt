@@ -89,11 +89,6 @@
     <dependencies>
         <dependency>
             <groupId>eu.modernmt</groupId>
-            <artifactId>mmt-api-rest</artifactId>
-            <version>${mmt.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>eu.modernmt</groupId>
             <artifactId>mmt-core</artifactId>
             <version>${mmt.version}</version>
         </dependency>

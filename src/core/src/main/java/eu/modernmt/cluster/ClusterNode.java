@@ -6,8 +6,8 @@ import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.Member;
-import eu.modernmt.cluster.db.DatabaseLoader;
-import eu.modernmt.cluster.db.EmbeddedCassandra;
+import eu.modernmt.api.ApiServer;
+import eu.modernmt.cluster.cassandra.EmbeddedCassandra;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.cluster.kafka.EmbeddedKafka;
 import eu.modernmt.cluster.kafka.KafkaDataManager;
@@ -18,16 +18,20 @@ import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.data.DataManager;
 import eu.modernmt.data.HostUnreachableException;
+import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.hw.NetworkUtils;
 import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Translation;
 import eu.modernmt.persistence.Database;
+import eu.modernmt.persistence.PersistenceException;
+import eu.modernmt.persistence.cassandra.CassandraDatabase;
+import eu.modernmt.persistence.mysql.MySQLDatabase;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.Closeable;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -60,60 +64,17 @@ public class ClusterNode {
 
     private Engine engine;
 
-    private String uuid;
     private Status status;
     private ArrayList<StatusListener> statusListeners = new ArrayList<>();
 
-    private HazelcastInstance hazelcast;
-    private DataManager dataManager;
-    private Database database;
+    HazelcastInstance hazelcast;
+    DataManager dataManager;
+    Database database;
+    ApiServer api;
+    TranslationServiceProxy translationService;
+    ArrayList<EmbeddedService> services = new ArrayList<>(2);
 
-    private TranslationServiceProxy translationService;
-
-    private ArrayList<EmbeddedService> services = new ArrayList<>(2);
-
-    private final Thread shutdownThread = new Thread() {
-        @Override
-        public void run() {
-            forcefullyClose(hazelcast);
-
-            // Close engine resources
-            forcefullyClose(engine);
-
-            // Close services
-            forcefullyClose(database);
-            forcefullyClose(dataManager);
-
-            for (EmbeddedService service : services)
-                forcefullyClose(service);
-
-            setStatus(Status.TERMINATED);
-        }
-    };
-
-    private static void forcefullyClose(Closeable closeable) {
-        try {
-            if (closeable != null) closeable.close();
-        } catch (Throwable e) {
-            // Ignore
-        }
-    }
-
-    private static void forcefullyClose(EmbeddedService service) {
-        try {
-            if (service != null) service.shutdown();
-        } catch (Throwable e) {
-            // Ignore
-        }
-    }
-
-    private static void forcefullyClose(HazelcastInstance hazelcast) {
-        try {
-            if (hazelcast != null) hazelcast.shutdown();
-        } catch (Throwable e) {
-            // Ignore
-        }
-    }
+    private final ShutdownThread shutdownThread = new ShutdownThread(this);
 
     public ClusterNode() {
         this.status = Status.CREATED;
@@ -145,7 +106,7 @@ public class ClusterNode {
         this.statusListeners.remove(listener);
     }
 
-    private void setStatus(Status status) {
+    void setStatus(Status status) {
         setStatus(status, null);
     }
 
@@ -249,6 +210,8 @@ public class ClusterNode {
     public void start(NodeConfig nodeConfig, long joinTimeoutInterval, TimeUnit joinTimeoutUnit) throws FailedToJoinClusterException, BootstrapException {
         Timer globalTimer = new Timer();
         Timer timer = new Timer();
+
+        String uuid;
 
         // ===========  Join the cluster  =============
 
@@ -359,13 +322,12 @@ public class ClusterNode {
 
         DatabaseConfig databaseConfig = nodeConfig.getDatabaseConfig();
         if (databaseConfig.isEnabled()) {
-
             boolean local = NetworkUtils.isLocalhost(databaseConfig.getHost());
             boolean embedded = databaseConfig.isEmbedded();
 
-            // if db is 'embedded' and db host is localhost, start a db process;
-            // else do nothing - will connect to a remote db or a local standalone db
-            if (embedded && local && databaseConfig.getType() == DatabaseConfig.TYPE.CASSANDRA) {
+            // if cassandra is 'embedded' and cassandra host is localhost, start a cassandra process;
+            // else do nothing - will connect to a remote cassandra or a local standalone cassandra
+            if (embedded && local && databaseConfig.getType() == DatabaseConfig.Type.CASSANDRA) {
                 logger.info("Starting embedded Cassandra process");
                 timer.reset();
 
@@ -375,17 +337,48 @@ public class ClusterNode {
                 this.services.add(cassandra);
             }
 
-            /*else if is not embedded, check that it has a name and connect to it*/
             if (!embedded && databaseConfig.getName() == null)
                 throw new BootstrapException("Database name is mandatory if database is not embedded");
-            this.database = DatabaseLoader.load(engine, databaseConfig);
+
+            switch (databaseConfig.getType()) {
+                case CASSANDRA:
+                    this.database = new CassandraDatabase(databaseConfig);
+                    break;
+                case MYSQL:
+                    this.database = new MySQLDatabase(databaseConfig);
+                    break;
+                default:
+                    throw new Error("Invalid value for enum DatabaseConfig.Type: " + databaseConfig.getType());
+            }
+
+            try {
+                if (!this.database.exists())
+                    this.database.create();
+            } catch (PersistenceException e) {
+                throw new BootstrapException("Failed to create database: " + this.database.getClass().getSimpleName(), e);
+            }
         }
 
 
         // ===========  Hazelcast services init =============
 
-        translationService = hazelcast.getDistributedObject(TranslationService.SERVICE_NAME,
-                ClusterConstants.TRANSLATION_SERVICE_NAME);
+        translationService = hazelcast.getDistributedObject(TranslationService.SERVICE_NAME, "TranslationService");
+
+        // ===========  REST Api start ===========
+
+        ApiConfig apiConfig = nodeConfig.getNetworkConfig().getApiConfig();
+
+        if (apiConfig.isEnabled()) {
+            ApiServer.ServerOptions options = new ApiServer.ServerOptions(apiConfig.getPort());
+            options.contextPath = apiConfig.getApiRoot();
+
+            this.api = new ApiServer(options);
+            try {
+                this.api.start();
+            } catch (Exception e) {
+                throw new BootstrapException("Unable to start REST Api service", e);
+            }
+        }
 
         setStatus(Status.READY);
 
@@ -422,67 +415,36 @@ public class ClusterNode {
         return nodes;
     }
 
-    /**
-     * This method dispatches a TranslationTask to perform to a random Member of the cluster
-     * that supports a specific LanguagePair.
-     * It returns a Future for the TranslationTask result.
-     *
-     * @param task the translationTask with all the information on the translation job to execute
-     * @return the resulting Translation object.
-     */
-    public Future<Translation> submit(TranslationTask task, LanguagePair direction) {
-        Member member = this.getRandomMember(direction);
-        return member != null ? translationService.submit(task, member.getAddress()) : null;
-    }
+    public Future<Translation> submit(TranslationTask task) throws DecoderUnavailableException {
+        LanguagePair language = task.getLanguage();
 
-    /**
-     * This method dispatches a TranslationTask to perform to a random Member of the cluster.
-     * It returns a Future for the TranslationTask result.
-     *
-     * @param task the translationTask with all the information on the translation job to execute
-     * @return the resulting Translation object.
-     */
-    public Future<Translation> submit(TranslationTask task) {
-        Member member = this.getRandomMember();
-        return translationService.submit(task, member.getAddress());
-    }
-
-
-    /**
-     * This private method gets a random Member of the mmt cluster that this node is part of too
-     *
-     * @return the obtained Member
-     */
-    private Member getRandomMember() {
         Set<Member> members = hazelcast.getCluster().getMembers();
-        Member[] array = members.toArray(new Member[members.size()]);
-        int randomIndex = new Random().nextInt(array.length);
-        return array[randomIndex];
-    }
-
-    /**
-     * This private method gets a random Member of the mmt cluster that this node is part of too,
-     * after making sure that it supports a specific language direction
-     *
-     * @param languagePair the language direction that the Member to retrieve must support
-     * @return the obtained Member, or null if in the cluster there is no member supporting the passed language pair
-     */
-    private Member getRandomMember(LanguagePair languagePair) {
-        Set<Member> allMembers = hazelcast.getCluster().getMembers();
         ArrayList<Member> candidates = new ArrayList<>();
 
-        for (Member member : allMembers)
-            if (NodeInfo.hasTranslationDirection(member, languagePair))
+        int activeNodes = 0;
+
+        for (Member member : members) {
+            if (!NodeInfo.statusIs(member, Status.READY))
+                continue;
+
+            activeNodes++;
+
+            if (NodeInfo.hasTranslationDirection(member, language))
                 candidates.add(member);
-
-        if (candidates.size() == 0) {
-            return null;
-        } else {
-            int randomIndex = new Random().nextInt(candidates.size());
-            return candidates.get(randomIndex);
         }
-    }
 
+        if (candidates.isEmpty()) {
+            if (activeNodes > 0)
+                throw new UnsupportedLanguageException(language);
+            else
+                throw new DecoderUnavailableException("No active nodes in the cluster");
+        }
+
+        int i = new Random().nextInt(candidates.size());
+        Member member = candidates.get(i);
+
+        return translationService.submit(task, member.getAddress());
+    }
 
     public synchronized void shutdown() {
         if (setStatus(Status.SHUTDOWN, Status.READY))
