@@ -7,7 +7,9 @@ import com.hazelcast.spi.OperationService;
 import eu.modernmt.cluster.TranslationTask;
 import eu.modernmt.model.Translation;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A TranslationServiceProxy is an Hazelcast proxy for a TranslationService service.
@@ -52,4 +54,17 @@ public class TranslationServiceProxy extends AbstractDistributedObject<Translati
         TranslationOperation operation = new TranslationOperation(task);
         return localOperationService.invokeOnTarget(getServiceName(), operation, address);
     }
+
+    public void shutdown() {
+        ExecutorService service = getService().getExecutor();
+
+        if (!service.isShutdown())
+            service.shutdown();
+    }
+
+    public void awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+        ExecutorService service = getService().getExecutor();
+        service.awaitTermination(timeout, unit);
+    }
+
 }

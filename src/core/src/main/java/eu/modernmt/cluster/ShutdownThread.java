@@ -2,11 +2,13 @@ package eu.modernmt.cluster;
 
 
 import eu.modernmt.api.ApiServer;
+import eu.modernmt.cluster.services.TranslationServiceProxy;
 import eu.modernmt.engine.Engine;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
+import java.util.concurrent.TimeUnit;
 
 class ShutdownThread extends Thread {
 
@@ -23,6 +25,7 @@ class ShutdownThread extends Thread {
         long begin = System.currentTimeMillis();
 
         halt(this.node.api);
+        halt(this.node.translationService); // wait for all translations to be fulfilled
         halt(this.node.getEngine());
 
         // Close services
@@ -41,6 +44,17 @@ class ShutdownThread extends Thread {
 
         // Stop log4j2
         LogManager.shutdown();
+    }
+
+    private void halt(TranslationServiceProxy service) {
+        try {
+            logger.info("Halting Translation Service...");
+            service.shutdown();
+            service.awaitTermination(1, TimeUnit.DAYS);
+            logger.info("Translation Service halted");
+        } catch (Throwable e) {
+            logger.error("Failed to halt Translation Service", e);
+        }
     }
 
     private void halt(ApiServer api) {
