@@ -8,6 +8,10 @@ def list_gpus():
                    [x for x in stdout.splitlines() if x.startswith('GPU ')])
     except subprocess.CalledProcessError:
         return []
+    except OSError as e:
+        if e.errno == 2:  # nvidia-smi not installed
+            return []
+        raise
 
 
 def get_ram(gpu):
@@ -17,3 +21,7 @@ def get_ram(gpu):
         return int(stdout.strip()) * 1024 * 1024
     except subprocess.CalledProcessError:
         return 0
+    except OSError as e:
+        if e.errno == 2:   # nvidia-smi not installed
+            return 0
+        raise

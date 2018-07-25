@@ -26,10 +26,10 @@ public class EmbeddedKafka extends EmbeddedService {
 
     public static final String VERSION = Pom.getProperty("kafka.version");
 
-    public static EmbeddedKafka start(Engine engine, int port) throws BootstrapException {
+    public static EmbeddedKafka start(Engine engine, String netInterface, int port) throws BootstrapException {
         try {
             EmbeddedKafka instance = new EmbeddedKafka(engine);
-            instance.start(port);
+            instance.start(netInterface, port);
 
             return instance;
         } catch (IOException e) {
@@ -54,7 +54,7 @@ public class EmbeddedKafka extends EmbeddedService {
         this.zookeeperBin = Paths.join(kafkaHome, "bin", "zookeeper-server-start.sh");
     }
 
-    private void start(int port) throws IOException {
+    private void start(String netInterface, int port) throws IOException {
         if (!NetworkUtils.isAvailable(port))
             throw new IOException("Port " + port + " is already in use by another process");
 
@@ -73,7 +73,7 @@ public class EmbeddedKafka extends EmbeddedService {
             int zookeperPort = NetworkUtils.getAvailablePort();
 
             zookeeper = this.startZookeeper(zookeperPort);
-            kafka = this.startKafka(port, zookeperPort);
+            kafka = this.startKafka(netInterface, port, zookeperPort);
 
             success = true;
         } finally {
@@ -137,13 +137,13 @@ public class EmbeddedKafka extends EmbeddedService {
         }
     }
 
-    private Process startKafka(int port, int zookeperPort) throws IOException {
+    private Process startKafka(String netInterface, int port, int zookeperPort) throws IOException {
         if (!this.data.isDirectory())
             FileUtils.forceMkdir(this.data);
 
         Properties properties = new Properties();
         properties.setProperty("broker.id", "0");
-        properties.setProperty("listeners", "PLAINTEXT://:" + port);
+        properties.setProperty("listeners", "PLAINTEXT://" + netInterface + ":" + port);
         properties.setProperty("log.dirs", this.data.getAbsolutePath());
         properties.setProperty("num.partitions", "1");
         properties.setProperty("log.retention.hours", "8760000");

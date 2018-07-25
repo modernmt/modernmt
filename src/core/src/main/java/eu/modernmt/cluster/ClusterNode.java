@@ -261,7 +261,6 @@ public class ClusterNode {
 
         DataStreamConfig dataStreamConfig = nodeConfig.getDataStreamConfig();
         if (dataStreamConfig.isEnabled()) {
-
             boolean localDatastream = NetworkUtils.isLocalhost(dataStreamConfig.getHost());
             boolean embeddedDatastream = dataStreamConfig.isEmbedded();
 
@@ -273,7 +272,10 @@ public class ClusterNode {
                 logger.info("Starting embedded Kafka process");
                 timer.reset();
 
-                EmbeddedKafka kafka = EmbeddedKafka.start(this.engine, dataStreamConfig.getPort());
+                String host = hazelcast.getCluster().getLocalMember().getAddress().getHost();
+                dataStreamConfig.setHost(host);
+
+                EmbeddedKafka kafka = EmbeddedKafka.start(this.engine, dataStreamConfig.getHost(), dataStreamConfig.getPort());
                 logger.info("Embedded Kafka started in " + (timer.time() / 1000.) + "s");
 
                 this.services.add(kafka);
@@ -281,7 +283,6 @@ public class ClusterNode {
 
             if (!embeddedDatastream && dataStreamConfig.getName() == null)
                 throw new BootstrapException("Datastream name is mandatory if datastream is not embedded");
-
 
             this.dataManager = new KafkaDataManager(this.engine, uuid, dataStreamConfig);
             this.dataManager.setDataManagerListener(this::updateChannelsPositions);
