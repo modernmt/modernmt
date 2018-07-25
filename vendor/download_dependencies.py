@@ -1,3 +1,4 @@
+import argparse
 import os
 import shutil
 import sys
@@ -203,9 +204,18 @@ def copy_opennlp():
 
 
 if __name__ == '__main__':
-    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # reopen stdout in unbuffered mode
-    args = sys.argv
+    parser = argparse.ArgumentParser(description='Download all dependencies needed by ModernMT system.')
+    parser.add_argument('--skip-kafka', dest='skip_kafka', action='store_true', default=False,
+                        help='skip Apache Kafka download')
+    parser.add_argument('--skip-cassandra', dest='skip_cassandra', action='store_true', default=False,
+                        help='skip Apache Cassandra download')
 
-    download_cassandra()
-    download_kafka()
+    args = parser.parse_args()
+
+    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # reopen stdout in unbuffered mode
+
+    if not args.skip_cassandra:
+        download_cassandra()
+    if not args.skip_kafka:
+        download_kafka()
     copy_opennlp()
