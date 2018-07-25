@@ -571,7 +571,7 @@ def main():
         exit(1)
     except Exception as e:
         sys.stderr.write('\nERROR Unexpected exception: {message}\n'.format(message=e.message))
-        exit(1)
+        raise
 
 
 # Check that the node is running
