@@ -227,7 +227,7 @@ class ClusterNode(DaemonController):
         'LOADED': 700,
         'UPDATING': 800,
         'UPDATED': 900,
-        'READY': 1000,
+        'RUNNING': 1000,
         'SHUTDOWN': 1100,
         'TERMINATED': 1200,
         'ERROR': 9999,

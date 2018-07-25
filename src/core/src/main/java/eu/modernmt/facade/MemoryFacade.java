@@ -279,7 +279,7 @@ public class MemoryFacade {
             return null;
 
         List<NodeInfo> nodes = ModernMT.getNode().getClusterNodes().stream()
-                .filter(node -> node.status == ClusterNode.Status.READY)
+                .filter(node -> node.status == ClusterNode.Status.RUNNING)
                 .collect(Collectors.toList());
 
         long begin = job.getBegin();

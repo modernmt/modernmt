@@ -157,7 +157,7 @@ public class ClusterNodeMain {
 
         try {
             ModernMT.start(args.config, listener);
-            listener.updateStatus(ClusterNode.Status.READY).store();
+            listener.updateStatus(ClusterNode.Status.RUNNING).store();
         } catch (Throwable e) {
             listener.onError();
             throw e;
@@ -236,7 +236,7 @@ public class ClusterNodeMain {
         public void onStatusChanged(ClusterNode node, ClusterNode.Status currentStatus, ClusterNode.Status previousStatus) {
             this.updateServices(node.getServices());
 
-            if (currentStatus == ClusterNode.Status.READY)
+            if (currentStatus == ClusterNode.Status.RUNNING)
                 return; // Wait for REST Api to be ready
 
             this.updateStatus(currentStatus).store();

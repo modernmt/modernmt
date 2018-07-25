@@ -51,7 +51,7 @@ public class ClusterNode {
         LOADED,         // Node loaded the models
         UPDATING,       // Node is updating its models with the latest contributions
         UPDATED,        // Node updated its models with the latest contributions
-        READY,          // Node is ready and can receive translation requests
+        RUNNING,        // Node is running and it can receive translation requests
         SHUTDOWN,       // Node is shutting down
         TERMINATED      // Node is no longer active
     }
@@ -381,7 +381,7 @@ public class ClusterNode {
             }
         }
 
-        setStatus(Status.READY);
+        setStatus(Status.RUNNING);
 
         logger.info("Node started in " + (globalTimer.time() / 1000.) + "s");
     }
@@ -425,7 +425,7 @@ public class ClusterNode {
         int activeNodes = 0;
 
         for (Member member : members) {
-            if (!NodeInfo.statusIs(member, Status.READY))
+            if (!NodeInfo.statusIs(member, Status.RUNNING))
                 continue;
 
             activeNodes++;
@@ -448,7 +448,7 @@ public class ClusterNode {
     }
 
     public synchronized void shutdown() {
-        if (setStatus(Status.SHUTDOWN, Status.READY))
+        if (setStatus(Status.SHUTDOWN, Status.RUNNING))
             shutdownThread.start();
     }
 
