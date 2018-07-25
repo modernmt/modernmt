@@ -12,6 +12,7 @@ import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
@@ -76,7 +77,19 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
             env.put("CUDA_DEVICE_ORDER", "PCI_BUS_ID");  // see issue #152
             env.put("CUDA_VISIBLE_DEVICES", Integer.toString(gpu));
 
-            return new PythonDecoderImpl(builder.start(), gpu);
+            PythonDecoderImpl process = new PythonDecoderImpl(builder.start(), gpu);
+            boolean success = false;
+
+            try {
+                process.connect();
+                process.init();
+                success = true;
+
+                return process;
+            } finally {
+                if (!success)
+                    IOUtils.closeQuietly(process);
+            }
         }
 
     }
@@ -86,26 +99,19 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
     private final int gpu;
     private boolean alive;
 
-    private PythonDecoderImpl(Process process) throws IOException {
+    protected PythonDecoderImpl(Process process) {
         this(process, -1);
     }
 
-    private PythonDecoderImpl(Process process, int gpu) throws IOException {
+    protected PythonDecoderImpl(Process process, int gpu) {
         super(process);
         this.gpu = gpu;
+    }
 
-        boolean success = false;
-
-        try {
-            super.connect();
-            String line = super.recv();
-            if (!"READY".equals(line))
-                throw new IOException("Failed to start neural decoder, received: " + line);
-            success = true;
-        } finally {
-            if (!success)
-                close();
-        }
+    protected void init() throws IOException {
+        String line = super.recv();
+        if (!"READY".equals(line))
+            throw new IOException("Failed to start neural decoder, received: " + line);
 
         this.alive = true;
     }

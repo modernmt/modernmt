@@ -91,9 +91,9 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         PythonDecoder.Builder builder = new PythonDecoderImpl.Builder(getJarPath(), model);
 
         if (decoderConfig.isUsingGPUs())
-            return DecoderQueueImpl.newGPUInstance(builder, decoderConfig.getGPUs());
+            return DecoderQueueImpl.newGPUInstance(modelConfig, builder, decoderConfig.getGPUs());
         else
-            return DecoderQueueImpl.newCPUInstance(builder, decoderConfig.getThreads());
+            return DecoderQueueImpl.newCPUInstance(modelConfig, builder, decoderConfig.getThreads());
     }
 
     // Decoder

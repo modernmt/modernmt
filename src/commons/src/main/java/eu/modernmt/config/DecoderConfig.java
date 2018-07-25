@@ -62,16 +62,16 @@ public class DecoderConfig {
     // exclude gpus, specified in the config file, but not available
     // multiple occurrences of the same gpu are allowed
     public void setGPUs(int[] gpus) {
-        int[] availableGPUs;
-        try {
-            availableGPUs = Graphics.getAvailableGPUs();
-        } catch (IOException e) {
-            throw new RuntimeIOException(e);
-        }
-
         if (gpus == null || gpus.length == 0) {
-            throw new IllegalArgumentException("Empty GPU list specified");
+            this.gpus = null;
         } else {
+            int[] availableGPUs;
+            try {
+                availableGPUs = Graphics.getAvailableGPUs();
+            } catch (IOException e) {
+                throw new RuntimeIOException(e);
+            }
+
             for (int gpu : gpus) {
                 if (gpu < 0 || gpu >= availableGPUs.length)
                     throw new IllegalArgumentException("Invalid GPU index: " + gpu);

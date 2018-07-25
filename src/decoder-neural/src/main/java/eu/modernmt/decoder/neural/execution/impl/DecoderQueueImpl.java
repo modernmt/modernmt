@@ -3,6 +3,7 @@ package eu.modernmt.decoder.neural.execution.impl;
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.DecoderListener;
 import eu.modernmt.decoder.DecoderUnavailableException;
+import eu.modernmt.decoder.neural.ModelConfig;
 import eu.modernmt.decoder.neural.execution.DecoderQueue;
 import eu.modernmt.decoder.neural.execution.PythonDecoder;
 import eu.modernmt.lang.LanguagePair;
@@ -10,57 +11,66 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by davide on 22/05/17.
  */
-public abstract class DecoderQueueImpl implements DecoderQueue {
+public class DecoderQueueImpl implements DecoderQueue {
 
-    public static DecoderQueueImpl newGPUInstance(PythonDecoder.Builder builder, int[] gpus) throws DecoderException {
-        return new GPUDecoderQueueImpl(builder, gpus).init();
+    public static DecoderQueueImpl newGPUInstance(ModelConfig config, PythonDecoder.Builder builder, int[] gpus) throws DecoderException {
+        Map<LanguagePair, File> checkpoints = config.getAvailableModels();
+
+        Handler[] handlers = new Handler[gpus.length];
+        for (int i = 0; i < gpus.length; i++)
+            handlers[i] = new Handler(builder, checkpoints, gpus[i]);
+
+        return new DecoderQueueImpl(checkpoints, handlers);
     }
 
-    public static DecoderQueueImpl newCPUInstance(PythonDecoder.Builder builder, int cpus) throws DecoderException {
-        return new CPUDecoderQueueImpl(builder, cpus).init();
+    public static DecoderQueueImpl newCPUInstance(ModelConfig config, PythonDecoder.Builder builder, int cpus) throws DecoderException {
+        Map<LanguagePair, File> checkpoints = config.getAvailableModels();
+
+        Handler[] handlers = new Handler[cpus];
+        for (int i = 0; i < cpus; i++)
+            handlers[i] = new Handler(builder, checkpoints, -1);
+
+        return new DecoderQueueImpl(checkpoints, handlers);
     }
 
     protected final Logger logger = LogManager.getLogger(getClass());
 
-    private final int capacity;
-    private final PythonDecoder.Builder processBuilder;
-    private final BlockingQueue<PythonDecoder> queue;
+    private final Map<LanguagePair, File> checkpoints;
+    private final BlockingQueue<Handler> queue;
     private final ExecutorService initExecutor;
 
     private final AtomicInteger aliveProcesses = new AtomicInteger(0);
     private boolean active = true;
     private DecoderListener listener;
 
-    protected DecoderQueueImpl(PythonDecoder.Builder processBuilder, int capacity) {
-        this.capacity = capacity;
-        this.processBuilder = processBuilder;
-        this.queue = new ArrayBlockingQueue<>(capacity);
-        this.initExecutor = capacity > 1 ? Executors.newCachedThreadPool() : Executors.newSingleThreadExecutor();
-    }
+    protected DecoderQueueImpl(Map<LanguagePair, File> checkpoints, Handler[] handlers) throws DecoderException {
+        this.checkpoints = checkpoints;
+        this.queue = new ArrayBlockingQueue<>(handlers.length);
+        this.initExecutor = handlers.length > 1 ? Executors.newCachedThreadPool() : Executors.newSingleThreadExecutor();
 
-    protected final DecoderQueueImpl init() throws DecoderException {
-        Future<?>[] array = new Future<?>[capacity];
-        for (int i = 0; i < capacity; i++)
-            array[i] = this.initExecutor.submit(new Initializer());
+        Future<?>[] array = new Future<?>[handlers.length];
+        for (int i = 0; i < array.length; i++)
+            array[i] = this.initExecutor.submit(new Initializer(handlers[i]));
 
-        for (int i = 0; i < capacity; i++) {
+        for (Future<?> future : array) {
             try {
-                array[i].get();
+                future.get();
             } catch (InterruptedException e) {
                 throw new DecoderException("Initialization interrupted", e);
             } catch (ExecutionException e) {
                 throw new DecoderException("Unexpected error during initialization", e.getCause());
             }
         }
-
-        return this;
     }
 
     @Override
@@ -75,37 +85,61 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
 
     @Override
     public final PythonDecoder take(LanguagePair language) throws DecoderUnavailableException {
-        if (this.active && this.aliveProcesses.get() > 0) {
-            try {
-                return this.queue.take();
-            } catch (InterruptedException e) {
-                throw new DecoderUnavailableException("No NMT processes available", e);
-            }
-        } else {
+        if (!this.active || this.aliveProcesses.get() == 0)
             throw new DecoderUnavailableException("No alive NMT processes available");
+
+        PythonDecoder decoder = tryGetByLanguagePair(language);
+        if (decoder != null)
+            return decoder;
+
+        try {
+            return this.queue.take();
+        } catch (InterruptedException e) {
+            throw new DecoderUnavailableException("No NMT processes available", e);
         }
     }
 
     @Override
     public final PythonDecoder poll(LanguagePair language, long timeout, TimeUnit unit) throws DecoderUnavailableException {
-        if (this.active && this.aliveProcesses.get() > 0) {
-            try {
-                return this.queue.poll(timeout, unit);
-            } catch (InterruptedException e) {
-                throw new DecoderUnavailableException("No NMT processes available", e);
-            }
-        } else {
+        if (!this.active || this.aliveProcesses.get() == 0)
             throw new DecoderUnavailableException("No alive NMT processes available");
+
+        PythonDecoder decoder = tryGetByLanguagePair(language);
+        if (decoder != null)
+            return decoder;
+
+        try {
+            return this.queue.poll(timeout, unit);
+        } catch (InterruptedException e) {
+            throw new DecoderUnavailableException("No NMT processes available", e);
         }
+    }
+
+    private PythonDecoder tryGetByLanguagePair(LanguagePair language) {
+        File checkpoint = checkpoints.get(language);
+
+        Iterator<Handler> iterator = this.queue.iterator();
+        while (iterator.hasNext()) {
+            Handler handler = iterator.next();
+
+            if (checkpoint.equals(handler.getLastCheckpoint())) {
+                iterator.remove();
+                return handler;
+            }
+        }
+
+        return null;
     }
 
     @Override
     public final void release(PythonDecoder process) {
+        Handler handler = (Handler) process;
+
         if (!this.active) {
-            IOUtils.closeQuietly(process);
+            IOUtils.closeQuietly(handler);
         } else {
-            if (process.isAlive()) {
-                this.queue.offer(process);
+            if (handler.isAlive()) {
+                this.queue.offer(handler);
             } else {
                 int availability = this.aliveProcesses.decrementAndGet();
 
@@ -113,19 +147,11 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
                 if (listener != null)
                     listener.onDecoderAvailabilityChanged(availability);
 
-                IOUtils.closeQuietly(process);
-
-                this.onProcessDied(process);
-
                 if (this.active)
-                    this.initExecutor.execute(new Initializer());
+                    this.initExecutor.execute(new Initializer(handler));
             }
         }
     }
-
-    protected abstract PythonDecoder startProcess(PythonDecoder.Builder processBuilder) throws IOException;
-
-    protected abstract void onProcessDied(PythonDecoder process);
 
     @Override
     public void close() {
@@ -146,21 +172,28 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
 
     private class Initializer implements Runnable {
 
+        private final Handler handler;
+
+        private Initializer(Handler handler) {
+            this.handler = handler;
+        }
+
         @Override
         public void run() {
-            PythonDecoder process;
-
             try {
                 logger.info("Starting native decoder process");
-                process = startProcess(processBuilder);
+
+                long begin = System.currentTimeMillis();
+                handler.restart();
+                long elapsed = System.currentTimeMillis() - begin;
+
+                logger.info("Native decoder process started in " + (elapsed / 1000) + "s");
             } catch (IOException e) {
                 logger.error("Failed to start new decoder process", e);
                 System.exit(2);
-
-                return;
             }
 
-            queue.offer(process);
+            queue.offer(handler);
             int availability = aliveProcesses.incrementAndGet();
 
             DecoderListener listener = DecoderQueueImpl.this.listener;
@@ -169,4 +202,5 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
         }
 
     }
+
 }
