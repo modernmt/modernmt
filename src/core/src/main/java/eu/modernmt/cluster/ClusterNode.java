@@ -18,6 +18,7 @@ import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.data.DataManager;
 import eu.modernmt.data.HostUnreachableException;
+import eu.modernmt.decoder.DecoderListener;
 import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
@@ -52,6 +53,7 @@ public class ClusterNode {
         UPDATING,       // Node is updating its models with the latest contributions
         UPDATED,        // Node updated its models with the latest contributions
         RUNNING,        // Node is running and it can receive translation requests
+        UNAVAILABLE,    // Node has no decoder processes and it is recovering (cannot handle translation requests)
         SHUTDOWN,       // Node is shutting down
         TERMINATED      // Node is no longer active
     }
@@ -110,28 +112,34 @@ public class ClusterNode {
         setStatus(status, null);
     }
 
-    private synchronized boolean setStatus(Status status, Status expected) {
+    private boolean setStatus(Status status, Status expected) {
         if (expected == null || this.status == expected) {
-            Status previousStatus = this.status;
-            this.status = status;
+            synchronized (this) {
+                if (expected == null || this.status == expected) {
+                    Status previousStatus = this.status;
+                    this.status = status;
 
-            if (this.hazelcast != null) {
-                Member localMember = this.hazelcast.getCluster().getLocalMember();
-                NodeInfo.updateStatusInMember(localMember, status);
-            }
+                    if (this.hazelcast != null) {
+                        Member localMember = this.hazelcast.getCluster().getLocalMember();
+                        NodeInfo.updateStatusInMember(localMember, status);
+                    }
 
-            if (logger.isDebugEnabled())
-                logger.debug("Cluster node status changed: " + previousStatus + " -> " + status);
+                    if (logger.isDebugEnabled())
+                        logger.debug("Cluster node status changed: " + previousStatus + " -> " + status);
 
-            for (StatusListener listener : statusListeners) {
-                try {
-                    listener.onStatusChanged(this, this.status, previousStatus);
-                } catch (RuntimeException e) {
-                    logger.error("Unexpected exception while updating Node status. Resuming normal operations.", e);
+                    for (StatusListener listener : statusListeners) {
+                        try {
+                            listener.onStatusChanged(this, this.status, previousStatus);
+                        } catch (RuntimeException e) {
+                            logger.error("Unexpected exception while updating Node status. Resuming normal operations.", e);
+                        }
+                    }
+
+                    return true;
+                } else {
+                    return false;
                 }
             }
-
-            return true;
         } else {
             return false;
         }
@@ -249,7 +257,17 @@ public class ClusterNode {
         timer.reset();
         this.engine = Engine.load(nodeConfig.getEngineConfig());
         try {
-            this.engine.getDecoder().setListener(this::updateDecoderTranslationDirections);
+            this.engine.getDecoder().setListener(new DecoderListener() {
+                @Override
+                public void onTranslationDirectionsChanged(Set<LanguagePair> directions) {
+                    updateDecoderTranslationDirections(directions);
+                }
+
+                @Override
+                public void onDecoderAvailabilityChanged(int availability) {
+                    updateDecoderAvailability(availability);
+                }
+            });
         } catch (UnsupportedOperationException e) {
             // Ignore, decoder not available
         }
@@ -403,6 +421,13 @@ public class ClusterNode {
     private void updateDecoderTranslationDirections(Set<LanguagePair> directions) {
         Member localMember = hazelcast.getCluster().getLocalMember();
         NodeInfo.updateTranslationDirections(localMember, directions);
+    }
+
+    private void updateDecoderAvailability(int availability) {
+        if (availability == 0)
+            setStatus(Status.UNAVAILABLE, Status.RUNNING);
+        else
+            setStatus(Status.RUNNING, Status.UNAVAILABLE);
     }
 
     public Collection<NodeInfo> getClusterNodes() {

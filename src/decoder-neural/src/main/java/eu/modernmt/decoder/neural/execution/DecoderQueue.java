@@ -1,5 +1,6 @@
 package eu.modernmt.decoder.neural.execution;
 
+import eu.modernmt.decoder.DecoderListener;
 import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.lang.LanguagePair;
 
@@ -13,5 +14,9 @@ public interface DecoderQueue extends Closeable {
     PythonDecoder poll(LanguagePair language, long timeout, TimeUnit unit) throws DecoderUnavailableException;
 
     void release(PythonDecoder decoder);
+
+    int availability();
+
+    void setListener(DecoderListener listener);
 
 }

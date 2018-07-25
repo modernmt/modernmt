@@ -100,6 +100,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
     @Override
     public void setListener(DecoderListener listener) {
+        decoderQueue.setListener(listener);
         listener.onTranslationDirectionsChanged(directions);
     }
 

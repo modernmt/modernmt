@@ -1,6 +1,7 @@
 package eu.modernmt.decoder.neural.execution.impl;
 
 import eu.modernmt.decoder.DecoderException;
+import eu.modernmt.decoder.DecoderListener;
 import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.decoder.neural.execution.DecoderQueue;
 import eu.modernmt.decoder.neural.execution.PythonDecoder;
@@ -35,6 +36,7 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
 
     private final AtomicInteger aliveProcesses = new AtomicInteger(0);
     private boolean active = true;
+    private DecoderListener listener;
 
     protected DecoderQueueImpl(PythonDecoder.Builder processBuilder, int capacity) {
         this.capacity = capacity;
@@ -62,7 +64,17 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
     }
 
     @Override
-    public PythonDecoder take(LanguagePair language) throws DecoderUnavailableException {
+    public int availability() {
+        return aliveProcesses.get();
+    }
+
+    @Override
+    public void setListener(DecoderListener listener) {
+        this.listener = listener;
+    }
+
+    @Override
+    public final PythonDecoder take(LanguagePair language) throws DecoderUnavailableException {
         if (this.active && this.aliveProcesses.get() > 0) {
             try {
                 return this.queue.take();
@@ -75,7 +87,7 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
     }
 
     @Override
-    public PythonDecoder poll(LanguagePair language, long timeout, TimeUnit unit) throws DecoderUnavailableException {
+    public final PythonDecoder poll(LanguagePair language, long timeout, TimeUnit unit) throws DecoderUnavailableException {
         if (this.active && this.aliveProcesses.get() > 0) {
             try {
                 return this.queue.poll(timeout, unit);
@@ -88,14 +100,19 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
     }
 
     @Override
-    public void release(PythonDecoder process) {
+    public final void release(PythonDecoder process) {
         if (!this.active) {
             IOUtils.closeQuietly(process);
         } else {
             if (process.isAlive()) {
                 this.queue.offer(process);
             } else {
-                this.aliveProcesses.decrementAndGet();
+                int availability = this.aliveProcesses.decrementAndGet();
+
+                DecoderListener listener = this.listener;
+                if (listener != null)
+                    listener.onDecoderAvailabilityChanged(availability);
+
                 IOUtils.closeQuietly(process);
 
                 this.onProcessDied(process);
@@ -144,7 +161,11 @@ public abstract class DecoderQueueImpl implements DecoderQueue {
             }
 
             queue.offer(process);
-            aliveProcesses.incrementAndGet();
+            int availability = aliveProcesses.incrementAndGet();
+
+            DecoderListener listener = DecoderQueueImpl.this.listener;
+            if (listener != null)
+                listener.onDecoderAvailabilityChanged(availability);
         }
 
     }

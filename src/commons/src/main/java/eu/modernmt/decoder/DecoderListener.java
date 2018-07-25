@@ -11,4 +11,6 @@ public interface DecoderListener {
 
     void onTranslationDirectionsChanged(Set<LanguagePair> directions);
 
+    void onDecoderAvailabilityChanged(int availability);
+
 }
