@@ -31,6 +31,8 @@
     <processor>eu.modernmt.processing.recaser.UpperCasePostprocessor</processor>
     <processor>eu.modernmt.processing.recaser.SimpleRecaser</processor>
 
+    <processor target="zh">eu.modernmt.processing.lang.ChineseCharacterConverter</processor>
+
     <processor>eu.modernmt.processing.xml.XMLTagProcessor</processor>
 
 </pipeline>
