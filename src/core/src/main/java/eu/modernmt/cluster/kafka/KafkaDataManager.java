@@ -1,12 +1,15 @@
 package eu.modernmt.cluster.kafka;
 
+import eu.modernmt.aligner.Aligner;
 import eu.modernmt.config.DataStreamConfig;
 import eu.modernmt.data.*;
 import eu.modernmt.engine.Engine;
+import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.processing.Preprocessor;
 import org.apache.commons.io.IOUtils;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -53,14 +56,26 @@ public class KafkaDataManager implements DataManager {
     private ArrayList<TopicPartition> partitions;
     private HashMap<String, KafkaChannel> name2channel;
 
+    private static Aligner getAligner(Engine engine) {
+        try {
+            return engine.getAligner();
+        } catch (UnsupportedOperationException e) {
+            return null;
+        }
+    }
+
     public KafkaDataManager(Engine engine, String uuid, DataStreamConfig config) {
+        this(engine.getLanguageIndex(), engine.getPreprocessor(), getAligner(engine), uuid, config);
+    }
+
+    public KafkaDataManager(LanguageIndex languages, Preprocessor preprocessor, Aligner aligner, String uuid, DataStreamConfig config) {
         this.uuid = uuid;
 
         this.host = config.getHost();
         this.port = config.getPort();
         this.name = config.getName();
 
-        this.pollingThread = new DataPollingThread(engine, this);
+        this.pollingThread = new DataPollingThread(languages, preprocessor, aligner, this);
 
         // initialize the two required kafkaChannels with proper names
         // and put them in an array "channels"

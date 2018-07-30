@@ -31,7 +31,7 @@ public class ModernMT {
 
     public static ClusterNode getNode() {
         if (node == null)
-            throw new IllegalStateException("ModernMT node not available. You must must call start() first.");
+            throw new IllegalStateException("ModernMT node not available. You must must call runForever() first.");
 
         return node;
     }

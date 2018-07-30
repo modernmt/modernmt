@@ -10,6 +10,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -19,9 +20,7 @@ import java.util.stream.Collectors;
 /**
  * Created by davide on 22/09/16.
  */
-public class CorporaStorage {
-
-    private static final int MAX_CONCURRENT_BUCKET_ANALYSIS = 8;
+public class CorporaStorage implements Closeable {
 
     private final Logger logger = LogManager.getLogger(CorporaStorage.class);
 
@@ -143,8 +142,8 @@ public class CorporaStorage {
                     .filter(CorpusBucket::hasUnanalyzedContent)
                     .collect(Collectors.toList());
 
-            if (filteredBuckets.size() > MAX_CONCURRENT_BUCKET_ANALYSIS)
-                filteredBuckets = filteredBuckets.subList(0, MAX_CONCURRENT_BUCKET_ANALYSIS);
+            if (filteredBuckets.size() > options.maxConcurrentAnalyses)
+                filteredBuckets = filteredBuckets.subList(0, options.maxConcurrentAnalyses);
         }
 
         this.doAnalyze(filteredBuckets);
@@ -175,14 +174,7 @@ public class CorporaStorage {
             } catch (InterruptedException e) {
                 throw new IOException("Analysis has been interrupted", e);
             } catch (ExecutionException e) {
-                Throwable cause = e.getCause();
-
-                if (cause instanceof RuntimeException)
-                    throw (RuntimeException) cause;
-                else if (cause instanceof IOException)
-                    throw (IOException) cause;
-                else
-                    throw new Error("Unexpected exception", cause);
+                throw unpack(e);
             }
         }
 
@@ -190,34 +182,71 @@ public class CorporaStorage {
         this.contextAnalyzer.invalidateCache();
     }
 
-    public void shutdown() {
-        analysisTimer.shutdown();
-        analysisExecutor.shutdownNow();
+    public void compress() throws IOException {
+        this.flushToDisk(false, true);
+
+        int threads = Math.max(10, Runtime.getRuntime().availableProcessors());
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+
+        try {
+            this.analysisTimer.setEnabled(false);
+            ExecutorCompletionService<CorpusBucket.Compression> ecs = new ExecutorCompletionService<>(executor);
+
+            int size = 0;
+            for (final CorpusBucket bucket : index.getBuckets()) {
+                if (bucket.hasUncompressedContent()) {
+                    ecs.submit(bucket::compress);
+                    size++;
+                }
+            }
+
+            for (int i = 0; i < size; i++) {
+                CorpusBucket.Compression compression = ecs.take().get();
+
+                this.index.save();
+
+                try {
+                    compression.commit();
+                    logger.info("(" + (i + 1) + "/" + size + ") Compression completed for bucket " + compression.getBucket());
+                } catch (IOException e) {
+                    logger.warn("Failed to compress bucket " + compression.getBucket() + ", rolling back", e);
+                    compression.rollback();
+                    this.index.save();
+                }
+            }
+        } catch (InterruptedException e) {
+            throw new IOException("Interrupted execution", e);
+        } catch (ExecutionException e) {
+            throw unpack(e);
+        } finally {
+            this.analysisTimer.setEnabled(true);
+
+            executor.shutdownNow();
+        }
     }
 
-    public void awaitTermination(TimeUnit unit, long timeout) throws InterruptedException {
-        Thread waitThread = new Thread(() -> {
-            try {
-                analysisTimer.join();
-            } catch (InterruptedException e) {
-                // Ignore it
-            }
+    @Override
+    public void close() {
+        try {
+            analysisTimer.shutdown();
+            analysisTimer.join();
+        } catch (InterruptedException e) {
+            // Ignore it
+        }
 
-            try {
-                analysisExecutor.awaitTermination(timeout, unit);
-            } catch (InterruptedException e) {
-                // Ignore it
-            }
-        });
-        waitThread.start();
-
-        unit.timedJoin(waitThread, timeout);
+        try {
+            analysisExecutor.shutdownNow();
+            analysisExecutor.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            // Ignore it
+        }
     }
 
     private class AnalysisTimer extends Thread {
 
         private final SynchronousQueue<Object> shutdownSignal = new SynchronousQueue<>();
         private boolean shuttingDown = false;
+        private boolean enabled = true;
 
         public void shutdown() {
             if (!shuttingDown) {
@@ -231,6 +260,10 @@ public class CorporaStorage {
             }
         }
 
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
         @Override
         public void run() {
             while (true) {
@@ -241,6 +274,9 @@ public class CorporaStorage {
                 } catch (InterruptedException e) {
                     break;
                 }
+
+                if (!enabled)
+                    continue;
 
                 if (poisonPill == null) { // timeout
                     try {
@@ -262,6 +298,16 @@ public class CorporaStorage {
             }
         }
 
+    }
+
+    private static IOException unpack(ExecutionException e) {
+        Throwable cause = e.getCause();
+        if (cause instanceof RuntimeException)
+            throw (RuntimeException) cause;
+        else if (cause instanceof IOException)
+            return (IOException) cause;
+        else
+            throw new Error("Unexpected exception", cause);
     }
 
 }

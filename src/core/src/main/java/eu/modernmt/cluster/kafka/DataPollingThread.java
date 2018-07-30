@@ -1,10 +1,12 @@
 package eu.modernmt.cluster.kafka;
 
+import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataManager;
 import eu.modernmt.data.DataManagerException;
-import eu.modernmt.engine.Engine;
+import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
 import org.apache.commons.io.IOUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -36,10 +38,10 @@ class DataPollingThread extends Thread {
 
     private final ExecutorService executor = Executors.newCachedThreadPool();
 
-    public DataPollingThread(Engine engine, KafkaDataManager manager) {
+    public DataPollingThread(LanguageIndex languages, Preprocessor preprocessor, Aligner aligner, KafkaDataManager manager) {
         super("DataPollingThread");
         this.manager = manager;
-        this.batch = new KafkaDataBatch(engine, manager);
+        this.batch = new KafkaDataBatch(languages, preprocessor, aligner, manager);
     }
 
     public void ensureRunning() throws DataManagerException {

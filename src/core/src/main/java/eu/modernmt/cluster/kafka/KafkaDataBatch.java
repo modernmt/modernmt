@@ -3,10 +3,8 @@ package eu.modernmt.cluster.kafka;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.data.DataBatch;
-import eu.modernmt.data.DataMessage;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.engine.Engine;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Alignment;
@@ -27,14 +25,18 @@ class KafkaDataBatch implements DataBatch {
     private final ArrayList<Deletion> deletions = new ArrayList<>();
     private final HashMap<Short, Long> currentPositions = new HashMap<>();
 
-    private final Engine engine;
+    private final LanguageIndex languageIndex;
+    private final Preprocessor preprocessor;
+    private final Aligner aligner;
     private final KafkaDataManager manager;
 
     private final Stack<DataPartition> cachedPartitions = new Stack<>();
     private final HashMap<LanguagePair, DataPartition> cachedDataSet = new HashMap<>();
 
-    public KafkaDataBatch(Engine engine, KafkaDataManager manager) {
-        this.engine = engine;
+    public KafkaDataBatch(LanguageIndex languageIndex, Preprocessor preprocessor, Aligner aligner, KafkaDataManager manager) {
+        this.languageIndex = languageIndex;
+        this.preprocessor = preprocessor;
+        this.aligner = aligner;
         this.manager = manager;
     }
 
@@ -56,8 +58,6 @@ class KafkaDataBatch implements DataBatch {
     }
 
     public void load(ConsumerRecords<Integer, KafkaPacket> records, boolean process, boolean align) throws ProcessingException, AlignerException {
-        LanguageIndex languageIndex = engine.getLanguageIndex();
-
         // Load records
 
         this.clear();
@@ -92,7 +92,7 @@ class KafkaDataBatch implements DataBatch {
 
         this.translationUnits.ensureCapacity(size);
         for (DataPartition partition : cachedDataSet.values()) {
-            partition.process(engine, process, align, this.translationUnits);
+            partition.process(process, align, this.translationUnits);
             releaseDataPartition(partition);
         }
 
@@ -118,7 +118,7 @@ class KafkaDataBatch implements DataBatch {
         return currentPositions;
     }
 
-    private static class DataPartition {
+    private class DataPartition {
 
         private LanguagePair direction;
         public final ArrayList<KafkaPacket> packets = new ArrayList<>();
@@ -150,20 +150,17 @@ class KafkaDataBatch implements DataBatch {
             targets.add(packet.getTranslation());
         }
 
-        public void process(Engine engine, boolean process, boolean align, Collection<TranslationUnit> output) throws ProcessingException, AlignerException {
+        public void process(boolean process, boolean align, Collection<TranslationUnit> output) throws ProcessingException, AlignerException {
             if (packets.isEmpty())
                 return;
 
             if (process || align) {
-                Preprocessor preprocessor = engine.getPreprocessor();
                 List<Sentence> sourceSentences = preprocessor.process(direction, sources);
                 List<Sentence> targetSentences = preprocessor.process(direction.reversed(), targets);
                 Alignment[] alignments = null;
 
-                if (align) {
-                    Aligner aligner = engine.getAligner();
+                if (align)
                     alignments = aligner.getAlignments(direction, sourceSentences, targetSentences);
-                }
 
                 for (int i = 0; i < packets.size(); i++) {
                     Sentence sentence = sourceSentences.get(i);
@@ -173,8 +170,7 @@ class KafkaDataBatch implements DataBatch {
                     output.add(packets.get(i).asTranslationUnit(direction, sentence, translation, alignment));
                 }
             } else {
-                for (int i = 0; i < packets.size(); i++)
-                    output.add(packets.get(i).asTranslationUnit(direction));
+                for (KafkaPacket packet : packets) output.add(packet.asTranslationUnit(direction));
             }
         }
     }

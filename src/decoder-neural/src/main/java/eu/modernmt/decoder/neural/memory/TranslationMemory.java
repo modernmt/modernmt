@@ -18,4 +18,8 @@ public interface TranslationMemory extends Closeable, DataListener {
 
     ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, ContextVector contextVector, int limit) throws IOException;
 
+    // Optimize the model for storage.
+    // This operation can be extremely costly, use it only for backup purposes.
+    void optimize() throws IOException;
+
 }

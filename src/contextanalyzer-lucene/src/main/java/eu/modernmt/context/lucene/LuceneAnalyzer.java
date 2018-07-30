@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by davide on 09/05/16.
@@ -74,12 +73,15 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     }
 
     @Override
+    public void optimize() throws IOException {
+        this.storage.compress();
+        this.index.forceMerge();
+    }
+
+    @Override
     public void close() throws IOException {
         try {
-            this.storage.shutdown();
-            this.storage.awaitTermination(TimeUnit.SECONDS, 2);
-        } catch (InterruptedException e) {
-            // Ignore it
+            this.storage.close();
         } finally {
             this.index.close();
         }

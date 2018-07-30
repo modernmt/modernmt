@@ -14,6 +14,8 @@ import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -36,6 +38,8 @@ import java.util.function.Consumer;
  * Created by davide on 23/05/17.
  */
 public class LuceneTranslationMemory implements TranslationMemory {
+
+    private final Logger logger = LogManager.getLogger(LuceneTranslationMemory.class);
 
     private final int minQuerySize;
     private final Directory indexDirectory;
@@ -195,6 +199,16 @@ public class LuceneTranslationMemory implements TranslationMemory {
         return entries;
     }
 
+    @Override
+    public void optimize() throws IOException {
+        logger.info("Starting memory forced merge");
+        long begin = System.currentTimeMillis();
+        this.indexWriter.forceMerge(1);
+        this.indexWriter.commit();
+        long elapsed = begin - System.currentTimeMillis();
+        logger.info("Memory forced merge completed in " + (elapsed / 1000.) + "s");
+    }
+
     // DataListener
 
     @Override
@@ -235,7 +249,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
     @Override
     public boolean needsAlignment() {
-        return true;
+        return false;
     }
 
     private void onTranslationUnitsReceived(Collection<TranslationUnit> units) throws IOException {

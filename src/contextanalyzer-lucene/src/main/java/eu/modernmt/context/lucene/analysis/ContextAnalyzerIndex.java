@@ -2,12 +2,13 @@ package eu.modernmt.context.lucene.analysis;
 
 import eu.modernmt.context.lucene.analysis.rescoring.CosineSimilarityRescorer;
 import eu.modernmt.context.lucene.analysis.rescoring.Rescorer;
-import eu.modernmt.data.DataManager;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
@@ -31,6 +32,7 @@ public class ContextAnalyzerIndex implements Closeable {
 
     private static final int MIN_RESULT_BATCH = 20;
 
+    private final Logger logger = LogManager.getLogger(ContextAnalyzerIndex.class);
     private final Directory indexDirectory;
     private final Analyzer analyzer;
     private final IndexWriter indexWriter;
@@ -204,4 +206,12 @@ public class ContextAnalyzerIndex implements Closeable {
         IOUtils.closeQuietly(this.indexDirectory);
     }
 
+    public void forceMerge() throws IOException {
+        logger.info("Starting index forced merge");
+        long begin = System.currentTimeMillis();
+        this.indexWriter.forceMerge(1);
+        this.indexWriter.commit();
+        long elapsed = begin - System.currentTimeMillis();
+        logger.info("Index forced merge completed in " + (elapsed / 1000.) + "s");
+    }
 }

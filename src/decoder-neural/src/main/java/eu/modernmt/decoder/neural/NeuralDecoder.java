@@ -76,7 +76,6 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
         // Decoder Queue
         this.decoderQueue = this.echoServer ? null : loadDecoderQueue(modelConfig, config, model);
-
     }
 
     protected ModelConfig loadModelConfig(File filepath) throws IOException {

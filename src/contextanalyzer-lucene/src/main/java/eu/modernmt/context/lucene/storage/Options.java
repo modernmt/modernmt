@@ -5,16 +5,10 @@ package eu.modernmt.context.lucene.storage;
  */
 public class Options {
 
-    public static Options prepareForBulkLoad() {
-        Options options = new Options();
-        options.writeBehindDelay = Long.MAX_VALUE;
-
-        options.analysisOptions.minOffset = Long.MAX_VALUE;
-        options.analysisOptions.maxToleratedMisalignment = Long.MAX_VALUE;
-        options.analysisOptions.maxToleratedMisalignmentRatio = Float.MAX_VALUE;
-
-        return options;
-    }
+    // Number of maximum concurrent analyses in a one batch
+    // (one batch is executed every 'writeBehindDelay' milliseconds).
+    // If more are present, they are postponed to the next batch.
+    public int maxConcurrentAnalyses = 16;
 
     // Background threads that add corpora to the
     // context analyzer index
