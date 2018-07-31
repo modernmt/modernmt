@@ -24,6 +24,7 @@ public class CorporaStorage implements Closeable {
 
     private final Logger logger = LogManager.getLogger(CorporaStorage.class);
 
+    protected final File path;
     private final Options options;
     private final AnalysisTimer analysisTimer;
     private final ExecutorService analysisExecutor;
@@ -37,20 +38,25 @@ public class CorporaStorage implements Closeable {
 
         this.options = options;
         this.contextAnalyzer = contextAnalyzer;
+        this.path = path;
 
         FileUtils.forceMkdir(path);
 
         File indexPath = new File(path, "index");
 
         if (indexPath.exists())
-            this.index = CorporaIndex.load(options.analysisOptions, indexPath, path);
+            this.index = CorporaIndex.load(options, indexPath, path);
         else
-            this.index = new CorporaIndex(indexPath, options.analysisOptions, path);
+            this.index = new CorporaIndex(indexPath, options, path);
 
         this.analyzeIfNeeded(this.index.getBuckets());
 
-        this.analysisTimer = new AnalysisTimer();
-        this.analysisTimer.start();
+        if (options.enableAnalysis) {
+            this.analysisTimer = new AnalysisTimer();
+            this.analysisTimer.start();
+        } else {
+            this.analysisTimer = null;
+        }
     }
 
     public CorpusBucket getBucket(String docId) throws IOException {
@@ -150,7 +156,7 @@ public class CorporaStorage implements Closeable {
     }
 
     private void doAnalyze(Collection<CorpusBucket> buckets) throws IOException {
-        if (buckets.isEmpty())
+        if (!options.enableAnalysis || buckets.isEmpty())
             return;
 
         ArrayList<Future<Void>> pendingAnalysis = new ArrayList<>(buckets.size());
@@ -189,7 +195,8 @@ public class CorporaStorage implements Closeable {
         ExecutorService executor = Executors.newFixedThreadPool(threads);
 
         try {
-            this.analysisTimer.setEnabled(false);
+            if (this.analysisTimer != null)
+                this.analysisTimer.setEnabled(false);
             ExecutorCompletionService<CorpusBucket.Compression> ecs = new ExecutorCompletionService<>(executor);
 
             int size = 0;
@@ -219,7 +226,8 @@ public class CorporaStorage implements Closeable {
         } catch (ExecutionException e) {
             throw unpack(e);
         } finally {
-            this.analysisTimer.setEnabled(true);
+            if (this.analysisTimer != null)
+                this.analysisTimer.setEnabled(true);
 
             executor.shutdownNow();
         }
@@ -227,11 +235,13 @@ public class CorporaStorage implements Closeable {
 
     @Override
     public void close() {
-        try {
-            analysisTimer.shutdown();
-            analysisTimer.join();
-        } catch (InterruptedException e) {
-            // Ignore it
+        if (this.analysisTimer != null) {
+            try {
+                analysisTimer.shutdown();
+                analysisTimer.join();
+            } catch (InterruptedException e) {
+                // Ignore it
+            }
         }
 
         try {

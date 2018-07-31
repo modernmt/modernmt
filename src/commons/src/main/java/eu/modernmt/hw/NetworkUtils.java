@@ -19,7 +19,6 @@ public class NetworkUtils {
      */
     public static String getMyIpv4Address() {
         try {
-
             Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
 
             for (NetworkInterface netInterface : Collections.list(nets)) {
@@ -37,6 +36,7 @@ public class NetworkUtils {
         } catch (SocketException e) {
             // ignore it
         }
+
         return "127.0.0.1";
     }
 

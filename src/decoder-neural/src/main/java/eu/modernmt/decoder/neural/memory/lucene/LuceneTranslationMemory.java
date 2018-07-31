@@ -205,7 +205,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         long begin = System.currentTimeMillis();
         this.indexWriter.forceMerge(1);
         this.indexWriter.commit();
-        long elapsed = begin - System.currentTimeMillis();
+        long elapsed = System.currentTimeMillis() - begin;
         logger.info("Memory forced merge completed in " + (elapsed / 1000.) + "s");
     }
 

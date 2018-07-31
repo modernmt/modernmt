@@ -7,6 +7,8 @@ import eu.modernmt.config.NodeConfig;
 import eu.modernmt.config.xml.XMLConfigBuilder;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 
@@ -53,8 +55,14 @@ public class BackupMain {
         Args args = new Args(_args);
         Log4jConfiguration.setup(args.logFile, Level.INFO);
 
-        BackupDaemon daemon = new BackupDaemon(args.backupFolder, args.limit);
-        daemon.runForever(args.config, args.time * 1000L);
+        Logger logger = LogManager.getLogger(BackupDaemon.class);
+
+        try (BackupDaemon daemon = new BackupDaemon(args.backupFolder, args.limit)) {
+            daemon.runForever(args.config, args.time * 1000L);
+        } catch (Throwable e) {
+            logger.error(e.getMessage(), e);
+            System.exit(1);
+        }
     }
 
 }

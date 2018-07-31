@@ -37,7 +37,7 @@ public class CorpusBucket implements Closeable {
         writer.append('\n');
     }
 
-    public static CorpusBucket deserialize(Options.AnalysisOptions analysisOptions, File folder, BufferedReader reader) throws IOException {
+    public static CorpusBucket deserialize(Options analysisOptions, File folder, BufferedReader reader) throws IOException {
         String line = reader.readLine();
 
         try {
@@ -58,7 +58,7 @@ public class CorpusBucket implements Closeable {
         }
     }
 
-    private final Options.AnalysisOptions analysisOptions;
+    private final Options analysisOptions;
 
     private final UUID owner;
     private final String documentId;
@@ -73,11 +73,11 @@ public class CorpusBucket implements Closeable {
     private final File gzPath;
     private FileOutputStream stream = null;
 
-    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, UUID owner, String documentId) {
+    public CorpusBucket(Options analysisOptions, File folder, UUID owner, String documentId) {
         this(analysisOptions, folder, owner, documentId, 0L, 0L, 0L);
     }
 
-    public CorpusBucket(Options.AnalysisOptions analysisOptions, File folder, UUID owner, String documentId,
+    public CorpusBucket(Options analysisOptions, File folder, UUID owner, String documentId,
                         long analyzerOffset, long plainTextFileSize, long virtualFileSize) {
         this.owner = owner;
         this.documentId = documentId;
@@ -114,14 +114,30 @@ public class CorpusBucket implements Closeable {
         boolean success = false;
 
         InputStream gzStream = null;
+        InputStream stream = null;
 
         try {
             if (gzPath.exists())
                 gzStream = new GZIPInputStream(new FileInputStream(gzPath));
 
-            InputStream stream = new FileInputStream(path);
+            if (path.exists())
+                stream = new FileInputStream(path);
+
             success = true;
-            return gzStream == null ? stream : new SequenceInputStream(gzStream, stream);
+
+            if (gzStream != null && stream != null)
+                return new SequenceInputStream(gzStream, stream);
+            else if (gzStream != null)
+                return gzStream;
+            else if (stream != null)
+                return stream;
+            else
+                return new InputStream() {
+                    @Override
+                    public int read() {
+                        return -1;
+                    }
+                };
         } finally {
             if (!success)
                 IOUtils.closeQuietly(gzStream);
@@ -194,6 +210,10 @@ public class CorpusBucket implements Closeable {
 
     public boolean hasUncompressedContent() {
         return this.plainTextFileSize > 0;
+    }
+
+    public long getSize() {
+        return virtualFileSize;
     }
 
     public Compression compress() throws IOException {

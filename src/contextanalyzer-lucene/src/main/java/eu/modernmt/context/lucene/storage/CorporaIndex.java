@@ -15,7 +15,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
  */
 public class CorporaIndex implements Closeable {
 
-    public static CorporaIndex load(Options.AnalysisOptions analysisOptions, File indexFile, File bucketsFolder) throws IOException {
+    public static CorporaIndex load(Options analysisOptions, File indexFile, File bucketsFolder) throws IOException {
         BufferedReader reader = null;
 
         try {
@@ -53,17 +53,17 @@ public class CorporaIndex implements Closeable {
 
     private final File file;
     private final File swapFile;
-    private final Options.AnalysisOptions analysisOptions;
+    private final Options analysisOptions;
     private final File bucketsFolder;
     private final HashMap<String, CorpusBucket> bucketById;
     private final HashMap<Long, HashSet<CorpusBucket>> bucketsByMemory;
     private final HashMap<Short, Long> channels;
 
-    public CorporaIndex(File file, Options.AnalysisOptions analysisOptions, File bucketsFolder) {
+    public CorporaIndex(File file, Options analysisOptions, File bucketsFolder) {
         this(file, analysisOptions, bucketsFolder, Collections.emptyList(), new HashMap<>());
     }
 
-    private CorporaIndex(File file, Options.AnalysisOptions analysisOptions, File bucketsFolder, Collection<CorpusBucket> buckets, HashMap<Short, Long> channels) {
+    private CorporaIndex(File file, Options analysisOptions, File bucketsFolder, Collection<CorpusBucket> buckets, HashMap<Short, Long> channels) {
         this.file = file;
         this.swapFile = new File(file.getParentFile(), "~" + file.getName());
         this.analysisOptions = analysisOptions;

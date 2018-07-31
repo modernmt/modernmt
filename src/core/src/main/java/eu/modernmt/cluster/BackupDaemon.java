@@ -1,12 +1,14 @@
 package eu.modernmt.cluster;
 
 import eu.modernmt.cluster.kafka.KafkaDataManager;
+import eu.modernmt.config.DataStreamConfig;
 import eu.modernmt.config.NodeConfig;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.lucene.LuceneAnalyzer;
 import eu.modernmt.data.DataManager;
 import eu.modernmt.decoder.neural.memory.TranslationMemory;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
+import eu.modernmt.hw.NetworkUtils;
 import eu.modernmt.io.Paths;
 import eu.modernmt.processing.Preprocessor;
 import org.apache.commons.io.FileUtils;
@@ -36,6 +38,7 @@ public class BackupDaemon implements Closeable {
     private ContextAnalyzer contextAnalyzer = null;
     private TranslationMemory memory = null;
     private DataManager dataManager = null;
+    private boolean closed = false;
 
     public BackupDaemon(File folder, int limit) {
         this.folder = folder;
@@ -43,32 +46,49 @@ public class BackupDaemon implements Closeable {
         this.limit = limit;
     }
 
-    public void runForever(NodeConfig config, long time) throws Throwable {
+    public void setConfig(NodeConfig config) {
         this.config = config;
-        this.startComponents();
+
+        DataStreamConfig dataStreamConfig = config.getDataStreamConfig();
+
+        boolean localDatastream = NetworkUtils.isLocalhost(dataStreamConfig.getHost());
+        boolean embeddedDatastream = dataStreamConfig.isEmbedded();
+
+        if (embeddedDatastream && localDatastream) {
+            String host = NetworkUtils.getMyIpv4Address();
+            dataStreamConfig.setHost(host);
+        }
+    }
+
+    public void runForever(NodeConfig config, long time) throws Throwable {
+        this.setConfig(config);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
-                shutdown.put(new Object());
-            } catch (InterruptedException e) {
-                // ignore it
+                close();
+            } catch (IOException e) {
+                logger.error(e);
             }
         }));
 
+        this.startComponents();
+
         long nextBackup = System.currentTimeMillis();
 
-        while (true) {
+        while (!closed) {
             nextBackup += time;
 
             long awaitFor = nextBackup - System.currentTimeMillis();
-
+            
             if (awaitFor > 0) {
+                logger.info("Next backup in " + (int) (awaitFor / 1000.) + "s");
                 Object object = shutdown.poll(awaitFor, TimeUnit.MILLISECONDS);
                 if (object != null)
                     break;
             }
 
-            backup();
+            if (!closed)
+                backup();
         }
     }
 
@@ -79,7 +99,7 @@ public class BackupDaemon implements Closeable {
         this.memory.optimize();
         this.contextAnalyzer.optimize();
 
-        this.close();
+        this.stopComponents();
         this.createBackup();
         this.startComponents();
     }
@@ -99,26 +119,7 @@ public class BackupDaemon implements Closeable {
         }
     }
 
-    private void startComponents() throws Throwable {
-        close();
-
-        long begin = System.currentTimeMillis();
-
-        contextAnalyzer = new LuceneAnalyzer(Paths.join(models, "context"));
-        memory = new LuceneTranslationMemory(Paths.join(models, "memory"), 1);
-
-        dataManager = new KafkaDataManager(config.getEngineConfig().getLanguageIndex(), new Preprocessor(), null, UUID.randomUUID().toString(), config.getDataStreamConfig());
-        dataManager.addDataListener(contextAnalyzer);
-        dataManager.addDataListener(memory);
-
-        Map<Short, Long> positions = dataManager.connect();
-
-        long elapsed = System.currentTimeMillis() - begin;
-        logger.info("Components started in " + (elapsed / 1000.) + "s, channels: " + positions);
-    }
-
-    @Override
-    public void close() throws IOException {
+    private void stopComponents() throws IOException {
         IOException error = null;
 
         if (dataManager != null) {
@@ -150,5 +151,40 @@ public class BackupDaemon implements Closeable {
 
         if (error != null)
             throw error;
+    }
+
+    private void startComponents() throws Throwable {
+        this.stopComponents();
+
+        long begin, elapsed;
+
+        logger.info("Starting Context Analyzer");
+        begin = System.currentTimeMillis();
+        contextAnalyzer = new LuceneAnalyzer(Paths.join(models, "context"));
+        elapsed = System.currentTimeMillis() - begin;
+        logger.info("Context Analyzer started in " + (elapsed / 1000.) + "s");
+
+        logger.info("Starting Translation Memory");
+        begin = System.currentTimeMillis();
+        memory = new LuceneTranslationMemory(Paths.join(models, "memory"), 1);
+        elapsed = System.currentTimeMillis() - begin;
+        logger.info("Translation Memory started in " + (elapsed / 1000.) + "s");
+
+        logger.info("Starting Kafka Data Manager");
+        begin = System.currentTimeMillis();
+        dataManager = new KafkaDataManager(config.getEngineConfig().getLanguageIndex(), new Preprocessor(), null, UUID.randomUUID().toString(), config.getDataStreamConfig());
+        dataManager.addDataListener(contextAnalyzer);
+        dataManager.addDataListener(memory);
+        Map<Short, Long> positions = dataManager.connect(60, TimeUnit.SECONDS, true, false);
+        elapsed = System.currentTimeMillis() - begin;
+        logger.info("Kafka Data Manager started in " + (elapsed / 1000.) + "s, channels: " + positions);
+    }
+
+    @Override
+    public void close() throws IOException {
+        closed = true;
+        shutdown.offer(new Object());
+
+        this.stopComponents();
     }
 }
