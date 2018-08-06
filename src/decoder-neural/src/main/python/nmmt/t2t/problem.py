@@ -3,9 +3,9 @@ import os
 from collections import defaultdict
 
 import tensorflow as tf
-from tensor2tensor.data_generators import problem, text_problems, text_encoder, tokenizer
+from tensor2tensor.data_generators import problem, text_problems, text_encoder
 from tensor2tensor.data_generators import translate
-from tensor2tensor.data_generators.text_encoder import SubwordTextEncoder
+from tensor2tensor.data_generators.text_encoder import SubwordTextEncoder, native_to_unicode, unicode_to_native
 from tensor2tensor.data_generators.text_problems import VocabType
 from tensor2tensor.utils import registry
 
@@ -58,6 +58,17 @@ def _build_from_token_counts(args):
         encoder.store_to_file(vocab_filepath)
 
     return max_size, encoder.vocab_size
+
+
+class ModernMTSubwordTextEncoder(SubwordTextEncoder):
+    def __init__(self, filename=None):
+        super(ModernMTSubwordTextEncoder, self).__init__(filename=filename)
+
+    def encode(self, raw_text):
+        return self._tokens_to_subtoken_ids(native_to_unicode(raw_text).split(u' '))
+
+    def decode(self, subtokens):
+        return unicode_to_native(u' '.join(self._subtoken_ids_to_tokens(subtokens)))
 
 
 class SubwordTextEncoderBuilder(object):
@@ -114,7 +125,7 @@ class SubwordTextEncoderBuilder(object):
         if vocab_filepath is not None:
             encoder.store_to_file(vocab_filepath)
 
-        return encoder
+        return ModernMTSubwordTextEncoder(vocab_filepath)
 
 
 @registry.register_problem(name='translate_mmt')
@@ -193,7 +204,7 @@ class TranslateModernMT(translate.TranslateProblem):
 
         if force_get or tf.gfile.Exists(vocab_filepath):
             tf.logging.info('Found vocab file: %s', vocab_filepath)
-            return SubwordTextEncoder(vocab_filepath)
+            return ModernMTSubwordTextEncoder(vocab_filepath)
 
         # Vocabulary file does not exist: generate vocabulary
         # --------------------------------------------------------------------------------------------------------------
@@ -209,7 +220,7 @@ class TranslateModernMT(translate.TranslateProblem):
             token_counts = defaultdict(int)
 
             for item in self.generate_text_for_vocab(data_dir, tmp_dir):
-                for tok in tokenizer.encode(text_encoder.native_to_unicode(item)):
+                for tok in text_encoder.native_to_unicode(item).split(u' '):
                     token_counts[tok] += 1
 
             self._save_token_counts(token_counts, tokens_filepath)
