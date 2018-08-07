@@ -1,3 +1,11 @@
+<div>
+<img src="https://user-images.githubusercontent.com/1674891/43786026-f2043344-9a67-11e8-8434-27c324c37214.png" width="60%"></img>
+<p style="text-size: 200%">Simple. Adaptive. Neural.</p>
+<h3>State-of-the-art neural machine translation as a service that learns from your translation memories and corrections</h3>
+<div/>
+
+-----------
+
 # ModernMT - Neural Adaptive Machine Translation
 We think that artificial intelligence is going to be the next big thing in our nearby future. It will bring humanity to a new era of access and organization of information.
 Language translation is probably the most complex of the human tasks for a machine to learn but it is also the one with the greatest potential to make the world a single family.
