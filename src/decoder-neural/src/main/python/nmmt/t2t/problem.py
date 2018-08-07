@@ -74,7 +74,7 @@ class ModernMTSubwordTextEncoder(SubwordTextEncoder):
 class SubwordTextEncoderBuilder(object):
     __INITIAL_MAX_SIZE = 2e3
 
-    def __init__(self, target_size, threads=4, custom_tokens=None):
+    def __init__(self, target_size, threads=1, custom_tokens=None):
         self._approx_vocab_size = target_size
         self._threads = threads
         self._reserved_tokens = text_encoder.RESERVED_TOKENS + custom_tokens if custom_tokens is not None else None
@@ -226,8 +226,11 @@ class TranslateModernMT(translate.TranslateProblem):
             self._save_token_counts(token_counts, tokens_filepath)
 
         # Build subword
-        builder = SubwordTextEncoderBuilder(self.approx_vocab_size)
+        builder = SubwordTextEncoderBuilder(self.approx_vocab_size, custom_tokens=self._make_reserved_tokens())
         return builder.build(token_counts, vocab_filepath)
+
+    def _make_reserved_tokens(self):
+        return [('${DNT%d}_' % i) for i in range(10)]
 
     @staticmethod
     def _load_token_counts(filepath):
