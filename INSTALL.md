@@ -94,7 +94,7 @@ Done! go to [README.md](README.md) to create your first engine.
 
 **Important**: follow [pre-installation steps](#pre-installation-actions) before continuing with this installation.
 
-This release was tested on a clean Ubuntu 16.04 server from Amazon AWS (AMI: *Ubuntu Server 16.04 LTS (HVM), SSD Volume Type - ami-cd0f5cb6*).
+This release was tested on a clean Ubuntu 16.04 server.
 
 ## Libraries that MMT requires:
 
@@ -138,10 +138,17 @@ sudo apt-get install python-pip
 pip install -U requests
 ```
 
-### PyTorch (for Neural engine)
-Install *PyTorch 0.3* with `pip`:
+### Tensorflow and Tensor2Tensor
+
+In order to install Tensorflow and Tensor2Tensor just type:
+
 ```bash
-pip install http://download.pytorch.org/whl/cu91/torch-0.3.1-cp27-cp27mu-linux_x86_64.whl 
+pip install -U requests
+pip install numpy==1.14.5
+pip install tensorflow-gpu==1.8.0
+pip install tensor2tensor==1.6.3
+
+pip install --upgrade oauth2client
 ```
 
 ## Install the MMT Binaries
@@ -160,7 +167,6 @@ Done! go to [README.md](README.md)
 
 **Important**: follow [pre-installation steps](#pre-installation-actions) before continuing with this installation.
 
-Build MMT from source ensures the best performance and it can also solve some issues with hardware compatibility.
 The following procedure describes how to build MMT from source in an Ubuntu 16.04 environment.
 
 ## Installing third-party libraries
@@ -173,35 +179,38 @@ sudo apt-get update
 
 sudo apt-get install python-pip
 pip install -U requests
-sudo apt-get install g++
-sudo apt-get install libsnappy-dev zlib1g-dev libbz2-dev libboost-all-dev libsparsehash-dev cmake openjdk-8-jdk git maven
+
+sudo apt-get install zlib1g-dev libbz2-dev libboost-all-dev cmake git maven
 ```
 
-## PyTorch (for Neural engine)
-Install *PyTorch 0.3* with `pip`:
+### Tensorflow and Tensor2Tensor
+
+In order to install Tensorflow and Tensor2Tensor just type:
 
 ```bash
-pip install http://download.pytorch.org/whl/cu91/torch-0.3.1-cp27-cp27mu-linux_x86_64.whl 
+pip install -U requests
+pip install numpy==1.14.5
+pip install tensorflow-gpu==1.8.0
+pip install tensor2tensor==1.6.3
+
+pip install --upgrade oauth2client
 ```
 
 ## Install MMT
 
-First, clone ModernMT repository and initialize its submodules:
+First, clone ModernMT repository:
 
 ```
 git clone https://github.com/ModernMT/MMT.git ModernMT
 
 cd ModernMT
-
-git submodule init
-git submodule update
 ```
 
-Download and compile MMT submodules:
+Download MMT dependencies:
 
 ```
 cd vendor
-./compile
+python download_dependencies.py
 cd ..
 ```
 
