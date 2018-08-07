@@ -10,26 +10,19 @@ Language translation is probably the most complex of the human tasks for a machi
 With this project we want to give our contribution to the evolution of machine translation toward singularity.
 We want to consolidate the current state of the art into a single easy to use product, evolve it and keeping it an open to integrate the greatest opportunities in machine intelligence like deep learning.
 
-To achieve our goals we need a better MT technology that is able to extract more from data, adapt to context and easy to deploy. We know that the challenge is big, but the reward is potentially so big that we think it is worth trying hard.
+To achieve our goals we need a better MT technology that is able to extract more from data, adapt to context and be easy to deploy. We know that the challenge is big, but the reward is potentially so big that we think it is worth trying hard.
 
-## About MMT
-MMT is a context-aware, incremental and distributed general purpose Neural Machine Translation technology. MMT is:
-- Simple to use, fast to train, and easy to scale with respect to domains, data, and users.
+## About ModernMT
+ModernMT is a context-aware, incremental and distributed general purpose Neural Machine Translation technology based on **Tensorflow Transformer model**. ModernMT is:
+- Easy to use and scale with respect to domains, data, and users.
 - Trained by pooling all available projects/customers data and translation memories in one folder.
 - Queried by providing the sentence to be translated and optionally some context text.
 
-MMT's goal is to deliver the quality of multiple custom engines by adapting on the fly to the provided context.
+ModernMT goal is to deliver the quality of multiple custom engines by adapting on the fly to the provided context.
 
 You can find more information on: http://www.modernmt.eu
 
-## About this Release
-Release for Ubuntu 16.04
-
-This release strongly improves our **Adaptive Neural MT engine**. 
-In addition to the fast Phrase-Based engine, you can now create  a neural engine with the same simplicity, starting from a collection of line aligned parallel data or TMX files; the engine will be accessible via a [REST API](https://github.com/ModernMT/MMT/wiki/API-Documentation).
-It also lets you create an MT cluster where identical engines on different machines cooperate in order to increase the system speed and fault tolerance.
-
-## Your first translation with MMT
+## Your first translation with ModernMT
 
 ### Installation
 
@@ -40,17 +33,14 @@ English to Italian in three domains.
 
 ### Create an engine
 
-In order to create a *phrase-based* engine you can simply:
+We will now demonstrate how easy it is to train your first engine with MMT. *Please notice* however that the provided training set is tiny and exclusively intended for this demo. If you wish to train a proper engine please follow the instructions provided in this guide: [Create an engine from scratch](https://github.com/ModernMT/MMT/wiki/Create-an-engine-from-scratch).
 
+Creating an engine in ModernMT is this simple:
 ```bash
-$ ./mmt create en it examples/data/train
+$ ./mmt create en it examples/data/train --train-steps 6000
 ```
 
-*Note:* if you wish to create an *neural* engine, please add more data to the training set and specify the `--neural` flag:
-```bash
-$ ./mmt create en it examples/data/train --neural
-```
-Neural Engine on this tiny example data does not give any resonable output. We reccommend to complete the tutorial and then add more data to try neural.
+This command will start a fast training process that will last approximately 30mins; not enough to achieve good translation performance, but enough to demonstrate its functioning.
 
 ### Start the engine
 
