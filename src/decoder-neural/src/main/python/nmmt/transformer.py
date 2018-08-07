@@ -70,20 +70,21 @@ class TransformerDecoder(object):
         def __init__(self):
             self.memory_suggestions_limit = None  # Ignore
             self.memory_query_min_results = None  # Ignore
-            self.tuning_max_epochs = 10
+            self.tuning_max_epochs = 5
             self.tuning_max_learning_rate = .0002
+            self.tuning_max_batch_size = None
 
         def __str__(self):
             return str(self.__dict__)
 
-    def __init__(self, device, checkpoints, settings=None):
+    def __init__(self, gpu, checkpoints, settings=None):
         self._logger = logging.getLogger('TransformerDecoder')
         self._settings = settings if settings is not None else TransformerDecoder.Settings()
         self._checkpoints = checkpoints
         self._checkpoint = None
         self._nn_needs_reset = True
 
-        with tf.device(device):
+        with tf.device('/device:GPU:0' if gpu is not None else '/cpu:0'):
             self._restorer = checkpoints.restorer()
 
             # Prepare features for feeding into the model.
@@ -119,6 +120,10 @@ class TransformerDecoder(object):
 
         session_config = tf.ConfigProto(allow_soft_placement=True)
         session_config.gpu_options.allow_growth = True
+        if gpu is not None:
+            session_config.gpu_options.force_gpu_compatible = True
+            session_config.gpu_options.visible_device_list = str(gpu)
+
         self._session = tf.Session(config=session_config)
 
         # Init model
@@ -141,7 +146,7 @@ class TransformerDecoder(object):
 
         # (3) Translate and compute word alignment
         begin = time.time()
-        result = self._decode(text)
+        result = self._decode(source_lang, target_lang, text)
         decode_time = time.time() - begin
 
         self._logger.info('reset_time = %.3f, tune_time = %.3f, decode_time = %.3f'
@@ -187,12 +192,10 @@ class TransformerDecoder(object):
             learning_rate = learning_rate if learning_rate is not None else _learning_rate
 
         if learning_rate > 0. and epochs > 0:
-            encoder = self._checkpoint.encoder
-            batch_src = [encoder.encode(s.segment) + [text_encoder.EOS_ID] for s in suggestions]
-            batch_tgt = [encoder.encode(s.translation) + [text_encoder.EOS_ID] for s in suggestions]
+            batch_src = [self._text_encode(s.segment) for s in suggestions]
+            batch_tgt = [self._text_encode(s.translation) for s in suggestions]
 
-            batch_src = self._pack_batch(batch_src)
-            batch_tgt = self._pack_batch(batch_tgt)
+            batch_src, batch_tgt = self._pack_batch(batch_src, batch_tgt, self._settings.tuning_max_batch_size)
 
             for _ in xrange(epochs):
                 self._session.run(self._train_op, {
@@ -203,16 +206,13 @@ class TransformerDecoder(object):
 
             self._nn_needs_reset = True
 
-    def _decode(self, text):
-        inputs = self._checkpoint.encoder.encode(text) + [text_encoder.EOS_ID]
+    def _decode(self, source_lang, target_lang, text):
+        inputs = self._text_encode(text)
         results = self._session.run(self._predictions_op, {
             self._ph_infer_inputs: inputs
         })
 
-        output = self._save_until_eos(results['outputs'])
-        output = self._checkpoint.decoder.decode(output)
-
-        return Translation(text=output)
+        return Translation(text=self._text_decode(results['outputs']))
 
     def _warmup(self):
         random_checkpoint = self._checkpoints[None]
@@ -222,21 +222,45 @@ class TransformerDecoder(object):
             self._ph_infer_inputs: [text_encoder.EOS_ID]
         })
 
+    def _text_encode(self, text):
+        encoded = self._checkpoint.encoder.encode(text)
+        encoded.append(text_encoder.EOS_ID)
+        return encoded
+
+    def _text_decode(self, hyp):
+        hyp = self._save_until_eos(hyp)
+        return self._checkpoint.decoder.decode(hyp)
+
     @staticmethod
-    def _pack_batch(batch):
-        max_length = 0
+    def _pack_batch(batch_src, batch_tgt, max_size=None):
+        src_lengths = [len(x) for x in batch_src]
+        tgt_lengths = [len(x) for x in batch_tgt]
+        src_max_length = max(src_lengths)
+        tgt_max_length = max(tgt_lengths)
 
-        for e in batch:
-            max_length = max(len(e), max_length)
+        if max_size is not None:
+            while (src_max_length * len(src_lengths) + tgt_max_length * len(tgt_lengths)) > max_size:
+                src_lengths.pop()
+                tgt_lengths.pop()
+                src_max_length = max(src_lengths)
+                tgt_max_length = max(tgt_lengths)
 
-        for e in batch:
-            length = len(e)
+            if len(src_lengths) < len(batch_src):
+                batch_src = batch_src[:len(src_lengths)]
+            if len(tgt_lengths) < len(batch_tgt):
+                batch_tgt = batch_tgt[:len(tgt_lengths)]
 
-            if length < max_length:
-                for i in xrange(max_length - length):
-                    e.append(text_encoder.PAD_ID)
+        def _pack(batch, max_length):
+            for e in batch:
+                length = len(e)
 
-        return [[[[x]] for x in e] for e in batch]
+                if length < max_length:
+                    for i in xrange(max_length - length):
+                        e.append(text_encoder.PAD_ID)
+
+            return [[[[w]] for w in l] for l in batch]
+
+        return _pack(batch_src, src_max_length), _pack(batch_tgt, tgt_max_length)
 
     @staticmethod
     def _save_until_eos(hyp):
