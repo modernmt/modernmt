@@ -1,6 +1,7 @@
 <div>
 <img src="https://user-images.githubusercontent.com/1674891/43786026-f2043344-9a67-11e8-8434-27c324c37214.png" width="60%"></img>
 <h1>Simple. Adaptive. Neural.</h1>
+<br>
 <div/>
 
 We think that artificial intelligence is going to be the next big thing in our nearby future. It will bring humanity to a new era of access and organization of information.
