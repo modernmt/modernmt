@@ -1,6 +1,6 @@
 <div>
 <img src="https://user-images.githubusercontent.com/1674891/43786026-f2043344-9a67-11e8-8434-27c324c37214.png" width="60%"></img>
-<p style="text-size: 200%">Simple. Adaptive. Neural.</p>
+<h1>Simple. Adaptive. Neural.</h1>
 <h3>State-of-the-art neural machine translation as a service that learns from your translation memories and corrections</h3>
 <div/>
 
