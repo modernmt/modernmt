@@ -7,37 +7,56 @@ At least 10 times the corpus size, min 10GB. If your unzipped training data is 1
 A x86_64 platform is required.
 
 ### CPU
-No minimum required. 
-* More cores generally will give you a faster training and translation request throughput for phrase-based engines. 
-* More clock speed will generally give you a faster translation for the single request in phrase-based scenario.
+No minimum required. We suggest a least a 8-cores CPU for decoding.
 
-### GPU (only for neural engine)
-At least one [CUDA-capable GPU](https://developer.nvidia.com/cuda-gpus). Current MMT version supports only single-GPU training, while you can increase the translation throughput using multiple GPUs at runtime.
+### GPU
+At least one [CUDA-capable GPU](https://developer.nvidia.com/cuda-gpus). Multiple GPUs can speedup both training and translation.
 
 We recommend at least 8GB GPU memory for training and at least 2GB GPU memory for runtime.
 
 ### Memory
-*  Min 5GB
-*  1GB each 350MB of training data
+*  Min 16GB
 
 # Pre-installation actions
 
-## CUDA drivers (required for neural engine)
-In order to run the Neural Adaptive MMT engine, NVIDIA CUDA 9 drivers are required no matter the option you choose for installing MMT.
+## CUDA/cuDNN libraries and software
+### CUDA library
+In order to run ModernMT Enterprise Edition, [CUDA 9.0 library](https://developer.nvidia.com/cuda-90-download-archive?target_os=Linux) are required.
 
-Here we report the procedure for installing CUDA 9.0 for Ubuntu on a x86_64 machine; a detailed guide for different platforms  is available on the NVIDIA website: [NVIDIA CUDA Installation Guide for Linux](https://developer.nvidia.com/cuda-downloads).
-```
-wget -O cuda-repo-ubuntu1604-9-1-local_9.1.85-1_amd64.deb https://developer.nvidia.com/compute/cuda/9.1/Prod/local_installers/cuda-repo-ubuntu1604-9-1-local_9.1.85-1_amd64
+```bash
+# IMPORTANT: Tensorflow **won't work** with CUDA > 9.0
+wget -O cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64.deb https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64-deb
 
-sudo dpkg -i cuda-repo-ubuntu1604-9-1-local_9.1.85-1_amd64.deb
-sudo apt-key add /var/cuda-repo-9-1-local/7fa2af80.pub
+sudo dpkg -i cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64.deb
+sudo apt-key add /var/cuda-repo-<version>/7fa2af80.pub
 sudo apt-get update
 sudo apt-get install cuda
 
-rm cuda-*
+# Install Patch 1
+wget -O cuda-repo-ubuntu1604-9-0-local-cublas-performance-update_1.0-1_amd64.deb https://developer.nvidia.com/compute/cuda/9.0/Prod/patches/1/cuda-repo-ubuntu1604-9-0-local-cublas-performance-update_1.0-1_amd64-deb
+
+sudo dpkg -i cuda-repo-ubuntu1604-9-0-local-cublas-performance-update_1.0-1_amd64.deb
+sudo apt-get update
+sudo apt-get upgrade cuda
+
+# Install Patch 2
+wget -O cuda-repo-ubuntu1604-9-0-local-cublas-performance-update-2_1.0-1_amd64.deb https://developer.nvidia.com/compute/cuda/9.0/Prod/patches/2/cuda-repo-ubuntu1604-9-0-local-cublas-performance-update-2_1.0-1_amd64-deb
+
+sudo dpkg -i cuda-repo-ubuntu1604-9-0-local-cublas-performance-update-2_1.0-1_amd64.deb 
+sudo apt-get update
+sudo apt-get upgrade cuda
 ```
 
-Optionally, you can also install the **CuDNN 7.0** drivers in order to speed-up the deep-neural network computation. You can follow the steps described in this guide: [NVIDIA cuDNN](https://developer.nvidia.com/cudnn).
+### cuDNN library
+
+Install cuDNN 7.1 library from: [NVIDIA cuDNN Download](https://developer.nvidia.com/rdp/cudnn-download)
+
+Select option `Download cuDNN v7.1.4 (May 16, 2018), for CUDA 9.0` and version `cuDNN v7.1.4 Runtime Library for Ubuntu16.04 (Deb)`
+
+```
+curl [...] --output libcudnn7_7.1.4.18-1+cuda9.0_amd64.deb
+sudo dpkg -i libcudnn7_7.1.4.18-1+cuda9.0_amd64.deb
+```
 
 ## Max open files limit
 The current version of ModernMT does not limit the maximum number of open files for performance reasons. For this reason, if you plan to create an engine with a high number of different domains you could hit the OS limit and MMT will crash.
