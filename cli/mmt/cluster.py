@@ -397,7 +397,7 @@ class ClusterNode(DaemonController):
             ids = [m['id'] for m in memories if m['name'] == name]
 
             if len(ids) == 0:
-                raise IllegalArgumentException('unable to find memory "%s"' % name)
+                return None
             elif len(ids) > 1:
                 raise IllegalArgumentException(
                     'ambiguous memory name "%s", choose one of the following ids: %s' % (name, str(ids)))
@@ -406,6 +406,9 @@ class ClusterNode(DaemonController):
 
     def append_to_memory(self, memory, source_lang, target_lang, sentence, translation):
         memory = self.get_memory_id_by_name(memory)
+        if memory is None:
+            return None
+
         return self.api.append_to_memory(source_lang, target_lang, memory, sentence, translation)
 
     def rename_memory(self, memory, name):

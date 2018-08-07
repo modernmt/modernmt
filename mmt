@@ -408,7 +408,7 @@ def main_translate(argv):
                                    context_file=args.context_file, context_vector=args.context_vector)
 
     if args.text is not None:
-        print mmt_translator.translate_text(args.text.strip())
+        print mmt_translator.translate_text(args.text.strip()).encode('utf-8')
     else:
         if args.is_xliff:
             translator = XLIFFTranslator(mmt_translator)
@@ -450,7 +450,12 @@ def main_add(argv):
                                            'Options "-s" and "-t" are mandatory for multilingual engines.')
         source_lang, target_lang = node.engine.languages[0]
 
-    node.append_to_memory(args.memory, source_lang, target_lang, args.source, args.target)
+    result = node.append_to_memory(args.memory, source_lang, target_lang, args.source, args.target)
+    if result is None:
+        memory = node.api.create_memory(args.memory)
+        print 'Created new memory with name "%s"' % args.memory
+
+        node.append_to_memory(memory['id'], source_lang, target_lang, args.source, args.target)
 
     print 'SUCCESS - contribution added to memory "' + args.memory + '"'
 
