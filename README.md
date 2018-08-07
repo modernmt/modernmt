@@ -53,32 +53,20 @@ You can stop it with the command `stop`.
 
 Let's now use the command-line tool `mmt` to query the engine with the sentence *hello world* and context *computer*:
 ```
-$ ./mmt translate --context "programming language tutorial" "hello world"
-
-ModernMT Translate command line
->> Context: ibm 64%, microsoft 27%, europarl 9%
-
->> hello mondo
+$ ./mmt translate "This is an example"
+Si tratta di un esempio
 ```
-Next, we are going to improve the partial translation `hello mondo`.
 
 *Note:* You can query MMT directly via REST API, to learn more on how to do it, visit the [Translate API](https://github.com/ModernMT/MMT/wiki/API-Translate) page in the project Wiki.
 
 
-### Improve translation quality with new data
+### How to import a TMX file
 
-Let's now add a contribution to the existing engine, **without** need for retraining, in order to improve the previous translation. We will use again the command-line tool `mmt`:
+Importing a TMX file is very simple and fast. We will use again the command-line tool `mmt`:
 ```
-./mmt add ibm "hello Mike!" "ciao Mike!"
-```
-And now repeat the previous translation query: the engine has just learned a new word and the result is immediately visible.
-```
-$ ./mmt translate --context "programming language tutorial" "hello world"
-
-ModernMT Translate command line
->> Context: ibm 64%, microsoft 27%, europarl 9%
-
->> ciao mondo
+$ ./mmt import -x /path/to/file.tmx
+Importing example... [========================================] 100.0% 00:35
+IMPORT SUCCESS
 ```
 
 ## Evaluating quality
@@ -153,13 +141,13 @@ MMT Community is free, is open source and welcomes contributions and donations.
 MMT Community is sponsored by its funding members (Translated, FBK, UEDIN and TAUS) and the European Commission. 
 
 We also have an **MMT Enterprise Edition**, managed by the MMT company and not available on GitHub, with some extra features:
-- Pre-trained generic and custom models in 27 language pairs (and more to come!) on multiple billion words of premium data.
+- Pre-trained generic and custom models in 31 language pairs (and more to come!) on multiple billion words of premium data.
 - Support for cluster of servers for higher throughput, load balancing and high availability. 
 - Support for 71 files formats without format loss (Office, Adobe, Localization, etc).
 - Enterprise Customer Support via Video Conference Call, Phone and Email on business hours (CET) and optionally 24x7.
 - Custom developments billed per hour of work.
 
-MMT Enterprise is available in two cloud-based operating modes:
+ModernMT Enterprise is available in two cloud-based operating modes:
 - **Private**  Privacy of data, adaptivity, low cost for excellent throughput and maintenance, customer support.
 - **Confidential** Higher privacy of data, adaptivity, higher cost for throughput and maintenance, customer support.
 
