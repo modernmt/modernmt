@@ -66,7 +66,7 @@ def run_main():
         builder.register(name, checkpoint_path)
     checkpoints = builder.build()
 
-    decoder = TransformerDecoder(args.gpu, checkpoints, settings=config.settings)
+    decoder = TransformerDecoder(args.gpu, checkpoints, config=config)
 
     stdout.write('READY\n')
     stdout.flush()
