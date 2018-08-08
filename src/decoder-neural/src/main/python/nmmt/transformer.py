@@ -251,7 +251,8 @@ class TransformerDecoder(object):
         return encoded, indexes
 
     def _text_decode(self, hyp):
-        return self._checkpoint.decoder.decode_with_indexes(hyp)
+        encoded, indexes = self._checkpoint.decoder.decode_with_indexes(hyp)
+        return encoded, indexes
 
     @staticmethod
     def _pack_batch(batch_src, batch_tgt, max_size=None):
@@ -306,10 +307,14 @@ class TransformerDecoder(object):
         average_encdec_atts_mats = reduced_attention_matrix.mean((0, 2))
         # get first batch only; resulting shape (output, input)
         alignment_matrix = average_encdec_atts_mats[0]
-        # get indexes of the best aligned source for each output; resulting shape (output)
-        best_indexes = alignment_matrix.argmax(1)
 
-        sub_alignment = [(best_indexes[index], index) for index in xrange(len(best_indexes))]
+        # get indexes of the best aligned source for each output; resulting shape (output)
+        # best_indexes = alignment_matrix.argmax(1)
+        # sub_alignment = [(best_indexes[index], index) for index in xrange(len(best_indexes))]
+
+        # get indexes of the best aligned output for each input; resulting shape (input)
+        best_indexes = alignment_matrix.argmax(0)
+        sub_alignment = [(index, best_indexes[index]) for index in xrange(len(best_indexes))]
 
         if not sub_alignment:
             return []
