@@ -5,6 +5,7 @@ import os
 # noinspection PyUnresolvedReferences
 import time
 
+import numpy as np
 import tensorflow as tf
 # noinspection PyUnresolvedReferences
 from tensor2tensor import problems as problems_lib  # pylint: disable=unused-import
@@ -108,6 +109,12 @@ class TransformerDecoder(object):
             tf.get_variable_scope().reuse_variables()
 
             # Prepare the model for infer
+            self._attention_mats_op = [
+                self._model.attention_weights[
+                    'transformer/body/decoder/layer_%i/encdec_attention/multihead_attention/dot_product_attention' % i]
+                for i in xrange(self._model.hparams.num_hidden_layers)
+            ]
+
             infer_inputs = tf.reshape(self._ph_infer_inputs, [1, -1, 1, 1]),  # Make it 4D.
             infer_out = self._model.infer({
                 "inputs": infer_inputs
@@ -130,7 +137,7 @@ class TransformerDecoder(object):
         self._warmup()
 
     def translate(self, source_lang, target_lang, text, suggestions=None,
-                  tuning_epochs=None, tuning_learning_rate=None):
+                  tuning_epochs=None, tuning_learning_rate=None, forced_translation=None):
         checkpoint = self._checkpoints[source_lang, target_lang]
 
         # (1) Reset model (if necessary)
@@ -146,7 +153,7 @@ class TransformerDecoder(object):
 
         # (3) Translate and compute word alignment
         begin = time.time()
-        result = self._decode(source_lang, target_lang, text)
+        result = self._decode(source_lang, target_lang, text, output_text=forced_translation)
         decode_time = time.time() - begin
 
         self._logger.info('reset_time = %.3f, tune_time = %.3f, decode_time = %.3f'
@@ -192,8 +199,8 @@ class TransformerDecoder(object):
             learning_rate = learning_rate if learning_rate is not None else _learning_rate
 
         if learning_rate > 0. and epochs > 0:
-            batch_src = [self._text_encode(s.segment) for s in suggestions]
-            batch_tgt = [self._text_encode(s.translation) for s in suggestions]
+            batch_src = [self._text_encode(s.segment)[0] for s in suggestions]
+            batch_tgt = [self._text_encode(s.translation)[0] for s in suggestions]
 
             batch_src, batch_tgt = self._pack_batch(batch_src, batch_tgt, self._settings.tuning_max_batch_size)
 
@@ -206,13 +213,29 @@ class TransformerDecoder(object):
 
             self._nn_needs_reset = True
 
-    def _decode(self, source_lang, target_lang, text):
-        inputs = self._text_encode(text)
-        results = self._session.run(self._predictions_op, {
-            self._ph_infer_inputs: inputs
+    def _decode(self, source_lang, target_lang, text, output_text=None):
+        # decode
+        inputs, input_indexes = self._text_encode(text)
+        if output_text is None:
+            results = self._session.run(self._predictions_op, {
+                self._ph_infer_inputs: inputs
+            })
+            outputs = self._save_until_eos(results['outputs'])
+            raw_output, output_indexes = self._text_decode(outputs)
+        else:
+            outputs, output_indexes = self._text_encode(output_text)
+            raw_output = output_text
+
+        # align
+        results = self._session.run(self._attention_mats_op, {
+            self._ph_infer_inputs: inputs,
+            self._ph_train_inputs: np.reshape(inputs, [1, -1, 1, 1]),
+            self._ph_train_targets: np.reshape(outputs, [1, -1, 1, 1]),
         })
 
-        return Translation(text=self._text_decode(results['outputs']))
+        alignment = self._make_alignment(input_indexes, output_indexes, results)
+
+        return Translation(text=raw_output, alignment=alignment)
 
     def _warmup(self):
         random_checkpoint = self._checkpoints[None]
@@ -223,13 +246,12 @@ class TransformerDecoder(object):
         })
 
     def _text_encode(self, text):
-        encoded = self._checkpoint.encoder.encode(text)
+        encoded, indexes = self._checkpoint.encoder.encode_with_indexes(text)
         encoded.append(text_encoder.EOS_ID)
-        return encoded
+        return encoded, indexes
 
     def _text_decode(self, hyp):
-        hyp = self._save_until_eos(hyp)
-        return self._checkpoint.decoder.decode(hyp)
+        return self._checkpoint.decoder.decode_with_indexes(hyp)
 
     @staticmethod
     def _pack_batch(batch_src, batch_tgt, max_size=None):
@@ -273,6 +295,27 @@ class TransformerDecoder(object):
             # No EOS_ID: return the array as-is.
             return hyp
 
+    @staticmethod
+    def _make_alignment(input_indexes, output_indexes, attention_matrix):
+        attention_matrix = np.asarray(attention_matrix)
+
+        # resulting shape (layers, batch, heads, output, input);
+        # last two dimensions truncated to the size of trg_sub_tokens and src_sub_tokens
+        reduced_attention_matrix = attention_matrix[:, :, :, :len(output_indexes), :len(input_indexes)]
+        # get average over layers and heads; resulting shape (batch, output, input)
+        average_encdec_atts_mats = reduced_attention_matrix.mean((0, 2))
+        # get first batch only; resulting shape (output, input)
+        alignment_matrix = average_encdec_atts_mats[0]
+        # get indexes of the best aligned source for each output; resulting shape (output)
+        best_indexes = alignment_matrix.argmax(1)
+
+        sub_alignment = [(best_indexes[index], index) for index in xrange(len(best_indexes))]
+
+        if not sub_alignment:
+            return []
+
+        return sorted(set([(input_indexes[al[0]], output_indexes[al[1]]) for al in sub_alignment]))
+
     def serve_forever(self, stdin, stdout):
         try:
             while True:
@@ -282,7 +325,8 @@ class TransformerDecoder(object):
 
                 request = TranslationRequest.from_json_string(line)
                 translation = self.translate(request.source_lang, request.target_lang, request.query,
-                                             suggestions=request.suggestions)
+                                             suggestions=request.suggestions,
+                                             forced_translation=request.forced_translation)
                 response = TranslationResponse.to_json_string(translation)
 
                 stdout.write(response + '\n')

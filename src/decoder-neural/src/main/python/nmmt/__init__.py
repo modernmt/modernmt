@@ -29,11 +29,12 @@ class UnsupportedLanguageException(BaseException):
 
 
 class TranslationRequest(object):
-    def __init__(self, source_lang, target_lang, query, suggestions=None):
+    def __init__(self, source_lang, target_lang, query, suggestions=None, forced_translation=None):
         self.source_lang = source_lang
         self.target_lang = target_lang
         self.query = query
         self.suggestions = suggestions if suggestions is not None else []
+        self.forced_translation = forced_translation
 
     @staticmethod
     def from_json_string(json_string):
@@ -42,6 +43,7 @@ class TranslationRequest(object):
         query = obj['q']
         source_lang = obj['sl']
         target_lang = obj['tl']
+        forced_translation = obj['f'] if 'f' in obj else None
 
         suggestions = []
 
@@ -55,7 +57,8 @@ class TranslationRequest(object):
 
                 suggestions.append(Suggestion(sugg_sl, sugg_tl, sugg_seg, sugg_tra, sugg_scr))
 
-        return TranslationRequest(source_lang, target_lang, query, suggestions=suggestions)
+        return TranslationRequest(source_lang, target_lang, query,
+                                  suggestions=suggestions, forced_translation=forced_translation)
 
 
 class TranslationResponse(object):

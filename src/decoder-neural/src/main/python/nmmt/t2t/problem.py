@@ -5,7 +5,8 @@ from collections import defaultdict
 import tensorflow as tf
 from tensor2tensor.data_generators import problem, text_problems, text_encoder
 from tensor2tensor.data_generators import translate
-from tensor2tensor.data_generators.text_encoder import SubwordTextEncoder, native_to_unicode, unicode_to_native
+from tensor2tensor.data_generators.text_encoder import SubwordTextEncoder, native_to_unicode, unicode_to_native, \
+    _escape_token, _unescape_token
 from tensor2tensor.data_generators.text_problems import VocabType
 from tensor2tensor.utils import registry
 
@@ -67,8 +68,59 @@ class ModernMTSubwordTextEncoder(SubwordTextEncoder):
     def encode(self, raw_text):
         return self._tokens_to_subtoken_ids(native_to_unicode(raw_text).split(u' '))
 
-    def decode(self, subtokens):
-        return unicode_to_native(u' '.join(self._subtoken_ids_to_tokens(subtokens)))
+    def encode_with_indexes(self, raw_text):
+        tokens = native_to_unicode(raw_text).split(u' ')
+        subtokens = self._tokens_to_subtoken_strings(tokens)
+        subtoken_ids = [self._subtoken_string_to_id[subtoken] for subtoken in subtokens]
+
+        return subtoken_ids, self._get_indexes(subtokens)
+
+    def _tokens_to_subtoken_strings(self, tokens):
+        ret = []
+        for token in tokens:
+            ret.extend(self._token_to_subtoken_strings(token))
+        return ret
+
+    def _token_to_subtoken_strings(self, token):
+        cache_location = hash(token) % self._cache_size
+        cache_key, cache_value = self._cache[cache_location]
+        if cache_key == token:
+            return cache_value
+        ret = self._escaped_token_to_subtoken_strings(_escape_token(token, self._alphabet))
+        self._cache[cache_location] = (token, ret)
+        return ret
+
+    def decode(self, subtoken_ids):
+        return unicode_to_native(u' '.join(self._subtoken_ids_to_tokens(subtoken_ids)))
+
+    def decode_with_indexes(self, subtoken_ids):
+        subtokens = [self._subtoken_id_to_subtoken_string(subtoken_id) for subtoken_id in subtoken_ids]
+        tokens = self._subtoken_strings_to_tokens(subtokens)
+        raw_text = unicode_to_native(u' '.join(tokens))
+
+        return raw_text, self._get_indexes(subtokens)
+
+    @staticmethod
+    def _subtoken_strings_to_tokens(subtokens):
+        concatenated = ''.join(subtokens)
+        split = concatenated.split("_")
+        ret = []
+        for t in split:
+            if t:
+                unescaped = _unescape_token(t + "_")
+                if unescaped:
+                    ret.append(unescaped)
+        return ret
+
+    @staticmethod
+    def _get_indexes(subtokens):
+        indexes = []
+        i = 0
+        for subtoken in subtokens:
+            indexes.append(i)
+            if subtoken.endswith('_'):
+                i += 1
+        return indexes
 
 
 class SubwordTextEncoderBuilder(object):
@@ -191,7 +243,6 @@ class TranslateModernMT(translate.TranslateProblem):
 
                 for src_line, tgt_line in zip(
                         text_problems.txt_line_iterator(src_file), text_problems.txt_line_iterator(tgt_file)):
-
                     yield {"inputs": src_line, "targets": tgt_line}
 
         return iterator()
