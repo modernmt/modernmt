@@ -70,6 +70,15 @@ class Handler implements PythonDecoder {
     }
 
     @Override
+    public synchronized Translation translate(LanguagePair direction, Sentence sentence, String[] translation) throws DecoderException {
+        if (delegate == null)
+            throw new DecoderUnavailableException("Decoder process is dead");
+
+        checkpoint = checkpoints.get(direction);
+        return delegate.translate(direction, sentence, translation);
+    }
+
+    @Override
     public void close() throws IOException {
         checkpoint = null;
 

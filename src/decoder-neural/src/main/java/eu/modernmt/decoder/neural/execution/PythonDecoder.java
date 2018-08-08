@@ -27,4 +27,6 @@ public interface PythonDecoder extends Closeable {
 
     Translation translate(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException;
 
+    Translation translate(LanguagePair direction, Sentence sentence, String[] translation) throws DecoderException;
+
 }

@@ -128,15 +128,22 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
 
     @Override
     public Translation translate(LanguagePair direction, Sentence sentence, int nBest) throws DecoderException {
-        return this.translate(direction, sentence, null, nBest);
+        return this.translate(sentence, serialize(direction, sentence, null, null));
     }
 
     @Override
     public Translation translate(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException {
+        return this.translate(sentence, serialize(direction, sentence, suggestions, null));
+    }
+
+    @Override
+    public Translation translate(LanguagePair direction, Sentence sentence, String[] translation) throws DecoderException {
+        return this.translate(sentence, serialize(direction, sentence, null, translation));
+    }
+
+    private Translation translate(Sentence sentence, String payload) throws DecoderException {
         if (!isAlive())
             throw new DecoderUnavailableException("Neural decoder process not available");
-
-        String payload = serialize(direction, sentence, suggestions);
 
         boolean success = false;
 
@@ -161,13 +168,16 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
         }
     }
 
-    private String serialize(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions) {
+    private String serialize(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, String[] forcedTranslation) {
         String text = TokensOutputStream.serialize(sentence, false, true);
 
         JsonObject json = new JsonObject();
         json.addProperty("q", text);
         json.addProperty("sl", direction.source.toLanguageTag());
         json.addProperty("tl", direction.target.toLanguageTag());
+
+        if (forcedTranslation != null)
+            json.addProperty("f", StringUtils.join(forcedTranslation, ' '));
 
         if (suggestions != null && suggestions.length > 0) {
             JsonArray array = new JsonArray();

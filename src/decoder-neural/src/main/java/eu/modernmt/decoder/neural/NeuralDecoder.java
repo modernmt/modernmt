@@ -144,16 +144,16 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
                 PythonDecoder decoder = null;
 
                 try {
+                    decoder = decoderQueue.take(direction);
+
                     if (suggestions != null && suggestions.length > 0) {
-                        // if perfect match, return suggestion instead
+                        // if perfect match, force translate with suggestion instead
                         if (suggestions[0].score == 1.f) {
-                            translation = Translation.fromTokens(text, suggestions[0].translation);
+                            translation = decoder.translate(direction, text, suggestions[0].translation);
                         } else {
-                            decoder = decoderQueue.take(direction);
                             translation = decoder.translate(direction, text, suggestions, nbestListSize);
                         }
                     } else {
-                        decoder = decoderQueue.take(direction);
                         translation = decoder.translate(direction, text, nbestListSize);
                     }
                 } finally {
