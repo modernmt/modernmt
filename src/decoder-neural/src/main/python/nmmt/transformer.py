@@ -351,8 +351,9 @@ class TransformerDecoder(object):
         sub_alignment = [(index, best_indexes[index]) for index in xrange(len(best_indexes))]
         if not sub_alignment:
             return []
+        alignment = sorted(set([(input_indexes[al[0]], output_indexes[al[1]]) for al in sub_alignment]))
 
-        return sorted(set([(input_indexes[al[0]], output_indexes[al[1]]) for al in sub_alignment]))
+        return alignment
 
     def serve_forever(self, stdin, stdout):
         try:

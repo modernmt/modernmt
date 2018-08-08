@@ -5,8 +5,7 @@ from collections import defaultdict
 import tensorflow as tf
 from tensor2tensor.data_generators import problem, text_problems, text_encoder
 from tensor2tensor.data_generators import translate
-from tensor2tensor.data_generators.text_encoder import SubwordTextEncoder, native_to_unicode, unicode_to_native, \
-    _escape_token, _unescape_token
+from tensor2tensor.data_generators.text_encoder import SubwordTextEncoder
 from tensor2tensor.data_generators.text_problems import VocabType
 from tensor2tensor.utils import registry
 
@@ -66,10 +65,10 @@ class ModernMTSubwordTextEncoder(SubwordTextEncoder):
         super(ModernMTSubwordTextEncoder, self).__init__(filename=filename)
 
     def encode(self, raw_text):
-        return self._tokens_to_subtoken_ids(native_to_unicode(raw_text).split(u' '))
+        return self._tokens_to_subtoken_ids(text_encoder.native_to_unicode(raw_text).split(u' '))
 
     def encode_with_indexes(self, raw_text):
-        tokens = native_to_unicode(raw_text).split(u' ')
+        tokens = text_encoder.native_to_unicode(raw_text).split(u' ')
         subtokens = self._tokens_to_subtoken_strings(tokens)
         subtoken_ids = [self._subtoken_string_to_id[subtoken] for subtoken in subtokens]
 
@@ -86,17 +85,17 @@ class ModernMTSubwordTextEncoder(SubwordTextEncoder):
         cache_key, cache_value = self._cache[cache_location]
         if cache_key == token:
             return cache_value
-        ret = self._escaped_token_to_subtoken_strings(_escape_token(token, self._alphabet))
+        ret = self._escaped_token_to_subtoken_strings(text_encoder._escape_token(token, self._alphabet))
         self._cache[cache_location] = (token, ret)
         return ret
 
     def decode(self, subtoken_ids):
-        return unicode_to_native(u' '.join(self._subtoken_ids_to_tokens(subtoken_ids)))
+        return text_encoder.unicode_to_native(u' '.join(self._subtoken_ids_to_tokens(subtoken_ids)))
 
     def decode_with_indexes(self, subtoken_ids):
         subtokens = [self._subtoken_id_to_subtoken_string(subtoken_id) for subtoken_id in subtoken_ids]
         tokens = self._subtoken_strings_to_tokens(subtokens)
-        raw_text = unicode_to_native(u' '.join(tokens))
+        raw_text = text_encoder.unicode_to_native(u' '.join(tokens))
 
         return raw_text, self._get_indexes(subtokens)
 
@@ -107,7 +106,7 @@ class ModernMTSubwordTextEncoder(SubwordTextEncoder):
         ret = []
         for t in split:
             if t:
-                unescaped = _unescape_token(t + "_")
+                unescaped = text_encoder._unescape_token(t + "_")
                 if unescaped:
                     ret.append(unescaped)
         return ret
