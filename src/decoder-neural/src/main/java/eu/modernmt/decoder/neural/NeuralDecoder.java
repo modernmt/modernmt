@@ -126,12 +126,14 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         Translation translation;
 
         if (text.hasWords()) {
-            ScoreEntry[] suggestions;
+            ScoreEntry[] suggestions = null;
 
-            try {
-                suggestions = memory.search(user, direction, text, contextVector, this.suggestionsLimit);
-            } catch (IOException e) {
-                throw new DecoderException("Failed to retrieve suggestions from memory", e);
+            if (contextVector != null) {
+                try {
+                    suggestions = memory.search(user, direction, text, contextVector, this.suggestionsLimit);
+                } catch (IOException e) {
+                    throw new DecoderException("Failed to retrieve suggestions from memory", e);
+                }
             }
 
             if (this.echoServer) {
