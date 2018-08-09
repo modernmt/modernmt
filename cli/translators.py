@@ -411,12 +411,12 @@ class XLIFFTranslator(Translator):
         xliff = ElementTree.fromstring(in_stream.read())
 
         for tu in xliff.findall('.//xlf:trans-unit', self.NAMESPACES):
-            if self._skip_translation_unit(tu):
-                continue
-
             trans_unit = XLIFFTranslator.TransUnit.parse(tu, self._engine.target_lang)
 
             for source_tag, target_tag in trans_unit:
+                if self._skip_source_tag(tu, source_tag):
+                    continue
+
                 source_content, placeholders = self._get_source_content(source_tag)
                 if source_content is None:
                     continue
@@ -434,8 +434,9 @@ class XLIFFTranslator(Translator):
         xliff_str = ElementTree.tostring(xliff, encoding='UTF-8', method='xml')
         out_stream.write(xliff_str)
 
-    def _skip_translation_unit(self, tu):
-        match = tu.find('.//sdl:seg[@percent="100"]', self.NAMESPACES)
+    def _skip_source_tag(self, tu, source_tag):
+        _id = source_tag.attrib['mid']
+        match = tu.find('.//sdl:seg[@id="%s"][@percent="100"]' % _id, self.NAMESPACES)
         return True if match is not None else False
 
     @staticmethod
