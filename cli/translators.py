@@ -2,6 +2,7 @@ import Queue
 import copy
 import os
 import random
+import re
 import threading
 import time
 from multiprocessing.dummy import Pool
@@ -471,9 +472,11 @@ class XLIFFTranslator(Translator):
         source_tag, target_tag = self._units[self._index]
         self._index += 1
 
-        _, placeholders = self._get_source_content(source_tag)
+        source_text, placeholders = self._get_source_content(source_tag)
+        trailing_match = re.search(r'\s*$', source_text)
+        trailing_space = trailing_match.group() if trailing_match is not None else ''
 
-        content = u'<content xmlns="%s">%s</content>' % (self.NAMESPACES['xlf'], content)
+        content = u'<content xmlns="%s">%s</content>' % (self.NAMESPACES['xlf'], content + trailing_space)
         content = ElementTree.fromstring(content.encode('utf-8'))
 
         # Replace placeholders
@@ -495,7 +498,6 @@ class XLIFFTranslator(Translator):
 
         # Replace target content
         target_tag.text = content.text
-        target_tag.tail = content.tail
         for child in list(content):
             content.remove(child)
             target_tag.append(child)
