@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
@@ -71,12 +70,6 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
             }
 
             ProcessBuilder builder = new ProcessBuilder(command);
-
-
-            Map<String, String> env = builder.environment();
-            env.put("CUDA_DEVICE_ORDER", "PCI_BUS_ID");  // see issue #152
-            env.put("CUDA_VISIBLE_DEVICES", Integer.toString(gpu));
-
             PythonDecoderImpl process = new PythonDecoderImpl(builder.start(), gpu);
             boolean success = false;
 
