@@ -229,6 +229,7 @@ class NeuralDecoder(object):
 
         global_steps = max([(steps - (steps % 100)) for steps, _ in checkpoint_pairs])
         checkpoints = [path for (_, path) in checkpoint_pairs]
+        logger.log(logging.INFO, "checkpoints:%s" % (checkpoints))
 
         # Read variables from all checkpoints and average them.
         var_list = tf.contrib.framework.list_variables(checkpoints[0])
@@ -244,14 +245,15 @@ class NeuralDecoder(object):
         for name in var_values:  # Average.
             var_values[name] /= len(checkpoints)
 
-        logger.log(logging.INFO, "finalize_model gpus:%s" % (gpus))
-        logger.log(logging.INFO, "finalize_model gpus.split(','):%s" % (gpus.split(',')))
-        logger.log(logging.INFO, "finalize_model gpus.split(',')[0]:%s" % (gpus.split(',')[0]))
+        if gpus is not None:
+            gpu = gpus.split(',')[0]
+            device = '/device:GPU:%s' % (gpu)
+        else:
+            gpu = None
+            device = '/cpu:0'
 
-        device='/device:GPU:%d' % gpus.split(',')[0] if gpus is not None else '/cpu:0'
-        print "finalize_model device:%s" % (device)
+        logger.log(logging.INFO, "finalize_model device:%s" % (device))
         with tf.device(device):
-        # with tf.device('/device:GPU:%d' % gpus.split(',')[0] if gpus is not None else '/cpu:0'):
             tf_vars = [tf.get_variable(name, shape=var.shape, dtype=var.dtype) for name, var in var_values.iteritems()]
             placeholders = [tf.placeholder(v.dtype, shape=v.shape) for v in tf_vars]
             assign_ops = [tf.assign(v, p) for (v, p) in zip(tf_vars, placeholders)]
@@ -259,20 +261,25 @@ class NeuralDecoder(object):
 
         saver = tf.train.Saver(tf.global_variables(), save_relative_paths=True)
 
-        # Build a model consisting only of variables, set them to the average values.
+        # Build a model consting only of variables, set them to the average values.
         model_output_path = os.path.join(self.model, '%s__%s' % (self.source_lang, self.target_lang))
 
         if not os.path.isdir(model_output_path):
             os.makedirs(model_output_path)
 
-        with tf.Session() as sess:
-            sess.run(tf.initialize_all_variables())
+        session_config = tf.ConfigProto(allow_soft_placement=True)
+        session_config.gpu_options.allow_growth = True
+        if gpu is not None:
+            session_config.gpu_options.force_gpu_compatible = True
+            session_config.gpu_options.visible_device_list = str(gpu)
 
-            for p, assign_op, (name, value) in zip(placeholders, assign_ops, six.iteritems(var_values)):
-                sess.run(assign_op, {p: value})
+        sess = tf.Session(config=session_config)
 
-            # Use the built saver to save the averaged checkpoint.
-            saver.save(sess, os.path.join(model_output_path, 'model-avg'), global_step=global_steps)
+        # with tf.Session() as sess:
+        sess.run(tf.initialize_all_variables())
+
+        # Use the built saver to save the averaged checkpoint.
+        saver.save(sess, os.path.join(model_output_path, 'model-avg'), global_step=global_steps)
 
         # Copy auxiliary files
         shutil.copyfile(os.path.join(model_dir, 'hparams.json'), os.path.join(model_output_path, 'hparams.json'))

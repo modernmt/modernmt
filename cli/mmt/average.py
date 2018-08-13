@@ -2,9 +2,10 @@ import argparse
 import os
 import sys
 
-import time
 import tensorflow as tf
 import logging
+import numpy as np
+
 
 def finalize_model(str_checkpoints, model_dir, n_checkpoints=None, gpus=None):
 
@@ -31,14 +32,15 @@ def finalize_model(str_checkpoints, model_dir, n_checkpoints=None, gpus=None):
     for name in var_values:  # Average.
         var_values[name] /= len(checkpoints)
 
+    device = '/cpu:0'
     if gpus is not None:
-        logger.log(logging.INFO, "finalize_model gpus:%s" % (gpus))
-        logger.log(logging.INFO, "finalize_model gpus.split(','):%s" % (gpus.split(',')))
-        logger.log(logging.INFO, "finalize_model gpus.split(',')[0]:%s" % (gpus.split(',')[0]))
+        print "finalize_model gpus:%s" % (gpus)
+        print "finalize_model gpus.split(','):%s" % (gpus.split(','))
+        print "finalize_model gpus.split(',')[0]:%s" % (gpus.split(',')[0])
 
-        device='/device:GPU:%d' % gpus.split(',')[0]\
-    else:
-        device='/cpu:0'
+        device='/device:GPU:%s' % (gpus.split(',')[0])
+
+
     print "finalize_model device:%s" % (device)
     with tf.device(device):
     # with tf.device('/device:GPU:%d' % gpus.split(',')[0] if gpus is not None else '/cpu:0'):
@@ -53,11 +55,11 @@ def finalize_model(str_checkpoints, model_dir, n_checkpoints=None, gpus=None):
     saver = tf.train.Saver(tf.global_variables(), save_relative_paths=True)
 
 
-
 def main(argv):
     train_dir=argv[1]
     output_dir=argv[2]
     n_checkpoints = argv[3]
+    gpus = argv[4]
     finalize_model(train_dir, output_dir, n_checkpoints, gpus)
 
 if __name__ == '__main__':
