@@ -192,8 +192,12 @@ class NeuralDecoder(object):
         except KeyboardInterrupt:
             process.kill()
 
-    def finalize_model(self, train_dir, model_dir, n_checkpoints=None):
+    def finalize_model(self, train_dir, model_dir, n_checkpoints=None, gpus=None):
         import warnings
+
+        logging.basicConfig(format='%(asctime)-15s [%(levelname)s] - %(message)s',
+                            level=logging.DEBUG)
+        logger = logging.getLogger('finalize_model')
 
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', category=FutureWarning)
@@ -240,10 +244,19 @@ class NeuralDecoder(object):
         for name in var_values:  # Average.
             var_values[name] /= len(checkpoints)
 
-        tf_vars = [tf.get_variable(name, shape=var.shape, dtype=var.dtype) for name, var in var_values.iteritems()]
-        placeholders = [tf.placeholder(v.dtype, shape=v.shape) for v in tf_vars]
-        assign_ops = [tf.assign(v, p) for (v, p) in zip(tf_vars, placeholders)]
-        tf.Variable(0, name="global_step", trainable=False, dtype=tf.int64)
+        logger.log(logging.INFO, "finalize_model gpus:%s" % (gpus))
+        logger.log(logging.INFO, "finalize_model gpus.split(','):%s" % (gpus.split(',')))
+        logger.log(logging.INFO, "finalize_model gpus.split(',')[0]:%s" % (gpus.split(',')[0]))
+
+        device='/device:GPU:%d' % gpus.split(',')[0] if gpus is not None else '/cpu:0'
+        print "finalize_model device:%s" % (device)
+        with tf.device(device):
+        # with tf.device('/device:GPU:%d' % gpus.split(',')[0] if gpus is not None else '/cpu:0'):
+            tf_vars = [tf.get_variable(name, shape=var.shape, dtype=var.dtype) for name, var in var_values.iteritems()]
+            placeholders = [tf.placeholder(v.dtype, shape=v.shape) for v in tf_vars]
+            assign_ops = [tf.assign(v, p) for (v, p) in zip(tf_vars, placeholders)]
+            tf.Variable(0, name="global_step", trainable=False, dtype=tf.int64)
+
         saver = tf.train.Saver(tf.global_variables(), save_relative_paths=True)
 
         # Build a model consisting only of variables, set them to the average values.
@@ -745,4 +758,4 @@ class EngineBuilder:
     @Step(7, 'Pack model')
     def _pack_model(self, args, skip=False):
         if not skip:
-            self._decoder.finalize_model(args.prepared_data_path, args.train_model_path)
+            self._decoder.finalize_model(args.prepared_data_path, args.train_model_path, self._gpus)
