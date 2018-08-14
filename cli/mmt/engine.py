@@ -229,10 +229,11 @@ class NeuralDecoder(object):
 
         global_steps = max([(steps - (steps % 100)) for steps, _ in checkpoint_pairs])
         checkpoints = [path for (_, path) in checkpoint_pairs]
-        logger.log(logging.INFO, "checkpoints:%s" % (checkpoints))
+        logger.log(logging.INFO, "average on these checkpoints:%s" % (checkpoints))
 
         # Read variables from all checkpoints and average them.
         var_list = tf.contrib.framework.list_variables(checkpoints[0])
+        var_dtypes = {}
         var_values = {name: np.zeros(shape) for name, shape in var_list if not name.startswith("global_step")}
 
         for checkpoint in checkpoints:
@@ -240,21 +241,21 @@ class NeuralDecoder(object):
 
             for name in var_values:
                 tensor = reader.get_tensor(name)
+                var_dtypes[name] = tensor.dtype
                 var_values[name] += tensor
 
         for name in var_values:  # Average.
             var_values[name] /= len(checkpoints)
 
         if gpus is not None:
-            gpu = gpus.split(',')[0]
+            gpu = gpus[0]
             device = '/device:GPU:%s' % (gpu)
         else:
             gpu = None
             device = '/cpu:0'
 
-        logger.log(logging.INFO, "finalize_model device:%s" % (device))
         with tf.device(device):
-            tf_vars = [tf.get_variable(name, shape=var.shape, dtype=var.dtype) for name, var in var_values.iteritems()]
+            tf_vars = [ tf.get_variable(v, shape=var_values[v].shape, dtype=var_dtypes[name]) for v in var_values ]
             placeholders = [tf.placeholder(v.dtype, shape=v.shape) for v in tf_vars]
             assign_ops = [tf.assign(v, p) for (v, p) in zip(tf_vars, placeholders)]
             tf.Variable(0, name="global_step", trainable=False, dtype=tf.int64)
@@ -277,6 +278,8 @@ class NeuralDecoder(object):
 
         # with tf.Session() as sess:
         sess.run(tf.initialize_all_variables())
+        for p, assign_op, (name, value) in zip(placeholders, assign_ops, six.iteritems(var_values)):
+            sess.run(assign_op, {p: value})
 
         # Use the built saver to save the averaged checkpoint.
         saver.save(sess, os.path.join(model_output_path, 'model-avg'), global_step=global_steps)
@@ -765,4 +768,4 @@ class EngineBuilder:
     @Step(7, 'Pack model')
     def _pack_model(self, args, skip=False):
         if not skip:
-            self._decoder.finalize_model(args.prepared_data_path, args.train_model_path, self._gpus)
+            self._decoder.finalize_model(args.prepared_data_path, args.train_model_path, gpus=self._gpus)

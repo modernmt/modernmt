@@ -243,13 +243,16 @@ class TransformerDecoder(object):
             raw_output = output_text
 
         # align
-        results = self._session.run(self._attention_mats_op, {
-            self._ph_infer_inputs: inputs,
-            self._ph_train_inputs: np.reshape(inputs, [1, -1, 1, 1]),
-            self._ph_train_targets: np.reshape(outputs, [1, -1, 1, 1]),
-        })
+        if len(outputs) > 0:      # if output is empty the forced decoding does not work; reshape of an empty array is not possible
+            results = self._session.run(self._attention_mats_op, {
+                self._ph_infer_inputs: inputs,
+                self._ph_train_inputs: np.reshape(inputs, [1, -1, 1, 1]),
+                self._ph_train_targets: np.reshape(outputs, [1, -1, 1, 1]),
+            })
 
-        alignment = self._make_alignment(input_indexes, output_indexes, results)
+            alignment = self._make_alignment(input_indexes, output_indexes, results)
+        else:
+            alignment = []
 
         return Translation(text=raw_output, alignment=alignment)
 
