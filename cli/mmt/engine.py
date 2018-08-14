@@ -212,9 +212,10 @@ class NeuralDecoder(object):
 
         # Get checkpoints list
         checkpoint_paths = {}
+        mask_value = 100     # used to select only one (the last) of the two checkpoints created at each validation; it assumes that the validation is computed with a frquency higher or equal to 100
         for checkpoint_path in tf.train.get_checkpoint_state(model_dir).all_model_checkpoint_paths:
             steps = int(checkpoint_path[checkpoint_path.rfind('-') + 1:])
-            masked_steps = steps - (steps % 100)
+            masked_steps = steps - (steps % mask_value)
 
             if masked_steps in checkpoint_paths:
                 e_steps, e_checkpoint_path = checkpoint_paths[masked_steps]
