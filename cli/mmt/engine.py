@@ -204,6 +204,8 @@ class NeuralDecoder(object):
 
         data_dir = os.path.join(train_dir, 'data')
 
+        logger = logging.getLogger('NeuralDecoder')
+
         # Get checkpoints list
         checkpoint_paths = {}
 
@@ -229,6 +231,8 @@ class NeuralDecoder(object):
         global_steps = max([(steps - (steps % 100)) for steps, _ in checkpoint_pairs])
         checkpoints = [path for (_, path) in checkpoint_pairs]
 
+        logger.info('(finalize_model) Averaging checkpoints: %s' % str(checkpoints))
+
         # Read variables from all checkpoints and average them.
         var_list = tf.contrib.framework.list_variables(checkpoints[0])
         var_dtypes = {}
@@ -251,6 +255,8 @@ class NeuralDecoder(object):
         else:
             gpu = None
             device = '/cpu:0'
+
+        logger.info('(finalize_model) Running on device: %s' % device)
 
         with tf.device(device):
             tf_vars = [tf.get_variable(n, shape=var_values[n].shape, dtype=var_dtypes[n]) for n in var_values]
