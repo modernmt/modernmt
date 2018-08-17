@@ -1,12 +1,10 @@
 import inspect
 import json
+import logging
 import os
 import shutil
-from xml.dom import minidom
-
-import logging
-
 import time
+from xml.dom import minidom
 
 import cli
 from cli import IllegalArgumentException, CorpusNotFoundInFolderException, mmt_javamain
@@ -195,10 +193,6 @@ class NeuralDecoder(object):
     def finalize_model(self, train_dir, model_dir, n_checkpoints=None, gpus=None):
         import warnings
 
-        logging.basicConfig(format='%(asctime)-15s [%(levelname)s] - %(message)s',
-                            level=logging.DEBUG)
-        logger = logging.getLogger('finalize_model')
-
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', category=FutureWarning)
 
@@ -212,7 +206,11 @@ class NeuralDecoder(object):
 
         # Get checkpoints list
         checkpoint_paths = {}
-        mask_value = 100     # used to select only one (the last) of the two checkpoints created at each validation; it assumes that the validation is computed with a frquency higher or equal to 100
+
+        # Used to select only one (the last) of the two checkpoints created at each validation;
+        # it assumes that the validation is computed with a frquency higher or equal to 100.
+        mask_value = 100
+
         for checkpoint_path in tf.train.get_checkpoint_state(model_dir).all_model_checkpoint_paths:
             steps = int(checkpoint_path[checkpoint_path.rfind('-') + 1:])
             masked_steps = steps - (steps % mask_value)
@@ -230,12 +228,11 @@ class NeuralDecoder(object):
 
         global_steps = max([(steps - (steps % 100)) for steps, _ in checkpoint_pairs])
         checkpoints = [path for (_, path) in checkpoint_pairs]
-        logger.log(logging.INFO, "average on these checkpoints:%s" % (checkpoints))
 
         # Read variables from all checkpoints and average them.
         var_list = tf.contrib.framework.list_variables(checkpoints[0])
         var_dtypes = {}
-        var_values = {name: np.zeros(shape) for name, shape in var_list if not name.startswith("global_step")}
+        var_values = {name: np.zeros(shape) for name, shape in var_list if not name.startswith('global_step')}
 
         for checkpoint in checkpoints:
             reader = tf.contrib.framework.load_checkpoint(checkpoint)
@@ -250,20 +247,20 @@ class NeuralDecoder(object):
 
         if gpus is not None:
             gpu = gpus[0]
-            device = '/device:GPU:%s' % (gpu)
+            device = '/device:GPU:%s' % gpu
         else:
             gpu = None
             device = '/cpu:0'
 
         with tf.device(device):
-            tf_vars = [ tf.get_variable(v, shape=var_values[v].shape, dtype=var_dtypes[name]) for v in var_values ]
+            tf_vars = [tf.get_variable(n, shape=var_values[n].shape, dtype=var_dtypes[n]) for n in var_values]
             placeholders = [tf.placeholder(v.dtype, shape=v.shape) for v in tf_vars]
             assign_ops = [tf.assign(v, p) for (v, p) in zip(tf_vars, placeholders)]
-            tf.Variable(0, name="global_step", trainable=False, dtype=tf.int64)
+            tf.Variable(0, name='global_step', trainable=False, dtype=tf.int64)
 
         saver = tf.train.Saver(tf.global_variables(), save_relative_paths=True)
 
-        # Build a model consting only of variables, set them to the average values.
+        # Build a model consisting only of variables, set them to the average values.
         model_output_path = os.path.join(self.model, '%s__%s' % (self.source_lang, self.target_lang))
 
         if not os.path.isdir(model_output_path):
