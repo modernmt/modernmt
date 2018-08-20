@@ -34,7 +34,7 @@ git submodule update
 popd
 
 pushd $temp/mmt/vendor
-./compile || { echo 'ERROR failed to compile vendor folder' ; exit 1; }
+python download_dependencies.py || { echo 'ERROR failed to download dependencies in vendor folder' ; exit 1; }
 popd
 
 pushd $temp/mmt/src
@@ -64,8 +64,6 @@ cp /usr/lib/x86_64-linux-gnu/libboost_program_options.so.1.* . || { echo 'ERROR 
 cp /usr/lib/x86_64-linux-gnu/libboost_system.so.1.* . || { echo 'ERROR failed to copy lib' ; exit 1; }
 cp /usr/lib/x86_64-linux-gnu/libboost_thread.so.1.* . || { echo 'ERROR failed to copy lib' ; exit 1; }
 cp /usr/lib/x86_64-linux-gnu/libboost_serialization.so.1.* . || { echo 'ERROR failed to copy lib' ; exit 1; }
-cp /usr/lib/x86_64-linux-gnu/libgomp.so.1 . || { echo 'ERROR failed to copy lib' ; exit 1; }
-cp /usr/lib/x86_64-linux-gnu/libsnappy.so.1 . || { echo 'ERROR failed to copy lib' ; exit 1; }
 popd
 
 pushd $temp
