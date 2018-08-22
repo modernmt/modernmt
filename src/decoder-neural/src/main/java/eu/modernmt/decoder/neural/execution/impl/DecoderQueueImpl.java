@@ -181,7 +181,7 @@ public class DecoderQueueImpl implements DecoderQueue {
         @Override
         public void run() {
             int gpu = handler.getGPU();
-            String msg = gpu < 0 ? "Native decoder process on CPU" : ("Native decoder process on GPU + " + gpu);
+            String msg = gpu < 0 ? "Native decoder process on CPU" : ("Native decoder process on GPU " + gpu);
 
             try {
                 logger.info(msg + " is starting");
