@@ -32,7 +32,16 @@ public class JoinConfig {
 
     }
 
+    private int timeout = 5;
     private Member[] members = null;
+
+    public int getTimeout() {
+        return timeout;
+    }
+
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
+    }
 
     public Member[] getMembers() {
         return members;
@@ -45,6 +54,7 @@ public class JoinConfig {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder("[Join]\n");
+        builder.append("  timeout = ").append(timeout).append('\n');
         if (members != null) {
             for (Member member : members) {
                 builder.append("  ")

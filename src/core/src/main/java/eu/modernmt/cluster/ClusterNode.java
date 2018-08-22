@@ -184,17 +184,15 @@ public class ClusterNode {
                     .setEnabled(true)
                     .addInterface(listenInterface);
 
-        JoinConfig.Member[] members = networkConfig.getJoinConfig().getMembers();
+        JoinConfig joinConfig = networkConfig.getJoinConfig();
+        JoinConfig.Member[] members = joinConfig.getMembers();
         if (members != null && members.length > 0) {
-            hazelcastConfig.setProperty("hazelcast.initial.min.cluster.size", "2");
-
             TcpIpConfig tcpIpConfig = hazelcastConfig.getNetworkConfig().getJoin().getTcpIpConfig();
+            tcpIpConfig.setConnectionTimeoutSeconds(joinConfig.getTimeout());
             tcpIpConfig.setEnabled(true);
 
             for (JoinConfig.Member member : members)
                 tcpIpConfig.addMember(member.getHost() + ":" + member.getPort());
-        } else {
-            hazelcastConfig.setProperty("hazelcast.initial.min.cluster.size", "1");
         }
 
         /* for the translation service use as many threads as the decoder threads */
@@ -235,7 +233,7 @@ public class ClusterNode {
             throw new FailedToJoinClusterException(tcpIpConfig.getRequiredMember());
         }
         setStatus(Status.JOINED);
-        logger.info("Node joined the cluster in " + (timer.time() / 1000.) + "s");
+        logger.info("Node joined cluster of " + countClusterMembers(false) + " members in " + (timer.time() / 1000.) + "s");
 
 
         // ===========  Adding shutdown hook for closing the cluster  =============
@@ -317,7 +315,7 @@ public class ClusterNode {
 
                 setStatus(Status.UPDATING);
 
-                if (hasAtLeastOneClusterPair(nodeConfig)) {
+                if (countClusterMembers(true) > 0) {
                     timer.reset();
                     try {
                         logger.info("Starting sync from data stream");
@@ -327,7 +325,7 @@ public class ClusterNode {
                         throw new BootstrapException("Data stream sync interrupted", e);
                     }
                 } else {
-                    logger.info("Data stream sync running in background, force single node cluster start");
+                    logger.info("Data stream sync running in background, force single running node cluster start");
                 }
 
                 setStatus(Status.UPDATED);
@@ -404,9 +402,15 @@ public class ClusterNode {
         logger.info("Node started in " + (globalTimer.time() / 1000.) + "s");
     }
 
-    private static boolean hasAtLeastOneClusterPair(NodeConfig config) {
-        JoinConfig.Member[] members = config.getNetworkConfig().getJoinConfig().getMembers();
-        return members != null && members.length > 0;
+    private int countClusterMembers(boolean onlyRunning) {
+        int size = 0;
+
+        for (Member member : hazelcast.getCluster().getMembers()) {
+            if (!onlyRunning || NodeInfo.statusIs(member, Status.RUNNING))
+                size++;
+        }
+
+        return size;
     }
 
     public List<EmbeddedService> getServices() {
