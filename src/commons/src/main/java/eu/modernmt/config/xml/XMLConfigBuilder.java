@@ -29,7 +29,7 @@ public class XMLConfigBuilder extends XMLAbstractBuilder {
 
         networkConfigBuilder = new XMLNetworkConfigBuilder(getChild("network"));
         dataStreamConfigBuilder = new XMLDataStreamConfigBuilder(getChild("datastream"));
-        databaseConfigBuilder = new XMLDatabaseConfigBuilder(getChild("cassandra"));
+        databaseConfigBuilder = new XMLDatabaseConfigBuilder(getChild("db"));
         engineConfigBuilder = new XMLEngineConfigBuilder(getChild("engine"));
         translationQueueConfigBuilder = new XMLTranslationQueueConfigBuilder(getChild("translation-queue"));
     }
