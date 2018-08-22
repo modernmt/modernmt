@@ -180,16 +180,19 @@ public class DecoderQueueImpl implements DecoderQueue {
 
         @Override
         public void run() {
+            int gpu = handler.getGPU();
+            String msg = gpu < 0 ? "Native decoder process on CPU" : ("Native decoder process on GPU + " + gpu);
+
             try {
-                logger.info("Starting native decoder process");
+                logger.info(msg + " is starting");
 
                 long begin = System.currentTimeMillis();
                 handler.restart();
                 long elapsed = System.currentTimeMillis() - begin;
 
-                logger.info("Native decoder process started in " + (elapsed / 1000) + "s");
+                logger.info(msg + " started in " + (elapsed / 1000) + "s");
             } catch (IOException e) {
-                logger.error("Failed to start new decoder process", e);
+                logger.error(msg + " failed to start", e);
                 System.exit(2);
             }
 
