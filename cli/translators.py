@@ -116,7 +116,11 @@ class MMTTranslator(TranslateEngine):
             self._context = self._parse_context_vector(context_vector)
 
     def _get_default_threads(self):
-        return max(len(nvidia_smi.list_gpus()), 1)
+        executors = max(len(nvidia_smi.list_gpus()), 1)
+        cluster_info = self._api.info()['cluster']
+        node_count = max(len(cluster_info['nodes']), 1)
+
+        return executors * node_count
 
     @property
     def context_vector(self):
