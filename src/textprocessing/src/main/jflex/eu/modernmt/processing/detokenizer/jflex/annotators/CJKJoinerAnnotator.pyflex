@@ -15,5 +15,6 @@ import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
 
 /* Language Specific - CJKV */
 
+{CJKV}{_}{CJKV}                                                 { return REMOVE_FIRST; }
 {CJKV}{_}                                                       { return REMOVE_FIRST; }
 {_}{CJKV}                                                       { return REMOVE_FIRST; }
