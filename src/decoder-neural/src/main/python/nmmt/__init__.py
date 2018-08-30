@@ -94,4 +94,4 @@ class TranslationResponse(object):
 
     @staticmethod
     def _encode_alignment(a):
-        return [[e[0] for e in a], [e[1] for e in a]] if a is not None and len(a) > 0 else None
+        return [[e[0] for e in a], [e[1] for e in a]] if a is not None else None
