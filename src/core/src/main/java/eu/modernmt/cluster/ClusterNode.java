@@ -181,10 +181,13 @@ public class ClusterNode {
         hazelcastConfig.getNetworkConfig().setPort(networkConfig.getPort());
 
         String listenInterface = networkConfig.getListeningInterface();
-        if (listenInterface != null)
+        if (listenInterface != null) {
             hazelcastConfig.getNetworkConfig().getInterfaces()
                     .setEnabled(true)
                     .addInterface(listenInterface);
+            hazelcastConfig.setProperty("hazelcast.local.localAddress", listenInterface);
+            hazelcastConfig.setProperty("hazelcast.local.publicAddress", listenInterface);
+        }
 
         JoinConfig joinConfig = networkConfig.getJoinConfig();
         JoinConfig.Member[] members = joinConfig.getMembers();
