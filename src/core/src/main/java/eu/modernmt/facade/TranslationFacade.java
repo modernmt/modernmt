@@ -74,6 +74,22 @@ public class TranslationFacade {
         if (nbest > 0)
             ensureDecoderSupportsNBest();
 
+        try {
+            return insecureGet(user, direction, sentence, translationContext, nbest, priority);
+        } catch (DecoderException e) {
+            logger.warn("Translation failed, retry after delay", e);
+
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e1) {
+                // Ignore it
+            }
+
+            return insecureGet(user, direction, sentence, translationContext, nbest, priority);
+        }
+    }
+
+    private Translation insecureGet(UUID user, LanguagePair direction, String sentence, ContextVector translationContext, int nbest, Priority priority) throws ProcessingException, DecoderException, AlignerException {
         TranslationTask task = new TranslationTaskImpl(user, direction, sentence, translationContext, nbest, priority);
 
         try {
