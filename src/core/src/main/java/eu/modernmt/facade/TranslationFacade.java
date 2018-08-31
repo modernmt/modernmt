@@ -1,5 +1,6 @@
 package eu.modernmt.facade;
 
+import com.hazelcast.core.HazelcastException;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.cluster.ClusterNode;
@@ -76,7 +77,7 @@ public class TranslationFacade {
 
         try {
             return insecureGet(user, direction, sentence, translationContext, nbest, priority);
-        } catch (DecoderException e) {
+        } catch (DecoderException | HazelcastException e) {
             logger.warn("Translation failed, retry after delay", e);
 
             try {
