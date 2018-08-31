@@ -55,7 +55,9 @@ public class ClusterNode {
         RUNNING,        // Node is running and it can receive translation requests
         UNAVAILABLE,    // Node has no decoder processes and it is recovering (cannot handle translation requests)
         SHUTDOWN,       // Node is shutting down
-        TERMINATED      // Node is no longer active
+        TERMINATED,     // Node is no longer active
+
+        UNKNOWN         // Node has no valid status (or null)
     }
 
     public interface StatusListener {

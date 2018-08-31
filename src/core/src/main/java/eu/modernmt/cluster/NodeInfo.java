@@ -23,7 +23,7 @@ public class NodeInfo {
 
     static NodeInfo fromMember(Member member) {
         String uuid = member.getUuid();
-        ClusterNode.Status status = ClusterNode.Status.valueOf(member.getStringAttribute(STATUS_ATTRIBUTE));
+        ClusterNode.Status status = deserializeStatus(member.getStringAttribute(STATUS_ATTRIBUTE));
         Map<Short, Long> positions = deserializeChannels(member.getStringAttribute(DATA_CHANNELS_ATTRIBUTE));
         Set<LanguagePair> languages = deserializeLanguages(member.getStringAttribute(TRANSLATION_DIRECTIONS_ATTRIBUTE));
         String address = member.getAddress().getHost();
@@ -107,6 +107,17 @@ public class NodeInfo {
     }
 
     // Deserializers
+
+    private static ClusterNode.Status deserializeStatus(String encoded) {
+        if (encoded == null)
+            return ClusterNode.Status.UNKNOWN;
+
+        try {
+            return ClusterNode.Status.valueOf(encoded.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ClusterNode.Status.UNKNOWN;
+        }
+    }
 
     private static Set<LanguagePair> deserializeLanguages(String encoded) {
         if (encoded == null || encoded.isEmpty())
