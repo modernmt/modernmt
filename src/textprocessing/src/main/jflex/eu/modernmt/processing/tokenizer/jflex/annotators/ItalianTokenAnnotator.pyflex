@@ -17,3 +17,4 @@ ItalianContractions = [:letter:]\'[:letter:]
 
 {ItalianContractions}                                               { yypushback(1); return PROTECT; }
 po'                                                                 { return PROTECT; }
+l'[18]                                                              { yypushback(1); return PROTECT; }

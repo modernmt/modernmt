@@ -61,12 +61,8 @@ public class ItalianAccentMarkProcessor extends TextProcessor<SentenceBuilder, S
         int pendingApostrophesCount = 0;
         for (int i = 0; i < array.length; i++) {
             if (array[i] == '\'') {
-//                boolean leftWhitespace = (i == 0 || array[i - 1] == ' ');
-//                boolean rightWhitespace = (i == array.length - 1 || array[i + 1] == ' ');
-                //TODO: fix for "citta'."
-                boolean leftWhitespace = (i == 0 || ! Character.isLetter(array[i - 1]) );
+                boolean leftWhitespace = (i == 0 || ! Character.isLetter(array[i - 1]));
                 boolean rightWhitespace = (i == array.length - 1 || ! Character.isLetter(array[i + 1]));
-
                 if (leftWhitespace) {
                     if (rightWhitespace) {
                         if (pendingApostrophesCount > 0)
