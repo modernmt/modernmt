@@ -41,7 +41,7 @@ public class ClusterNodeMain {
             Option apiPort = Option.builder("a").longOpt("api-port").hasArg().type(Integer.class).required(false).build();
             Option clusterPort = Option.builder("p").longOpt("cluster-port").hasArg().type(Integer.class).required(false).build();
             Option datastreamPort = Option.builder().longOpt("datastream-port").hasArg().required(false).build();
-            Option databasePort = Option.builder().longOpt("cassandra-port").hasArg().required(false).build();
+            Option databasePort = Option.builder().longOpt("db-port").hasArg().required(false).build();
 
             Option leader = Option.builder().longOpt("leader").hasArg().required(false).build();
 
@@ -117,7 +117,7 @@ public class ClusterNodeMain {
             String datastreamPort = cli.getOptionValue("datastream-port");
             if (datastreamPort != null)
                 streamConfig.setPort(Integer.parseInt(datastreamPort));
-            String databasePort = cli.getOptionValue("cassandra-port");
+            String databasePort = cli.getOptionValue("db-port");
             if (databasePort != null)
                 dbConfig.setPort(Integer.parseInt(databasePort));
 
