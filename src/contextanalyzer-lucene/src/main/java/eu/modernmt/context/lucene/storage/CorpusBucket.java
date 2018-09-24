@@ -146,6 +146,7 @@ public class CorpusBucket implements Closeable {
 
     public void flush() throws IOException {
         stream.flush();
+        stream.getFD().sync();
 
         long newSize = stream.getChannel().position();
         virtualFileSize += newSize - plainTextFileSize;
