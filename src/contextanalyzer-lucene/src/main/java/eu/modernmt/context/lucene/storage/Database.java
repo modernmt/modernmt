@@ -1,5 +1,6 @@
-package eu.modernmt.context.lucene.storage2;
+package eu.modernmt.context.lucene.storage;
 
+import eu.modernmt.io.RuntimeIOException;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 
@@ -8,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Database implements Closeable {
 
@@ -47,6 +49,23 @@ public class Database implements Closeable {
             statement.executeUpdate(sql);
         } finally {
             statement.close();
+        }
+    }
+
+    public synchronized int count() throws IOException {
+        Statement statement = null;
+        ResultSet result = null;
+
+        try {
+            statement = connection.createStatement();
+            result = statement.executeQuery("SELECT COUNT(*) FROM buckets WHERE size > 0");
+
+            return result.next() ? result.getInt(1) : 0;
+        } catch (SQLException e) {
+            throw new IOException(e);
+        } finally {
+            close(result);
+            close(statement);
         }
     }
 
@@ -138,13 +157,89 @@ public class Database implements Closeable {
         }
     }
 
+    public synchronized Set<Bucket> retrieveUpdatedBuckets(File folder, long minMisalignment, int limit, ConcurrentHashMap<CorporaStorage.CacheKey, Bucket> buckets) throws IOException {
+        HashSet<Bucket> set = new HashSet<>();
+
+        Statement statement = null;
+        ResultSet result = null;
+
+        try {
+            statement = connection.createStatement();
+            result = statement.executeQuery(
+                    "SELECT id, source, target, owner_lsb, owner_msb, size, plain_size, gz_size " +
+                            "FROM buckets " +
+                            "WHERE mark > size OR (size - mark) >= " + minMisalignment + " " +
+                            "ORDER BY ABS(mark - size) DESC " +
+                            "LIMIT " + limit);
+
+            CorporaStorage.CacheKey key = new CorporaStorage.CacheKey(0, null, false);
+
+            while (result.next()) {
+                long id = result.getLong(1);
+                Language source = Language.fromString(result.getString(2));
+                Language target = Language.fromString(result.getString(3));
+
+                key.id = id;
+                key.language = new LanguagePair(source, target);
+
+                final ResultSet r = result;
+
+                Bucket bucket = buckets.computeIfAbsent(key, k -> {
+                    try {
+                        long ownerLsb = r.getLong(4);
+                        long ownerMsb = r.getLong(5);
+                        long size = r.getLong(6);
+                        long plainSize = r.getLong(7);
+                        long gzSize = r.getLong(8);
+
+                        UUID owner = null;
+                        if (ownerLsb > 0 || ownerMsb > 0)
+                            owner = new UUID(ownerMsb, ownerLsb);
+
+                        return new Bucket(folder, k.id, k.language, owner, plainSize, gzSize, size);
+                    } catch (SQLException e) {
+                        throw new RuntimeIOException(new IOException(e));
+                    }
+                });
+
+                set.add(bucket);
+            }
+
+            return set;
+        } catch (SQLException e) {
+            throw new IOException(e);
+        } catch (RuntimeIOException e) {
+            throw e.getCause();
+        } finally {
+            close(result);
+            close(statement);
+        }
+    }
+
+    public synchronized void mark(Bucket bucket, long mark) throws IOException {
+        PreparedStatement statement = null;
+
+        try {
+            statement = connection.prepareStatement("UPDATE buckets SET mark = ? WHERE id = ? AND source = ? AND target = ?");
+            statement.setLong(1, mark);
+            statement.setLong(2, bucket.getId());
+            statement.setString(3, bucket.getLanguage().source.toString());
+            statement.setString(4, bucket.getLanguage().target.toString());
+
+            statement.executeUpdate();
+        } catch (SQLException e) {
+            throw new IOException(e);
+        } finally {
+            close(statement);
+        }
+    }
+
     public synchronized void update(Map<Short, Long> channels, Set<Bucket> buckets) throws IOException {
         boolean success = false;
 
         PreparedStatement channelStatement = null;
         PreparedStatement iBucketStatement = null;
         PreparedStatement uBucketStatement = null;
-        PreparedStatement dBucketStatement = null;
 
         try {
             connection.setAutoCommit(false);
@@ -152,7 +247,6 @@ public class Database implements Closeable {
             channelStatement = connection.prepareStatement("INSERT OR REPLACE INTO channels(id, position) VALUES (?, ?)");
             iBucketStatement = connection.prepareStatement("INSERT INTO buckets(id, source, target, owner_lsb, owner_msb, size, plain_size, gz_size) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
             uBucketStatement = connection.prepareStatement("UPDATE buckets SET size = ?, plain_size = ?, gz_size = ? WHERE id = ? AND source = ? AND target = ?");
-            dBucketStatement = connection.prepareStatement("DELETE FROM buckets WHERE id = ? AND source = ? AND target = ?");
 
             for (Map.Entry<Short, Long> entry : channels.entrySet()) {
                 channelStatement.setShort(1, entry.getKey());
@@ -161,36 +255,27 @@ public class Database implements Closeable {
             }
 
             for (Bucket bucket : buckets) {
-                if (bucket.getSize() == 0L) {
-                    // Delete
-                    dBucketStatement.setLong(1, bucket.getId());
-                    dBucketStatement.setString(2, bucket.getLanguage().source.toString());
-                    dBucketStatement.setString(3, bucket.getLanguage().target.toString());
+                // Create or update
+                uBucketStatement.setLong(1, bucket.virtualSize);
+                uBucketStatement.setLong(2, bucket.plainTextFileSize);
+                uBucketStatement.setLong(3, bucket.compressedFileSize);
+                uBucketStatement.setLong(4, bucket.getId());
+                uBucketStatement.setString(5, bucket.getLanguage().source.toString());
+                uBucketStatement.setString(6, bucket.getLanguage().target.toString());
 
-                    dBucketStatement.executeUpdate();
-                } else {
-                    // Create or update
-                    uBucketStatement.setLong(1, bucket.virtualSize);
-                    uBucketStatement.setLong(2, bucket.plainTextFileSize);
-                    uBucketStatement.setLong(3, bucket.compressedFileSize);
-                    uBucketStatement.setLong(4, bucket.getId());
-                    uBucketStatement.setString(5, bucket.getLanguage().source.toString());
-                    uBucketStatement.setString(6, bucket.getLanguage().target.toString());
+                if (uBucketStatement.executeUpdate() == 0) {
+                    UUID owner = bucket.getOwner();
 
-                    if (uBucketStatement.executeUpdate() == 0) {
-                        UUID owner = bucket.getOwner();
+                    iBucketStatement.setLong(1, bucket.getId());
+                    iBucketStatement.setString(2, bucket.getLanguage().source.toString());
+                    iBucketStatement.setString(3, bucket.getLanguage().target.toString());
+                    iBucketStatement.setLong(4, owner == null ? 0L : owner.getLeastSignificantBits());
+                    iBucketStatement.setLong(5, owner == null ? 0L : owner.getMostSignificantBits());
+                    iBucketStatement.setLong(6, bucket.virtualSize);
+                    iBucketStatement.setLong(7, bucket.plainTextFileSize);
+                    iBucketStatement.setLong(8, bucket.compressedFileSize);
 
-                        iBucketStatement.setLong(1, bucket.getId());
-                        iBucketStatement.setString(2, bucket.getLanguage().source.toString());
-                        iBucketStatement.setString(3, bucket.getLanguage().target.toString());
-                        iBucketStatement.setLong(4, owner == null ? 0L : owner.getLeastSignificantBits());
-                        iBucketStatement.setLong(5, owner == null ? 0L : owner.getMostSignificantBits());
-                        iBucketStatement.setLong(6, bucket.virtualSize);
-                        iBucketStatement.setLong(7, bucket.plainTextFileSize);
-                        iBucketStatement.setLong(8, bucket.compressedFileSize);
-
-                        iBucketStatement.executeUpdate();
-                    }
+                    iBucketStatement.executeUpdate();
                 }
             }
 
@@ -204,7 +289,6 @@ public class Database implements Closeable {
             close(channelStatement);
             close(iBucketStatement);
             close(uBucketStatement);
-            close(dBucketStatement);
         }
     }
 
@@ -251,4 +335,5 @@ public class Database implements Closeable {
             throw new IOException(e);
         }
     }
+
 }

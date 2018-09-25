@@ -1,7 +1,6 @@
 package eu.modernmt.context.lucene;
 
 import eu.modernmt.context.lucene.storage.CorporaStorage;
-import eu.modernmt.context.lucene.storage.Options;
 import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
@@ -17,12 +16,6 @@ import java.util.Map;
 
 public class TCorporaStorage extends CorporaStorage {
 
-    private static Options defaultOptions() {
-        Options options = new Options();
-        options.enableAnalysis = false;
-        return options;
-    }
-
     private static File makeTempDirectory() throws IOException {
         File dir = Files.createTempDirectory("TCorporaStorage").toFile();
         FileUtils.forceMkdir(dir);
@@ -30,7 +23,7 @@ public class TCorporaStorage extends CorporaStorage {
     }
 
     public TCorporaStorage() throws IOException {
-        super(makeTempDirectory(), defaultOptions(), null);
+        super(makeTempDirectory());
     }
 
     public void onDataReceived(Collection<TranslationUnit> units) throws IOException {
@@ -61,11 +54,11 @@ public class TCorporaStorage extends CorporaStorage {
     }
 
     @Override
-    public void close() {
+    public void close() throws IOException {
         try {
             super.close();
         } finally {
-            FileUtils.deleteQuietly(super.path);
+            FileUtils.deleteQuietly(super.getPath());
         }
     }
 }

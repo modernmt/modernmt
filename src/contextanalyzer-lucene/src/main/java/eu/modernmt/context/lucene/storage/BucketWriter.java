@@ -1,4 +1,4 @@
-package eu.modernmt.context.lucene.storage2;
+package eu.modernmt.context.lucene.storage;
 
 import eu.modernmt.io.FileSystemUtils;
 import eu.modernmt.io.UTF8Charset;
@@ -14,6 +14,10 @@ class BucketWriter implements Closeable {
     private static final long COMPRESS_THRESHOLD = 50L * 1024L; // 50 Kb
 
     private static FileOutputStream openStream(File path, long size) throws IOException {
+        File parent = path.getParentFile();
+        if (!parent.isDirectory())
+            FileUtils.forceMkdir(parent);
+
         FileOutputStream stream = new FileOutputStream(path, true);
 
         FileChannel channel = stream.getChannel();

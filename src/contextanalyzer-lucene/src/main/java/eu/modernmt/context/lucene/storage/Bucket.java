@@ -1,4 +1,4 @@
-package eu.modernmt.context.lucene.storage2;
+package eu.modernmt.context.lucene.storage;
 
 import eu.modernmt.lang.LanguagePair;
 import org.apache.commons.io.IOUtils;
@@ -8,7 +8,12 @@ import java.io.*;
 import java.util.UUID;
 import java.util.zip.GZIPInputStream;
 
-class Bucket {
+public class Bucket {
+
+    private static File getParentFolder(File path, long id) {
+        File parent = new File(path, Long.toString(id % 10000L));
+        return new File(parent, Long.toString(id));
+    }
 
     private final long id;
     private final LanguagePair language;
@@ -28,9 +33,11 @@ class Bucket {
         this.language = language;
         this.owner = owner;
 
+        File parent = getParentFolder(folder, id);
         String key = Long.toString(id) + '_' + language.source.getLanguage() + '_' + language.target.getLanguage();
-        this.path = new File(folder, key);
-        this.gzPath = new File(folder, key + ".gz");
+
+        this.path = new File(parent, key + ".txt");
+        this.gzPath = new File(parent, key + ".gz");
 
         this.plainTextFileSize = 0;
         this.compressedFileSize = 0;

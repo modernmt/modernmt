@@ -1,6 +1,5 @@
 package eu.modernmt.context.lucene.analysis;
 
-import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.Corpus;
 import org.apache.lucene.document.Document;
@@ -32,17 +31,6 @@ public class DocumentBuilder {
 
     public static Document newInstance(UUID owner, long memory, LanguagePair direction, Corpus corpus) throws IOException {
         return newInstance(owner, memory, direction, corpus.getRawContentReader());
-    }
-
-    public static Document updatedInstance(UUID owner, String docId, Reader contentReader) {
-        String[] parts = docId.split("_");
-        if (parts.length != 3)
-            throw new IllegalArgumentException("Invalid Document ID: " + docId);
-
-        long memory = Long.parseLong(parts[0]);
-        LanguagePair direction = new LanguagePair(new Language(parts[1]), new Language(parts[2]));
-
-        return newInstance(owner, memory, direction, contentReader);
     }
 
     public static Document newInstance(UUID owner, long memory, LanguagePair direction, Reader contentReader) {

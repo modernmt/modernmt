@@ -1,323 +1,221 @@
 package eu.modernmt.context.lucene.storage;
 
-import eu.modernmt.context.lucene.analysis.ContextAnalyzerIndex;
-import eu.modernmt.context.lucene.analysis.DocumentBuilder;
 import eu.modernmt.data.DataBatch;
+import eu.modernmt.data.DataListener;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.io.RuntimeIOException;
+import eu.modernmt.lang.Language;
+import eu.modernmt.lang.LanguagePair;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.*;
-import java.util.stream.Collectors;
+import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Created by davide on 22/09/16.
- */
-public class CorporaStorage implements Closeable {
+public class CorporaStorage implements DataListener, Closeable {
 
-    private final Logger logger = LogManager.getLogger(CorporaStorage.class);
+    private final boolean maskLanguageRegion;
+    private final File path;
+    private final ConcurrentHashMap<CacheKey, Bucket> buckets = new ConcurrentHashMap<>();
+    private final Database db;
+    private boolean closed = false;
+    private Map<Short, Long> channels;
 
-    protected final File path;
-    private final Options options;
-    private final AnalysisTimer analysisTimer;
-    private final ExecutorService analysisExecutor;
+    public CorporaStorage(File path) throws IOException {
+        this(path, true);
+    }
 
-    private final ContextAnalyzerIndex contextAnalyzer;
-    private final CorporaIndex index;
-    private HashSet<CorpusBucket> pendingUpdatesBuckets = new HashSet<>();
-
-    public CorporaStorage(File path, Options options, ContextAnalyzerIndex contextAnalyzer) throws IOException {
-        this.analysisExecutor = Executors.newFixedThreadPool(options.analysisThreads);
-
-        this.options = options;
-        this.contextAnalyzer = contextAnalyzer;
-        this.path = path;
-
+    public CorporaStorage(File path, boolean maskLanguageRegion) throws IOException {
         FileUtils.forceMkdir(path);
 
-        File indexPath = new File(path, "index");
+        this.maskLanguageRegion = maskLanguageRegion;
+        this.path = path;
+        this.db = new Database(new File(path, "index"));
+        this.channels = db.getChannels();
+    }
 
-        if (indexPath.exists())
-            this.index = CorporaIndex.load(options, indexPath, path);
-        else
-            this.index = new CorporaIndex(indexPath, options, path);
+    public int size() throws IOException {
+        return db.count();
+    }
 
-        this.analyzeIfNeeded(this.index.getBuckets());
+    public File getPath() {
+        return path;
+    }
 
-        if (options.enableAnalysis) {
-            this.analysisTimer = new AnalysisTimer();
-            this.analysisTimer.start();
-        } else {
-            this.analysisTimer = null;
+    public Bucket getBucket(long id, LanguagePair language, UUID owner) throws IOException {
+        return getBucket(new CacheKey(id, language, this.maskLanguageRegion), owner);
+    }
+
+    private Bucket getBucket(CacheKey key, UUID owner) throws IOException {
+        try {
+            return buckets.computeIfAbsent(key, arg -> {
+                try {
+                    Bucket bucket = db.retrieve(path, arg.id, arg.language);
+                    return bucket == null ? new Bucket(path, arg.id, arg.language, owner) : bucket;
+                } catch (IOException e) {
+                    throw new RuntimeIOException(e);
+                }
+            });
+        } catch (RuntimeIOException e) {
+            throw e.getCause();
         }
     }
 
-    public CorpusBucket getBucket(String docId) throws IOException {
-        // createIfAbsent == false, so owner can only be read and not created (null is acceptable)
-        return this.index.getBucket(null, docId, false);
+    private boolean skipData(short channel, long position) {
+        Long existent = this.channels.get(channel);
+        return existent != null && position <= existent;
     }
 
-    public int size() {
-        return index.getBuckets().size();
+    private static Map<Short, Long> advanceChannels(Map<Short, Long> channels, Map<Short, Long> update) {
+        channels = new HashMap<>(channels);
+
+        for (Map.Entry<Short, Long> entry : update.entrySet()) {
+            Short channel = entry.getKey();
+            Long position = entry.getValue();
+            Long existent = channels.get(channel);
+
+            if (existent == null || position > existent)
+                channels.put(channel, position);
+        }
+
+        return channels;
     }
 
-    public synchronized Collection<Deletion> onDataReceived(DataBatch batch) throws IOException {
-        List<Deletion> deletions = new ArrayList<>(batch.getDeletions().size());
+    @Override
+    public synchronized void onDataReceived(DataBatch batch) throws IOException {
+        if (closed)
+            return;
+
+        HashSet<Bucket> pendingUpdatesBuckets = new HashSet<>(buckets.size());
+
+        // Apply changes
 
         for (TranslationUnit unit : batch.getTranslationUnits()) {
-            if (!index.shouldAcceptData(unit.channel, unit.channelPosition))
+            if (skipData(unit.channel, unit.channelPosition))
                 continue;
 
-            CorpusBucket fwdBucket = index.getBucket(unit.owner, DocumentBuilder.makeId(unit.memory, unit.direction));
-            fwdBucket.append(unit.rawSentence);
+            Bucket fwdBucket = getBucket(unit.memory, unit.direction, unit.owner);
+            fwdBucket.getWriter().append(unit.rawSentence);
             pendingUpdatesBuckets.add(fwdBucket);
 
-            CorpusBucket bwdBucket = index.getBucket(unit.owner, DocumentBuilder.makeId(unit.memory, unit.direction.reversed()));
-            bwdBucket.append(unit.rawTranslation);
+            Bucket bwdBucket = getBucket(unit.memory, unit.direction.reversed(), unit.owner);
+            bwdBucket.getWriter().append(unit.rawTranslation);
             pendingUpdatesBuckets.add(bwdBucket);
         }
 
         for (Deletion deletion : batch.getDeletions()) {
-            if (!index.shouldAcceptData(deletion.channel, deletion.channelPosition))
+            if (skipData(deletion.channel, deletion.channelPosition))
                 continue;
 
-            deletions.add(deletion);
-
-            for (CorpusBucket bucket : index.getBucketsByMemory(deletion.memory)) {
-                bucket.markForDeletion();
+            for (LanguagePair language : db.retrieveLanguages(deletion.memory)) {
+                Bucket bucket = getBucket(deletion.memory, language, null);
+                bucket.getWriter().delete();
                 pendingUpdatesBuckets.add(bucket);
             }
         }
 
-        index.advanceChannels(batch.getChannelPositions());
+        // Flush pending updates
 
-        return deletions;
-    }
-
-    public Map<Short, Long> getLatestChannelPositions() {
-        return index.getChannels();
-    }
-
-    public synchronized void flushToDisk(boolean skipAnalysis, boolean forceAnalysis) throws IOException {
-        if (pendingUpdatesBuckets.isEmpty())
-            return;
-
-        logger.info("Flushing index to disk. Pending updates: " + pendingUpdatesBuckets.size());
-
-        for (Iterator<CorpusBucket> iterator = pendingUpdatesBuckets.iterator(); iterator.hasNext(); ) {
-            CorpusBucket bucket = iterator.next();
-
-            if (bucket.isDeleted()) {
-                bucket.delete();
-                index.remove(bucket);
-
-                iterator.remove();
-            } else {
-                bucket.flush();
-            }
+        for (Bucket bucket : pendingUpdatesBuckets) {
+            BucketWriter writer = bucket.getWriter();
+            writer.flush();
+            writer.close();
         }
 
-        if (!skipAnalysis || forceAnalysis) {
-            if (forceAnalysis)
-                doAnalyze(pendingUpdatesBuckets);
-            else
-                analyzeIfNeeded(pendingUpdatesBuckets);
+        // Update index and finalize
 
-            pendingUpdatesBuckets.clear();
-        }
+        Map<Short, Long> channels = advanceChannels(this.channels, batch.getChannelPositions());
+        db.update(channels, pendingUpdatesBuckets);
+        this.channels = channels;
 
-        index.save();
-
-        logger.debug("CorporaStorage index successfully written to disk");
-    }
-
-    private void analyzeIfNeeded(Collection<CorpusBucket> buckets) throws IOException {
-        List<CorpusBucket> filteredBuckets = buckets.stream()
-                .filter(CorpusBucket::shouldAnalyze)
-                .collect(Collectors.toList());
-
-        if (filteredBuckets.isEmpty()) {
-            filteredBuckets = buckets.stream()
-                    .filter(CorpusBucket::hasUnanalyzedContent)
-                    .collect(Collectors.toList());
-
-            if (filteredBuckets.size() > options.maxConcurrentAnalyses)
-                filteredBuckets = filteredBuckets.subList(0, options.maxConcurrentAnalyses);
-        }
-
-        this.doAnalyze(filteredBuckets);
-    }
-
-    private void doAnalyze(Collection<CorpusBucket> buckets) throws IOException {
-        if (!options.enableAnalysis || buckets.isEmpty())
-            return;
-
-        ArrayList<Future<Void>> pendingAnalysis = new ArrayList<>(buckets.size());
-
-        for (CorpusBucket bucket : buckets) {
-            if (bucket.isDeleted())
-                continue;
-
-            AnalysisTask task = new AnalysisTask(contextAnalyzer, bucket);
-            try {
-                pendingAnalysis.add(analysisExecutor.submit(task));
-            } catch (RejectedExecutionException e) {
-                // Shutting down, ignore analyze instruction
-                return;
-            }
-        }
-
-        for (Future<Void> analysis : pendingAnalysis) {
-            try {
-                analysis.get();
-            } catch (InterruptedException e) {
-                throw new IOException("Analysis has been interrupted", e);
-            } catch (ExecutionException e) {
-                throw unpack(e);
-            }
-        }
-
-        this.contextAnalyzer.flush();
-        this.contextAnalyzer.invalidateCache();
-    }
-
-    public void compress() throws IOException {
-        this.flushToDisk(false, true);
-
-        int threads = Math.max(10, Runtime.getRuntime().availableProcessors());
-        ExecutorService executor = Executors.newFixedThreadPool(threads);
-
-        try {
-            if (this.analysisTimer != null)
-                this.analysisTimer.setEnabled(false);
-            ExecutorCompletionService<CorpusBucket.Compression> ecs = new ExecutorCompletionService<>(executor);
-
-            int size = 0;
-            for (final CorpusBucket bucket : index.getBuckets()) {
-                if (bucket.hasUncompressedContent()) {
-                    ecs.submit(bucket::compress);
-                    size++;
-                }
-            }
-
-            for (int i = 0; i < size; i++) {
-                CorpusBucket.Compression compression = ecs.take().get();
-
-                this.index.save();
-
-                try {
-                    compression.commit();
-                    logger.info("(" + (i + 1) + "/" + size + ") Compression completed for bucket " + compression.getBucket());
-                } catch (IOException e) {
-                    logger.warn("Failed to compress bucket " + compression.getBucket() + ", rolling back", e);
-                    compression.rollback();
-                    this.index.save();
-                }
-            }
-        } catch (InterruptedException e) {
-            throw new IOException("Interrupted execution", e);
-        } catch (ExecutionException e) {
-            throw unpack(e);
-        } finally {
-            if (this.analysisTimer != null)
-                this.analysisTimer.setEnabled(true);
-
-            executor.shutdownNow();
-        }
+        this.buckets.clear();
     }
 
     @Override
-    public void close() {
-        if (this.analysisTimer != null) {
-            try {
-                analysisTimer.shutdown();
-                analysisTimer.join();
-            } catch (InterruptedException e) {
-                // Ignore it
-            }
-        }
+    public Map<Short, Long> getLatestChannelPositions() {
+        return Collections.unmodifiableMap(channels);
+    }
+
+    @Override
+    public boolean needsProcessing() {
+        return false;
+    }
+
+    @Override
+    public boolean needsAlignment() {
+        return false;
+    }
+
+    @Override
+    public synchronized void close() throws IOException {
+        closed = true;
 
         try {
-            analysisExecutor.shutdownNow();
-            analysisExecutor.awaitTermination(10, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            // Ignore it
+            for (Bucket bucket : buckets.values())
+                bucket.getWriter().close();
+
+            buckets.clear();
+        } finally {
+            db.close();
         }
     }
 
-    private class AnalysisTimer extends Thread {
+    public Set<Bucket> getUpdatedBuckets(long minMisalignment, int limit) throws IOException {
+        return db.retrieveUpdatedBuckets(path, minMisalignment, limit, buckets);
+    }
 
-        private final SynchronousQueue<Object> shutdownSignal = new SynchronousQueue<>();
-        private boolean shuttingDown = false;
-        private boolean enabled = true;
+    public void markUpdate(Bucket bucket, long size) throws IOException {
+        db.mark(bucket, size);
+    }
 
-        public void shutdown() {
-            if (!shuttingDown) {
-                shuttingDown = true;
+    static class CacheKey {
 
-                try {
-                    shutdownSignal.put(new Object());
-                } catch (InterruptedException e) {
-                    this.interrupt();
+        public long id;
+        public LanguagePair language;
+
+        public CacheKey(long id, LanguagePair language, boolean maskLanguageRegion) {
+            if (maskLanguageRegion) {
+                Language owSource = null;
+                Language owTarget = null;
+
+                if (language.source.getRegion() != null)
+                    owSource = new Language(language.source.getLanguage());
+                if (language.target.getRegion() != null)
+                    owTarget = new Language(language.target.getLanguage());
+
+                if (owSource != null || owTarget != null) {
+                    if (owSource == null)
+                        owSource = language.source;
+                    if (owTarget == null)
+                        owTarget = language.target;
+
+                    language = new LanguagePair(owSource, owTarget);
                 }
             }
-        }
 
-        public void setEnabled(boolean enabled) {
-            this.enabled = enabled;
+            this.id = id;
+            this.language = language;
         }
 
         @Override
-        public void run() {
-            while (true) {
-                Object poisonPill;
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
 
-                try {
-                    poisonPill = shutdownSignal.poll(options.writeBehindDelay, TimeUnit.MILLISECONDS);
-                } catch (InterruptedException e) {
-                    break;
-                }
+            CacheKey cacheKey = (CacheKey) o;
 
-                if (!enabled)
-                    continue;
-
-                if (poisonPill == null) { // timeout
-                    try {
-                        flushToDisk(false, false);
-                    } catch (IOException e) {
-                        logger.error("Failed to flush CorporaStorage to disk", e);
-                    }
-                } else { // poison pill
-                    break;
-                }
-            }
-
-            try {
-                flushToDisk(true, false);
-            } catch (IOException e) {
-                logger.error("Failed to flush CorporaStorage to disk", e);
-            } finally {
-                IOUtils.closeQuietly(index);
-            }
+            if (id != cacheKey.id) return false;
+            return language.equals(cacheKey.language);
         }
 
+        @Override
+        public int hashCode() {
+            int result = (int) (id ^ (id >>> 32));
+            result = 31 * result + language.hashCode();
+            return result;
+        }
     }
-
-    private static IOException unpack(ExecutionException e) {
-        Throwable cause = e.getCause();
-        if (cause instanceof RuntimeException)
-            throw (RuntimeException) cause;
-        else if (cause instanceof IOException)
-            return (IOException) cause;
-        else
-            throw new Error("Unexpected exception", cause);
-    }
-
 }
