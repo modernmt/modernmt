@@ -6,6 +6,8 @@ import eu.modernmt.context.lucene.analysis.ContextAnalyzerIndex;
 import eu.modernmt.context.lucene.storage.CorporaStorage;
 import eu.modernmt.context.lucene.storage.Options;
 import eu.modernmt.data.DataBatch;
+import eu.modernmt.data.DataListener;
+import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
@@ -18,18 +20,20 @@ import org.apache.logging.log4j.Logger;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 
 /**
  * Created by davide on 09/05/16.
  */
-public class LuceneAnalyzer implements ContextAnalyzer {
+public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
 
     private final Logger logger = LogManager.getLogger(LuceneAnalyzer.class);
 
     private final ContextAnalyzerIndex index;
     private final CorporaStorage storage;
+    private final eu.modernmt.context.lucene.storage2.CorporaStorage storage2;
 
     public LuceneAnalyzer(File indexPath) throws IOException {
         this(indexPath, new Options());
@@ -38,11 +42,13 @@ public class LuceneAnalyzer implements ContextAnalyzer {
     public LuceneAnalyzer(File indexPath, Options options) throws IOException {
         this.index = new ContextAnalyzerIndex(new File(indexPath, "index"));
         this.storage = new CorporaStorage(new File(indexPath, "storage"), options, this.index);
+        this.storage2 = new eu.modernmt.context.lucene.storage2.CorporaStorage(new File(indexPath, "storage2"));
     }
 
     public LuceneAnalyzer(ContextAnalyzerIndex index, CorporaStorage storage) {
         this.index = index;
         this.storage = storage;
+        this.storage2 = null;
     }
 
     public ContextAnalyzerIndex getIndex() {
@@ -146,4 +152,8 @@ public class LuceneAnalyzer implements ContextAnalyzer {
         return false;
     }
 
+    @Override
+    public Collection<DataListener> getDataListeners() {
+        return Collections.singleton(storage2);
+    }
 }
