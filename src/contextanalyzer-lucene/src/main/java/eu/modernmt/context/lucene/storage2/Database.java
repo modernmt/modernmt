@@ -33,8 +33,8 @@ public class Database implements Closeable {
             String sql = "CREATE TABLE IF NOT EXISTS buckets (" +
                     "id INTEGER, source TEXT, target TEXT, " +
                     "owner_lsb INTEGER, owner_msb INTEGER, " +
-                    "size INTEGER, plain_size INTEGER, gz_size INTEGER, mark INTEGER DEFAULT 0) " +
-                    "PRIMARY KEY (id, source, target)";
+                    "size INTEGER, plain_size INTEGER, gz_size INTEGER, mark INTEGER DEFAULT 0, " +
+                    "PRIMARY KEY (id, source, target))";
             statement.executeUpdate(sql);
         } finally {
             statement.close();
@@ -70,7 +70,11 @@ public class Database implements Closeable {
                 long plainSize = result.getLong(4);
                 long gzSize = result.getLong(5);
 
-                return new Bucket(folder, id, language, new UUID(ownerMsb, ownerLsb), plainSize, gzSize, size);
+                UUID owner = null;
+                if (ownerLsb > 0 || ownerMsb > 0)
+                    owner = new UUID(ownerMsb, ownerLsb);
+
+                return new Bucket(folder, id, language, owner, plainSize, gzSize, size);
             } else {
                 return null;
             }
@@ -140,6 +144,7 @@ public class Database implements Closeable {
         PreparedStatement channelStatement = null;
         PreparedStatement iBucketStatement = null;
         PreparedStatement uBucketStatement = null;
+        PreparedStatement dBucketStatement = null;
 
         try {
             connection.setAutoCommit(false);
@@ -147,6 +152,7 @@ public class Database implements Closeable {
             channelStatement = connection.prepareStatement("INSERT OR REPLACE INTO channels(id, position) VALUES (?, ?)");
             iBucketStatement = connection.prepareStatement("INSERT INTO buckets(id, source, target, owner_lsb, owner_msb, size, plain_size, gz_size) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
             uBucketStatement = connection.prepareStatement("UPDATE buckets SET size = ?, plain_size = ?, gz_size = ? WHERE id = ? AND source = ? AND target = ?");
+            dBucketStatement = connection.prepareStatement("DELETE FROM buckets WHERE id = ? AND source = ? AND target = ?");
 
             for (Map.Entry<Short, Long> entry : channels.entrySet()) {
                 channelStatement.setShort(1, entry.getKey());
@@ -155,24 +161,36 @@ public class Database implements Closeable {
             }
 
             for (Bucket bucket : buckets) {
-                uBucketStatement.setLong(1, bucket.virtualSize);
-                uBucketStatement.setLong(2, bucket.plainTextFileSize);
-                uBucketStatement.setLong(3, bucket.compressedFileSize);
-                uBucketStatement.setLong(4, bucket.getId());
-                uBucketStatement.setString(5, bucket.getLanguage().source.toString());
-                uBucketStatement.setString(6, bucket.getLanguage().target.toString());
+                if (bucket.getSize() == 0L) {
+                    // Delete
+                    dBucketStatement.setLong(1, bucket.getId());
+                    dBucketStatement.setString(2, bucket.getLanguage().source.toString());
+                    dBucketStatement.setString(3, bucket.getLanguage().target.toString());
 
-                if (uBucketStatement.executeUpdate() == 0) {
-                    iBucketStatement.setLong(1, bucket.getId());
-                    iBucketStatement.setString(2, bucket.getLanguage().source.toString());
-                    iBucketStatement.setString(3, bucket.getLanguage().target.toString());
-                    iBucketStatement.setLong(4, bucket.getOwner().getLeastSignificantBits());
-                    iBucketStatement.setLong(5, bucket.getOwner().getMostSignificantBits());
-                    iBucketStatement.setLong(6, bucket.virtualSize);
-                    iBucketStatement.setLong(7, bucket.plainTextFileSize);
-                    iBucketStatement.setLong(8, bucket.compressedFileSize);
+                    dBucketStatement.executeUpdate();
+                } else {
+                    // Create or update
+                    uBucketStatement.setLong(1, bucket.virtualSize);
+                    uBucketStatement.setLong(2, bucket.plainTextFileSize);
+                    uBucketStatement.setLong(3, bucket.compressedFileSize);
+                    uBucketStatement.setLong(4, bucket.getId());
+                    uBucketStatement.setString(5, bucket.getLanguage().source.toString());
+                    uBucketStatement.setString(6, bucket.getLanguage().target.toString());
 
-                    iBucketStatement.executeUpdate();
+                    if (uBucketStatement.executeUpdate() == 0) {
+                        UUID owner = bucket.getOwner();
+
+                        iBucketStatement.setLong(1, bucket.getId());
+                        iBucketStatement.setString(2, bucket.getLanguage().source.toString());
+                        iBucketStatement.setString(3, bucket.getLanguage().target.toString());
+                        iBucketStatement.setLong(4, owner == null ? 0L : owner.getLeastSignificantBits());
+                        iBucketStatement.setLong(5, owner == null ? 0L : owner.getMostSignificantBits());
+                        iBucketStatement.setLong(6, bucket.virtualSize);
+                        iBucketStatement.setLong(7, bucket.plainTextFileSize);
+                        iBucketStatement.setLong(8, bucket.compressedFileSize);
+
+                        iBucketStatement.executeUpdate();
+                    }
                 }
             }
 
@@ -182,9 +200,11 @@ public class Database implements Closeable {
             throw new IOException(e);
         } finally {
             finalizeTransaction(connection, success);
+
             close(channelStatement);
             close(iBucketStatement);
             close(uBucketStatement);
+            close(dBucketStatement);
         }
     }
 

@@ -5,6 +5,7 @@ import eu.modernmt.data.DataListener;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.io.RuntimeIOException;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import org.apache.commons.io.FileUtils;
 
@@ -21,6 +22,7 @@ public class CorporaStorage implements DataListener, Closeable {
         return new File(parent, Long.toString(id));
     }
 
+    private final boolean maskLanguageRegion;
     private final File path;
     private final ConcurrentHashMap<CacheKey, Bucket> buckets = new ConcurrentHashMap<>();
     private final Database db;
@@ -28,15 +30,20 @@ public class CorporaStorage implements DataListener, Closeable {
     private Map<Short, Long> channels;
 
     public CorporaStorage(File path) throws IOException {
+        this(path, true);
+    }
+
+    public CorporaStorage(File path, boolean maskLanguageRegion) throws IOException {
         FileUtils.forceMkdir(path);
 
+        this.maskLanguageRegion = maskLanguageRegion;
         this.path = path;
         this.db = new Database(new File(path, "index"));
         this.channels = db.getChannels();
     }
 
     private Bucket getBucket(long id, LanguagePair language, UUID owner) throws IOException {
-        return getBucket(new CacheKey(id, language), owner);
+        return getBucket(new CacheKey(id, language, this.maskLanguageRegion), owner);
     }
 
     private Bucket getBucket(CacheKey key, UUID owner) throws IOException {
@@ -56,9 +63,9 @@ public class CorporaStorage implements DataListener, Closeable {
         }
     }
 
-    private boolean shouldAcceptData(short channel, long position) {
+    private boolean skipData(short channel, long position) {
         Long existent = this.channels.get(channel);
-        return existent == null || position > existent;
+        return existent != null && position <= existent;
     }
 
     private static Map<Short, Long> advanceChannels(Map<Short, Long> channels, Map<Short, Long> update) {
@@ -86,7 +93,7 @@ public class CorporaStorage implements DataListener, Closeable {
         // Apply changes
 
         for (TranslationUnit unit : batch.getTranslationUnits()) {
-            if (!shouldAcceptData(unit.channel, unit.channelPosition))
+            if (skipData(unit.channel, unit.channelPosition))
                 continue;
 
             Bucket fwdBucket = getBucket(unit.memory, unit.direction, unit.owner);
@@ -99,7 +106,7 @@ public class CorporaStorage implements DataListener, Closeable {
         }
 
         for (Deletion deletion : batch.getDeletions()) {
-            if (shouldAcceptData(deletion.channel, deletion.channelPosition))
+            if (skipData(deletion.channel, deletion.channelPosition))
                 continue;
 
             for (LanguagePair language : db.retrieveLanguages(deletion.memory)) {
@@ -160,7 +167,26 @@ public class CorporaStorage implements DataListener, Closeable {
         public long id;
         public LanguagePair language;
 
-        public CacheKey(long id, LanguagePair language) {
+        public CacheKey(long id, LanguagePair language, boolean maskLanguageRegion) {
+            if (maskLanguageRegion) {
+                Language owSource = null;
+                Language owTarget = null;
+
+                if (language.source.getRegion() != null)
+                    owSource = new Language(language.source.getLanguage());
+                if (language.target.getRegion() != null)
+                    owTarget = new Language(language.target.getLanguage());
+
+                if (owSource != null || owTarget != null) {
+                    if (owSource == null)
+                        owSource = language.source;
+                    if (owTarget == null)
+                        owTarget = language.target;
+
+                    language = new LanguagePair(owSource, owTarget);
+                }
+            }
+
             this.id = id;
             this.language = language;
         }

@@ -74,24 +74,25 @@ class BucketWriter implements Closeable {
     }
 
     private long compress() throws IOException {
-        FileOutputStream output = null;
+        GZIPOutputStream gzOutput = null;
         FileInputStream input = null;
 
         try {
-            output = openStream(bucket.gzPath, bucket.compressedFileSize);
+            FileOutputStream output = openStream(bucket.gzPath, bucket.compressedFileSize);
+            gzOutput = new GZIPOutputStream(output);
+
             input = new FileInputStream(bucket.path);
 
-            GZIPOutputStream gzOutput = new GZIPOutputStream(output);
             IOUtils.copy(input, gzOutput);
+            gzOutput.finish();
             gzOutput.flush();
-            gzOutput.close();
 
             FileSystemUtils.fsync(output);
 
             return output.getChannel().position();
         } finally {
             IOUtils.closeQuietly(input);
-            IOUtils.closeQuietly(output);
+            IOUtils.closeQuietly(gzOutput);
         }
     }
 
