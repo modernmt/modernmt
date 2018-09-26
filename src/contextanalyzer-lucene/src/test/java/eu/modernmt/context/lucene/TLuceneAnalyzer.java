@@ -29,6 +29,20 @@ import java.util.*;
  */
 public class TLuceneAnalyzer extends LuceneAnalyzer {
 
+    public static class TCorporaStorage extends CorporaStorage {
+
+        public TCorporaStorage(File path) throws IOException {
+            super(path);
+        }
+
+        public Bucket getBucket(long id, LanguagePair language) throws IOException {
+            Bucket bucket = super.db.retrieve(super.path, id, language);
+            if (bucket != null && bucket.getSize() == 0)
+                bucket = null;
+            return bucket;
+        }
+    }
+
     private final File path;
 
     private static File getTempDirectory() throws IOException {
@@ -44,17 +58,26 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
     }
 
     private TLuceneAnalyzer(File path, AnalysisOptions options) throws IOException {
-        super(path, options);
+        super(new ContextAnalyzerIndex(new File(path, "index")), new TCorporaStorage(new File(path, "storage")), options);
         this.path = path;
+    }
+
+    @Override
+    public TCorporaStorage getStorage() {
+        return (TCorporaStorage) super.getStorage();
     }
 
     public int getIndexSize() throws IOException {
         return getIndex().getIndexReader().numDocs();
     }
 
+    public int getStorageSize() throws IOException {
+        return getStorage().size();
+    }
+
     public Entry getEntry(long memory, LanguagePair direction) throws IOException {
         ContextAnalyzerIndex index = getIndex();
-        CorporaStorage storage = getStorage();
+        TCorporaStorage storage = getStorage();
 
         String docId = DocumentBuilder.makeId(memory, direction);
 
@@ -62,7 +85,7 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
 
         String content = null;
 
-        Bucket bucket = storage.getBucket(memory, direction, null);
+        Bucket bucket = storage.getBucket(memory, direction);
         if (bucket != null) {
             InputStream stream = null;
 
@@ -147,6 +170,14 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
 
     // DataListener utils
 
+    public void forceAnalysis() throws IOException {
+        super.runAnalysis(null, 0, Integer.MAX_VALUE);
+    }
+
+    public Map<Short, Long> getLatestChannelPositions() {
+        return getStorage().getLatestChannelPositions();
+    }
+
     public void onDelete(final Deletion deletion) throws IOException {
         getStorage().onDataReceived(new DataBatch() {
 
@@ -166,6 +197,8 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
             }
 
         });
+
+        this.forceAnalysis();
     }
 
     public void onDataReceived(Collection<TranslationUnit> units) throws IOException {
@@ -193,6 +226,8 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
                 return positions;
             }
         });
+
+        this.forceAnalysis();
     }
 
     public void onDataReceived(Memory memory, MultilingualCorpus corpus) throws IOException {

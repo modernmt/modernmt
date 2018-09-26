@@ -18,9 +18,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class CorporaStorage implements DataListener, Closeable {
 
     private final boolean maskLanguageRegion;
-    private final File path;
+    protected final File path;
+    protected final Database db;
     private final ConcurrentHashMap<CacheKey, Bucket> buckets = new ConcurrentHashMap<>();
-    private final Database db;
     private boolean closed = false;
     private Map<Short, Long> channels;
 
@@ -41,11 +41,7 @@ public class CorporaStorage implements DataListener, Closeable {
         return db.count();
     }
 
-    public File getPath() {
-        return path;
-    }
-
-    public Bucket getBucket(long id, LanguagePair language, UUID owner) throws IOException {
+    private Bucket getBucket(long id, LanguagePair language, UUID owner) throws IOException {
         return getBucket(new CacheKey(id, language, this.maskLanguageRegion), owner);
     }
 

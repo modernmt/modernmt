@@ -55,8 +55,8 @@ class BucketWriter implements Closeable {
                 IOUtils.closeQuietly(this.stream);
                 this.stream = null;
 
-                FileUtils.forceDelete(this.bucket.gzPath);
-                FileUtils.forceDelete(this.bucket.path);
+                FileUtils.deleteQuietly(this.bucket.gzPath);
+                FileUtils.deleteQuietly(this.bucket.path);
             } else if (stream != null) {
                 FileSystemUtils.fsync(stream);
 

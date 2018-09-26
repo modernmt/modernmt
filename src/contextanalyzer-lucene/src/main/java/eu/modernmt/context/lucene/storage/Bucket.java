@@ -135,7 +135,7 @@ public class Bucket {
 
     @Override
     public String toString() {
-        return "Bucket{" + id + ", " + language + '}';
+        return "Bucket{" + id + ", " + language.source + ", " + language.target + '}';
     }
 
 }

@@ -22,13 +22,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Created by davide on 09/05/16.
@@ -46,8 +41,12 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
     }
 
     public LuceneAnalyzer(File indexPath, AnalysisOptions options) throws IOException {
-        this.index = new ContextAnalyzerIndex(new File(indexPath, "index"));
-        this.storage = new CorporaStorage(new File(indexPath, "storage"));
+        this(new ContextAnalyzerIndex(new File(indexPath, "index")), new CorporaStorage(new File(indexPath, "storage")), options);
+    }
+
+    protected LuceneAnalyzer(ContextAnalyzerIndex index, CorporaStorage storage, AnalysisOptions options) {
+        this.index = index;
+        this.storage = storage;
 
         if (options.enabled) {
             this.analysis = new AnalysisThread(options);
@@ -98,6 +97,49 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
         }
     }
 
+    protected void runAnalysis(ExecutorService executor, long maxToleratedMisalignment, int batchSize) throws IOException {
+        Set<Bucket> buckets = storage.getUpdatedBuckets(maxToleratedMisalignment, batchSize);
+        List<AnalysisTask> tasks = new ArrayList<>(buckets.size());
+
+        for (Bucket bucket : buckets)
+            tasks.add(new AnalysisTask(bucket));
+
+        if (executor == null) {
+            for (AnalysisTask task : tasks)
+                task.run();
+        } else {
+            List<Future<Void>> results = new ArrayList<>(tasks.size());
+            for (AnalysisTask task : tasks)
+                results.add(executor.submit(task, null));
+
+            for (Future<Void> future : results) {
+                try {
+                    future.get();
+                } catch (InterruptedException e) {
+                    // Ignore it
+                } catch (ExecutionException e) {
+                    Throwable cause = e.getCause();
+                    if (cause instanceof RuntimeException)
+                        throw (RuntimeException) cause;
+                    else
+                        throw new Error("Unexpected exception", cause);
+                }
+            }
+        }
+
+        // Commit
+
+        index.flush();
+
+        for (AnalysisTask task : tasks) {
+            try {
+                storage.markUpdate(task.getBucket(), task.getSize());
+            } catch (IOException e) {
+                logger.error("Failed to mark update for bucket " + task.getBucket());
+            }
+        }
+    }
+
     @Override
     public Collection<DataListener> getDataListeners() {
         return Collections.singleton(storage);
@@ -134,10 +176,9 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
                     break;
 
                 try {
-                    for (Bucket bucket : storage.getUpdatedBuckets(maxToleratedMisalignment, batchSize))
-                        executor.execute(new AnalysisTask(bucket));
-                } catch (IOException e) {
-                    logger.error("Failed to retrieve updated buckets", e);
+                    runAnalysis(executor, maxToleratedMisalignment, batchSize);
+                } catch (Exception e) {
+                    logger.error("Failed to retrieve run analysis", e);
                 }
             }
         }
@@ -158,9 +199,18 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
     private class AnalysisTask implements Runnable {
 
         private final Bucket bucket;
+        private long size = -1;
 
         public AnalysisTask(Bucket bucket) {
             this.bucket = bucket;
+        }
+
+        public long getSize() {
+            return size < 0 ? bucket.getSize() : size;
+        }
+
+        public Bucket getBucket() {
+            return bucket;
         }
 
         @Override
@@ -168,9 +218,9 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
             try {
                 long start = System.currentTimeMillis();
 
-                long size = bucket.getSize();
+                this.size = bucket.getSize();
 
-                if (size == 0) {
+                if (this.size == 0) {
                     // Deleted
                     index.delete(bucket.getId());
                 } else {
@@ -179,14 +229,11 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
                     index.update(document);
                 }
 
-                storage.markUpdate(bucket, size);
-
                 long elapsed = System.currentTimeMillis() - start;
                 logger.info("Index of bucket " + bucket + " completed in " + (elapsed / 1000) + "s");
             } catch (Exception e) {
                 logger.error("Failed to index bucket: " + bucket, e);
             }
         }
-
     }
 }
