@@ -229,8 +229,9 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
                     index.update(document);
                 }
 
-                long elapsed = System.currentTimeMillis() - start;
-                logger.info("Index of bucket " + bucket + " completed in " + (elapsed / 1000) + "s");
+                long elapsed = (long) ((System.currentTimeMillis() - start) / 100.);
+                if (logger.isDebugEnabled())
+                    logger.debug("Index of bucket " + bucket + " completed in " + (elapsed / 10.) + "s");
             } catch (Exception e) {
                 logger.error("Failed to index bucket: " + bucket, e);
             }

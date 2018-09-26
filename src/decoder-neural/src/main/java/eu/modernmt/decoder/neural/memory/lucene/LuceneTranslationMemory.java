@@ -51,6 +51,8 @@ public class LuceneTranslationMemory implements TranslationMemory {
     private IndexSearcher _indexSearcher;
     private final Map<Short, Long> channels;
 
+    private boolean closed = false;
+
     private static File forceMkdir(File directory) throws IOException {
         if (!directory.isDirectory())
             FileUtils.forceMkdir(directory);
@@ -212,7 +214,10 @@ public class LuceneTranslationMemory implements TranslationMemory {
     // DataListener
 
     @Override
-    public void onDataReceived(DataBatch batch) throws IOException {
+    public synchronized void onDataReceived(DataBatch batch) throws IOException {
+        if (closed)
+            return;
+
         boolean success = false;
 
         try {
@@ -287,7 +292,9 @@ public class LuceneTranslationMemory implements TranslationMemory {
     // Closeable
 
     @Override
-    public void close() {
+    public synchronized void close() {
+        this.closed = true;
+
         IOUtils.closeQuietly(this._indexReader);
         IOUtils.closeQuietly(this.indexWriter);
         IOUtils.closeQuietly(this.indexDirectory);
