@@ -36,7 +36,7 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
         }
 
         public Bucket getBucket(long id, LanguagePair language) throws IOException {
-            Bucket bucket = super.db.retrieve(super.path, id, language);
+            Bucket bucket = super.buckets.get(id, language, null);
             if (bucket != null && bucket.getSize() == 0)
                 bucket = null;
             return bucket;

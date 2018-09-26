@@ -45,6 +45,9 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
     }
 
     protected LuceneAnalyzer(ContextAnalyzerIndex index, CorporaStorage storage, AnalysisOptions options) {
+        // TODO: remove
+        options.timeout = 10;
+
         this.index = index;
         this.storage = storage;
 
@@ -98,7 +101,9 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
     }
 
     protected void runAnalysis(ExecutorService executor, long maxToleratedMisalignment, int batchSize) throws IOException {
+        logger.info("runAnalysis(): storage.getUpdatedBuckets() before");
         Set<Bucket> buckets = storage.getUpdatedBuckets(maxToleratedMisalignment, batchSize);
+        logger.info("runAnalysis(): storage.getUpdatedBuckets() after");
         List<AnalysisTask> tasks = new ArrayList<>(buckets.size());
 
         for (Bucket bucket : buckets)
@@ -129,11 +134,15 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
 
         // Commit
 
+        logger.info("runAnalysis(): index.flush() before");
         index.flush();
+        logger.info("runAnalysis(): index.flush() after");
 
         for (AnalysisTask task : tasks) {
             try {
+                logger.info("runAnalysis(): storage.markUpdate(" + task.getBucket() + ") before");
                 storage.markUpdate(task.getBucket(), task.getSize());
+                logger.info("runAnalysis(): storage.markUpdate(" + task.getBucket() + ") after");
             } catch (IOException e) {
                 logger.error("Failed to mark update for bucket " + task.getBucket());
             }

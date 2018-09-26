@@ -46,8 +46,10 @@ class BucketWriter implements Closeable {
     }
 
     public void flush() throws IOException {
-        synchronized (bucket) {
-            if (deleted) {
+        if (deleted) {
+            this.bucket.lockFiles();
+
+            try {
                 this.bucket.plainTextFileSize = 0;
                 this.bucket.compressedFileSize = 0;
                 this.bucket.virtualSize = 0;
@@ -57,22 +59,30 @@ class BucketWriter implements Closeable {
 
                 FileUtils.deleteQuietly(this.bucket.gzPath);
                 FileUtils.deleteQuietly(this.bucket.path);
-            } else if (stream != null) {
-                FileSystemUtils.fsync(stream);
+            } finally {
+                this.bucket.unlockFiles();
+            }
+        } else if (stream != null) {
+            FileSystemUtils.fsync(stream);
 
-                long size = stream.getChannel().position();
-                bucket.virtualSize += size - bucket.plainTextFileSize;
+            long size = stream.getChannel().position();
+            bucket.virtualSize += size - bucket.plainTextFileSize;
 
-                // Compress if needed
-                if (size >= COMPRESS_THRESHOLD) {
+            // Compress if needed
+            if (size >= COMPRESS_THRESHOLD) {
+                this.bucket.lockFiles();
+
+                try {
                     IOUtils.closeQuietly(this.stream);
                     this.stream = null;
 
                     bucket.compressedFileSize = compress();
                     bucket.plainTextFileSize = 0;
-                } else {
-                    bucket.plainTextFileSize = size;
+                } finally {
+                    this.bucket.unlockFiles();
                 }
+            } else {
+                bucket.plainTextFileSize = size;
             }
         }
     }

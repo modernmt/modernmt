@@ -4,25 +4,19 @@ import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.io.RuntimeIOException;
-import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
 import org.apache.commons.io.FileUtils;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class CorporaStorage implements DataListener, Closeable {
 
-    private final boolean maskLanguageRegion;
     protected final File path;
-    protected final Database db;
-    private final ConcurrentHashMap<CacheKey, Bucket> buckets = new ConcurrentHashMap<>();
+    protected final BucketRegistry buckets;
     private boolean closed = false;
-    private Map<Short, Long> channels;
+    private final Map<Short, Long> channels;
 
     public CorporaStorage(File path) throws IOException {
         this(path, true);
@@ -31,33 +25,21 @@ public class CorporaStorage implements DataListener, Closeable {
     public CorporaStorage(File path, boolean maskLanguageRegion) throws IOException {
         FileUtils.forceMkdir(path);
 
-        this.maskLanguageRegion = maskLanguageRegion;
         this.path = path;
-        this.db = new Database(new File(path, "index"));
-        this.channels = db.getChannels();
+        this.buckets = new BucketRegistry(path, maskLanguageRegion);
+        this.channels = buckets.getChannels();
     }
 
     public int size() throws IOException {
-        return db.count();
+        return buckets.count();
     }
 
-    private Bucket getBucket(long id, LanguagePair language, UUID owner) throws IOException {
-        return getBucket(new CacheKey(id, language, this.maskLanguageRegion), owner);
+    public Set<Bucket> getUpdatedBuckets(long minMisalignment, int limit) throws IOException {
+        return buckets.getUpdated(minMisalignment, limit);
     }
 
-    private Bucket getBucket(CacheKey key, UUID owner) throws IOException {
-        try {
-            return buckets.computeIfAbsent(key, arg -> {
-                try {
-                    Bucket bucket = db.retrieve(path, arg.id, arg.language);
-                    return bucket == null ? new Bucket(path, arg.id, arg.language, owner) : bucket;
-                } catch (IOException e) {
-                    throw new RuntimeIOException(e);
-                }
-            });
-        } catch (RuntimeIOException e) {
-            throw e.getCause();
-        }
+    public void markUpdate(Bucket bucket, long size) throws IOException {
+        buckets.mark(bucket, size);
     }
 
     private boolean skipData(short channel, long position) {
@@ -85,7 +67,7 @@ public class CorporaStorage implements DataListener, Closeable {
         if (closed)
             return;
 
-        HashSet<Bucket> pendingUpdatesBuckets = new HashSet<>(buckets.size());
+        HashSet<Bucket> pendingUpdatesBuckets = new HashSet<>();
 
         // Apply changes
 
@@ -93,11 +75,11 @@ public class CorporaStorage implements DataListener, Closeable {
             if (skipData(unit.channel, unit.channelPosition))
                 continue;
 
-            Bucket fwdBucket = getBucket(unit.memory, unit.direction, unit.owner);
+            Bucket fwdBucket = buckets.get(unit.memory, unit.direction, unit.owner);
             fwdBucket.getWriter().append(unit.rawSentence);
             pendingUpdatesBuckets.add(fwdBucket);
 
-            Bucket bwdBucket = getBucket(unit.memory, unit.direction.reversed(), unit.owner);
+            Bucket bwdBucket = buckets.get(unit.memory, unit.direction.reversed(), unit.owner);
             bwdBucket.getWriter().append(unit.rawTranslation);
             pendingUpdatesBuckets.add(bwdBucket);
         }
@@ -106,8 +88,7 @@ public class CorporaStorage implements DataListener, Closeable {
             if (skipData(deletion.channel, deletion.channelPosition))
                 continue;
 
-            for (LanguagePair language : db.retrieveLanguages(deletion.memory)) {
-                Bucket bucket = getBucket(deletion.memory, language, null);
+            for (Bucket bucket : buckets.getAll(deletion.memory)) {
                 bucket.getWriter().delete();
                 pendingUpdatesBuckets.add(bucket);
             }
@@ -123,11 +104,11 @@ public class CorporaStorage implements DataListener, Closeable {
 
         // Update index and finalize
 
-        Map<Short, Long> channels = advanceChannels(this.channels, batch.getChannelPositions());
-        db.update(channels, pendingUpdatesBuckets);
-        this.channels = channels;
+        Map<Short, Long> updatedChannels = advanceChannels(channels, batch.getChannelPositions());
+        buckets.update(updatedChannels, pendingUpdatesBuckets);
+        channels.putAll(updatedChannels);
 
-        this.buckets.clear();
+        buckets.clearCache();
     }
 
     @Override
@@ -148,70 +129,7 @@ public class CorporaStorage implements DataListener, Closeable {
     @Override
     public synchronized void close() throws IOException {
         closed = true;
-
-        try {
-            for (Bucket bucket : buckets.values())
-                bucket.getWriter().close();
-
-            buckets.clear();
-        } finally {
-            db.close();
-        }
+        buckets.close();
     }
 
-    public Set<Bucket> getUpdatedBuckets(long minMisalignment, int limit) throws IOException {
-        return db.retrieveUpdatedBuckets(path, minMisalignment, limit, buckets);
-    }
-
-    public void markUpdate(Bucket bucket, long size) throws IOException {
-        db.mark(bucket, size);
-    }
-
-    static class CacheKey {
-
-        public long id;
-        public LanguagePair language;
-
-        public CacheKey(long id, LanguagePair language, boolean maskLanguageRegion) {
-            if (maskLanguageRegion) {
-                Language owSource = null;
-                Language owTarget = null;
-
-                if (language.source.getRegion() != null)
-                    owSource = new Language(language.source.getLanguage());
-                if (language.target.getRegion() != null)
-                    owTarget = new Language(language.target.getLanguage());
-
-                if (owSource != null || owTarget != null) {
-                    if (owSource == null)
-                        owSource = language.source;
-                    if (owTarget == null)
-                        owTarget = language.target;
-
-                    language = new LanguagePair(owSource, owTarget);
-                }
-            }
-
-            this.id = id;
-            this.language = language;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            CacheKey cacheKey = (CacheKey) o;
-
-            if (id != cacheKey.id) return false;
-            return language.equals(cacheKey.language);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = (int) (id ^ (id >>> 32));
-            result = 31 * result + language.hashCode();
-            return result;
-        }
-    }
 }

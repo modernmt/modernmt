@@ -9,16 +9,27 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
-public class Database implements Closeable {
+public class BucketRegistry implements Closeable {
 
+    private static File getBucketFolder(File path, long id) {
+        File parent = new File(path, Long.toString(id % 10000L));
+        return new File(parent, Long.toString(id));
+    }
+
+    private final File root;
+    private final boolean maskLanguageRegion;
     private final Connection connection;
+    private final HashMap<CacheKey, Bucket> cache = new HashMap<>();
 
-    public Database(File path) throws IOException {
+    public BucketRegistry(File root, boolean maskLanguageRegion) throws IOException {
+        this.root = root;
+        this.maskLanguageRegion = maskLanguageRegion;
+
         try {
+            File index = new File(root, "index");
             Class.forName("org.sqlite.JDBC");
-            this.connection = DriverManager.getConnection("jdbc:sqlite:" + path.getAbsolutePath());
+            this.connection = DriverManager.getConnection("jdbc:sqlite:" + index.getAbsolutePath());
 
             createDatabaseIfNotExists(connection);
         } catch (SQLException e) {
@@ -69,7 +80,24 @@ public class Database implements Closeable {
         }
     }
 
-    public synchronized Bucket retrieve(File folder, long id, LanguagePair language) throws IOException {
+    public synchronized Bucket get(long id, LanguagePair language, UUID owner) throws IOException {
+        CacheKey key = new CacheKey(id, language, this.maskLanguageRegion);
+
+        try {
+            return cache.computeIfAbsent(key, arg -> {
+                try {
+                    Bucket bucket = retrieve(arg.id, arg.language);
+                    return bucket == null ? new Bucket(getBucketFolder(this.root, id), arg.id, arg.language, owner) : bucket;
+                } catch (IOException e) {
+                    throw new RuntimeIOException(e);
+                }
+            });
+        } catch (RuntimeIOException e) {
+            throw e.getCause();
+        }
+    }
+
+    private synchronized Bucket retrieve(long id, LanguagePair language) throws IOException {
         PreparedStatement statement = null;
         ResultSet result = null;
 
@@ -83,17 +111,12 @@ public class Database implements Closeable {
             result = statement.executeQuery();
 
             if (result.next()) {
-                long ownerLsb = result.getLong(1);
-                long ownerMsb = result.getLong(2);
+                UUID owner = getUUID(result, 1, 2);
                 long size = result.getLong(3);
                 long plainSize = result.getLong(4);
                 long gzSize = result.getLong(5);
 
-                UUID owner = null;
-                if (ownerLsb > 0 || ownerMsb > 0)
-                    owner = new UUID(ownerMsb, ownerLsb);
-
-                return new Bucket(folder, id, language, owner, plainSize, gzSize, size);
+                return new Bucket(getBucketFolder(this.root, id), id, language, owner, plainSize, gzSize, size);
             } else {
                 return null;
             }
@@ -105,47 +128,29 @@ public class Database implements Closeable {
         }
     }
 
-    public synchronized Map<Short, Long> getChannels() throws IOException {
-        HashMap<Short, Long> map = new HashMap<>();
+    public synchronized Set<Bucket> getAll(long id) throws IOException {
+        Set<Bucket> set = new HashSet<>();
 
         Statement statement = null;
         ResultSet result = null;
 
         try {
             statement = connection.createStatement();
-            result = statement.executeQuery("SELECT id, position FROM channels");
+            result = statement.executeQuery("SELECT source, target, owner_lsb, owner_msb, size, plain_size, gz_size FROM buckets WHERE id = " + id);
 
             while (result.next()) {
-                Short id = result.getShort(1);
-                Long position = result.getLong(2);
+                final Language source = Language.fromString(result.getString(1));
+                final Language target = Language.fromString(result.getString(2));
+                final UUID owner = getUUID(result, 3, 4);
+                final long size = result.getLong(5);
+                final long plainSize = result.getLong(6);
+                final long gzSize = result.getLong(7);
 
-                map.put(id, position);
-            }
+                CacheKey key = new CacheKey(id, new LanguagePair(source, target), this.maskLanguageRegion);
+                Bucket bucket = cache.computeIfAbsent(key,
+                        arg -> new Bucket(getBucketFolder(root, arg.id), arg.id, arg.language, owner, plainSize, gzSize, size));
 
-            return map;
-        } catch (SQLException e) {
-            throw new IOException(e);
-        } finally {
-            close(result);
-            close(statement);
-        }
-    }
-
-    public synchronized Set<LanguagePair> retrieveLanguages(long id) throws IOException {
-        Set<LanguagePair> set = new HashSet<>();
-
-        Statement statement = null;
-        ResultSet result = null;
-
-        try {
-            statement = connection.createStatement();
-            result = statement.executeQuery("SELECT source, target FROM buckets WHERE id = " + id);
-
-            while (result.next()) {
-                Language source = Language.fromString(result.getString(1));
-                Language target = Language.fromString(result.getString(2));
-
-                set.add(new LanguagePair(source, target));
+                set.add(bucket);
             }
 
             return set;
@@ -157,7 +162,7 @@ public class Database implements Closeable {
         }
     }
 
-    public synchronized Set<Bucket> retrieveUpdatedBuckets(File folder, long minMisalignment, int limit, ConcurrentHashMap<CorporaStorage.CacheKey, Bucket> buckets) throws IOException {
+    public synchronized Set<Bucket> getUpdated(long minMisalignment, int limit) throws IOException {
         HashSet<Bucket> set = new HashSet<>();
 
         Statement statement = null;
@@ -172,35 +177,18 @@ public class Database implements Closeable {
                             "ORDER BY ABS(mark - size) DESC " +
                             "LIMIT " + limit);
 
-            CorporaStorage.CacheKey key = new CorporaStorage.CacheKey(0, null, false);
-
             while (result.next()) {
                 long id = result.getLong(1);
-                Language source = Language.fromString(result.getString(2));
-                Language target = Language.fromString(result.getString(3));
+                final Language source = Language.fromString(result.getString(2));
+                final Language target = Language.fromString(result.getString(3));
+                final UUID owner = getUUID(result, 4, 5);
+                final long size = result.getLong(6);
+                final long plainSize = result.getLong(7);
+                final long gzSize = result.getLong(8);
 
-                key.id = id;
-                key.language = new LanguagePair(source, target);
-
-                final ResultSet r = result;
-
-                Bucket bucket = buckets.computeIfAbsent(key, k -> {
-                    try {
-                        long ownerLsb = r.getLong(4);
-                        long ownerMsb = r.getLong(5);
-                        long size = r.getLong(6);
-                        long plainSize = r.getLong(7);
-                        long gzSize = r.getLong(8);
-
-                        UUID owner = null;
-                        if (ownerLsb > 0 || ownerMsb > 0)
-                            owner = new UUID(ownerMsb, ownerLsb);
-
-                        return new Bucket(folder, k.id, k.language, owner, plainSize, gzSize, size);
-                    } catch (SQLException e) {
-                        throw new RuntimeIOException(new IOException(e));
-                    }
-                });
+                CacheKey key = new CacheKey(id, new LanguagePair(source, target), this.maskLanguageRegion);
+                Bucket bucket = cache.computeIfAbsent(key,
+                        arg -> new Bucket(getBucketFolder(root, arg.id), arg.id, arg.language, owner, plainSize, gzSize, size));
 
                 set.add(bucket);
             }
@@ -230,6 +218,32 @@ public class Database implements Closeable {
         } catch (SQLException e) {
             throw new IOException(e);
         } finally {
+            close(statement);
+        }
+    }
+
+    public synchronized Map<Short, Long> getChannels() throws IOException {
+        HashMap<Short, Long> map = new HashMap<>();
+
+        Statement statement = null;
+        ResultSet result = null;
+
+        try {
+            statement = connection.createStatement();
+            result = statement.executeQuery("SELECT id, position FROM channels");
+
+            while (result.next()) {
+                Short id = result.getShort(1);
+                Long position = result.getLong(2);
+
+                map.put(id, position);
+            }
+
+            return map;
+        } catch (SQLException e) {
+            throw new IOException(e);
+        } finally {
+            close(result);
             close(statement);
         }
     }
@@ -327,12 +341,81 @@ public class Database implements Closeable {
         }
     }
 
+    private static UUID getUUID(ResultSet result, int lsbIndex, int msbIndex) throws SQLException {
+        long lsb = result.getLong(lsbIndex);
+        long msb = result.getLong(msbIndex);
+
+        UUID uuid = null;
+        if (lsb > 0 || msb > 0)
+            uuid = new UUID(msb, lsb);
+        return uuid;
+    }
+
+    public synchronized void clearCache() {
+        this.cache.clear();
+    }
+
     @Override
-    public void close() throws IOException {
+    public synchronized void close() throws IOException {
         try {
-            this.connection.close();
-        } catch (SQLException e) {
-            throw new IOException(e);
+            for (Bucket bucket : cache.values())
+                bucket.getWriter().close();
+
+            cache.clear();
+        } finally {
+            try {
+                this.connection.close();
+            } catch (SQLException e) {
+                // Ignore it
+            }
+        }
+    }
+
+    private static class CacheKey {
+
+        public long id;
+        public LanguagePair language;
+
+        public CacheKey(long id, LanguagePair language, boolean maskLanguageRegion) {
+            if (maskLanguageRegion) {
+                Language owSource = null;
+                Language owTarget = null;
+
+                if (language.source.getRegion() != null)
+                    owSource = new Language(language.source.getLanguage());
+                if (language.target.getRegion() != null)
+                    owTarget = new Language(language.target.getLanguage());
+
+                if (owSource != null || owTarget != null) {
+                    if (owSource == null)
+                        owSource = language.source;
+                    if (owTarget == null)
+                        owTarget = language.target;
+
+                    language = new LanguagePair(owSource, owTarget);
+                }
+            }
+
+            this.id = id;
+            this.language = language;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            CacheKey cacheKey = (CacheKey) o;
+
+            if (id != cacheKey.id) return false;
+            return language.equals(cacheKey.language);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = (int) (id ^ (id >>> 32));
+            result = 31 * result + language.hashCode();
+            return result;
         }
     }
 

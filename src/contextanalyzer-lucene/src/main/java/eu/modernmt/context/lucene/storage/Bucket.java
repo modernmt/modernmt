@@ -6,19 +6,17 @@ import org.apache.commons.io.input.BoundedInputStream;
 
 import java.io.*;
 import java.util.UUID;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.zip.GZIPInputStream;
 
 public class Bucket {
-
-    private static File getParentFolder(File path, long id) {
-        File parent = new File(path, Long.toString(id % 10000L));
-        return new File(parent, Long.toString(id));
-    }
 
     private final long id;
     private final LanguagePair language;
     private final UUID owner;
 
+    private final Lock fileLock;
     final File path;
     final File gzPath;
 
@@ -33,11 +31,11 @@ public class Bucket {
         this.language = language;
         this.owner = owner;
 
-        File parent = getParentFolder(folder, id);
         String key = Long.toString(id) + '_' + language.source.getLanguage() + '_' + language.target.getLanguage();
 
-        this.path = new File(parent, key + ".txt");
-        this.gzPath = new File(parent, key + ".gz");
+        this.fileLock = new ReentrantLock();
+        this.path = new File(folder, key + ".txt");
+        this.gzPath = new File(folder, key + ".gz");
 
         this.plainTextFileSize = 0;
         this.compressedFileSize = 0;
@@ -68,6 +66,14 @@ public class Bucket {
         return virtualSize;
     }
 
+    void lockFiles() {
+        this.fileLock.lock();
+    }
+
+    void unlockFiles() {
+        this.fileLock.unlock();
+    }
+
     BucketWriter getWriter() {
         if (writer == null) {
             synchronized (this) {
@@ -86,12 +92,16 @@ public class Bucket {
         InputStream stream = null;
 
         try {
-            synchronized (this) {
+            this.lockFiles();
+
+            try {
                 if (gzPath.exists() && compressedFileSize > 0)
                     gzStream = new GZIPInputStream(new BoundedInputStream(new FileInputStream(gzPath), compressedFileSize));
 
                 if (path.exists() && plainTextFileSize > 0)
                     stream = new BoundedInputStream(new FileInputStream(path), plainTextFileSize);
+            } finally {
+                this.unlockFiles();
             }
 
             success = true;
