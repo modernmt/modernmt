@@ -92,4 +92,8 @@ public class FileConst {
         return new File(_runtimePath, engine);
     }
 
+    public static File getLogsPath(String engine) {
+        return Paths.join(getEngineRuntime(engine), "logs");
+    }
+
 }
