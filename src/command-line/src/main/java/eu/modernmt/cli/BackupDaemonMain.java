@@ -57,8 +57,10 @@ public class BackupDaemonMain {
         Log4jConfiguration.setup(new File(logFolder, "backup.log"), Level.INFO);
 
         FileLimitRetentionPolicy policy = new FileLimitRetentionPolicy(args.limit);
-        BackupDaemon daemon = new BackupDaemon(args.config, policy, args.interval);
-        daemon.runForever();
+
+        try (BackupDaemon daemon = new BackupDaemon(args.config, policy, args.interval)) {
+            daemon.runForever();
+        }
     }
 
 }

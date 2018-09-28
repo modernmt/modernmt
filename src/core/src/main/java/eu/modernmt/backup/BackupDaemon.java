@@ -34,13 +34,7 @@ public class BackupDaemon implements Closeable {
     }
 
     public void runForever() throws IOException {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                close();
-            } catch (IOException e) {
-                logger.error(e);
-            }
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(this::interrupt));
 
         long nextBackup = System.currentTimeMillis();
 
@@ -95,14 +89,16 @@ public class BackupDaemon implements Closeable {
         logger.info("Backup created in " + (elapsed / 1000.) + "s");
     }
 
-    @Override
-    public void close() throws IOException {
+    public void interrupt() {
         try {
             shutdown.put(new Object());
         } catch (InterruptedException e) {
-            throw new IOException(e);
-        } finally {
-            this.engine.stop(false);
+            // Ignore it
         }
+    }
+
+    @Override
+    public void close() throws IOException {
+        this.engine.stop(false);
     }
 }
