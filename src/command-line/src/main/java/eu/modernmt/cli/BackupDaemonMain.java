@@ -42,7 +42,8 @@ public class BackupDaemonMain {
 
             this.engine = cli.getOptionValue("engine");
             this.config = XMLConfigBuilder.build(Engine.getConfigFile(this.engine));
-            this.interval = Long.parseLong(cli.getOptionValue("interval"));
+            this.config.getEngineConfig().setName(this.engine);
+            this.interval = Long.parseLong(cli.getOptionValue("interval")) * 1000L;
             this.limit = Integer.parseInt(cli.getOptionValue("limit"));
         }
     }
