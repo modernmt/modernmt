@@ -36,7 +36,7 @@ public class TranslationService implements ManagedService, RemoteService {
         int normalPriorityQueueSize = config.getNormalPriorityQueueSize();
         int backgroundPriorityQueueSize = config.getBackgroundPriorityQueueSize();
 
-        BlockingQueue<Runnable> queue = new PriorityBucketBlockingQueue<>(
+        final PriorityBucketBlockingQueue<Runnable> queue = new PriorityBucketBlockingQueue<>(
                 highPriorityQueueSize, normalPriorityQueueSize, backgroundPriorityQueueSize);
 
         this.nodeEngine = nodeEngine;
@@ -56,12 +56,7 @@ public class TranslationService implements ManagedService, RemoteService {
              */
             @Override
             protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
-                RunnableFuture<T> task = super.newTaskFor(runnable, value);
-
-                if (runnable instanceof Prioritizable)
-                    task = new PriorityRunnableFuture<>(task, ((Prioritizable) runnable).getPriority());
-
-                return task;
+                return wrap(runnable, super.newTaskFor(runnable, value));
             }
 
             /**
@@ -74,12 +69,19 @@ public class TranslationService implements ManagedService, RemoteService {
              */
             @Override
             protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
-                RunnableFuture<T> task = super.newTaskFor(callable);
+                return wrap(callable, super.newTaskFor(callable));
+            }
 
-                if (callable instanceof Prioritizable)
-                    task = new PriorityRunnableFuture<>(task, ((Prioritizable) callable).getPriority());
+            private <T> RunnableFuture<T> wrap(Object task, RunnableFuture<T> future) {
+                if (task instanceof Prioritizable) {
+                    Prioritizable prioritizable = (Prioritizable) task;
+                    int priority = prioritizable.getPriority();
+                    prioritizable.setQueueLength(queue.size(priority));
 
-                return task;
+                    future = new PriorityRunnableFuture<>(future, priority);
+                }
+
+                return future;
             }
 
         };

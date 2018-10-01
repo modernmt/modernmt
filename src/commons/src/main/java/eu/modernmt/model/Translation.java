@@ -22,8 +22,13 @@ public class Translation extends Sentence {
     protected final Sentence source;
     private Alignment wordAlignment;
     private Alignment sentenceAlignment = null;
-    private long elapsedTime;
     private List<Translation> nbest;
+
+    // Statistics
+    private long elapsedTime;
+    private long queueTime;
+    private int queueLength;
+    private Priority priority;
 
     public Translation(Word[] words, Sentence source, Alignment wordAlignment) {
         this(words, null, source, wordAlignment);
@@ -34,6 +39,7 @@ public class Translation extends Sentence {
         this.source = source;
         this.wordAlignment = wordAlignment;
         this.elapsedTime = 0;
+        this.queueLength = 0;
     }
 
     public long getElapsedTime() {
@@ -42,6 +48,30 @@ public class Translation extends Sentence {
 
     public void setElapsedTime(long elapsedTime) {
         this.elapsedTime = elapsedTime;
+    }
+
+    public long getQueueTime() {
+        return queueTime;
+    }
+
+    public void setQueueTime(long queueTime) {
+        this.queueTime = queueTime;
+    }
+
+    public int getQueueLength() {
+        return queueLength;
+    }
+
+    public void setQueueLength(int queueLength) {
+        this.queueLength = queueLength;
+    }
+
+    public Priority getPriority() {
+        return priority;
+    }
+
+    public void setPriority(Priority priority) {
+        this.priority = priority;
     }
 
     public Sentence getSource() {

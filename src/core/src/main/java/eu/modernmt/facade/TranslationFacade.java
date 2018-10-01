@@ -16,10 +16,7 @@ import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
-import eu.modernmt.model.Alignment;
-import eu.modernmt.model.ContextVector;
-import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Translation;
+import eu.modernmt.model.*;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.impl.StringCorpus;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
@@ -42,16 +39,6 @@ import java.util.concurrent.Future;
 public class TranslationFacade {
 
     private static final Logger logger = LogManager.getLogger(TranslationFacade.class);
-
-    public enum Priority {
-        HIGH(0), NORMAL(1), BACKGROUND(2);  //three priority values are allowed
-
-        public final int intValue;
-
-        Priority(int value) {
-            this.intValue = value;
-        }
-    }
 
     // =============================
     //  Translation
@@ -90,11 +77,10 @@ public class TranslationFacade {
     }
 
     private Translation insecureGet(UUID user, LanguagePair direction, String sentence, ContextVector translationContext, int nbest, Priority priority) throws ProcessingException, DecoderException, AlignerException {
-        TranslationTask task = new TranslationTaskImpl(user, direction, sentence, translationContext, nbest, priority);
-
         try {
             ClusterNode node = ModernMT.getNode();
 
+            TranslationTask task = new TranslationTaskImpl(user, direction, sentence, translationContext, nbest, priority);
             Future<Translation> future = node.submit(task);
             Translation translation = future.get();
 
@@ -200,6 +186,8 @@ public class TranslationFacade {
         public final ContextVector context;
         public final int nbest;
         public final Priority priority;
+        private int queueLength;
+        private final long creationTimestamp;
 
         public TranslationTaskImpl(UUID user, LanguagePair direction, String text, ContextVector context, int nbest, Priority priority) {
             this.user = user;
@@ -208,18 +196,20 @@ public class TranslationFacade {
             this.context = context;
             this.nbest = nbest;
             this.priority = priority;
+            this.creationTimestamp = System.currentTimeMillis();
         }
 
         @Override
         public Translation call() throws ProcessingException, DecoderException, AlignerException {
+            long begin = System.currentTimeMillis();
+            long timeInQueue = begin - creationTimestamp;
+
             ClusterNode node = ModernMT.getNode();
 
             Engine engine = node.getEngine();
             Decoder decoder = engine.getDecoder();
             Preprocessor preprocessor = engine.getPreprocessor();
             Postprocessor postprocessor = engine.getPostprocessor();
-
-            long begin = System.currentTimeMillis();
 
             Sentence sentence = preprocessor.process(direction, text);
             Translation translation;
@@ -239,6 +229,9 @@ public class TranslationFacade {
             }
 
             translation.setElapsedTime(System.currentTimeMillis() - begin);
+            translation.setQueueLength(queueLength);
+            translation.setPriority(priority);
+            translation.setQueueTime(Math.max(0, timeInQueue));
 
             return translation;
         }
@@ -319,8 +312,14 @@ public class TranslationFacade {
         }
 
         @Override
+        public void setQueueLength(int size) {
+            this.queueLength = size;
+        }
+
+        @Override
         public LanguagePair getLanguage() {
             return direction;
         }
+
     }
 }

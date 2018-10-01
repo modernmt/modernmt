@@ -1,15 +1,6 @@
 package eu.modernmt.api.actions.translation;
 
 import eu.modernmt.aligner.AlignerException;
-import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.data.DataManager;
-import eu.modernmt.decoder.DecoderException;
-import eu.modernmt.facade.ModernMT;
-import eu.modernmt.facade.TranslationFacade;
-import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.ContextVector;
-import eu.modernmt.persistence.PersistenceException;
-import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.api.actions.util.ContextUtils;
 import eu.modernmt.api.framework.HttpMethod;
 import eu.modernmt.api.framework.Parameters;
@@ -17,6 +8,14 @@ import eu.modernmt.api.framework.RESTRequest;
 import eu.modernmt.api.framework.actions.ObjectAction;
 import eu.modernmt.api.framework.routing.Route;
 import eu.modernmt.api.model.TranslationResponse;
+import eu.modernmt.context.ContextAnalyzerException;
+import eu.modernmt.decoder.DecoderException;
+import eu.modernmt.facade.ModernMT;
+import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.model.ContextVector;
+import eu.modernmt.model.Priority;
+import eu.modernmt.persistence.PersistenceException;
+import eu.modernmt.processing.ProcessingException;
 
 import java.util.UUID;
 
@@ -65,7 +64,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
         public final String contextString;
         public final int contextLimit;
         public final int nbest;
-        public final TranslationFacade.Priority priority;
+        public final Priority priority;
         public final boolean verbose;
 
         public Params(RESTRequest req) throws ParameterParsingException {
@@ -86,7 +85,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
             contextLimit = getInt("context_limit", 10);
             nbest = getInt("nbest", 0);
 
-            priority = getEnum("priority", TranslationFacade.Priority.class, TranslationFacade.Priority.NORMAL);
+            priority = getEnum("priority", Priority.class, Priority.NORMAL);
             verbose = getBoolean("verbose", false);
 
             String weights = getString("context_vector", false, null);

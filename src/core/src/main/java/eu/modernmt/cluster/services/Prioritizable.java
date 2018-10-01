@@ -7,4 +7,6 @@ public interface Prioritizable {
 
     int getPriority();
 
+    void setQueueLength(int size);
+
 }

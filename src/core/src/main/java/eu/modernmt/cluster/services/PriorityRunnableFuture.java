@@ -23,6 +23,11 @@ class PriorityRunnableFuture<T> implements RunnableFuture<T>, Prioritizable {
         return priority;
     }
 
+    @Override
+    public void setQueueLength(int size) {
+        // Ignore it
+    }
+
     public boolean cancel(boolean mayInterruptIfRunning) {
         return src.cancel(mayInterruptIfRunning);
     }

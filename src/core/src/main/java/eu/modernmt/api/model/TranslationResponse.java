@@ -12,4 +12,10 @@ public class TranslationResponse {
     public ContextVector context = null;
     public boolean verbose = false;
 
+    private final long creationTimestamp = System.currentTimeMillis();
+
+    public long getTotalTime() {
+        return System.currentTimeMillis() - creationTimestamp;
+    }
+
 }

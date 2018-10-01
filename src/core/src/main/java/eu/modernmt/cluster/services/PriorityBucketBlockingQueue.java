@@ -207,6 +207,15 @@ public class PriorityBucketBlockingQueue<E> extends AbstractQueue<E> implements 
         return count;
     }
 
+    private int totalCount(int priority) {
+        checkPriority(priority, queues.length);
+
+        int count = 0;
+        for (int i = 0; i <= priority; i++)
+            count += queues[i].count;
+        return count;
+    }
+
     private static int getPriority(Object e) {
         if (e instanceof Prioritizable)
             return ((Prioritizable) e).getPriority();
@@ -339,6 +348,16 @@ public class PriorityBucketBlockingQueue<E> extends AbstractQueue<E> implements 
         lock.lock();
         try {
             return totalCount();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public int size(int priority) {
+        final ReentrantLock lock = this.lock;
+        lock.lock();
+        try {
+            return totalCount(priority);
         } finally {
             lock.unlock();
         }

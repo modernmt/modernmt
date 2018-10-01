@@ -1,8 +1,8 @@
 package eu.modernmt.api.serializers;
 
 import com.google.gson.*;
-import eu.modernmt.model.*;
 import eu.modernmt.api.model.TranslationResponse;
+import eu.modernmt.model.*;
 
 import java.lang.reflect.Type;
 
@@ -16,7 +16,6 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
         Sentence source = src.translation.getSource();
 
         JsonObject json = new JsonObject();
-        json.addProperty("decodingTime", src.translation.getElapsedTime());
         json.addProperty("translation", src.translation.toString());
         json.addProperty("sourceWordCount", source.getWords().length);
         json.addProperty("targetWordCount", src.translation.getWords().length);
@@ -36,6 +35,13 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
 
         if (src.context != null)
             json.add("contextVector", context.serialize(src.context, ContextVector.class));
+
+        if (src.translation.getPriority() != null)
+            json.addProperty("priority", src.translation.getPriority().toString().toLowerCase());
+        json.addProperty("totalTime", src.getTotalTime());
+        json.addProperty("decodingTime", src.translation.getElapsedTime());
+        json.addProperty("queueTime", src.translation.getQueueTime());
+        json.addProperty("queueLength", src.translation.getQueueLength());
 
         return json;
     }

@@ -55,6 +55,11 @@ class TranslationOperation extends Operation {
         public int getPriority() {
             return task.getPriority();
         }
+
+        @Override
+        public void setQueueLength(int size) {
+            task.setQueueLength(size);
+        }
     }
 
 
