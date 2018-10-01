@@ -109,14 +109,10 @@ public class MemoryFacade {
             IOUtils.closeQuietly(connection);
         }
 
-        this.empty(id);
-
-        return true;
-    }
-
-    public void empty(long id) throws DataManagerException {
         DataManager dataManager = ModernMT.getNode().getDataManager();
         dataManager.delete(id);
+
+        return true;
     }
 
     public ImportJob add(LanguagePair direction, long memoryId, String source, String target) throws DataManagerException, PersistenceException {
