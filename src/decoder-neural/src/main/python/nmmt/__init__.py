@@ -40,6 +40,9 @@ class TranslationRequest(object):
     def from_json_string(json_string):
         obj = json.loads(json_string)
 
+        if len(obj) == 0:
+            return TranslationRequest(None, None, None)  # Test request
+
         query = obj['q']
         source_lang = obj['sl']
         target_lang = obj['tl']

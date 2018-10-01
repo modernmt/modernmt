@@ -52,6 +52,8 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
     private final Set<LanguagePair> directions;
     private final DecoderQueue decoderQueue;
 
+    private volatile long lastSuccessfulTranslation = 0L;
+
     public NeuralDecoder(File model, DecoderConfig config) throws DecoderException {
         super(model, config);
 
@@ -159,6 +161,8 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
                     } else {
                         translation = decoder.translate(direction, text, nbestListSize);
                     }
+
+                    lastSuccessfulTranslation = System.currentTimeMillis();
                 } finally {
                     if (decoder != null)
                         decoderQueue.release(decoder);
@@ -188,6 +192,27 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         }
 
         return translation;
+    }
+
+    @Override
+    public void test() throws DecoderException {
+        if (decoderQueue.availability() < 1)
+            throw new DecoderException("No decoder process available");
+
+        long now = System.currentTimeMillis();
+        if (now - lastSuccessfulTranslation < 5000L)
+            return;
+
+        PythonDecoder decoder = null;
+        try {
+            decoder = decoderQueue.take(null);
+            decoder.test();
+
+            lastSuccessfulTranslation = now;
+        } finally {
+            if (decoder != null)
+                decoderQueue.release(decoder);
+        }
     }
 
     // DataListenerProvider

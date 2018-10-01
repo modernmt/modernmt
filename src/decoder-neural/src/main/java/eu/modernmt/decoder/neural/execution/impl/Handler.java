@@ -79,6 +79,13 @@ class Handler implements PythonDecoder {
     }
 
     @Override
+    public void test() throws DecoderException {
+        if (delegate == null)
+            throw new DecoderUnavailableException("Decoder process is dead");
+        delegate.test();
+    }
+
+    @Override
     public void close() throws IOException {
         checkpoint = null;
 

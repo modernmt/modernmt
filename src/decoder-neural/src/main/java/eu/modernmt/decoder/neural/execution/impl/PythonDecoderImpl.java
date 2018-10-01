@@ -120,6 +120,11 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
     }
 
     @Override
+    public void test() throws DecoderException {
+        translate(null, "{}");
+    }
+
+    @Override
     public Translation translate(LanguagePair direction, Sentence sentence, int nBest) throws DecoderException {
         return this.translate(sentence, serialize(direction, sentence, null, null));
     }

@@ -25,4 +25,6 @@ public abstract class Decoder implements Closeable {
 
     public abstract Translation translate(UUID user, LanguagePair direction, Sentence text, ContextVector contextVector) throws DecoderException;
 
+    public abstract void test() throws DecoderException;
+
 }

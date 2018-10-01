@@ -1,19 +1,18 @@
 package eu.modernmt.facade;
 
 import eu.modernmt.Pom;
-import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.NodeInfo;
 import eu.modernmt.cluster.ServerInfo;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.config.NodeConfig;
+import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.facade.exceptions.TestFailedException;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.persistence.Database;
 import eu.modernmt.persistence.PersistenceException;
-import eu.modernmt.processing.ProcessingException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -69,14 +68,7 @@ public class ModernMT {
     public static void test() throws TestFailedException {
         ClusterNode node = getNode();
 
-        // 1 - Testing cluster
-        try {
-            cluster.getNodes();
-        } catch (RuntimeException e) {
-            throw new TestFailedException("Failed to retrieve cluster members", e);
-        }
-
-        // 2 - Testing database connection
+        // 1 - Testing database connection
         try {
             Database db = node.getDatabase();
             db.testConnection();
@@ -84,11 +76,14 @@ public class ModernMT {
             throw new TestFailedException("Failed to connect to database", e);
         }
 
-        // 3 - Testing translation engine
+        // 2 - Testing decoder
         try {
-            translation.test();
-        } catch (AlignerException | DecoderException | ProcessingException e) {
-            throw new TestFailedException("Failed to translate test sentence", e);
+            Decoder decoder = node.getEngine().getDecoder();
+            decoder.test();
+        } catch (DecoderException e) {
+            throw new TestFailedException("Decoder test failed", e);
+        } catch (UnsupportedOperationException e) {
+            // Ignore - decoder not available
         }
     }
 

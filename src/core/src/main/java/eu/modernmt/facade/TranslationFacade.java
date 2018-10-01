@@ -42,7 +42,6 @@ import java.util.concurrent.Future;
 public class TranslationFacade {
 
     private static final Logger logger = LogManager.getLogger(TranslationFacade.class);
-    private LanguagePair lastTranslationLanguage = null;
 
     public enum Priority {
         HIGH(0), NORMAL(1), BACKGROUND(2);  //three priority values are allowed
@@ -119,41 +118,6 @@ public class TranslationFacade {
             else
                 throw new Error("Unexpected exception thrown: " + cause.getMessage(), cause);
         }
-    }
-
-    public void test() throws DecoderException, AlignerException, ProcessingException {
-        LanguagePair language = selectForTest();
-        String text = "Translation test " + new Random().nextInt();
-
-        TranslationTaskImpl task = new TranslationTaskImpl(null, language, text, null, 0, TranslationFacade.Priority.HIGH);
-        Translation translation = task.call();
-        if (!translation.hasWords())
-            throw new DecoderException("Empty translation for test sentence '" + text + "'");
-    }
-
-    private LanguagePair selectForTest() {
-        LanguagePair language = getLastTranslationLanguage();
-
-        if (language == null) {
-            LanguageIndex index = ModernMT.getNode().getEngine().getLanguageIndex();
-
-            for (LanguagePair pair : index.getLanguages()) {
-                if ("en".equalsIgnoreCase(pair.source.getLanguage()))
-                    return pair;
-            }
-
-            language = index.getLanguages().iterator().next();
-        }
-
-        return language;
-    }
-
-    private synchronized LanguagePair getLastTranslationLanguage() {
-        return this.lastTranslationLanguage;
-    }
-
-    private synchronized void setLastTranslationLanguage(LanguagePair lastTranslationLanguage) {
-        this.lastTranslationLanguage = lastTranslationLanguage;
     }
 
     // =============================
@@ -248,8 +212,6 @@ public class TranslationFacade {
 
         @Override
         public Translation call() throws ProcessingException, DecoderException, AlignerException {
-            ModernMT.translation.setLastTranslationLanguage(direction);
-
             ClusterNode node = ModernMT.getNode();
 
             Engine engine = node.getEngine();

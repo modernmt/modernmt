@@ -151,6 +151,18 @@ class TransformerDecoder(object):
         # Init model
         self._warmup()
 
+    def test(self):
+        begin = time.time()
+        _, predictions_op = self._predictions_ops[0]
+        self._session.run(predictions_op, {
+            self._ph_infer_inputs: [text_encoder.EOS_ID]
+        })
+        test_time = time.time() - begin
+
+        self._logger.info('test_time = %.3f' % test_time)
+
+        return Translation(text='')
+
     def translate(self, source_lang, target_lang, text, suggestions=None,
                   tuning_epochs=None, tuning_learning_rate=None, forced_translation=None):
         checkpoint = self._checkpoints[source_lang, target_lang]
@@ -243,7 +255,8 @@ class TransformerDecoder(object):
             raw_output = output_text
 
         # align
-        if len(outputs) > 0:      # if output is empty the forced decoding does not work; reshape of an empty array is not possible
+        if len(
+                outputs) > 0:  # if output is empty the forced decoding does not work; reshape of an empty array is not possible
             results = self._session.run(self._attention_mats_op, {
                 self._ph_infer_inputs: inputs,
                 self._ph_train_inputs: np.reshape(inputs, [1, -1, 1, 1]),
@@ -366,9 +379,14 @@ class TransformerDecoder(object):
                     break
 
                 request = TranslationRequest.from_json_string(line)
-                translation = self.translate(request.source_lang, request.target_lang, request.query,
-                                             suggestions=request.suggestions,
-                                             forced_translation=request.forced_translation)
+
+                if request.query is None:
+                    translation = self.test()
+                else:
+                    translation = self.translate(request.source_lang, request.target_lang, request.query,
+                                                 suggestions=request.suggestions,
+                                                 forced_translation=request.forced_translation)
+
                 response = TranslationResponse.to_json_string(translation)
 
                 stdout.write(response + '\n')

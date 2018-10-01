@@ -88,9 +88,11 @@ public class DecoderQueueImpl implements DecoderQueue {
         if (!this.active || this.aliveProcesses.get() == 0)
             throw new DecoderUnavailableException("No alive NMT processes available");
 
-        PythonDecoder decoder = tryGetByLanguagePair(language);
-        if (decoder != null)
-            return decoder;
+        if (language != null) {
+            PythonDecoder decoder = tryGetByLanguagePair(language);
+            if (decoder != null)
+                return decoder;
+        }
 
         try {
             return this.queue.take();
@@ -104,9 +106,11 @@ public class DecoderQueueImpl implements DecoderQueue {
         if (!this.active || this.aliveProcesses.get() == 0)
             throw new DecoderUnavailableException("No alive NMT processes available");
 
-        PythonDecoder decoder = tryGetByLanguagePair(language);
-        if (decoder != null)
-            return decoder;
+        if (language != null) {
+            PythonDecoder decoder = tryGetByLanguagePair(language);
+            if (decoder != null)
+                return decoder;
+        }
 
         try {
             return this.queue.poll(timeout, unit);
