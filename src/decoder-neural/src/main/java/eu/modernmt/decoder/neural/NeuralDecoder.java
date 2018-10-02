@@ -215,15 +215,20 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         if (now - lastSuccessfulTranslation < 5000L)
             return;
 
-        PythonDecoder decoder = null;
-        try {
-            decoder = decoderQueue.take(null);
-            decoder.test();
+        synchronized (this) {
+            if (now - lastSuccessfulTranslation < 5000L)
+                return;
 
-            lastSuccessfulTranslation = now;
-        } finally {
-            if (decoder != null)
-                decoderQueue.release(decoder);
+            PythonDecoder decoder = null;
+            try {
+                decoder = decoderQueue.take(null);
+                decoder.test();
+
+                lastSuccessfulTranslation = now;
+            } finally {
+                if (decoder != null)
+                    decoderQueue.release(decoder);
+            }
         }
     }
 
