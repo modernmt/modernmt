@@ -25,7 +25,8 @@ public class Translation extends Sentence {
     private List<Translation> nbest;
 
     // Statistics
-    private long elapsedTime;
+    private long memoryLookupTime;
+    private long decodeTime;
     private long queueTime;
     private int queueLength;
     private Priority priority;
@@ -38,16 +39,25 @@ public class Translation extends Sentence {
         super(words, tags);
         this.source = source;
         this.wordAlignment = wordAlignment;
-        this.elapsedTime = 0;
+        this.decodeTime = 0;
+        this.queueTime = 0;
         this.queueLength = 0;
     }
 
-    public long getElapsedTime() {
-        return elapsedTime;
+    public long getMemoryLookupTime() {
+        return memoryLookupTime;
     }
 
-    public void setElapsedTime(long elapsedTime) {
-        this.elapsedTime = elapsedTime;
+    public void setMemoryLookupTime(long memoryLookupTime) {
+        this.memoryLookupTime = memoryLookupTime;
+    }
+
+    public long getDecodeTime() {
+        return decodeTime;
+    }
+
+    public void setDecodeTime(long decodeTime) {
+        this.decodeTime = decodeTime;
     }
 
     public long getQueueTime() {

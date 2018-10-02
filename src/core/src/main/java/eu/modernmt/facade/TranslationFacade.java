@@ -82,12 +82,7 @@ public class TranslationFacade {
 
             TranslationTask task = new TranslationTaskImpl(user, direction, sentence, translationContext, nbest, priority);
             Future<Translation> future = node.submit(task);
-            Translation translation = future.get();
-
-            if (logger.isDebugEnabled())
-                logger.debug("Translation of " + translation.getSource().length() + " words took " + (((double) translation.getElapsedTime()) / 1000.) + "s");
-
-            return translation;
+            return future.get();
         } catch (InterruptedException e) {
             throw new SystemShutdownException(e);
         } catch (ExecutionException e) {
@@ -201,8 +196,7 @@ public class TranslationFacade {
 
         @Override
         public Translation call() throws ProcessingException, DecoderException, AlignerException {
-            long begin = System.currentTimeMillis();
-            long timeInQueue = begin - creationTimestamp;
+            long timeInQueue = System.currentTimeMillis() - creationTimestamp;
 
             ClusterNode node = ModernMT.getNode();
 
@@ -228,7 +222,6 @@ public class TranslationFacade {
                 postprocessor.process(direction, hypotheses);
             }
 
-            translation.setElapsedTime(System.currentTimeMillis() - begin);
             translation.setQueueLength(queueLength);
             translation.setPriority(priority);
             translation.setQueueTime(Math.max(0, timeInQueue));

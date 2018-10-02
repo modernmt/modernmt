@@ -126,17 +126,23 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         if (!this.directions.contains(direction))
             throw new UnsupportedLanguageException(direction);
 
+        long decodeTime = 0L;
+        long lookupTime = 0L;
         Translation translation;
 
         if (text.hasWords()) {
             ScoreEntry[] suggestions = null;
 
             if (contextVector != null) {
+                long begin = System.currentTimeMillis();
+
                 try {
                     suggestions = memory.search(user, direction, text, contextVector, this.suggestionsLimit);
                 } catch (IOException e) {
                     throw new DecoderException("Failed to retrieve suggestions from memory", e);
                 }
+
+                lookupTime = System.currentTimeMillis() - begin;
             }
 
             if (this.echoServer) {
@@ -151,6 +157,8 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
                 try {
                     decoder = decoderQueue.take(direction);
 
+                    long begin = System.currentTimeMillis();
+
                     if (suggestions != null && suggestions.length > 0) {
                         // if perfect match, force translate with suggestion instead
                         if (suggestions[0].score == 1.f) {
@@ -161,6 +169,8 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
                     } else {
                         translation = decoder.translate(direction, text, nbestListSize);
                     }
+
+                    decodeTime = System.currentTimeMillis() - begin;
 
                     lastSuccessfulTranslation = System.currentTimeMillis();
                 } finally {
@@ -191,6 +201,8 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
             translation = Translation.emptyTranslation(text);
         }
 
+        translation.setDecodeTime(decodeTime);
+        translation.setMemoryLookupTime(lookupTime);
         return translation;
     }
 

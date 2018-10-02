@@ -18,7 +18,9 @@ public class TranslationJoiner {
                 globalWordAlignmentSize += piece.getWordAlignment().size();
         }
 
-        long totalElapsedTime = 0L;
+        long totalDecodeTime = 0L;
+        long totalLookupTime = 0L;
+
         WordsJoiner words = new WordsJoiner(globalWordsSize);
         AlignmentJoiner alignment = globalWordAlignmentSize > 0 ? new AlignmentJoiner(globalWordAlignmentSize) : null;
 
@@ -26,8 +28,9 @@ public class TranslationJoiner {
             Translation translationPiece = translationPieces[i];
             Sentence sentencePiece = sentencePieces[i];
 
-            // Elapsed time
-            totalElapsedTime += translationPiece.getElapsedTime();
+            // Times
+            totalDecodeTime += translationPiece.getDecodeTime();
+            totalLookupTime += translationPiece.getMemoryLookupTime();
 
             // Target words
             words.append(translationPiece.getWords());
@@ -43,7 +46,8 @@ public class TranslationJoiner {
         else
             globalTranslation = new Translation(words.build(), originalSentence, alignment.build());
 
-        globalTranslation.setElapsedTime(totalElapsedTime);
+        globalTranslation.setDecodeTime(totalDecodeTime);
+        globalTranslation.setMemoryLookupTime(totalLookupTime);
 
         return globalTranslation;
     }
