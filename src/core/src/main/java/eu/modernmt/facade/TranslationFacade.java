@@ -16,7 +16,10 @@ import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
-import eu.modernmt.model.*;
+import eu.modernmt.model.Alignment;
+import eu.modernmt.model.ContextVector;
+import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Translation;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.impl.StringCorpus;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
@@ -37,6 +40,16 @@ import java.util.concurrent.Future;
  * Created by davide on 31/01/17.
  */
 public class TranslationFacade {
+
+    public enum Priority {
+        HIGH(0), NORMAL(1), BACKGROUND(2);  //three priority values are allowed
+
+        public final int intValue;
+
+        Priority(int value) {
+            this.intValue = value;
+        }
+    }
 
     private static final Logger logger = LogManager.getLogger(TranslationFacade.class);
 

@@ -1,7 +1,7 @@
 package eu.modernmt.api.model;
 
+import eu.modernmt.facade.TranslationFacade;
 import eu.modernmt.model.ContextVector;
-import eu.modernmt.model.Priority;
 import eu.modernmt.model.Translation;
 
 /**
@@ -12,11 +12,11 @@ public class TranslationResponse {
     public Translation translation = null;
     public ContextVector context = null;
     public boolean verbose = false;
-    public final Priority priority;
+    public final TranslationFacade.Priority priority;
 
     private final long creationTimestamp = System.currentTimeMillis();
 
-    public TranslationResponse(Priority priority) {
+    public TranslationResponse(TranslationFacade.Priority priority) {
         this.priority = priority;
     }
 
