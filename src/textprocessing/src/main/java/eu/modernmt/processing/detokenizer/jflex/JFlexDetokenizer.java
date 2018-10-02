@@ -8,6 +8,7 @@ import eu.modernmt.processing.detokenizer.Detokenizer;
 import eu.modernmt.processing.detokenizer.jflex.annotators.EnglishSpaceAnnotator;
 import eu.modernmt.processing.detokenizer.jflex.annotators.FrenchSpaceAnnotator;
 import eu.modernmt.processing.detokenizer.jflex.annotators.ItalianSpaceAnnotator;
+import eu.modernmt.processing.detokenizer.jflex.annotators.GermanSpaceAnnotator;
 import eu.modernmt.processing.detokenizer.jflex.annotators.StandardSpaceAnnotator;
 
 import java.io.IOException;
@@ -26,6 +27,7 @@ public class JFlexDetokenizer extends Detokenizer {
     static {
         ANNOTATORS.put(Language.ENGLISH, EnglishSpaceAnnotator.class);
         ANNOTATORS.put(Language.ITALIAN, ItalianSpaceAnnotator.class);
+        ANNOTATORS.put(Language.GERMAN, GermanSpaceAnnotator.class);
         ANNOTATORS.put(Language.FRENCH, FrenchSpaceAnnotator.class);
     }
 

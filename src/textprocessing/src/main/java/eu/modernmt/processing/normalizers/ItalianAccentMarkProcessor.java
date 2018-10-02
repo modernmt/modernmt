@@ -16,11 +16,11 @@ import java.util.regex.Pattern;
  */
 public class ItalianAccentMarkProcessor extends TextProcessor<SentenceBuilder, SentenceBuilder> {
 
-    private final static Pattern COMMON = Pattern.compile("(((^|\\W)e)|([aeiou][nr][aiou]|io|t[aeiou]))'", Pattern.CASE_INSENSITIVE);
+    private final static Pattern COMMON = Pattern.compile("(((^|\\W)e)|\\w+[a-z][r][ao]|\\w+[gnr]no|\\w+io|\\w+t[aeiou]|(cio|cosi|gia|laggiu|lassu|li|la|menu|piu|puo|pero|quaggiu|quassu|si|lunedi|martedi|mercoledi|giovedi|venerdi))'", Pattern.CASE_INSENSITIVE);
     private final static Pattern SPECIAL_WORDS = Pattern.compile(
             "(^|\\W)(affinch|alch|alcunch|allorch|almenoch|altroch|amenoch|ammenoch|ancorch|anzicch|anzich|" +
                     "bench|ch|checch|cosicch|dopodich|finch|fintantoch|fuorch|giacch|granch|macch|nonch|perch|poich" +
-                    "|pressocch|pressoch|semprech|sennonch|senonch|sicch)(e'|è)", Pattern.CASE_INSENSITIVE);
+                    "|pressocch|pressoch|semprech|sennonch|senonch|sicch|n|\\w+tr)(e'|è)", Pattern.CASE_INSENSITIVE);
 
     public ItalianAccentMarkProcessor(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
@@ -61,13 +61,13 @@ public class ItalianAccentMarkProcessor extends TextProcessor<SentenceBuilder, S
         int pendingApostrophesCount = 0;
         for (int i = 0; i < array.length; i++) {
             if (array[i] == '\'') {
-                boolean leftWhitespace = (i == 0 || array[i - 1] == ' ');
-                boolean rightWhitespace = (i == array.length - 1 || array[i + 1] == ' ');
-
+                boolean leftWhitespace = (i == 0 || ! Character.isLetter(array[i - 1]));
+                boolean rightWhitespace = (i == array.length - 1 || ! Character.isLetter(array[i + 1]));
                 if (leftWhitespace) {
                     if (rightWhitespace) {
                         if (pendingApostrophesCount > 0)
                             pendingApostrophesCount--;
+
 
                         array[i] = ' ';  // cannot be an accent mark
                     } else {
@@ -95,8 +95,8 @@ public class ItalianAccentMarkProcessor extends TextProcessor<SentenceBuilder, S
             int start = matcher.start();
             int end = matcher.end();
 
-            if (end - start == 4 && "are'".equals(matcher.group()))
-                continue;
+//            if (end - start == 4 && "are'".equals(matcher.group()))
+//                continue;
 
             String replacement;
             switch (Character.toLowerCase(array[end - 2])) {

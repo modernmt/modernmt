@@ -6,7 +6,7 @@
     <!-- Detokenization -->
     <processorGroup>
         <!-- Language specific -->
-        <processor target="en fr it">
+        <processor target="en fr it de">
             eu.modernmt.processing.detokenizer.jflex.JFlexDetokenizer
         </processor>
 
