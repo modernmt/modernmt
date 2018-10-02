@@ -36,8 +36,7 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
         if (src.context != null)
             json.add("contextVector", context.serialize(src.context, ContextVector.class));
 
-        if (src.translation.getPriority() != null)
-            json.addProperty("priority", src.translation.getPriority().toString().toLowerCase());
+        json.addProperty("priority", src.priority.toString().toLowerCase());
         json.addProperty("totalTime", src.getTotalTime());
         json.addProperty("memoryLookupTime", src.translation.getMemoryLookupTime());
         json.addProperty("decodingTime", src.translation.getDecodeTime());

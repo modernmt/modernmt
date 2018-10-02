@@ -31,7 +31,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
     protected TranslationResponse execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, PersistenceException, DecoderException, AlignerException, ProcessingException {
         Params params = (Params) _params;
 
-        TranslationResponse result = new TranslationResponse();
+        TranslationResponse result = new TranslationResponse(params.priority);
         result.verbose = params.verbose;
 
         if (params.context != null) {

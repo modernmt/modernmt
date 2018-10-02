@@ -29,7 +29,6 @@ public class Translation extends Sentence {
     private long decodeTime;
     private long queueTime;
     private int queueLength;
-    private Priority priority;
 
     public Translation(Word[] words, Sentence source, Alignment wordAlignment) {
         this(words, null, source, wordAlignment);
@@ -74,14 +73,6 @@ public class Translation extends Sentence {
 
     public void setQueueLength(int queueLength) {
         this.queueLength = queueLength;
-    }
-
-    public Priority getPriority() {
-        return priority;
-    }
-
-    public void setPriority(Priority priority) {
-        this.priority = priority;
     }
 
     public Sentence getSource() {

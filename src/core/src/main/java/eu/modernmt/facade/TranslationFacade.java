@@ -223,7 +223,6 @@ public class TranslationFacade {
             }
 
             translation.setQueueLength(queueLength);
-            translation.setPriority(priority);
             translation.setQueueTime(Math.max(0, timeInQueue));
 
             return translation;
