@@ -1,7 +1,6 @@
 package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.lang.LanguagePair;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,7 +27,7 @@ public class LuceneTranslationMemoryTest_onDataReceived {
     }
 
     @After
-    public void teardown() {
+    public void teardown() throws IOException {
         this.memory.close();
         this.memory = null;
     }

@@ -37,8 +37,6 @@ public class LuceneAnalyzerTest_getContextVectorWithOwners {
         this.analyzer.onDataReceived(new Memory(12, owner1, "none"), corpus2);
         this.analyzer.onDataReceived(new Memory(21, owner2, "none"), corpus1);
         this.analyzer.onDataReceived(new Memory(22, owner2, "none"), corpus2);
-
-        this.analyzer.flush();
     }
 
     @After

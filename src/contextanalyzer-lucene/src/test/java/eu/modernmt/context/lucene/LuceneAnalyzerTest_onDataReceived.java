@@ -109,7 +109,6 @@ public class LuceneAnalyzerTest_onDataReceived {
     public void appendToExistingMemory() throws Throwable {
         DummyBilingualCorpus corpus = TestData.corpus("dummy", EN__IT);
         analyzer.onDataReceived(new Memory(1), corpus);
-        analyzer.flush();
 
         List<TranslationUnit> units = TestData.tuList(1, 0L, 1L, EN__IT, 4);
         analyzer.onDataReceived(units);

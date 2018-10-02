@@ -11,4 +11,9 @@ public class RuntimeIOException extends RuntimeException {
         super(cause);
     }
 
+    @Override
+    public synchronized IOException getCause() {
+        return (IOException) super.getCause();
+    }
+
 }

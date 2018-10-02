@@ -46,8 +46,6 @@ public class LuceneAnalyzerTest_getContextVector {
 
         this.analyzer.onDataReceived(new Memory(12), langMixedCorpus);
         this.analyzer.onDataReceived(new Memory(13), contentMixedCorpus);
-
-        this.analyzer.flush();
     }
 
     @After

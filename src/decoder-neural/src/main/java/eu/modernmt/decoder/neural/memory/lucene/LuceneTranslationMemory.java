@@ -13,7 +13,6 @@ import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.document.Document;
@@ -50,6 +49,8 @@ public class LuceneTranslationMemory implements TranslationMemory {
     private DirectoryReader _indexReader;
     private IndexSearcher _indexSearcher;
     private final Map<Short, Long> channels;
+
+    private boolean closed = false;
 
     private static File forceMkdir(File directory) throws IOException {
         if (!directory.isDirectory())
@@ -199,8 +200,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         return entries;
     }
 
-    @Override
-    public void optimize() throws IOException {
+    public synchronized void optimize() throws IOException {
         logger.info("Starting memory forced merge");
         long begin = System.currentTimeMillis();
         this.indexWriter.forceMerge(1);
@@ -212,7 +212,10 @@ public class LuceneTranslationMemory implements TranslationMemory {
     // DataListener
 
     @Override
-    public void onDataReceived(DataBatch batch) throws IOException {
+    public synchronized void onDataReceived(DataBatch batch) throws IOException {
+        if (closed)
+            return;
+
         boolean success = false;
 
         try {
@@ -287,10 +290,36 @@ public class LuceneTranslationMemory implements TranslationMemory {
     // Closeable
 
     @Override
-    public void close() {
-        IOUtils.closeQuietly(this._indexReader);
-        IOUtils.closeQuietly(this.indexWriter);
-        IOUtils.closeQuietly(this.indexDirectory);
+    public synchronized void close() throws IOException {
+        this.closed = true;
+
+        IOException error = null;
+
+        try {
+            if (this._indexReader != null)
+                this._indexReader.close();
+        } catch (IOException e) {
+            error = e;
+        }
+
+        try {
+            if (this.indexWriter != null)
+                this.indexWriter.close();
+        } catch (IOException e) {
+            if (error == null)
+                error = e;
+        }
+
+        try {
+            if (this.indexDirectory != null)
+                this.indexDirectory.close();
+        } catch (IOException e) {
+            if (error == null)
+                error = e;
+        }
+
+        if (error != null)
+            throw error;
     }
 
 }

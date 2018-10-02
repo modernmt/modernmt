@@ -6,6 +6,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.UUID;
 
@@ -36,7 +37,7 @@ public class LuceneTranslationMemoryTest_searchWithOwners {
     }
 
     @After
-    public void teardown() {
+    public void teardown() throws IOException {
         this.memory.close();
         this.memory = null;
     }

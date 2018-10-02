@@ -38,7 +38,6 @@ public class LuceneAnalyzerTest_onDelete {
 
         analyzer.onDataReceived(new Memory(1), corpus);
         analyzer.onDataReceived(new Memory(2), corpus);
-        analyzer.flush();
 
         assertEquals(4, analyzer.getIndexSize());
         assertEquals(4, analyzer.getStorageSize());
@@ -63,7 +62,6 @@ public class LuceneAnalyzerTest_onDelete {
 
         analyzer.onDataReceived(new Memory(1), corpus);
         analyzer.onDataReceived(new Memory(2), itCorpus);
-        analyzer.flush();
 
         assertEquals(6, analyzer.getIndexSize());
         assertEquals(6, analyzer.getStorageSize());
@@ -87,7 +85,6 @@ public class LuceneAnalyzerTest_onDelete {
 
         analyzer.onDataReceived(new Memory(1), corpus);
         analyzer.onDataReceived(new Memory(2), corpus);
-        analyzer.flush();
 
         assertEquals(4, analyzer.getIndexSize());
         assertEquals(4, analyzer.getStorageSize());
@@ -109,7 +106,6 @@ public class LuceneAnalyzerTest_onDelete {
 
         analyzer.onDataReceived(units1);
         analyzer.onDataReceived(units2);
-        analyzer.flush();
 
         assertEquals(4, analyzer.getIndexSize());
         assertEquals(4, analyzer.getStorageSize());
@@ -133,7 +129,6 @@ public class LuceneAnalyzerTest_onDelete {
 
         analyzer.onDataReceived(units1);
         analyzer.onDataReceived(units2);
-        analyzer.flush();
 
         assertEquals(4, analyzer.getIndexSize());
         assertEquals(4, analyzer.getStorageSize());

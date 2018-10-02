@@ -24,14 +24,18 @@ class ShutdownThread extends Thread {
     public void run() {
         long begin = System.currentTimeMillis();
 
+        // Prevent new API requests
         halt(this.node.api);
-        halt(this.node.translationService); // wait for all translations to be fulfilled
-        halt(this.node.getEngine());
 
-        // Close services
+        // Close internal services
+        halt(this.node.translationService); // wait for all translations to be fulfilled
         halt(this.node.database);
         halt(this.node.dataManager);
 
+        // Stop all engine components
+        halt(this.node.getEngine());
+
+        // Stop external services
         for (EmbeddedService service : this.node.services)
             halt(service);
 

@@ -1,12 +1,10 @@
 package eu.modernmt.context.lucene;
 
-import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.lucene.analysis.ContextAnalyzerIndex;
 import eu.modernmt.context.lucene.analysis.DocumentBuilder;
 import eu.modernmt.context.lucene.analysis.LuceneUtils;
+import eu.modernmt.context.lucene.storage.Bucket;
 import eu.modernmt.context.lucene.storage.CorporaStorage;
-import eu.modernmt.context.lucene.storage.CorpusBucket;
-import eu.modernmt.context.lucene.storage.Options;
 import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
@@ -31,6 +29,20 @@ import java.util.*;
  */
 public class TLuceneAnalyzer extends LuceneAnalyzer {
 
+    public static class TCorporaStorage extends CorporaStorage {
+
+        public TCorporaStorage(File path) throws IOException {
+            super(path);
+        }
+
+        public Bucket getBucket(long id, LanguagePair language) throws IOException {
+            Bucket bucket = super.buckets.get(id, language, null);
+            if (bucket != null && bucket.getSize() == 0)
+                bucket = null;
+            return bucket;
+        }
+    }
+
     private final File path;
 
     private static File getTempDirectory() throws IOException {
@@ -38,35 +50,34 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
     }
 
     public TLuceneAnalyzer() throws IOException {
-        this(new Options());
+        this(new AnalysisOptions());
     }
 
-    public TLuceneAnalyzer(Options options) throws IOException {
+    public TLuceneAnalyzer(AnalysisOptions options) throws IOException {
         this(getTempDirectory(), options);
     }
 
-    private TLuceneAnalyzer(File path, Options options) throws IOException {
-        super(path, options);
+    private TLuceneAnalyzer(File path, AnalysisOptions options) throws IOException {
+        super(new ContextAnalyzerIndex(new File(path, "index")), new TCorporaStorage(new File(path, "storage")), options);
         this.path = path;
+    }
+
+    @Override
+    public TCorporaStorage getStorage() {
+        return (TCorporaStorage) super.getStorage();
     }
 
     public int getIndexSize() throws IOException {
         return getIndex().getIndexReader().numDocs();
     }
 
-    public int getStorageSize() {
+    public int getStorageSize() throws IOException {
         return getStorage().size();
-    }
-
-    public void flush() throws IOException {
-        getStorage().flushToDisk(false, true);
     }
 
     public Entry getEntry(long memory, LanguagePair direction) throws IOException {
         ContextAnalyzerIndex index = getIndex();
-        CorporaStorage storage = getStorage();
-
-        this.flush();
+        TCorporaStorage storage = getStorage();
 
         String docId = DocumentBuilder.makeId(memory, direction);
 
@@ -74,7 +85,7 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
 
         String content = null;
 
-        CorpusBucket bucket = storage.getBucket(docId);
+        Bucket bucket = storage.getBucket(memory, direction);
         if (bucket != null) {
             InputStream stream = null;
 
@@ -159,8 +170,16 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
 
     // DataListener utils
 
-    public void onDelete(final Deletion deletion) throws ContextAnalyzerException {
-        super.onDataReceived(new DataBatch() {
+    public void forceAnalysis() throws IOException {
+        super.runAnalysis(null, 0, Integer.MAX_VALUE);
+    }
+
+    public Map<Short, Long> getLatestChannelPositions() {
+        return getStorage().getLatestChannelPositions();
+    }
+
+    public void onDelete(final Deletion deletion) throws IOException {
+        getStorage().onDataReceived(new DataBatch() {
 
             @Override
             public Collection<TranslationUnit> getTranslationUnits() {
@@ -178,9 +197,11 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
             }
 
         });
+
+        this.forceAnalysis();
     }
 
-    public void onDataReceived(Collection<TranslationUnit> units) throws ContextAnalyzerException {
+    public void onDataReceived(Collection<TranslationUnit> units) throws IOException {
         final HashMap<Short, Long> positions = new HashMap<>();
         for (TranslationUnit unit : units) {
             Long existingPosition = positions.get(unit.channel);
@@ -189,7 +210,7 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
                 positions.put(unit.channel, unit.channelPosition);
         }
 
-        super.onDataReceived(new DataBatch() {
+        getStorage().onDataReceived(new DataBatch() {
             @Override
             public Collection<TranslationUnit> getTranslationUnits() {
                 return units;
@@ -205,10 +226,12 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
                 return positions;
             }
         });
+
+        this.forceAnalysis();
     }
 
-    public void onDataReceived(Memory memory, MultilingualCorpus corpus) throws ContextAnalyzerException {
-        Long position = getLatestChannelPositions().getOrDefault((short) 0, 0L);
+    public void onDataReceived(Memory memory, MultilingualCorpus corpus) throws IOException {
+        Long position = getStorage().getLatestChannelPositions().getOrDefault((short) 0, 0L);
         if (position == null)
             position = 0L;
         else
@@ -225,8 +248,6 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
                         pair.source, pair.target, null, null, new Date(), null, null, null);
                 units.add(unit);
             }
-        } catch (IOException e) {
-            throw new ContextAnalyzerException(e);
         } finally {
             IOUtils.closeQuietly(reader);
         }

@@ -7,8 +7,6 @@ import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.*;
@@ -32,7 +30,6 @@ public class ContextAnalyzerIndex implements Closeable {
 
     private static final int MIN_RESULT_BATCH = 20;
 
-    private final Logger logger = LogManager.getLogger(ContextAnalyzerIndex.class);
     private final Directory indexDirectory;
     private final Analyzer analyzer;
     private final IndexWriter indexWriter;
@@ -108,10 +105,6 @@ public class ContextAnalyzerIndex implements Closeable {
         return this._indexSearcher;
     }
 
-    public void invalidateCache() {
-        // Do nothing.
-    }
-
     public void update(Document document) throws IOException {
         String id = DocumentBuilder.getId(document);
         this.indexWriter.updateDocument(DocumentBuilder.makeIdTerm(id), document);
@@ -128,6 +121,11 @@ public class ContextAnalyzerIndex implements Closeable {
 
     public void clear() throws IOException {
         this.indexWriter.deleteAll();
+        this.indexWriter.commit();
+    }
+
+    public void forceMerge() throws IOException {
+        this.indexWriter.forceMerge(1);
         this.indexWriter.commit();
     }
 
@@ -206,12 +204,4 @@ public class ContextAnalyzerIndex implements Closeable {
         IOUtils.closeQuietly(this.indexDirectory);
     }
 
-    public void forceMerge() throws IOException {
-        logger.info("Starting index forced merge");
-        long begin = System.currentTimeMillis();
-        this.indexWriter.forceMerge(1);
-        this.indexWriter.commit();
-        long elapsed = System.currentTimeMillis() - begin;
-        logger.info("Index forced merge completed in " + (elapsed / 1000.) + "s");
-    }
 }
