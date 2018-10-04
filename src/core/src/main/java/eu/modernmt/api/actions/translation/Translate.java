@@ -1,6 +1,5 @@
 package eu.modernmt.api.actions.translation;
 
-import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.api.actions.util.ContextUtils;
 import eu.modernmt.api.framework.HttpMethod;
 import eu.modernmt.api.framework.Parameters;
@@ -28,19 +27,19 @@ public class Translate extends ObjectAction<TranslationResponse> {
     public static final int MAX_QUERY_LENGTH = 5000;
 
     @Override
-    protected TranslationResponse execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, PersistenceException, DecoderException, AlignerException, ProcessingException {
+    protected TranslationResponse execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, PersistenceException, DecoderException, ProcessingException {
         Params params = (Params) _params;
 
         TranslationResponse result = new TranslationResponse(params.priority);
         result.verbose = params.verbose;
 
         if (params.context != null) {
-            result.translation = ModernMT.translation.get(params.user, params.direction, params.query, params.context, params.nbest, params.priority);
+            result.translation = ModernMT.translation.get(params.user, params.direction, params.query, params.context, params.nbest, params.priority, params.timeout);
         } else if (params.contextString != null) {
             result.context = ModernMT.translation.getContextVector(params.user, params.direction, params.contextString, params.contextLimit);
-            result.translation = ModernMT.translation.get(params.user, params.direction, params.query, result.context, params.nbest, params.priority);
+            result.translation = ModernMT.translation.get(params.user, params.direction, params.query, result.context, params.nbest, params.priority, params.timeout);
         } else {
-            result.translation = ModernMT.translation.get(params.user, params.direction, params.query, params.nbest, params.priority);
+            result.translation = ModernMT.translation.get(params.user, params.direction, params.query, params.nbest, params.priority, params.timeout);
         }
 
 
@@ -66,6 +65,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
         public final int nbest;
         public final TranslationFacade.Priority priority;
         public final boolean verbose;
+        public final long timeout;
 
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
@@ -87,6 +87,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
 
             priority = getEnum("priority", TranslationFacade.Priority.class, TranslationFacade.Priority.NORMAL);
             verbose = getBoolean("verbose", false);
+            timeout = getLong("timeout", 0L);
 
             String weights = getString("context_vector", false, null);
 

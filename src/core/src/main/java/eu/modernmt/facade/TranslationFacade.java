@@ -1,7 +1,6 @@
 package eu.modernmt.facade;
 
 import com.hazelcast.core.HazelcastException;
-import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.TranslationTask;
 import eu.modernmt.cluster.error.SystemShutdownException;
@@ -11,6 +10,7 @@ import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.DecoderWithNBest;
 import eu.modernmt.engine.Engine;
+import eu.modernmt.facade.exceptions.TimeoutException;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
@@ -55,25 +55,27 @@ public class TranslationFacade {
     //  Translation
     // =============================
 
-    public Translation get(UUID user, LanguagePair direction, String sentence, Priority priority) throws ProcessingException, DecoderException, AlignerException {
-        return get(user, direction, sentence, null, 0, priority);
+    public Translation get(UUID user, LanguagePair direction, String sentence, Priority priority, long timeout) throws ProcessingException, DecoderException {
+        return get(user, direction, sentence, null, 0, priority, timeout);
     }
 
-    public Translation get(UUID user, LanguagePair direction, String sentence, ContextVector translationContext, Priority priority) throws ProcessingException, DecoderException, AlignerException {
-        return get(user, direction, sentence, translationContext, 0, priority);
+    public Translation get(UUID user, LanguagePair direction, String sentence, ContextVector translationContext, Priority priority, long timeout) throws ProcessingException, DecoderException {
+        return get(user, direction, sentence, translationContext, 0, priority, timeout);
     }
 
-    public Translation get(UUID user, LanguagePair direction, String sentence, int nbest, Priority priority) throws ProcessingException, DecoderException, AlignerException {
-        return get(user, direction, sentence, null, nbest, priority);
+    public Translation get(UUID user, LanguagePair direction, String sentence, int nbest, Priority priority, long timeout) throws ProcessingException, DecoderException {
+        return get(user, direction, sentence, null, nbest, priority, timeout);
     }
 
-    public Translation get(UUID user, LanguagePair direction, String sentence, ContextVector translationContext, int nbest, Priority priority) throws ProcessingException, DecoderException, AlignerException {
+    public Translation get(UUID user, LanguagePair direction, String sentence, ContextVector translationContext, int nbest, Priority priority, long timeout) throws ProcessingException, DecoderException {
         direction = mapLanguagePair(direction);
         if (nbest > 0)
             ensureDecoderSupportsNBest();
 
+        long expirationTimestamp = timeout > 0 ? (System.currentTimeMillis() + timeout) : 0L;
+
         try {
-            return insecureGet(user, direction, sentence, translationContext, nbest, priority);
+            return insecureGet(user, direction, sentence, translationContext, nbest, priority, expirationTimestamp);
         } catch (DecoderException | HazelcastException e) {
             logger.warn("Translation failed, retry after delay", e);
 
@@ -83,15 +85,18 @@ public class TranslationFacade {
                 // Ignore it
             }
 
-            return insecureGet(user, direction, sentence, translationContext, nbest, priority);
+            return insecureGet(user, direction, sentence, translationContext, nbest, priority, expirationTimestamp);
         }
     }
 
-    private Translation insecureGet(UUID user, LanguagePair direction, String sentence, ContextVector translationContext, int nbest, Priority priority) throws ProcessingException, DecoderException, AlignerException {
+    private Translation insecureGet(UUID user, LanguagePair direction, String sentence, ContextVector translationContext, int nbest, Priority priority, long expirationTimestamp) throws ProcessingException, DecoderException {
+        if (expirationTimestamp > 0 && expirationTimestamp < System.currentTimeMillis())
+            throw new TimeoutException();
+
         try {
             ClusterNode node = ModernMT.getNode();
 
-            TranslationTask task = new TranslationTaskImpl(user, direction, sentence, translationContext, nbest, priority);
+            TranslationTask task = new TranslationTaskImpl(user, direction, sentence, translationContext, nbest, priority, expirationTimestamp);
             Future<Translation> future = node.submit(task);
             return future.get();
         } catch (InterruptedException e) {
@@ -103,8 +108,6 @@ public class TranslationFacade {
                 throw (ProcessingException) cause;
             else if (cause instanceof DecoderException)
                 throw (DecoderException) cause;
-            else if (cause instanceof AlignerException)
-                throw (AlignerException) cause;
             else if (cause instanceof RuntimeException)
                 throw (RuntimeException) cause;
             else
@@ -194,8 +197,9 @@ public class TranslationFacade {
         public final Priority priority;
         private int queueLength;
         private final long creationTimestamp;
+        private final long expirationTimestamp;
 
-        public TranslationTaskImpl(UUID user, LanguagePair direction, String text, ContextVector context, int nbest, Priority priority) {
+        public TranslationTaskImpl(UUID user, LanguagePair direction, String text, ContextVector context, int nbest, Priority priority, long expirationTimestamp) {
             this.user = user;
             this.direction = direction;
             this.text = text;
@@ -203,10 +207,14 @@ public class TranslationFacade {
             this.nbest = nbest;
             this.priority = priority;
             this.creationTimestamp = System.currentTimeMillis();
+            this.expirationTimestamp = expirationTimestamp;
         }
 
         @Override
-        public Translation call() throws ProcessingException, DecoderException, AlignerException {
+        public Translation call() throws ProcessingException, DecoderException {
+            if (expirationTimestamp > 0 && expirationTimestamp < System.currentTimeMillis())
+                throw new TimeoutException();
+
             long timeInQueue = System.currentTimeMillis() - creationTimestamp;
 
             ClusterNode node = ModernMT.getNode();
@@ -239,8 +247,7 @@ public class TranslationFacade {
             return translation;
         }
 
-        private Translation[] translate(Sentence[] sentences, Decoder decoder)
-                throws DecoderException, AlignerException {
+        private Translation[] translate(Sentence[] sentences, Decoder decoder) throws DecoderException {
             Translation[] translations = new Translation[sentences.length];
 
             for (int i = 0; i < sentences.length; i++)
@@ -249,7 +256,7 @@ public class TranslationFacade {
             return translations;
         }
 
-        private Translation translate(Sentence sentence, Decoder decoder) throws DecoderException, AlignerException {
+        private Translation translate(Sentence sentence, Decoder decoder) throws DecoderException {
             Translation translation;
 
             if (nbest > 0) {
