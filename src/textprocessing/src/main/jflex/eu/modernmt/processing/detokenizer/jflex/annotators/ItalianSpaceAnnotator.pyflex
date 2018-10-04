@@ -17,5 +17,6 @@ import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
 
 /* Language Specific - Italian */
 
+[0-9][\.\,\-]?{_}[\%]{_}                                                       { return REMOVE_FIRST; }
 {_}{Contractions}{_}?[[:letter:]|[:digit:]]                         { return REMOVE_INNER; }
 {_}{Currency}{_}                                                    { return REMOVE_LAST; }

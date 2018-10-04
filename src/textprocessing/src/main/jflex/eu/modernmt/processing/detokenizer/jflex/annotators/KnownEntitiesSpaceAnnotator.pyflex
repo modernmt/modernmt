@@ -1,0 +1,20 @@
+package eu.modernmt.processing.detokenizer.jflex.annotators;
+
+import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
+
+%%
+
+//pyflex class JFlexSpaceAnnotator
+
+//pyflex include ../macros.pyx
+
+%%
+
+/* Default Ignore */
+.                                                                         { /* ignore */ }
+
+/* Variable-like strings such as: ${example} or %{var_1} */
+{_}[\$\%]{_}?\{{_}?[a-zA-Z0-9_]+{_}?\}{_}                                  { return REMOVE_INNER; }
+
+/* String formatting variables: https://developer.android.com/reference/java/util/Formatter */
+{_}(\%){_}?([0-9]{_}?\$+)?{_}?([\-#+0,\(])?{_}?([0-9]+)?{_}?(\.[0-9]+)?{_}?([bBhHsScCdoxXeEfgGaA\%n]|[t|T][BbhAaCYyjmdeRTrDFc]){_} { return REMOVE_INNER; }

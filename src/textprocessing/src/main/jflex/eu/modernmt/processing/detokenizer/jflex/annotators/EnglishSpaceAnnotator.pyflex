@@ -26,8 +26,7 @@ import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
 
 /* Language Specific - English */
 
-{_}[\%]+{_}                                                       { return REMOVE_FIRST; }
-{_}[\%]{_}\{[a-zA-Z0-9_ ]+{_}\}{_}                                { return REMOVE_INNER; }
+[0-9][\.\,\-]?{_}[\%]{_}                                                       { return REMOVE_FIRST; }
 
 s{_}{apos}{_}                                                       { return englishPossessiveCase(); }
 {_}{Currency}{_}                                                    { return REMOVE_LAST; }

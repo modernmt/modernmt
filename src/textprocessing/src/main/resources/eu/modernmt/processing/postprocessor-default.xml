@@ -4,6 +4,8 @@
     </processor>
 
     <!-- Detokenization -->
+    <processor>eu.modernmt.processing.detokenizer.jflex.KnownEntitiesDetokenizer</processor>
+
     <processorGroup>
         <!-- Language specific -->
         <processor target="en fr it de">
@@ -19,10 +21,6 @@
             eu.modernmt.processing.detokenizer.jflex.JFlexDetokenizer
         </processor>
     </processorGroup>
-
-    <processor source="^ ja ko zh" target="^ ja ko zh">
-        eu.modernmt.processing.detokenizer.WhitespaceProjector
-    </processor>
 
     <processor source="fr">eu.modernmt.processing.normalizers.GuillemetsToQuotesProcessor</processor>
 

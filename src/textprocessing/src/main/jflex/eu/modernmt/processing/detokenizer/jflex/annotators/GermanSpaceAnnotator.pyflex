@@ -14,4 +14,4 @@ import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
 //pyflex include ../stddetok-rules.pyx
 
 /* Language Specific - German */
-{_}{apos}{_}s                                                      { return REMOVE_ALL; }
+[[:letter:][:digit:]]{_}{apos}{_}s{_}                                                      { return REMOVE_INNER; }

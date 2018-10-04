@@ -19,9 +19,11 @@ public class SpacesAnnotatedString {
         StringBuilder builder = new StringBuilder();
         builder.append(' ');
 
-        for (Word word : sentence.getWords()) {
-            builder.append(word.getPlaceholder());
-            builder.append(' ');
+        Word[] words = sentence.getWords();
+        for (int i = 0; i < words.length; i++) {
+            builder.append(words[i].getPlaceholder());
+            if (i == words.length - 1 || words[i].hasRightSpace())
+                builder.append(' ');
         }
 
         char[] buffer = new char[builder.length()];
@@ -79,8 +81,10 @@ public class SpacesAnnotatedString {
             String placeholder = word.getPlaceholder();
             index += placeholder.length();
 
-            function.apply(word, !(i == words.length - 1 || bits.get(index)));
-            index++;
+            if (word.hasRightSpace()) {
+                function.apply(word, !(i == words.length - 1 || bits.get(index)));
+                index++;
+            }
         }
 
         return sentence;

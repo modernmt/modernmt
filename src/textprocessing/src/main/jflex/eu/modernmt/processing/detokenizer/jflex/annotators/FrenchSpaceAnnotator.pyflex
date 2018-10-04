@@ -17,7 +17,6 @@ import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
 
 /* Language Specific - French */
 
-{_}[\%]+{_}                                                       { return REMOVE_FIRST; }
-{_}[\%]{_}\{[a-zA-Z0-9_ ]+{_}\}{_}                                { return REMOVE_INNER; }
+[0-9][\.\,\-]?{_}[\%]{_}                                                       { return REMOVE_FIRST; }
 {_}{Contractions}{_}?[:letter:]                                     { return REMOVE_INNER; }
 {_}{Currency}{_}                                                    { return REMOVE_LAST; }
