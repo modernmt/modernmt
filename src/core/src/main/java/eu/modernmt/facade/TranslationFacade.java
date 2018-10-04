@@ -1,7 +1,6 @@
 package eu.modernmt.facade;
 
 import com.hazelcast.core.HazelcastException;
-import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.TranslationTask;
@@ -16,7 +15,6 @@ import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.lang.UnsupportedLanguageException;
-import eu.modernmt.model.Alignment;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -259,25 +257,6 @@ public class TranslationFacade {
                 translation = nBestDecoder.translate(user, direction, sentence, context, nbest);
             } else {
                 translation = decoder.translate(user, direction, sentence, context);
-            }
-
-            // Compute alignments if missing
-
-            if (!translation.hasAlignment()) {
-                Engine engine = ModernMT.getNode().getEngine();
-                Aligner aligner = engine.getAligner();
-
-                Alignment alignment = aligner.getAlignment(direction, sentence, translation);
-                translation.setWordAlignment(alignment);
-
-                if (translation.hasNbest()) {
-                    for (Translation nbest : translation.getNbest()) {
-                        if (!nbest.hasAlignment()) {
-                            Alignment nbestAlignment = aligner.getAlignment(direction, sentence, nbest);
-                            nbest.setWordAlignment(nbestAlignment);
-                        }
-                    }
-                }
             }
 
             return translation;
