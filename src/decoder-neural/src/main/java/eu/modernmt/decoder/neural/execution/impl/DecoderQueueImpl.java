@@ -85,20 +85,7 @@ public class DecoderQueueImpl implements DecoderQueue {
 
     @Override
     public final PythonDecoder take(LanguagePair language) throws DecoderUnavailableException {
-        if (!this.active || this.aliveProcesses.get() == 0)
-            throw new DecoderUnavailableException("No alive NMT processes available");
-
-        if (language != null) {
-            PythonDecoder decoder = tryGetByLanguagePair(language);
-            if (decoder != null)
-                return decoder;
-        }
-
-        try {
-            return this.queue.take();
-        } catch (InterruptedException e) {
-            throw new DecoderUnavailableException("No NMT processes available", e);
-        }
+        return this.poll(language, 0L, null);
     }
 
     @Override
@@ -106,16 +93,24 @@ public class DecoderQueueImpl implements DecoderQueue {
         if (!this.active || this.aliveProcesses.get() == 0)
             throw new DecoderUnavailableException("No alive NMT processes available");
 
-        if (language != null) {
-            PythonDecoder decoder = tryGetByLanguagePair(language);
-            if (decoder != null)
-                return decoder;
-        }
-
+        PythonDecoder decoder = null;
         try {
-            return this.queue.poll(timeout, unit);
+            if (language != null)
+                decoder = tryGetByLanguagePair(language);
+
+            if (decoder == null) {
+                if (timeout > 0)
+                    decoder = this.queue.poll(timeout, unit);
+                else
+                    decoder = this.queue.take();
+            }
+
+            return decoder;
         } catch (InterruptedException e) {
             throw new DecoderUnavailableException("No NMT processes available", e);
+        } finally {
+            if (decoder != null)
+                ((Handler) decoder).setInUse();
         }
     }
 
@@ -138,6 +133,11 @@ public class DecoderQueueImpl implements DecoderQueue {
     @Override
     public final void release(PythonDecoder process) {
         Handler handler = (Handler) process;
+
+        if (!handler.unsetInUse()) {
+            logger.warn("Attempt to call release() twice on GPU " + handler.getGPU() + " process");
+            return;
+        }
 
         if (!this.active) {
             IOUtils.closeQuietly(handler);

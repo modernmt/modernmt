@@ -21,11 +21,29 @@ class Handler implements PythonDecoder {
 
     private PythonDecoder delegate = null;
     private File checkpoint = null;
+    private boolean inUse;
 
     public Handler(Builder builder, Map<LanguagePair, File> checkpoints, int gpu) {
         this.builder = builder;
         this.checkpoints = checkpoints;
         this.gpu = gpu;
+        this.inUse = false;
+    }
+
+    public synchronized boolean setInUse() {
+        if (this.inUse)
+            return false;
+
+        this.inUse = true;
+        return true;
+    }
+
+    public synchronized boolean unsetInUse() {
+        if (!this.inUse)
+            return false;
+
+        this.inUse = false;
+        return true;
     }
 
     public void restart() throws IOException {
