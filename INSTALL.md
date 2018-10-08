@@ -180,7 +180,7 @@ sudo apt-get update
 sudo apt-get install python-pip
 pip install -U requests
 
-sudo apt-get install zlib1g-dev libbz2-dev libboost-all-dev cmake git maven
+sudo apt-get install openjdk-8-jdk zlib1g-dev libbz2-dev libboost-all-dev cmake git maven
 ```
 
 ### Tensorflow and Tensor2Tensor
