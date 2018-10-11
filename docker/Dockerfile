@@ -42,5 +42,5 @@ RUN chown ubuntu:ubuntu /home/ubuntu
 USER ubuntu
 
 # Copy MMT
-ADD mmt-3.1-ubuntu.tar.gz /home/ubuntu
+ADD mmt-3.2-ubuntu.tar.gz /home/ubuntu
 WORKDIR /home/ubuntu/mmt
