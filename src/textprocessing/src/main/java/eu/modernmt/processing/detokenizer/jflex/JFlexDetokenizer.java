@@ -5,11 +5,7 @@ import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.detokenizer.Detokenizer;
-import eu.modernmt.processing.detokenizer.jflex.annotators.EnglishSpaceAnnotator;
-import eu.modernmt.processing.detokenizer.jflex.annotators.FrenchSpaceAnnotator;
-import eu.modernmt.processing.detokenizer.jflex.annotators.ItalianSpaceAnnotator;
-import eu.modernmt.processing.detokenizer.jflex.annotators.GermanSpaceAnnotator;
-import eu.modernmt.processing.detokenizer.jflex.annotators.StandardSpaceAnnotator;
+import eu.modernmt.processing.detokenizer.jflex.annotators.*;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -66,7 +62,11 @@ public class JFlexDetokenizer extends Detokenizer {
             annotator.annotate(text, type);
         }
 
-        text.apply(translation, (word, hasSpace) -> word.setRightSpace(hasSpace ? " " : null));
+        text.apply(translation, (word, hasSpace) -> {
+            if (word.hasRightSpace())
+                word.setRightSpace(hasSpace ? " " : null);
+        });
+        
         return translation;
     }
 

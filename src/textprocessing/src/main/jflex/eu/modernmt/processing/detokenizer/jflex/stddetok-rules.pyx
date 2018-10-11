@@ -10,3 +10,5 @@
 {_}\_{_}                                                            { return REMOVE_ALL; }
 {_}\/{_}                                                            { return REMOVE_ALL; }
 […\.[:letter:][:digit:]]{_}…{_}                                     { yypushback(1); return REMOVE_FIRST; }
+
+{_}™                                                                { return REMOVE_FIRST; }

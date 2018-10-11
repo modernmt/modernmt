@@ -22,6 +22,10 @@
         </processor>
     </processorGroup>
 
+    <processor source="^ ja ko zh" target="^ ja ko zh">
+        eu.modernmt.processing.detokenizer.WhitespaceProjector
+    </processor>
+
     <processor source="fr">eu.modernmt.processing.normalizers.GuillemetsToQuotesProcessor</processor>
 
     <!-- Best for small training corpora, skip vor large training sets -->
