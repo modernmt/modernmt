@@ -5,11 +5,14 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import java.util.regex.Pattern;
+
 /**
  * Created by davide on 04/01/17.
  */
 abstract class XMLAbstractBuilder {
 
+    private static final Pattern ENV_VAR_PATTERN = Pattern.compile("\\$\\{[A-Za-z._]+}");
     protected final Element element;
 
     public XMLAbstractBuilder(Element element) {
@@ -65,15 +68,34 @@ abstract class XMLAbstractBuilder {
         return hasAttribute(element, attr);
     }
 
-    protected static String getStringAttribute(Element element, String attr) {
+    private static String getAttribute(Element element, String attr) {
         if (element == null)
             return null;
 
         String value = element.getAttribute(attr);
-        if (value == null || value.isEmpty())
+        if (value == null)
+            return null;
+
+        if (ENV_VAR_PATTERN.matcher(value).matches()) {
+            String key = value.substring(2, value.length() - 1);
+            value = System.getProperty(key);
+
+            if (value == null)
+                value = System.getenv(key);
+
+            if (value == null)
+                throw new IllegalArgumentException("Undefined environment variable: " + key);
+        }
+
+        value = value.trim();
+        if (value.isEmpty())
             return null;
 
         return value;
+    }
+
+    protected static String getStringAttribute(Element element, String attr) {
+        return getAttribute(element, attr);
     }
 
     protected String getStringAttribute(String attr) {
@@ -81,8 +103,7 @@ abstract class XMLAbstractBuilder {
     }
 
     protected static boolean getBooleanAttribute(Element element, String attr) {
-        String value = getStringAttribute(element, attr);
-        return value != null && Boolean.parseBoolean(value);
+        return Boolean.parseBoolean(getAttribute(element, attr));
     }
 
     protected boolean getBooleanAttribute(String attr) {
@@ -90,7 +111,7 @@ abstract class XMLAbstractBuilder {
     }
 
     protected static <E extends Enum<E>> E getEnumAttribute(Element element, String attr, Class<E> enumClass) {
-        String value = getStringAttribute(element, attr);
+        String value = getAttribute(element, attr);
         return value == null ? null : Enum.valueOf(enumClass, value.toUpperCase());
     }
 
@@ -99,7 +120,7 @@ abstract class XMLAbstractBuilder {
     }
 
     protected static int getIntAttribute(Element element, String attr) {
-        String value = getStringAttribute(element, attr);
+        String value = getAttribute(element, attr);
         return value == null ? 0 : Integer.parseInt(value);
     }
 
@@ -108,7 +129,7 @@ abstract class XMLAbstractBuilder {
     }
 
     protected static Language getLanguageAttribute(Element element, String attr) {
-        String value = getStringAttribute(element, attr);
+        String value = getAttribute(element, attr);
         return value == null ? null : Language.fromString(value);
     }
 
@@ -117,11 +138,11 @@ abstract class XMLAbstractBuilder {
     }
 
     protected static int[] getIntArrayAttribute(Element element, String attr) {
-        String value = getStringAttribute(element, attr);
+        String value = getAttribute(element, attr);
         if (value == null)
             return null;
 
-        if (value.trim().equalsIgnoreCase("none"))
+        if (value.equalsIgnoreCase("none"))
             return null;
 
         String[] parts = value.split("[,\\s]+");
@@ -139,4 +160,5 @@ abstract class XMLAbstractBuilder {
     protected int[] getIntArrayAttribute(String attr) {
         return getIntArrayAttribute(element, attr);
     }
+
 }
