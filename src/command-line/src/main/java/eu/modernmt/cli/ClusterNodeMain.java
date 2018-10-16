@@ -12,9 +12,13 @@ import eu.modernmt.facade.ModernMT;
 import eu.modernmt.io.UTF8Charset;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.util.List;
 
@@ -23,6 +27,15 @@ import java.util.List;
  * Updated by andrearossi on 18/04/16.
  */
 public class ClusterNodeMain {
+
+    private static final PrintStream DEV_NULL = new PrintStream(new OutputStream() {
+
+        @Override
+        public void write(int b) {
+            // Do nothing
+        }
+
+    }, true);
 
     /**
      * This class models the list of arguments that can be passed to the ClusterNodeMain main.
@@ -36,7 +49,7 @@ public class ClusterNodeMain {
         static {
             Option engine = Option.builder("e").longOpt("engine").hasArg().required().build();
             Option statusFile = Option.builder().longOpt("status-file").hasArg().required().build();
-            Option logFile = Option.builder().longOpt("log-file").hasArg().required().build();
+            Option logFile = Option.builder().longOpt("log-file").hasArg().required(false).build();
 
             Option apiPort = Option.builder("a").longOpt("api-port").hasArg().type(Integer.class).required(false).build();
             Option clusterPort = Option.builder("p").longOpt("cluster-port").hasArg().type(Integer.class).required(false).build();
@@ -86,7 +99,7 @@ public class ClusterNodeMain {
 
             this.engine = cli.getOptionValue("engine");
             this.statusFile = new File(cli.getOptionValue("status-file"));
-            this.logFile = new File(cli.getOptionValue("log-file"));
+            this.logFile = cli.hasOption("log-file") ? new File(cli.getOptionValue("log-file")) : null;
 
             String verbosity = cli.getOptionValue("verbosity");
             this.verbosity = verbosity == null ? 1 : Integer.parseInt(verbosity);
@@ -150,16 +163,27 @@ public class ClusterNodeMain {
     public static void main(String[] _args) throws Throwable {
         Args args = new Args(_args);
 
-        Log4jConfiguration.setup(args.logFile, args.verbosity);
+        // Init logging
+        if (args.logFile != null)
+            Log4jConfiguration.setup(args.logFile, args.verbosity);
+        else
+            Log4jConfiguration.setup(args.verbosity);
 
-        FileStatusListener listener = new FileStatusListener(args.statusFile,
-                args.config);
+        Logger logger = LogManager.getLogger(ClusterNodeMain.class);
+
+        // Redirect stderr e stdout to null-writer
+        System.setErr(DEV_NULL);
+        System.setOut(DEV_NULL);
+
+        // Start node
+        FileStatusListener listener = new FileStatusListener(args.statusFile, args.config);
 
         try {
             ModernMT.start(args.config, listener);
             listener.updateStatus(ClusterNode.Status.RUNNING).store();
         } catch (Throwable e) {
             listener.onError();
+            logger.error("Failed to start node", e);
             throw e;
         }
     }
