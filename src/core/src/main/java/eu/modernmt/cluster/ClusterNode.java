@@ -463,7 +463,7 @@ public class ClusterNode {
         int activeNodes = 0;
 
         for (Member member : members) {
-            if (!NodeInfo.statusIs(member, Status.RUNNING))
+            if (!NodeInfo.statusIs(member, Status.RUNNING, Status.DEGRADED))
                 continue;
 
             activeNodes++;

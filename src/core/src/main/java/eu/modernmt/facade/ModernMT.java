@@ -37,8 +37,6 @@ public class ModernMT {
 
     public static final TranslationFacade translation = new TranslationFacade();
     public static final MemoryFacade memory = new MemoryFacade();
-
-
     public static final TagFacade tags = new TagFacade();
     public static final TrainingFacade training = new TrainingFacade();
 
@@ -65,7 +63,7 @@ public class ModernMT {
         return new ServerInfo(new ServerInfo.ClusterInfo(nodes), new ServerInfo.BuildInfo(buildVersion, buildNumber), languages);
     }
 
-    public static void test() throws TestFailedException {
+    public static void test(boolean strict) throws TestFailedException {
         ClusterNode node = getNode();
 
         // 1 - Testing database connection
@@ -76,7 +74,14 @@ public class ModernMT {
             throw new TestFailedException("Failed to connect to database", e);
         }
 
-        // 2 - Testing decoder
+        // 2 - Testing node status
+        ClusterNode.Status status = node.getStatus();
+        if (!ClusterNode.Status.RUNNING.equals(status) &&
+                (strict || !ClusterNode.Status.DEGRADED.equals(status))) {
+            throw new TestFailedException("Invalid node status: " + status);
+        }
+
+        // 3 - Testing decoder
         try {
             Decoder decoder = node.getEngine().getDecoder();
             decoder.test();

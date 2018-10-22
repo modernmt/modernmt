@@ -51,6 +51,9 @@ class ShutdownThread extends Thread {
     }
 
     private void halt(TranslationServiceProxy service) {
+        if (service == null)
+            return;
+
         try {
             logger.info("Halting Translation Service...");
             service.shutdown();
@@ -62,6 +65,9 @@ class ShutdownThread extends Thread {
     }
 
     private void halt(ApiServer api) {
+        if (api == null)
+            return;
+
         try {
             logger.info("Halting API interface...");
             api.stop();
@@ -73,6 +79,9 @@ class ShutdownThread extends Thread {
     }
 
     private void halt(Engine engine) {
+        if (engine == null)
+            return;
+
         try {
             logger.info("Halting Engine...");
             engine.close();
@@ -83,6 +92,9 @@ class ShutdownThread extends Thread {
     }
 
     private void halt(Closeable closeable) {
+        if (closeable == null)
+            return;
+
         String name = closeable.getClass().getSimpleName();
         try {
             logger.info("Halting component \"" + name + "\"...");
@@ -94,6 +106,9 @@ class ShutdownThread extends Thread {
     }
 
     private void halt(EmbeddedService service) {
+        if (service == null)
+            return;
+
         String name = service.getClass().getSimpleName();
         try {
             logger.info("Halting service \"" + name + "\"...");
