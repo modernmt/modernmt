@@ -1,5 +1,6 @@
 package eu.modernmt.backup;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -14,6 +15,9 @@ public class FileLimitRetentionPolicy implements RetentionPolicy {
 
     @Override
     public Set<Backup> retain(List<Backup> backups) {
+        Collections.sort(backups);
+        Collections.reverse(backups);
+
         if (backups.size() > limit)
             return new HashSet<>(backups.subList(0, limit));
         else

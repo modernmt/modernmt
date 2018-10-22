@@ -29,7 +29,6 @@ public class Backup implements Comparable<Backup> {
             }
         }
 
-        Collections.sort(backups);
         return backups;
     }
 
