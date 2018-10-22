@@ -53,7 +53,8 @@ public class ClusterNode {
         UPDATING,       // Node is updating its models with the latest contributions
         UPDATED,        // Node updated its models with the latest contributions
         RUNNING,        // Node is running and it can receive translation requests
-        UNAVAILABLE,    // Node has no decoder processes and it is recovering (cannot handle translation requests)
+        DEGRADED,       // Node has some decoder processes and it is recovering (CAN handle translation requests)
+        UNAVAILABLE,    // Node has no decoder processes and it is recovering (CANNOT handle translation requests)
         SHUTDOWN,       // Node is shutting down
         TERMINATED,     // Node is no longer active
 
@@ -79,6 +80,7 @@ public class ClusterNode {
     ArrayList<EmbeddedService> services = new ArrayList<>(2);
 
     private final ShutdownThread shutdownThread = new ShutdownThread(this);
+    private boolean isShuttingDown = false;
 
     public ClusterNode() {
         this.status = Status.CREATED;
@@ -111,13 +113,13 @@ public class ClusterNode {
     }
 
     void setStatus(Status status) {
-        setStatus(status, null);
+        setStatus(status, (Status[]) null);
     }
 
-    private boolean setStatus(Status status, Status expected) {
-        if (expected == null || this.status == expected) {
+    private boolean setStatus(Status status, Status... expected) {
+        if (expected == null || contains(expected, this.status)) {
             synchronized (this) {
-                if (expected == null || this.status == expected) {
+                if (expected == null || contains(expected, this.status)) {
                     Status previousStatus = this.status;
                     this.status = status;
 
@@ -267,8 +269,8 @@ public class ClusterNode {
                 }
 
                 @Override
-                public void onDecoderAvailabilityChanged(int availability) {
-                    updateDecoderAvailability(availability);
+                public void onDecoderAvailabilityChanged(int currentAvailability, int maxAvailability) {
+                    updateDecoderAvailability(currentAvailability, maxAvailability);
                 }
             });
         } catch (UnsupportedOperationException e) {
@@ -432,11 +434,13 @@ public class ClusterNode {
         NodeInfo.updateTranslationDirections(localMember, directions);
     }
 
-    private void updateDecoderAvailability(int availability) {
-        if (availability == 0)
-            setStatus(Status.UNAVAILABLE, Status.RUNNING);
+    private void updateDecoderAvailability(int currentAvailability, int maxAvailability) {
+        if (currentAvailability == 0)
+            setStatus(Status.UNAVAILABLE, Status.RUNNING, Status.DEGRADED);
+        else if (currentAvailability < maxAvailability)
+            setStatus(Status.DEGRADED, Status.RUNNING, Status.UNAVAILABLE);
         else
-            setStatus(Status.RUNNING, Status.UNAVAILABLE);
+            setStatus(Status.RUNNING, Status.UNAVAILABLE, Status.DEGRADED);
     }
 
     public Collection<NodeInfo> getClusterNodes() {
@@ -482,8 +486,12 @@ public class ClusterNode {
     }
 
     public synchronized void shutdown() {
-        if (setStatus(Status.SHUTDOWN, Status.RUNNING))
-            shutdownThread.start();
+        if (isShuttingDown)
+            return;
+
+        isShuttingDown = true;
+        setStatus(Status.SHUTDOWN);
+        shutdownThread.start();
     }
 
     public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
@@ -505,5 +513,14 @@ public class ClusterNode {
             return System.currentTimeMillis() - epoch;
         }
 
+    }
+
+    private static boolean contains(Status[] haystack, Status needle) {
+        for (Status e : haystack) {
+            if (e == needle)
+                return true;
+        }
+
+        return false;
     }
 }

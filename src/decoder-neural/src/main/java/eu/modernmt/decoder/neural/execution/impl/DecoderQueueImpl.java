@@ -48,6 +48,7 @@ public class DecoderQueueImpl implements DecoderQueue {
     private final Map<LanguagePair, File> checkpoints;
     private final BlockingQueue<Handler> queue;
     private final ExecutorService initExecutor;
+    private final int maxAvailability;
 
     private final AtomicInteger aliveProcesses = new AtomicInteger(0);
     private boolean active = true;
@@ -56,6 +57,7 @@ public class DecoderQueueImpl implements DecoderQueue {
     protected DecoderQueueImpl(Map<LanguagePair, File> checkpoints, Handler[] handlers) throws DecoderException {
         this.checkpoints = checkpoints;
         this.queue = new ArrayBlockingQueue<>(handlers.length);
+        this.maxAvailability = handlers.length;
         this.initExecutor = handlers.length > 1 ? Executors.newCachedThreadPool() : Executors.newSingleThreadExecutor();
 
         Future<?>[] array = new Future<?>[handlers.length];
@@ -149,7 +151,7 @@ public class DecoderQueueImpl implements DecoderQueue {
 
                 DecoderListener listener = this.listener;
                 if (listener != null)
-                    listener.onDecoderAvailabilityChanged(availability);
+                    listener.onDecoderAvailabilityChanged(availability, this.maxAvailability);
 
                 if (this.active)
                     this.initExecutor.execute(new Initializer(handler));
@@ -205,7 +207,7 @@ public class DecoderQueueImpl implements DecoderQueue {
 
             DecoderListener listener = DecoderQueueImpl.this.listener;
             if (listener != null)
-                listener.onDecoderAvailabilityChanged(availability);
+                listener.onDecoderAvailabilityChanged(availability, DecoderQueueImpl.this.maxAvailability);
         }
 
     }
