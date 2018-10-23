@@ -9,6 +9,7 @@ import eu.modernmt.config.NodeConfig;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.engine.BootstrapException;
+import eu.modernmt.engine.Engine;
 import eu.modernmt.facade.exceptions.TestFailedException;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.persistence.Database;
@@ -17,6 +18,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -40,8 +42,6 @@ public class ModernMT {
     public static final TagFacade tags = new TagFacade();
     public static final TrainingFacade training = new TrainingFacade();
 
-    public static final ClusterFacade cluster = new ClusterFacade();
-
     public static void start(NodeConfig config, ClusterNode.StatusListener listener) throws FailedToJoinClusterException, BootstrapException {
         Thread.setDefaultUncaughtExceptionHandler(
                 (t, e) -> logger.fatal("Unexpected exception thrown by thread [" + t.getName() + "]", e)
@@ -54,9 +54,17 @@ public class ModernMT {
         node.start(config, 30, TimeUnit.SECONDS);
     }
 
-    public static ServerInfo info() {
-        Set<LanguagePair> languages = node.getEngine().getAvailableLanguagePairs();
-        Collection<NodeInfo> nodes = cluster.getNodes();
+    public static ServerInfo info(boolean localhostOnly) {
+        Engine engine = null;
+
+        try {
+            engine = node.getEngine();
+        } catch (IllegalStateException e) {
+            // Engine is not yet loaded
+        }
+
+        Set<LanguagePair> languages = engine == null ? Collections.emptySet() : engine.getAvailableLanguagePairs();
+        Collection<NodeInfo> nodes = localhostOnly ? Collections.singleton(node.getLocalNode()) : node.getClusterNodes();
         String buildVersion = Pom.getProperty("mmt.version");
         long buildNumber = Long.parseLong(Pom.getProperty("mmt.build.number"));
 
@@ -66,22 +74,14 @@ public class ModernMT {
     public static void test(boolean strict) throws TestFailedException {
         ClusterNode node = getNode();
 
-        // 1 - Testing database connection
-        try {
-            Database db = node.getDatabase();
-            db.testConnection();
-        } catch (PersistenceException e) {
-            throw new TestFailedException("Failed to connect to database", e);
-        }
-
-        // 2 - Testing node status
+        // 1 - Testing node status
         ClusterNode.Status status = node.getStatus();
         if (!ClusterNode.Status.RUNNING.equals(status) &&
                 (strict || !ClusterNode.Status.DEGRADED.equals(status))) {
             throw new TestFailedException("Invalid node status: " + status);
         }
 
-        // 3 - Testing decoder
+        // 2 - Testing decoder
         try {
             Decoder decoder = node.getEngine().getDecoder();
             decoder.test();
@@ -89,6 +89,14 @@ public class ModernMT {
             throw new TestFailedException("Decoder test failed", e);
         } catch (UnsupportedOperationException e) {
             // Ignore - decoder not available
+        }
+
+        // 3 - Testing database connection
+        try {
+            Database db = node.getDatabase();
+            db.testConnection();
+        } catch (PersistenceException e) {
+            throw new TestFailedException("Failed to connect to database", e);
         }
     }
 

@@ -226,6 +226,17 @@ public class ClusterNode {
 
         String uuid;
 
+        // ===========  Adding shutdown hook for closing the cluster  =============
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                ClusterNode.this.shutdown();
+                ClusterNode.this.awaitTermination(1, TimeUnit.DAYS);
+            } catch (Throwable e) {
+                // Ignore
+            }
+        }));
+
         // ===========  Join the cluster  =============
 
         setStatus(Status.JOINING);
@@ -242,17 +253,21 @@ public class ClusterNode {
         setStatus(Status.JOINED);
         logger.info("Node joined cluster of " + countClusterMembers(false) + " members in " + (timer.time() / 1000.) + "s");
 
+        // ===========  REST Api start ===========
 
-        // ===========  Adding shutdown hook for closing the cluster  =============
+        ApiConfig apiConfig = nodeConfig.getNetworkConfig().getApiConfig();
 
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        if (apiConfig.isEnabled()) {
+            ApiServer.ServerOptions options = new ApiServer.ServerOptions(apiConfig.getPort());
+            options.contextPath = apiConfig.getApiRoot();
+
+            this.api = new ApiServer(options);
             try {
-                ClusterNode.this.shutdown();
-                ClusterNode.this.awaitTermination(1, TimeUnit.DAYS);
-            } catch (Throwable e) {
-                // Ignore
+                this.api.start();
+            } catch (Exception e) {
+                throw new BootstrapException("Unable to start REST Api service", e);
             }
-        }));
+        }
 
         // ===========  Model loading  =============
 
@@ -388,24 +403,7 @@ public class ClusterNode {
 
         translationService = hazelcast.getDistributedObject(TranslationService.SERVICE_NAME, "TranslationService");
 
-        // ===========  REST Api start ===========
-
-        ApiConfig apiConfig = nodeConfig.getNetworkConfig().getApiConfig();
-
-        if (apiConfig.isEnabled()) {
-            ApiServer.ServerOptions options = new ApiServer.ServerOptions(apiConfig.getPort());
-            options.contextPath = apiConfig.getApiRoot();
-
-            this.api = new ApiServer(options);
-            try {
-                this.api.start();
-            } catch (Exception e) {
-                throw new BootstrapException("Unable to start REST Api service", e);
-            }
-        }
-
         setStatus(Status.RUNNING);
-
         logger.info("Node started in " + (globalTimer.time() / 1000.) + "s");
     }
 
@@ -452,6 +450,11 @@ public class ClusterNode {
         }
 
         return nodes;
+    }
+
+    public NodeInfo getLocalNode() {
+        Member member = hazelcast.getCluster().getLocalMember();
+        return NodeInfo.fromMember(member);
     }
 
     public Future<Translation> submit(TranslationTask task) throws DecoderUnavailableException {
