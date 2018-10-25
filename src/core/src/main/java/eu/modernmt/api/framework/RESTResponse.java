@@ -7,6 +7,7 @@ import org.apache.logging.log4j.Logger;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Created by davide on 15/12/15.
@@ -96,11 +97,12 @@ public class RESTResponse {
 
         response.setStatus(httpStatus);
         response.setContentType("application/json; charset=utf-8");
+        response.addHeader("Access-Control-Allow-Origin", "*");
 
         try {
             if (content != null) {
                 String rawContent = content.toString() + '\n';
-                response.getOutputStream().write(rawContent.getBytes("UTF-8"));
+                response.getOutputStream().write(rawContent.getBytes(StandardCharsets.UTF_8));
             }
         } catch (IOException e) {
             logger.error("unable to write response", e);
