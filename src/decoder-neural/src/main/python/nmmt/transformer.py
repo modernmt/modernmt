@@ -65,17 +65,6 @@ class ModelConfig(object):
             result.append((name, value))
         return result
 
-    @property
-    def decode_lengths(self):
-        if not self._config.has_section('decode_lengths'):
-            return None
-
-        result = {}
-        for key, value in self._config.items('decode_lengths'):
-            slope, intercept = value.split()
-            result[key] = (float(slope), float(intercept))
-        return result
-
 
 class TransformerDecoder(object):
     class Settings(object):
@@ -92,7 +81,6 @@ class TransformerDecoder(object):
     def __init__(self, gpu, checkpoints, config=None):
         self._logger = logging.getLogger('TransformerDecoder')
         self._settings = config.settings if config is not None else TransformerDecoder.Settings()
-        self._decode_lengths = config.decode_lengths if config is not None else None
         self._checkpoints = checkpoints
         self._checkpoint = None
         self._nn_needs_reset = True
@@ -101,6 +89,7 @@ class TransformerDecoder(object):
             self._restorer = checkpoints.restorer()
 
             # Prepare features for feeding into the model.
+            self._ph_decode_length = tf.placeholder(dtype=tf.int32)
             self._ph_infer_inputs = tf.placeholder(dtype=tf.int32)
             self._ph_train_inputs = tf.reshape(tf.placeholder(dtype=tf.int32), shape=[-1, -1, 1, 1])
             self._ph_train_targets = tf.reshape(tf.placeholder(dtype=tf.int32), shape=[-1, -1, 1, 1])
@@ -128,17 +117,15 @@ class TransformerDecoder(object):
             ]
 
             self._predictions_ops = []
-            infer_inputs = tf.reshape(self._ph_infer_inputs, [1, -1, 1, 1]),  # Make it 4D.
+            infer_inputs = tf.reshape(self._ph_infer_inputs, [1, -1, 1, 1])  # Make it 4D.
+            infer_out = self._model.infer({
+                "inputs": infer_inputs
+            }, beam_size=4, top_beams=1, alpha=0.6, decode_length=self._ph_decode_length)
 
-            for decode_length in [50, 100, 260]:
-                infer_out = self._model.infer({
-                    "inputs": infer_inputs
-                }, beam_size=4, top_beams=1, alpha=0.6, decode_length=decode_length)
-
-                self._predictions_ops.append((decode_length, {
-                    "outputs": infer_out["outputs"],
-                    "inputs": infer_inputs,
-                }))
+            self._predictions_op = {
+                "outputs": infer_out["outputs"],
+                "inputs": infer_inputs,
+            }
 
         session_config = tf.ConfigProto(allow_soft_placement=True)
         session_config.gpu_options.allow_growth = True
@@ -153,9 +140,9 @@ class TransformerDecoder(object):
 
     def test(self):
         begin = time.time()
-        _, predictions_op = self._predictions_ops[0]
-        self._session.run(predictions_op, {
-            self._ph_infer_inputs: [text_encoder.EOS_ID]
+        self._session.run(self._predictions_op, {
+            self._ph_infer_inputs: [text_encoder.EOS_ID],
+            self._ph_decode_length: 1
         })
         test_time = time.time() - begin
 
@@ -244,9 +231,10 @@ class TransformerDecoder(object):
         # decode
         inputs, input_indexes = self._text_encode(text)
         if output_text is None:
-            predictions_op = self._get_predictions_op(source_lang, target_lang, len(inputs))
-            results = self._session.run(predictions_op, {
-                self._ph_infer_inputs: inputs
+            decode_length = self._get_expected_decode_length(source_lang, target_lang, len(inputs))
+            results = self._session.run(self._predictions_op, {
+                self._ph_infer_inputs: inputs,
+                self._ph_decode_length: decode_length
             })
             outputs = self._save_until_eos(results['outputs'])
             raw_output, output_indexes = self._text_decode(outputs)
@@ -255,8 +243,7 @@ class TransformerDecoder(object):
             raw_output = output_text
 
         # align
-        if len(
-                outputs) > 0:  # if output is empty the forced decoding does not work; reshape of an empty array is not possible
+        if len(outputs) > 0:  # if output is empty the forced decoding does not work; reshape of an empty array is not possible
             results = self._session.run(self._attention_mats_op, {
                 self._ph_infer_inputs: inputs,
                 self._ph_train_inputs: np.reshape(inputs, [1, -1, 1, 1]),
@@ -272,11 +259,10 @@ class TransformerDecoder(object):
     def _warmup(self):
         random_checkpoint = self._checkpoints[None]
         self._reset_model(random_checkpoint)
-
-        for _, predictions_op in self._predictions_ops:
-            self._session.run(predictions_op, {
-                self._ph_infer_inputs: [text_encoder.EOS_ID]
-            })
+        self._session.run(self._predictions_op, {
+            self._ph_infer_inputs: [text_encoder.EOS_ID],
+            self._ph_decode_length: 1
+        })
 
     def _text_encode(self, text):
         encoded, indexes = self._checkpoint.encoder.encode_with_indexes(text)
@@ -287,26 +273,8 @@ class TransformerDecoder(object):
         encoded, indexes = self._checkpoint.decoder.decode_with_indexes(hyp)
         return encoded, indexes
 
-    def _get_predictions_op(self, source_lang, target_lang, source_length):
-        if '-' in source_lang:
-            source_lang = source_lang[:source_lang.index('-')]
-        if '-' in target_lang:
-            target_lang = target_lang[:target_lang.index('-')]
-
-        key = '%s__%s' % (source_lang, target_lang)
-
-        if self._decode_lengths is not None and key in self._decode_lengths:
-            slope, intercept = self._decode_lengths[key]
-            expected_decode_length = int(round(source_length * slope + intercept))
-        else:
-            expected_decode_length = source_length
-
-        for decode_length, predictions_op in self._predictions_ops:
-            if expected_decode_length <= decode_length:
-                return predictions_op
-
-        decode_length, predictions_op = self._predictions_ops[-1]
-        return predictions_op
+    def _get_expected_decode_length(self, source_lang, target_lang, source_length):
+        return max(20, int(source_length * 1.5))
 
     @staticmethod
     def _pack_batch(batch_src, batch_tgt, max_size=None):
