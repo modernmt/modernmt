@@ -274,7 +274,7 @@ class TransformerDecoder(object):
         return encoded, indexes
 
     def _get_expected_decode_length(self, source_lang, target_lang, source_length):
-        return max(20, int(source_length * 1.5))
+        return int(source_length * 1.5)
 
     @staticmethod
     def _pack_batch(batch_src, batch_tgt, max_size=None):
