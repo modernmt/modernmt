@@ -238,8 +238,8 @@ class GoogleTranslate(TranslateEngine):
     def translate_text(self, text):
         data = {
             'model': 'nmt',
-            'source': self.source_lang,
-            'target': self.target_lang,
+            'source': self.source_lang.split('-')[0],
+            'target': self.target_lang.split('-')[0],
             'q': text,
             'key': self._key,
             'userip': '.'.join(map(str, (random.randint(0, 200) for _ in range(4))))
