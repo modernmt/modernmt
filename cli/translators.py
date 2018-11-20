@@ -15,8 +15,11 @@ from cli.mmt.cluster import ApiException, ClusterNode
 from cli.mmt.processing import XMLEncoder
 
 def  map_language(lang):
-    l=lang.split('-')[0]
-    return lang if l == "zh" else l
+    fields = lang.split('-')
+    if fields[0] == "zh" and len(fields) > 1:
+        if fields[1] == "CN" or fields[1] == "TW":
+            return lang
+    return fields[0]
 
 class TranslateError(Exception):
     def __init__(self, *args, **kwargs):
