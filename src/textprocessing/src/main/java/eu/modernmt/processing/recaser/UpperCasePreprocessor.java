@@ -7,7 +7,8 @@ import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.SentenceBuilder;
 
 import java.util.Map;
-
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 /**
  * Created by davide on 03/03/16.
  */
@@ -25,10 +26,13 @@ public class UpperCasePreprocessor extends TextProcessor<SentenceBuilder, Senten
 
         if (isUpperCase(chars)) {
             normalizeCase(chars);
+            handleDNT(chars);
+
             builder.addAnnotation(ANNOTATION);
 
             SentenceBuilder.Editor editor = builder.edit();
             editor.replace(0, chars.length, new String(chars));
+
             return editor.commit();
         } else {
             return builder;
@@ -59,8 +63,24 @@ public class UpperCasePreprocessor extends TextProcessor<SentenceBuilder, Senten
                 } else {
                     chars[i] = Character.toLowerCase(chars[i]);
                 }
-
             }
+        }
+    }
+
+    private static void handleDNT(char[] chars) {
+        // String to be scanned to find the pattern.
+        String pattern = "\\$\\{DNT(\\d)\\}";
+
+        // Create a Pattern object
+        Pattern r = Pattern.compile(pattern);
+
+        // Now create matcher object.
+        Matcher m = r.matcher(new String(chars));
+        while (m.find()) {
+            int start=m.start()+2;
+            chars[start]   = 'D';
+            chars[start+1] = 'N';
+            chars[start+2] = 'T';
         }
     }
 
