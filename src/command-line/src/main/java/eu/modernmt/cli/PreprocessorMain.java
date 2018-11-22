@@ -5,6 +5,7 @@ import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Preprocessor;
+import eu.modernmt.processing.ProcessingException;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 
@@ -23,6 +24,7 @@ public class PreprocessorMain {
         static {
             Option sourceLanguage = Option.builder("s").hasArg().required().build();
             Option targetLanguage = Option.builder("t").hasArg().required().build();
+            Option batch = Option.builder("b").longOpt("batch").hasArg(false).required(false).build();
             Option skipTags = Option.builder().longOpt("no-tags").hasArg(false).required(false).build();
             Option skipPlaceholders = Option.builder().longOpt("print-placeholders").hasArg(false).required(false).build();
             Option keepSpaces = Option.builder().longOpt("original-spacing").hasArg(false).required(false).build();
@@ -30,6 +32,7 @@ public class PreprocessorMain {
             cliOptions = new Options();
             cliOptions.addOption(sourceLanguage);
             cliOptions.addOption(targetLanguage);
+            cliOptions.addOption(batch);
             cliOptions.addOption(skipTags);
             cliOptions.addOption(skipPlaceholders);
             cliOptions.addOption(keepSpaces);
@@ -39,6 +42,7 @@ public class PreprocessorMain {
         public final boolean printTags;
         public final boolean printPlaceholders;
         public final boolean keepSpaces;
+        public final boolean batch;
 
         public Args(String[] args) throws ParseException {
             CommandLineParser parser = new DefaultParser();
@@ -50,6 +54,7 @@ public class PreprocessorMain {
             printTags = !cli.hasOption("no-tags");
             printPlaceholders = cli.hasOption("print-placeholders");
             keepSpaces = cli.hasOption("original-spacing");
+            batch = cli.hasOption("batch");
         }
 
     }
@@ -70,14 +75,32 @@ public class PreprocessorMain {
             else
                 output = new TokensOutputter(args.printTags, args.printPlaceholders);
 
-            String line;
-            while ((line = input.readLine()) != null) {
-                Sentence sentence = preprocessor.process(args.language, line);
-                output.write(sentence);
-            }
+            if (args.batch)
+                batchPreprocess(preprocessor, args.language, input, output);
+            else
+                interactivePreprocess(preprocessor, args.language, input, output);
         } finally {
             IOUtils.closeQuietly(preprocessor);
             IOUtils.closeQuietly(output);
+        }
+    }
+
+    private static void interactivePreprocess(Preprocessor preprocessor, LanguagePair language, LineReader input, Outputter output) throws IOException, ProcessingException {
+        String line;
+        while ((line = input.readLine()) != null) {
+            Sentence sentence = preprocessor.process(language, line);
+            output.write(sentence);
+        }
+    }
+
+    private static void batchPreprocess(Preprocessor preprocessor, LanguagePair language, LineReader input, Outputter output) throws IOException, ProcessingException {
+        BufferedLineReader bufferedReader = new BufferedLineReader(input);
+
+        String[] batch;
+        while ((batch = bufferedReader.readLines()) != null) {
+            Sentence[] tokenized = preprocessor.process(language, batch);
+            for (Sentence sentence : tokenized)
+                output.write(sentence);
         }
     }
 
