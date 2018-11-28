@@ -237,6 +237,7 @@ class TransformerDecoder(object):
                 self._ph_decode_length: decode_length
             })
             outputs = self._save_until_eos(results['outputs'])
+            outputs = self._remove_empty_subtokens(outputs)
             raw_output, output_indexes = self._text_decode(outputs)
         else:
             outputs, output_indexes = self._text_encode(output_text)
@@ -263,6 +264,9 @@ class TransformerDecoder(object):
             self._ph_infer_inputs: [text_encoder.EOS_ID],
             self._ph_decode_length: 1
         })
+
+    def _remove_empty_subtokens(self, indexes):
+        return self._checkpoint.encoder._remove_empty_subtokens(indexes)
 
     def _text_encode(self, text):
         encoded, indexes = self._checkpoint.encoder.encode_with_indexes(text)

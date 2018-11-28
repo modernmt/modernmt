@@ -67,6 +67,19 @@ class ModernMTSubwordTextEncoder(SubwordTextEncoder):
     def encode(self, raw_text):
         return self._tokens_to_subtoken_ids(text_encoder.native_to_unicode(raw_text).split(u' '))
 
+    def _remove_empty_subtokens(self, indexes):
+        cleaned = []
+        final = True
+        for idx in indexes:
+            subtoken = self._subtoken_id_to_subtoken_string(idx)
+            if subtoken != '_' or not final:
+                cleaned.append(idx)
+            if subtoken.endswith('_'):
+                final = True
+            else:
+                final = False
+        return cleaned
+
     def encode_with_indexes(self, raw_text):
         tokens = text_encoder.native_to_unicode(raw_text).split(u' ')
         subtokens = self._tokens_to_subtoken_strings(tokens)
@@ -115,18 +128,11 @@ class ModernMTSubwordTextEncoder(SubwordTextEncoder):
     def _get_indexes(subtokens):
         indexes = []
         i = 0
-        final = True
         for subtoken in subtokens:
-            if subtoken == "_" and final:  # handle the subtoken containing only the EndOfToken. associate it with the same previous token (if final)
-                i = i - 1 if i > 0 else 0
-
             indexes.append(i)
 
             if subtoken.endswith('_'):
                 i += 1
-                final = True
-            else:
-                final = False
 
         return indexes
 
