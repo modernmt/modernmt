@@ -26,6 +26,7 @@ CASSANDRA_FILE_SIZE = 37317433
 KAFKA_VERSION = '1.1.0'
 KAFKA_SCALA_VERSION = '2.11'
 KAFKA_FILE_SIZE = 56969154
+KAFKA_DOWNLOAD_URL = 'https://archive.apache.org/dist/kafka/1.1.0/kafka_2.11-1.1.0.tgz'
 
 vendor_dir = os.path.dirname(os.path.realpath(__file__))
 mmt_home = os.path.join(vendor_dir, os.path.pardir)
@@ -56,6 +57,9 @@ class ApacheDownloader(object):
         pass
 
     def download(self, name, apache_path, destination_folder, expected_file_size=None):
+        return self.download_from_mirrors(name, self._get_mirrors(apache_path), destination_folder, expected_file_size)
+
+    def download_from_mirrors(self, name, mirrors, destination_folder, expected_file_size=None):
         work_directory = tempfile.mkdtemp()
 
         progressbar = Progressbar('Downloading ' + name) \
@@ -63,18 +67,14 @@ class ApacheDownloader(object):
         progressbar.start()
 
         try:
-            mirrors = self._get_mirrors(apache_path)
-
-            tar_destination = os.path.join(work_directory, os.path.basename(apache_path))
-
             def _callback(length):
                 progress = min(1., length / float(expected_file_size))
                 progressbar.set_progress(progress * 0.8)
 
-            self._download_from_mirrors(mirrors, tar_destination,
-                                        callback=None if expected_file_size is None else _callback)
+            tar_file = self._download_from_mirrors(mirrors, work_directory,
+                                                   callback=None if expected_file_size is None else _callback)
 
-            folder = untar(tar_destination, work_directory)
+            folder = untar(tar_file, work_directory)
             progressbar.set_progress(0.9)
 
             shutil.rmtree(destination_folder, ignore_errors=True)
@@ -123,7 +123,7 @@ class ApacheDownloader(object):
         return ['%s/%s' % (mirror, path_info) for mirror in mirrors]
 
     @staticmethod
-    def _download_from_mirrors(mirrors, output_file, callback=None):
+    def _download_from_mirrors(mirrors, output_folder, callback=None):
         for mirror in mirrors:
             try:
                 r = requests.get(mirror, timeout=10, stream=True)
@@ -133,6 +133,8 @@ class ApacheDownloader(object):
             if r.status_code == 200:
                 length = 0
 
+                output_file = os.path.join(output_folder, os.path.basename(mirror))
+
                 with open(output_file, 'wb') as f:
                     for chunk in r:
                         length += len(chunk)
@@ -140,7 +142,7 @@ class ApacheDownloader(object):
 
                         if callback is not None:
                             callback(length)
-                return
+                return output_file
 
         raise Exception('Failed to download from Apache repository')
 
@@ -174,10 +176,9 @@ def download_cassandra():
 
 def download_kafka():
     kafka_home = os.path.join(vendor_dir, 'kafka-' + KAFKA_VERSION)
-    kafka_apache_path = '/kafka/' + KAFKA_VERSION + '/kafka_' + KAFKA_SCALA_VERSION + '-' + KAFKA_VERSION + '.tgz'
 
     downloader = ApacheDownloader()
-    downloader.download('Kafka', kafka_apache_path, kafka_home, expected_file_size=KAFKA_FILE_SIZE)
+    downloader.download_from_mirrors('Kafka', [KAFKA_DOWNLOAD_URL], kafka_home, expected_file_size=KAFKA_FILE_SIZE)
 
 
 def copy_opennlp():
