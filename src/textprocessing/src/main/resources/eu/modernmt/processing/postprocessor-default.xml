@@ -8,7 +8,7 @@
 
     <processorGroup>
         <!-- Language specific -->
-        <processor target="en fr it de">
+        <processor target="en fr it de th">
             eu.modernmt.processing.detokenizer.jflex.JFlexDetokenizer
         </processor>
 

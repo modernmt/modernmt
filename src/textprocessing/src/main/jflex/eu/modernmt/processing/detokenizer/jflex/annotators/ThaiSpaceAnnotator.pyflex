@@ -1,0 +1,22 @@
+package eu.modernmt.processing.detokenizer.jflex.annotators;
+
+import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
+
+%%
+
+//pyflex class JFlexSpaceAnnotator
+//pyflex include ../stddetok-defs.pyx
+
+//pyflex include ../macros.pyx
+
+// Thai UNICODE block: https://en.wikipedia.org/wiki/Thai_(Unicode_block)
+THAI = [\u0E01-\u0E3A\u0E3F-\u0E5B]
+
+%%
+
+//pyflex include ../stddetok-rules.pyx
+
+/* Language Specific - CJKV */
+[0-9][\.\,\-]?{_}[\%]{_}                                                       { return REMOVE_FIRST; }
+
+{THAI}{_}{THAI}                                                 { return REMOVE_FIRST; }

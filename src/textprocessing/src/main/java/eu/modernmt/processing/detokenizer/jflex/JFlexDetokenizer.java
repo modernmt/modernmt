@@ -25,6 +25,7 @@ public class JFlexDetokenizer extends Detokenizer {
         ANNOTATORS.put(Language.ITALIAN, ItalianSpaceAnnotator.class);
         ANNOTATORS.put(Language.GERMAN, GermanSpaceAnnotator.class);
         ANNOTATORS.put(Language.FRENCH, FrenchSpaceAnnotator.class);
+        ANNOTATORS.put(Language.THAI, ThaiSpaceAnnotator.class);
     }
 
     private final JFlexSpaceAnnotator annotator;
@@ -66,7 +67,7 @@ public class JFlexDetokenizer extends Detokenizer {
             if (word.hasRightSpace())
                 word.setRightSpace(hasSpace ? " " : null);
         });
-        
+
         return translation;
     }
 
