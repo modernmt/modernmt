@@ -80,7 +80,7 @@ def translate_xliff_file(input_file_abspath, output_file_abspath,
     command.extend(['<', '"' + str(input_file_abspath) + '"', '>', '"' + str(output_file_abspath) + '"'])
 
     print "Translating %s into %s..." % (input_file_abspath, output_file_abspath)
-    osutils.shell_exec(command)
+    osutils.shell_exec(' '.join(command))
     print "Done."
 
 
