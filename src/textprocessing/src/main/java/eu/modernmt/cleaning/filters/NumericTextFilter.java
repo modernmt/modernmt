@@ -1,26 +1,25 @@
 package eu.modernmt.cleaning.filters;
 
-import eu.modernmt.cleaning.Filter;
-import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.cleaning.CorpusFilter;
+import eu.modernmt.lang.Language;
 
-import java.io.IOException;
 import java.util.regex.Pattern;
 
 /**
  * Created by davide on 10/11/17.
  */
-public class NumericTextFilter implements Filter {
+public class NumericTextFilter implements CorpusFilter {
 
     private static final Pattern REGEX = Pattern.compile("[0-9\\s]+");
 
     @Override
-    public Initializer getInitializer() {
+    public Initializer getInitializer(Language language) {
         return null;
     }
 
     @Override
-    public boolean accept(MultilingualCorpus.StringPair pair, int index) throws IOException {
-        return !REGEX.matcher(pair.source).matches() && !REGEX.matcher(pair.target).matches();
+    public boolean accept(String line, int index) {
+        return !REGEX.matcher(line).matches();
     }
 
     @Override

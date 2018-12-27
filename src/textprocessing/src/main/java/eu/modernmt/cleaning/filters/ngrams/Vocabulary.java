@@ -1,6 +1,5 @@
 package eu.modernmt.cleaning.filters.ngrams;
 
-import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -16,33 +15,27 @@ class Vocabulary {
 
     static class Builder {
 
-        private final HashMap<String, Counter> source = new HashMap<>();
-        private final HashMap<String, Counter> target = new HashMap<>();
+        private final HashMap<String, Counter> map = new HashMap<>();
         private int lines = 0;
 
-        public void add(MultilingualCorpus.StringPair pair) {
+        public void add(String line) {
             lines++;
-            add(pair.source, source);
-            add(pair.target, target);
-        }
 
-        private static void add(String line, HashMap<String, Counter> vocabulary) {
             line = normalize(line);
 
             if (line.length() < MIN_SENTENCE_LENGTH)
                 return;
 
             for (String token : tokenize(line))
-                vocabulary.computeIfAbsent(token, key -> new Counter()).count++;
+                map.computeIfAbsent(token, key -> new Counter()).count++;
         }
 
         public Vocabulary build(double threshold) {
             if (lines < MIN_CORPUS_LINES)
                 return new Vocabulary();
 
-            HashSet<String> vocabularySource = filterCounts(source, threshold);
-            HashSet<String> vocabularyTarget = filterCounts(target, threshold);
-            return new Vocabulary(vocabularySource, vocabularyTarget);
+            HashSet<String> words = filterCounts(map, threshold);
+            return new Vocabulary(words);
         }
 
         private static HashSet<String> filterCounts(HashMap<String, Counter> vocabulary, double threshold) {
@@ -126,38 +119,35 @@ class Vocabulary {
         return result;
     }
 
-    private final HashSet<String> source;
-    private final HashSet<String> target;
+    private final HashSet<String> words;
 
     private Vocabulary() {
-        this(null, null);
+        this(null);
     }
 
-    private Vocabulary(HashSet<String> source, HashSet<String> target) {
-        this.source = source;
-        this.target = target;
+    private Vocabulary(HashSet<String> words) {
+        this.words = words;
     }
 
-    public boolean accept(MultilingualCorpus.StringPair pair, double threshold) {
-        if (source == null || target == null)
+    public boolean accept(String line, double threshold) {
+        if (words == null)
             return true;
 
-        String sourceLine = normalize(pair.source);
-        String targetLine = normalize(pair.target);
+        line = normalize(line);
 
-        if (sourceLine.length() < MIN_SENTENCE_LENGTH || targetLine.length() < MIN_SENTENCE_LENGTH)
+        if (line.length() < MIN_SENTENCE_LENGTH)
             return true;
 
-        return match(sourceLine, source) >= threshold && match(targetLine, target) >= threshold;
+        return match(line) >= threshold;
     }
 
-    private double match(String line, HashSet<String> terms) {
+    private double match(String line) {
         int matches = 0;
         int length = 0;
 
         for (String token : tokenize(line)) {
             length++;
-            if (terms.contains(token))
+            if (words.contains(token))
                 matches++;
         }
 

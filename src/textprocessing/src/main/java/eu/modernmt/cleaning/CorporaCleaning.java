@@ -6,6 +6,7 @@ import eu.modernmt.cleaning.filters.lang.OptimaizeLanguageFilter;
 import eu.modernmt.cleaning.filters.ngrams.RareNgramFilter;
 import eu.modernmt.cleaning.normalizers.ControlCharsStripper;
 import eu.modernmt.cleaning.normalizers.XMLStripper;
+import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
 /**
@@ -15,7 +16,7 @@ public class CorporaCleaning {
 
     public static class Options {
 
-        public static Options defaultOptions() {
+        public static Options defaultOptionsForTraining() {
             Options options = new Options();
             options.normalize = true;
             options.filterByPunctuation = true;
@@ -28,7 +29,20 @@ public class CorporaCleaning {
             return options;
         }
 
-        public static Options pairDefaultOptions() {
+        public static Options defaultOptionsForMemoryImport() {
+            Options options = new Options();
+            options.normalize = true;
+            options.filterByPunctuation = true;
+            options.filterOddSentences = true;
+            options.filterDrafts = true;
+            options.filterBySentenceLength = true;
+            options.filterNumericSentences = true;
+            options.filterVerbatimTranslations = true;
+            options.filterByLanguage = true;
+            return options;
+        }
+
+        public static Options defaultOptionsForStringPairs() {
             Options options = new Options();
             options.normalize = true;
             options.filterByPunctuation = true;
@@ -52,50 +66,120 @@ public class CorporaCleaning {
 
     }
 
-    public static FilteredMultilingualCorpus wrap(MultilingualCorpus corpus) {
-        return wrap(corpus, Options.defaultOptions());
-    }
-
     public static FilteredMultilingualCorpus wrap(MultilingualCorpus corpus, Options options) {
-        FilterEngine engine = make(options, false);
-        return new FilteredMultilingualCorpus(corpus, engine);
+        ChainedMultilingualCorpusFilter filter = makeMultilingualFilter(options);
+        return new FilteredMultilingualCorpus(corpus, filter, filter);
     }
 
-    public static StringPairFilter forStringPairs() {
-        return forStringPairs(Options.pairDefaultOptions());
+    public static FilteredCorpus wrap(Corpus corpus, Options options) {
+        ChainedCorpusFilter filter = makeFilter(options);
+        return new FilteredCorpus(corpus, filter, filter);
     }
 
-    public static StringPairFilter forStringPairs(Options options) {
-        FilterEngine engine = make(options, true);
-        return new StringPairFilter(engine);
+    public static ChainedCorpusFilter makeFilter(Options options) {
+        MonolingualComposer composer = new MonolingualComposer();
+        return compose(composer, options).build();
     }
 
-    private static FilterEngine make(Options options, boolean cld2AcceptUnknown) {
-        FilterEngine.Builder builder = new FilterEngine.Builder();
+    public static ChainedMultilingualCorpusFilter makeMultilingualFilter(Options options) {
+        MultilingualComposer composer = new MultilingualComposer();
+        return compose(composer, options).build();
+    }
+
+    private static <T extends Composer> T compose(T composer, Options options) {
+        composer.add(new TooLongLinesFilter());
 
         if (options.normalize) {
-            builder.add(new ControlCharsStripper());
-            builder.add(new XMLStripper());
+            composer.add(new ControlCharsStripper());
+            composer.add(new XMLStripper());
         }
 
-        builder.add(new EmptyLinesFilter());
+        composer.add(EmptyLinesFilter.class);
 
         if (options.filterByPunctuation)
-            builder.add(new PunctuationFilter());
+            composer.add(PunctuationFilter.class);
         if (options.filterNumericSentences)
-            builder.add(new NumericTextFilter());
+            composer.add(NumericTextFilter.class);
         if (options.filterVerbatimTranslations)
-            builder.add(new VerbatimTranslationFilter());
+            composer.addMultilingual(VerbatimTranslationFilter.class);
         if (options.filterOddSentences)
-            builder.add(new RareNgramFilter());
+            composer.add(RareNgramFilter.class);
         if (options.filterDrafts)
-            builder.add(new DraftFilter());
+            composer.addMultilingual(DraftFilter.class);
         if (options.filterBySentenceLength)
-            builder.add(new SentenceLengthFilter());
+            composer.addMultilingual(SentenceLengthFilter.class);
         if (options.filterByLanguage)
-            builder.add(new OptimaizeLanguageFilter());
+            composer.add(OptimaizeLanguageFilter.class);
 
-        return builder.build();
+        return composer;
+    }
+
+    private interface Composer {
+
+        void add(CorpusNormalizer normalizer);
+
+        void add(Class<? extends CorpusFilter> clazz);
+
+        void addMultilingual(Class<? extends MultilingualCorpusFilter> clazz);
+
+    }
+
+    private static class MonolingualComposer implements Composer {
+
+        private final ChainedCorpusFilter.Builder builder = new ChainedCorpusFilter.Builder();
+
+        @Override
+        public void add(CorpusNormalizer normalizer) {
+            builder.add(normalizer);
+        }
+
+        @Override
+        public void add(Class<? extends CorpusFilter> clazz) {
+            try {
+                builder.add(clazz.newInstance());
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+
+        @Override
+        public void addMultilingual(Class<? extends MultilingualCorpusFilter> clazz) {
+            // Ignore
+        }
+
+        public ChainedCorpusFilter build() {
+            return builder.build();
+        }
+
+    }
+
+    private static class MultilingualComposer implements Composer {
+
+        private final ChainedMultilingualCorpusFilter.Builder builder = new ChainedMultilingualCorpusFilter.Builder();
+
+        @Override
+        public void add(CorpusNormalizer normalizer) {
+            builder.add(normalizer);
+        }
+
+        @Override
+        public void add(Class<? extends CorpusFilter> clazz) {
+            builder.add(new MultilingualCorpusFilterAdapter(clazz));
+        }
+
+        @Override
+        public void addMultilingual(Class<? extends MultilingualCorpusFilter> clazz) {
+            try {
+                builder.add(clazz.newInstance());
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+
+        public ChainedMultilingualCorpusFilter build() {
+            return builder.build();
+        }
+
     }
 
 }

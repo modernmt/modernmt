@@ -1,18 +1,15 @@
 package eu.modernmt.cleaning.normalizers;
 
-import eu.modernmt.cleaning.Normalizer;
-import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.cleaning.CorpusNormalizer;
 import eu.modernmt.processing.normalizers.ControlCharsRemover;
 
 /**
  * Created by davide on 17/11/16.
  */
-public class ControlCharsStripper implements Normalizer {
+public class ControlCharsStripper implements CorpusNormalizer {
 
     @Override
-    public void normalize(MultilingualCorpus.StringPair pair, int index) {
-        pair.source = ControlCharsRemover.strip(pair.source);
-        pair.target = ControlCharsRemover.strip(pair.target);
+    public String normalize(String line) {
+        return ControlCharsRemover.strip(line);
     }
-
 }

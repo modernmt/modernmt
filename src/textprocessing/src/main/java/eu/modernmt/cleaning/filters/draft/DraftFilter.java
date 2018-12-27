@@ -1,17 +1,16 @@
 package eu.modernmt.cleaning.filters.draft;
 
-import eu.modernmt.cleaning.Filter;
+import eu.modernmt.cleaning.MultilingualCorpusFilter;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
-import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 
 /**
  * Created by davide on 14/03/16.
  */
-public class DraftFilter implements Filter {
+public class DraftFilter implements MultilingualCorpusFilter {
 
     private final HashMap<LanguagePair, DraftFilterData> filters = new HashMap<>();
     private boolean dataReady = false;
@@ -31,7 +30,7 @@ public class DraftFilter implements Filter {
             }
 
             @Override
-            public void onPair(MultilingualCorpus corpus, MultilingualCorpus.StringPair pair, int index) throws IOException {
+            public void onPair(MultilingualCorpus.StringPair pair, int index) {
                 Date timestamp = pair.timestamp;
                 if (timestamp == null)
                     timestamp = new Date(lastTimestamp.getTime() + 60L * 1000L);
@@ -52,7 +51,7 @@ public class DraftFilter implements Filter {
     }
 
     @Override
-    public boolean accept(MultilingualCorpus.StringPair pair, int index) throws IOException {
+    public boolean accept(MultilingualCorpus.StringPair pair, int index) {
         return filters.get(pair.language).accept(pair.source, index);
     }
 

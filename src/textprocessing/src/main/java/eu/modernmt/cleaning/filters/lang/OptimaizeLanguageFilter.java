@@ -4,18 +4,18 @@ import com.optimaize.langdetect.LanguageDetector;
 import com.optimaize.langdetect.LanguageDetectorBuilder;
 import com.optimaize.langdetect.ngram.NgramExtractors;
 import com.optimaize.langdetect.profiles.LanguageProfileReader;
-import eu.modernmt.cleaning.Filter;
+import eu.modernmt.cleaning.CorpusFilter;
 import eu.modernmt.io.RuntimeIOException;
-import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.lang.Language;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
 
 /**
  * Created by davide on 27/12/17.
  */
-public class OptimaizeLanguageFilter implements Filter {
+public class OptimaizeLanguageFilter implements CorpusFilter {
 
     private static final HashSet<String> SUPPORTED_LANGUAGES = new HashSet<>(
             Arrays.asList("af", "an", "ar", "ast", "be", "br", "ca", "bg", "bn", "cs", "cy", "da", "de", "el", "en",
@@ -46,45 +46,43 @@ public class OptimaizeLanguageFilter implements Filter {
         return detectorInstance;
     }
 
-    private final HashMap<LanguagePair, Blacklist> blacklists = new HashMap<>();
+    private Blacklist blacklist = null;
 
-    private static boolean isSupported(LanguagePair language) {
-        return SUPPORTED_LANGUAGES.contains(language.source.getLanguage()) &&
-                SUPPORTED_LANGUAGES.contains(language.target.getLanguage());
+    private static boolean isSupported(Language language) {
+        return SUPPORTED_LANGUAGES.contains(language.getLanguage());
     }
 
     @Override
-    public Initializer getInitializer() {
+    public Initializer getInitializer(Language language) {
         return new Initializer() {
 
-            private HashMap<LanguagePair, Batch> batches = new HashMap<>();
+            private final Batch batch = new Batch();
 
             @Override
             public void onBegin() {
-                blacklists.clear();
+                blacklist = null;
             }
 
             @Override
-            public void onPair(MultilingualCorpus corpus, MultilingualCorpus.StringPair pair, int index) {
-                if (isSupported(pair.language)) {
-                    Batch batch = batches.computeIfAbsent(pair.language, (key) -> new Batch());
-                    batch.add(pair.source, pair.target, index);
+            public void onLine(String line, int index) {
+                if (isSupported(language)) {
+                    batch.add(line, index);
 
                     if (batch.isFull())
-                        analyze(pair.language, batch);
+                        analyze(batch);
                 }
             }
 
-            private void analyze(LanguagePair direction, Batch batch) {
-                String sourceLang = batch.getSourceLanguage();
-                String targetLang = batch.getTargetLanguage();
+            private void analyze(Batch batch) {
+                String lang = batch.getLanguage();
 
-                if (!direction.source.getLanguage().equalsIgnoreCase(sourceLang) ||
-                        !direction.target.getLanguage().equalsIgnoreCase(targetLang)) {
+                if (!language.getLanguage().equalsIgnoreCase(lang)) {
                     int beginIndex = batch.getBeginIndex();
                     int endIndex = batch.getEndIndex();
 
-                    Blacklist blacklist = blacklists.computeIfAbsent(direction, (key) -> new Blacklist());
+                    if (blacklist == null)
+                        blacklist = new Blacklist();
+
                     blacklist.add(beginIndex, endIndex);
                 }
 
@@ -93,25 +91,23 @@ public class OptimaizeLanguageFilter implements Filter {
 
             @Override
             public void onEnd() {
-                for (Map.Entry<LanguagePair, Batch> entry : batches.entrySet()) {
-                    if (!entry.getValue().isEmpty())
-                        analyze(entry.getKey(), entry.getValue());
-                }
+                if (!batch.isEmpty())
+                    analyze(batch);
 
-                blacklists.entrySet().removeIf(entry -> entry.getValue().size() < MIN_SIZE);
+                if (blacklist.size() < MIN_SIZE)
+                    blacklist = null;
             }
         };
     }
 
     @Override
-    public boolean accept(MultilingualCorpus.StringPair pair, int index) {
-        Blacklist blacklist = blacklists.get(pair.language);
+    public boolean accept(String line, int index) {
         return blacklist == null || !blacklist.contains(index);
     }
 
     @Override
     public void clear() {
-        blacklists.clear();
+        this.blacklist = null;
     }
 
 }
