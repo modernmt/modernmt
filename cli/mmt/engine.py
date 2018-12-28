@@ -6,6 +6,10 @@ import shutil
 import time
 from xml.dom import minidom
 
+import glob
+
+from typing import Any, Union
+
 import cli
 from cli import IllegalArgumentException, CorpusNotFoundInFolderException, mmt_javamain
 from cli.libs import osutils, nvidia_smi
@@ -130,7 +134,7 @@ class NeuralDecoder(object):
             raise ValueError('Corpora must be contained in the same folder: ' + str(corpora))
         return roots.pop()
 
-    def prepare_data(self, train_corpora, eval_corpora, output_path, log=None, bpe_symbols=2 ** 15):
+    def prepare_data(self, train_corpora, eval_corpora, output_path, log=None, bpe_symbols=2 ** 15, fromCkpt=None):
         if log is None:
             log = osutils.DEVNULL
 
@@ -143,6 +147,16 @@ class NeuralDecoder(object):
         shutil.rmtree(data_dir, ignore_errors=True)
         osutils.makedirs(data_dir)
 
+
+        # if an existing checkpoint is loaded for starting the training (i.e fromCkpt!=None)
+        # copy the subtoken vocabulary associated to the existing checkpoint into the right location,
+        # so that the subtoken vocabulary is not re-created from the new training data,
+        # and so that it is only exploited \ to bpe-fy the new data
+        # it assumes that the vocabulary is called "model.vcb" and is located in the same directory of the checkpoint
+        if fromCkpt is not None:
+            modelVcb = os.path.join(os.path.dirname(fromCkpt), 'model.vcb')
+            shutil.copy2(modelVcb, data_dir)
+
         if not os.path.isdir(tmp_dir):
             osutils.makedirs(tmp_dir)
 
@@ -153,12 +167,26 @@ class NeuralDecoder(object):
         osutils.shell_exec(command, stdout=log, stderr=log, env=env)
 
     def train_model(self, train_dir, output_dir, batch_size=1024, n_train_steps=None, n_eval_steps=1000,
-                    hparams='transformer_base', log=None):
+                    hparams='transformer_base', log=None, fromCkpt=None):
         if log is None:
             log = osutils.DEVNULL
 
         if not os.path.isdir(output_dir):
             osutils.makedirs(output_dir)
+
+        # if an existing checkpoint is loaded for starting the training (i.e fromCkpt!=None)
+        # copy the checkpoint files into the right location
+        # it assumes that the the checkpoint is identified by its prefix, "/PATH/model.ckpt-150000"
+        if fromCkpt is not None:
+            wildcard = fromCkpt + "*"
+            for file in glob.glob(wildcard):
+                if os.path.isfile(file):
+                    shutil.copy2(file, output_dir)
+
+            fromCkptFile = os.path.join(os.path.dirname(fromCkpt + ".meta"), 'checkpoint')
+            fd = os.open(fromCkptFile,"w+")
+            fd.write("model_checkpoint_path: \"%s\"" % (fromCkpt))
+            os.close(fd)
 
         data_dir = os.path.join(train_dir, 'data')
 
@@ -517,7 +545,7 @@ class EngineBuilder:
 
     def __init__(self, engine_name, source_lang, target_lang, roots, gpus,
                  debug=False, steps=None, split_train=True, validation_path=None, batch_size=1024,
-                 n_train_steps=None, n_eval_steps=1000, hparams='transformer_base', bpe_symbols=2 ** 15):
+                 n_train_steps=None, n_eval_steps=1000, hparams='transformer_base', bpe_symbols=2 ** 15, fromCkpt=None):
         self.source_lang = source_lang
         self.target_lang = target_lang
         self.roots = roots
@@ -532,6 +560,7 @@ class EngineBuilder:
         self._n_train_steps = n_train_steps
         self._n_eval_steps = n_eval_steps
         self._hparams = hparams
+        self._fromCkpt = fromCkpt
 
         self._temp_dir = None
 
@@ -587,7 +616,6 @@ class EngineBuilder:
         logger = logging.getLogger('EngineBuilder')
 
         # Start the engine building (training) phases
-
         steps_count = len(self._schedule.visible_steps())
         log_line_len = 70
 
@@ -757,7 +785,7 @@ class EngineBuilder:
             eval_corpora = args.processed_valid_corpora or BilingualCorpus.list(self.source_lang, self.target_lang,
                                                                                 self._validation_path)
             self._decoder.prepare_data(train_corpora, eval_corpora, args.prepared_data_path,
-                                       log=log, bpe_symbols=self._bpe_symbols)
+                                       log=log, bpe_symbols=self._bpe_symbols, fromCkpt=self._fromCkpt)
 
     @Step(6, 'Training model')
     def _train_model(self, args, skip=False, log=None):
@@ -765,7 +793,7 @@ class EngineBuilder:
             args.train_model_path = self._get_tempdir('neural_model')
             self._decoder.train_model(args.prepared_data_path, args.train_model_path, log=log,
                                       batch_size=self._batch_size, hparams=self._hparams,
-                                      n_train_steps=self._n_train_steps, n_eval_steps=self._n_eval_steps)
+                                      n_train_steps=self._n_train_steps, n_eval_steps=self._n_eval_steps, fromCkpt=self._fromCkpt)
 
     @Step(7, 'Pack model')
     def _pack_model(self, args, skip=False):
