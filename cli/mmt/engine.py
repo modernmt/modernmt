@@ -528,7 +528,7 @@ class EngineBuilder:
             all_steps = self.all_steps()
 
             if filtered_steps is not None:
-                self._scheduled_steps = filtered_steps
+                self._scheduled_steps = self.required_steps(filtered_steps)
 
                 unknown_steps = [step for step in self._scheduled_steps if step not in all_steps]
                 if len(unknown_steps) > 0:
@@ -553,6 +553,10 @@ class EngineBuilder:
                         raise StopIteration
 
             return __Inner([el for el in self._plan if el.id in self._scheduled_steps or not el.is_optional()])
+
+        def required_steps(self, steps):
+            max_seq_num = max([x.pos() for x in self._plan if x.id in steps])
+            return [x.id for x in self._plan if x.pos() <= max_seq_num]
 
         def visible_steps(self):
             return [x.id for x in self._plan if x.id in self._scheduled_steps and not x.is_hidden()]
