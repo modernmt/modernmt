@@ -8,8 +8,6 @@ from xml.dom import minidom
 
 import glob
 
-from typing import Any, Union
-
 import cli
 from cli import IllegalArgumentException, CorpusNotFoundInFolderException, mmt_javamain
 from cli.libs import osutils, nvidia_smi
@@ -147,15 +145,13 @@ class NeuralDecoder(object):
         shutil.rmtree(data_dir, ignore_errors=True)
         osutils.makedirs(data_dir)
 
-
         # if an existing checkpoint is loaded for starting the training (i.e fromCkpt!=None)
         # copy the subtoken vocabulary associated to the existing checkpoint into the right location,
         # so that the subtoken vocabulary is not re-created from the new training data,
-        # and so that it is only exploited \ to bpe-fy the new data
+        # and so that it is only exploited to bpe-fy the new data
         # it assumes that the vocabulary is called "model.vcb" and is located in the same directory of the checkpoint
         if fromCkpt is not None:
-            modelVcb = os.path.join(os.path.dirname(fromCkpt), 'model.vcb')
-            shutil.copy2(modelVcb, data_dir)
+            shutil.copyfile(os.path.join(fromCkpt, 'model.vcb'), os.path.join(data_dir, 'model.vcb'))
 
         if not os.path.isdir(tmp_dir):
             osutils.makedirs(tmp_dir)
@@ -174,19 +170,10 @@ class NeuralDecoder(object):
         if not os.path.isdir(output_dir):
             osutils.makedirs(output_dir)
 
-        # if an existing checkpoint is loaded for starting the training (i.e fromCkpt!=None)
+        # if an existing checkpoint is loaded for starting the training (i.e fromCkpt != None)
         # copy the checkpoint files into the right location
-        # it assumes that the the checkpoint is identified by its prefix, "/PATH/model.ckpt-150000"
         if fromCkpt is not None:
-            wildcard = fromCkpt + "*"
-            for file in glob.glob(wildcard):
-                if os.path.isfile(file):
-                    shutil.copy2(file, output_dir)
-
-            fromCkptFile = os.path.join(os.path.dirname(fromCkpt + ".meta"), 'checkpoint')
-            fd = os.open(fromCkptFile,"w+")
-            fd.write("model_checkpoint_path: \"%s\"" % (fromCkpt))
-            os.close(fd)
+            self._copy_and_fix_model(fromCkpt, output_dir, gpus=self._gpus)
 
         data_dir = os.path.join(train_dir, 'data')
 
@@ -238,7 +225,7 @@ class NeuralDecoder(object):
         checkpoint_paths = {}
 
         # Used to select only one (the last) of the two checkpoints created at each validation;
-        # it assumes that the validation is computed with a frquency higher or equal to 100.
+        # it assumes that the validation is computed with a frequency higher or equal to 100.
         mask_value = 100
 
         for checkpoint_path in tf.train.get_checkpoint_state(model_dir).all_model_checkpoint_paths:
@@ -307,8 +294,6 @@ class NeuralDecoder(object):
             session_config.gpu_options.visible_device_list = str(gpu)
 
         sess = tf.Session(config=session_config)
-
-        # with tf.Session() as sess:
         sess.run(tf.initialize_all_variables())
         for p, assign_op, (name, value) in zip(placeholders, assign_ops, six.iteritems(var_values)):
             sess.run(assign_op, {p: value})
@@ -325,6 +310,67 @@ class NeuralDecoder(object):
             model_conf.write('[models]\n')
             model_conf.write('%s__%s = %s__%s/\n' %
                              (self.source_lang, self.target_lang, self.source_lang, self.target_lang))
+
+    def _copy_and_fix_model(self, fromCkpt, output_dir, gpus=None):
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', category=FutureWarning)
+
+            import tensorflow as tf
+            import numpy as np
+            import six
+
+            os.environ['TF_CPP_MIN_LOG_LEVEL'] = '9999'
+
+        # get the checkpoint to load
+        wildcard = fromCkpt + "/model.ckpt*.meta"
+        for file in glob.glob(wildcard):
+            if os.path.isfile(file):
+                checkpoint = os.path.splitext(file)[0]
+
+        # Read variables from the checkpoint.
+        var_list = tf.contrib.framework.list_variables(checkpoint)
+        var_dtypes = {}
+        var_values = {name: np.zeros(shape) for name, shape in var_list if not name.startswith('global_step')}
+
+        reader = tf.contrib.framework.load_checkpoint(checkpoint)
+        for name in var_values:
+            tensor = reader.get_tensor(name)
+            var_dtypes[name] = tensor.dtype
+            var_values[name] = tensor
+
+        if gpus is not None:
+            gpu = gpus[0]
+            device = '/device:GPU:%s' % gpu
+        else:
+            gpu = None
+            device = '/cpu:0'
+
+        with tf.device(device):
+            tf_vars = [tf.get_variable(n, shape=var_values[n].shape, dtype=var_dtypes[n]) for n in var_values]
+            placeholders = [tf.placeholder(v.dtype, shape=v.shape) for v in tf_vars]
+            assign_ops = [tf.assign(v, p) for (v, p) in zip(tf_vars, placeholders)]
+            tf.Variable(0, name='global_step', trainable=False, dtype=tf.int64)
+
+        saver = tf.train.Saver(tf.global_variables(), save_relative_paths=True)
+
+        session_config = tf.ConfigProto(allow_soft_placement=True)
+        session_config.gpu_options.allow_growth = True
+        if gpu is not None:
+            session_config.gpu_options.force_gpu_compatible = True
+            session_config.gpu_options.visible_device_list = str(gpu)
+
+        sess = tf.Session(config=session_config)
+        sess.run(tf.initialize_all_variables())
+        for p, assign_op, (name, value) in zip(placeholders, assign_ops, six.iteritems(var_values)):
+            sess.run(assign_op, {p: value})
+
+        # Use the built saver to save the checkpoint.
+        saver.save(sess, os.path.join(output_dir, 'model.ckpt'), global_step=0)
+
+        # Copy auxiliary files
+        shutil.copyfile(os.path.join(fromCkpt, 'hparams.json'), os.path.join(output_dir, 'hparams.json'))
 
 
 class Engine(object):
@@ -790,6 +836,8 @@ class EngineBuilder:
     @Step(6, 'Training model')
     def _train_model(self, args, skip=False, log=None):
         if not skip:
+            if args.prepared_data_path == None:
+                args.prepared_data_path = self._get_tempdir('neural_train_data')
             args.train_model_path = self._get_tempdir('neural_model')
             self._decoder.train_model(args.prepared_data_path, args.train_model_path, log=log,
                                       batch_size=self._batch_size, hparams=self._hparams,
