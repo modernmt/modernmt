@@ -54,8 +54,11 @@ public class OptimaizeLanguageFilter implements CorpusFilter {
 
     @Override
     public Initializer getInitializer(Language language) {
+        boolean isLanguageSupported = isSupported(language);
+
         return new Initializer() {
 
+            private int count = 0;
             private final Batch batch = new Batch();
 
             @Override
@@ -65,25 +68,29 @@ public class OptimaizeLanguageFilter implements CorpusFilter {
 
             @Override
             public void onLine(String line, int index) {
-                if (isSupported(language)) {
+                if (isLanguageSupported) {
                     batch.add(line, index);
 
                     if (batch.isFull())
                         analyze(batch);
+
+                    count++;
                 }
             }
 
             private void analyze(Batch batch) {
-                String lang = batch.getLanguage();
+                if (batch.size() >= MIN_SIZE) {
+                    String lang = batch.getLanguage();
 
-                if (!language.getLanguage().equalsIgnoreCase(lang)) {
-                    int beginIndex = batch.getBeginIndex();
-                    int endIndex = batch.getEndIndex();
+                    if (!language.getLanguage().equalsIgnoreCase(lang)) {
+                        int beginIndex = batch.getBeginIndex();
+                        int endIndex = batch.getEndIndex();
 
-                    if (blacklist == null)
-                        blacklist = new Blacklist();
+                        if (blacklist == null)
+                            blacklist = new Blacklist();
 
-                    blacklist.add(beginIndex, endIndex);
+                        blacklist.add(beginIndex, endIndex);
+                    }
                 }
 
                 batch.clear();
@@ -93,9 +100,6 @@ public class OptimaizeLanguageFilter implements CorpusFilter {
             public void onEnd() {
                 if (!batch.isEmpty())
                     analyze(batch);
-
-                if (blacklist.size() < MIN_SIZE)
-                    blacklist = null;
             }
         };
     }

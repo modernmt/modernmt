@@ -25,6 +25,10 @@ class Batch {
         this.size = size;
     }
 
+    public int size() {
+        return count;
+    }
+
     public boolean isEmpty() {
         return count == 0;
     }
@@ -61,7 +65,7 @@ class Batch {
 
     public String getLanguage() {
         List<DetectedLanguage> languages = OptimaizeLanguageFilter.getLanguageDetector().getProbabilities(buffer);
-        
+
         if (languages.size() < 1)
             return null;
 
