@@ -4,6 +4,7 @@ import eu.modernmt.cleaning.filters.*;
 import eu.modernmt.cleaning.filters.draft.DraftFilter;
 import eu.modernmt.cleaning.filters.lang.OptimaizeLanguageFilter;
 import eu.modernmt.cleaning.normalizers.ControlCharsStripper;
+import eu.modernmt.cleaning.normalizers.DeepXMLEraser;
 import eu.modernmt.cleaning.normalizers.XMLStripper;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -18,6 +19,7 @@ public class CorporaCleaning {
         public static Options defaultOptionsForTraining() {
             Options options = new Options();
             options.normalize = true;
+            options.eraseXml = true;
             options.filterByPunctuation = true;
             options.filterOddSentences = true;
             options.filterDrafts = true;
@@ -31,6 +33,7 @@ public class CorporaCleaning {
         public static Options defaultOptionsForMemoryImport() {
             Options options = new Options();
             options.normalize = true;
+            options.eraseXml = false;
             options.filterByPunctuation = true;
             options.filterOddSentences = true;
             options.filterDrafts = true;
@@ -55,6 +58,7 @@ public class CorporaCleaning {
         }
 
         public boolean normalize = false;
+        public boolean eraseXml = false;
         public boolean filterByPunctuation = false;
         public boolean filterOddSentences = false;
         public boolean filterDrafts = false;
@@ -92,6 +96,9 @@ public class CorporaCleaning {
             composer.add(new ControlCharsStripper());
             composer.add(new XMLStripper());
         }
+
+        if (options.eraseXml)
+            composer.add(new DeepXMLEraser());
 
         composer.add(EmptyLinesFilter.class);
 

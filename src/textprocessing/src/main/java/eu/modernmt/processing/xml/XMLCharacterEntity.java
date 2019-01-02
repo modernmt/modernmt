@@ -285,14 +285,18 @@ public class XMLCharacterEntity {
     }
 
     public static String unescapeAll(String line) {
-        char[] chars = line.toCharArray();
+        char[] chars = null;
+        StringBuilder builder = null;
 
-        StringBuilder builder = new StringBuilder();
         Matcher m = EntityPattern.matcher(line);
-
         int stringIndex = 0;
 
         while (m.find()) {
+            if (chars == null) {
+                chars = line.toCharArray();
+                builder = new StringBuilder();
+            }
+
             int mstart = m.start();
             int mend = m.end();
 
@@ -309,6 +313,9 @@ public class XMLCharacterEntity {
 
             stringIndex = mend;
         }
+
+        if (builder == null)
+            return line;
 
         if (stringIndex < chars.length)
             builder.append(chars, stringIndex, chars.length - stringIndex);
