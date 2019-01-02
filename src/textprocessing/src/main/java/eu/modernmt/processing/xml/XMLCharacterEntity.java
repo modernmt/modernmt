@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
  */
 public class XMLCharacterEntity {
 
-    public static final Pattern EntityPattern = Pattern.compile("&((#[0-9]{1,4})|(#x[0-9a-fA-F]{1,4})|([a-zA-Z]+));");
+    public static final Pattern EntityPattern = Pattern.compile("&((#[0-9]+)|(#x[0-9a-fA-F]+)|([a-zA-Z]+));");
 
     private static final HashMap<String, Character> NAMED_ENTITIES = new HashMap<>();
 
@@ -269,19 +269,29 @@ public class XMLCharacterEntity {
         NAMED_ENTITIES.put("diams", '\u2666');
     }
 
-    public static Character unescape(String entity) {
+    private static int unescapeCodepoint(String entity) {
         if (entity.charAt(1) == '#') {
-            if (entity.charAt(2) == 'x') {
-                String content = entity.substring(3, entity.length() - 1);
-                return (char) Integer.parseInt(content, 16);
-            } else {
-                String content = entity.substring(2, entity.length() - 1);
-                return (char) Integer.parseInt(content);
+            try {
+                if (entity.charAt(2) == 'x') {
+                    String content = entity.substring(3, entity.length() - 1);
+                    return Integer.parseInt(content, 16);
+                } else {
+                    String content = entity.substring(2, entity.length() - 1);
+                    return Integer.parseInt(content);
+                }
+            } catch (NumberFormatException e) {
+                return 0;
             }
         } else {
             String content = entity.substring(1, entity.length() - 1);
-            return NAMED_ENTITIES.get(content);
+            Character result = NAMED_ENTITIES.get(content);
+            return result == null ? 0 : result;
         }
+    }
+
+    public static String unescape(String entity) {
+        int codepoint = unescapeCodepoint(entity);
+        return codepoint == 0 ? null : new String(Character.toChars(codepoint));
     }
 
     public static String unescapeAll(String line) {
@@ -304,11 +314,11 @@ public class XMLCharacterEntity {
                 builder.append(chars, stringIndex, mstart - stringIndex);
 
             String entity = m.group();
-            Character c = XMLCharacterEntity.unescape(entity);
-            if (c == null) {
+            int c = unescapeCodepoint(entity);
+            if (c == 0) {
                 builder.append(entity);
             } else {
-                builder.append(c);
+                builder.appendCodePoint(c);
             }
 
             stringIndex = mend;

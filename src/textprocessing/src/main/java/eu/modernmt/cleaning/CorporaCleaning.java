@@ -5,6 +5,7 @@ import eu.modernmt.cleaning.filters.draft.DraftFilter;
 import eu.modernmt.cleaning.filters.lang.OptimaizeLanguageFilter;
 import eu.modernmt.cleaning.normalizers.ControlCharsStripper;
 import eu.modernmt.cleaning.normalizers.DeepXMLEraser;
+import eu.modernmt.cleaning.normalizers.StringSpacingNormalizer;
 import eu.modernmt.cleaning.normalizers.XMLStripper;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -18,8 +19,8 @@ public class CorporaCleaning {
 
         public static Options defaultOptionsForTraining() {
             Options options = new Options();
-            options.normalize = true;
             options.eraseXml = true;
+            options.filterBrokenUTF8 = true;
             options.filterByPunctuation = true;
             options.filterOddSentences = true;
             options.filterDrafts = true;
@@ -32,8 +33,8 @@ public class CorporaCleaning {
 
         public static Options defaultOptionsForMemoryImport() {
             Options options = new Options();
-            options.normalize = true;
             options.eraseXml = false;
+            options.filterBrokenUTF8 = true;
             options.filterByPunctuation = true;
             options.filterOddSentences = true;
             options.filterDrafts = true;
@@ -46,7 +47,8 @@ public class CorporaCleaning {
 
         public static Options defaultOptionsForStringPairs() {
             Options options = new Options();
-            options.normalize = true;
+            options.eraseXml = false;
+            options.filterBrokenUTF8 = true;
             options.filterByPunctuation = true;
             options.filterNumericSentences = true;
             options.filterVerbatimTranslations = true;
@@ -57,8 +59,8 @@ public class CorporaCleaning {
             return options;
         }
 
-        public boolean normalize = false;
         public boolean eraseXml = false;
+        public boolean filterBrokenUTF8 = false;
         public boolean filterByPunctuation = false;
         public boolean filterOddSentences = false;
         public boolean filterDrafts = false;
@@ -90,18 +92,26 @@ public class CorporaCleaning {
     }
 
     private static <T extends Composer> T compose(T composer, Options options) {
+        // Too long lines could lead Regex crash
+        // due to recursive calls (Memory exhausted error)
         composer.add(new TooLongLinesFilter());
 
-        if (options.normalize) {
-            composer.add(new ControlCharsStripper());
-            composer.add(new XMLStripper());
-        }
+        // Normalization --------------------------------------------------------
 
         if (options.eraseXml)
             composer.add(new DeepXMLEraser());
+        else
+            composer.add(new XMLStripper());
+
+        composer.add(new ControlCharsStripper());
+        composer.add(new StringSpacingNormalizer());
+
+        // Filtering ------------------------------------------------------------
 
         composer.add(EmptyLinesFilter.class);
 
+        if (options.filterBrokenUTF8)
+            composer.add(BrokenUTF8Filter.class);
         if (options.filterByPunctuation)
             composer.add(PunctuationFilter.class);
         if (options.filterNumericSentences)

@@ -23,7 +23,7 @@ import java.util.List;
 public class CleaningPipelineMain {
 
     public enum Filter {
-        NORMALIZE, ERASE_XML, PUNCTUATION, ODD_SENTENCES, DRAFTS, SENTENCE_LENGTH, VERBATIM, NUMERIC, LANGUAGE
+        ERASE_XML, PUNCTUATION, ODD_SENTENCES, DRAFTS, SENTENCE_LENGTH, VERBATIM, NUMERIC, LANGUAGE, BROKEN_UTF8
     }
 
     private static class Args {
@@ -92,11 +92,11 @@ public class CleaningPipelineMain {
 
             for (Filter filter : filters) {
                 switch (filter) {
-                    case NORMALIZE:
-                        options.normalize = true;
-                        break;
                     case ERASE_XML:
                         options.eraseXml = true;
+                        break;
+                    case BROKEN_UTF8:
+                        options.filterBrokenUTF8 = true;
                         break;
                     case PUNCTUATION:
                         options.filterByPunctuation = true;
