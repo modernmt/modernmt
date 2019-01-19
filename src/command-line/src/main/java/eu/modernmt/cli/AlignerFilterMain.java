@@ -34,6 +34,7 @@ public class AlignerFilterMain {
             Option input = Option.builder().longOpt("input").hasArg().required().build();
             Option output = Option.builder().longOpt("output").hasArg().required().build();
             Option threshold = Option.builder().longOpt("threshold").hasArg().required().build();
+            Option trash = Option.builder().longOpt("trash").hasArg().required(false).build();
 
             cliOptions = new Options();
             cliOptions.addOption(sourceLanguage);
@@ -42,6 +43,7 @@ public class AlignerFilterMain {
             cliOptions.addOption(input);
             cliOptions.addOption(output);
             cliOptions.addOption(threshold);
+            cliOptions.addOption(trash);
         }
 
         public final LanguagePair language;
@@ -49,6 +51,7 @@ public class AlignerFilterMain {
         public final File input;
         public final File output;
         public final float threshold;
+        public final File trash;
 
         public Args(String[] args) throws ParseException {
             CommandLineParser parser = new DefaultParser();
@@ -61,6 +64,7 @@ public class AlignerFilterMain {
             input = new File(cli.getOptionValue("input"));
             output = new File(cli.getOptionValue("output"));
             threshold = Float.parseFloat(cli.getOptionValue("threshold"));
+            trash = cli.hasOption("trash") ? new File(cli.getOptionValue("trash")) : null;
         }
 
     }
@@ -75,15 +79,24 @@ public class AlignerFilterMain {
         FileUtils.deleteQuietly(args.output);
         FileUtils.forceMkdir(args.output);
 
+        if (args.trash != null) {
+            FileUtils.deleteQuietly(args.trash);
+            FileUtils.forceMkdir(args.trash);
+        }
+
         FastAlign aligner = new FastAlign(args.model);
         Preprocessor preprocessor = new Preprocessor();
 
         try {
             for (MultilingualCorpus corpus : corpora) {
+                MultilingualCorpus trashCorpus = null;
+                if (args.trash != null)
+                    trashCorpus = new LazyWriterMultilingualCorpus(Corpora.rename(corpus, args.trash));
+
                 MultilingualCorpus outCorpus = new LazyWriterMultilingualCorpus(Corpora.rename(corpus, args.output));
                 corpus = new MultilingualCorpusMask(args.language, corpus);
 
-                filter(aligner, preprocessor, args.language, corpus, outCorpus, args.threshold);
+                filter(aligner, preprocessor, args.language, corpus, outCorpus, args.threshold, trashCorpus);
             }
         } finally {
             IOUtils.closeQuietly(aligner);
@@ -92,35 +105,39 @@ public class AlignerFilterMain {
     }
 
     private static void filter(FastAlign aligner, Preprocessor preprocessor, LanguagePair language,
-                               MultilingualCorpus input, MultilingualCorpus output, float threshold) throws Throwable {
+                               MultilingualCorpus input, MultilingualCorpus output, float threshold, MultilingualCorpus trashCorpus) throws Throwable {
         MultilingualCorpus.MultilingualLineReader reader = null;
         MultilingualCorpus.MultilingualLineWriter writer = null;
+        MultilingualCorpus.MultilingualLineWriter trashWriter = null;
 
         try {
             reader = input.getContentReader();
             writer = output.getContentWriter(false);
+            if (trashCorpus != null)
+                trashWriter = trashCorpus.getContentWriter(false);
 
             Batch batch = new Batch();
             MultilingualCorpus.StringPair pair;
             while ((pair = reader.read()) != null) {
                 if (!batch.add(pair)) {
-                    process(aligner, preprocessor, language, threshold, batch, writer);
+                    process(aligner, preprocessor, language, threshold, batch, writer, trashWriter);
                     batch.clear();
                 }
             }
 
             if (batch.size() > 0) {
-                process(aligner, preprocessor, language, threshold, batch, writer);
+                process(aligner, preprocessor, language, threshold, batch, writer, trashWriter);
                 batch.clear();
             }
         } finally {
             IOUtils.closeQuietly(reader);
             IOUtils.closeQuietly(writer);
+            IOUtils.closeQuietly(trashWriter);
         }
     }
 
     private static void process(FastAlign aligner, Preprocessor preprocessor, LanguagePair language, float threshold,
-                                Batch batch, MultilingualCorpus.MultilingualLineWriter writer) throws Throwable {
+                                Batch batch, MultilingualCorpus.MultilingualLineWriter writer, MultilingualCorpus.MultilingualLineWriter trashWriter) throws Throwable {
         List<String> sources = batch.getSources();
         List<String> targets = batch.getTargets();
 
@@ -135,10 +152,12 @@ public class AlignerFilterMain {
                 pair.source = sources.get(i);
                 pair.target = targets.get(i);
                 writer.write(pair);
+            } else if (trashWriter != null) {
+                pair.source = sources.get(i);
+                pair.target = targets.get(i);
+                trashWriter.write(pair);
             }
         }
-        for (Alignment alignment : alignments)
-            System.out.println(alignment);
 
         batch.clear();
     }
