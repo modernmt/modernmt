@@ -29,6 +29,7 @@ public class TrainingPipelineMain {
             Option outputPath = Option.builder().longOpt("output").hasArg().required().build();
             Option devPath = Option.builder().longOpt("dev").hasArg().required(false).build();
             Option testPath = Option.builder().longOpt("test").hasArg().required(false).build();
+            Option partitionSize = Option.builder().longOpt("size").hasArg().required(false).build();
 
             cliOptions = new Options();
             cliOptions.addOption(sourceLanguage);
@@ -37,6 +38,7 @@ public class TrainingPipelineMain {
             cliOptions.addOption(outputPath);
             cliOptions.addOption(devPath);
             cliOptions.addOption(testPath);
+            cliOptions.addOption(partitionSize);
         }
 
         public final LanguagePair language;
@@ -44,6 +46,7 @@ public class TrainingPipelineMain {
         public final File outputRoot;
         public final File devRoot;
         public final File testRoot;
+        public final int partitionSize;
 
         public Args(String[] args) throws ParseException {
             CommandLineParser parser = new DefaultParser();
@@ -62,6 +65,7 @@ public class TrainingPipelineMain {
 
             devRoot = cli.hasOption("dev") ? new File(cli.getOptionValue("dev")) : null;
             testRoot = cli.hasOption("test") ? new File(cli.getOptionValue("test")) : null;
+            partitionSize = cli.hasOption("size") ? Integer.parseInt(cli.getOptionValue("size")) : 0;
         }
 
     }
@@ -76,6 +80,9 @@ public class TrainingPipelineMain {
             throw new ParseException("Input path does not contains valid bilingual data");
 
         TrainingFacade.TrainingOptions options = new TrainingFacade.TrainingOptions();
+
+        if (args.partitionSize > 0)
+            options.partitionSize = args.partitionSize;
 
         if (args.devRoot != null)
             options.developmentPartition = args.devRoot;
