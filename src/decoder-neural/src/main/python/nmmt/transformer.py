@@ -16,6 +16,7 @@ from tensor2tensor.utils import registry, optimize
 # noinspection PyUnresolvedReferences
 import t2t  # pylint: disable=unused-import
 from nmmt import Translation, TranslationRequest, TranslationResponse
+from nmmt.alignment import make_alignment
 
 
 class ModelConfig(object):
@@ -231,7 +232,7 @@ class TransformerDecoder(object):
         # decode
         inputs, input_indexes = self._text_encode(text)
         if output_text is None:
-            decode_length = self._get_expected_decode_length(source_lang, target_lang, len(inputs))
+            decode_length = max(20, len(inputs) * 2)
             results = self._session.run(self._predictions_op, {
                 self._ph_infer_inputs: inputs,
                 self._ph_decode_length: decode_length
@@ -244,14 +245,15 @@ class TransformerDecoder(object):
             raw_output = output_text
 
         # align
-        if len(outputs) > 0:  # if output is empty the forced decoding does not work; reshape of an empty array is not possible
+        if len(outputs) > 0:
+            # if output is empty the forced decoding does not work; reshape of an empty array is not possible
             results = self._session.run(self._attention_mats_op, {
                 self._ph_infer_inputs: inputs,
                 self._ph_train_inputs: np.reshape(inputs, [1, -1, 1, 1]),
                 self._ph_train_targets: np.reshape(outputs, [1, -1, 1, 1]),
             })
 
-            alignment = self._make_alignment(input_indexes, output_indexes, results)
+            alignment = make_alignment(input_indexes, output_indexes, results)
         else:
             alignment = []
 
@@ -266,7 +268,7 @@ class TransformerDecoder(object):
         })
 
     def _remove_empty_subtokens(self, indexes):
-        return self._checkpoint.encoder._remove_empty_subtokens(indexes)
+        return self._checkpoint.encoder.remove_empty_subtokens(indexes)
 
     def _text_encode(self, text):
         encoded, indexes = self._checkpoint.encoder.encode_with_indexes(text)
@@ -276,9 +278,6 @@ class TransformerDecoder(object):
     def _text_decode(self, hyp):
         encoded, indexes = self._checkpoint.decoder.decode_with_indexes(hyp)
         return encoded, indexes
-
-    def _get_expected_decode_length(self, source_lang, target_lang, source_length):
-        return int(source_length * 1.5)
 
     @staticmethod
     def _pack_batch(batch_src, batch_tgt, max_size=None):
@@ -322,69 +321,6 @@ class TransformerDecoder(object):
             # No EOS_ID: return the array as-is.
             return hyp
 
-    @staticmethod
-    def _make_alignment(source_indexes, target_indexes, attention_matrix):
-        attention_matrix = np.asarray(attention_matrix)
-
-        # resulting shape (layers, batch, heads, output, input);
-        # last two dimensions truncated to the size of trg_sub_tokens and src_sub_tokens
-        reduced_attention_matrix = attention_matrix[:, :, :, :len(target_indexes), :len(source_indexes)]
-        # get average over layers and heads; resulting shape (batch, output, input)
-        average_encdec_atts_mats = reduced_attention_matrix.mean((0, 2))
-        # get first batch only; resulting shape (output, input)
-        alignment_matrix = average_encdec_atts_mats[0]
-
-        s2t_best_indexes = (alignment_matrix / alignment_matrix.sum(axis=0)[np.newaxis:]).argmax(0)
-        t2s_best_indexes = (alignment_matrix / alignment_matrix.sum(axis=1)[:, np.newaxis]).argmax(1)
-
-        SymmetrizationStrategy = "INTERSECT" #possible values: "DIRECT", "INVERSE", "INTERSECT", "UNION", "GROW", "GROW_DIAGONAL", "GROW_DIAGONAL_FINAL_AND"
-        threshold = 0.8
-        s_len = alignment_matrix.shape[1]
-        t_len = alignment_matrix.shape[0]
-
-        # select points of the direct alignment (having score >= threshold*best)
-        s2t_sub_alignment = []
-        for t in range(t_len):
-            threshold_value = threshold * alignment_matrix[t, t2s_best_indexes[t]]
-            s2t_sub_alignment += [(s, t) for s in range(s_len) if alignment_matrix[t, s] >= threshold_value]
-
-        # select points of the inverted alignment (having score >= threshold*best)
-        t2s_sub_alignment = []
-        for s in range(s_len):
-            threshold_value = threshold * alignment_matrix[s2t_best_indexes[s], s]
-            t2s_sub_alignment += [(s, t) for t in range(t_len) if alignment_matrix[t, s] >= threshold_value]
-
-        if not s2t_sub_alignment and not t2s_sub_alignment:
-            return []
-
-        # symmetrization on token-based alignment
-        s2t_alignment = sorted(set([(source_indexes[al[0]], target_indexes[al[1]]) for al in s2t_sub_alignment]))
-        t2s_alignment = sorted(set([(source_indexes[al[0]], target_indexes[al[1]]) for al in t2s_sub_alignment]))
-        alignment = TransformerDecoder._symmetrize(s2t_alignment, t2s_alignment,
-                                                   source_indexes[-1] + 1, target_indexes[-1] + 1,
-                                                   SymmetrizationStrategy)
-
-        return alignment
-
-    @staticmethod
-    def _symmetrize(self, s2t, t2s, s_len, t_len, strategy="DIRECT"):
-        if strategy == "DIRECT":
-            return _symmetrize_direct(s2t, t2s, s_len, t_len)
-        elif strategy == "INVERSE":
-            return _symmetrize_inverse(s2t, t2s, s_len, t_len)
-        elif strategy == "UNION":
-            return _symmetrize_union(s2t, t2s, s_len, t_len)
-        elif strategy == "INTERSECT":
-            return _symmetrize_intersect(s2t, t2s, s_len, t_len)
-        elif strategy == "GROW":
-            return _symmetrize_grow(s2t, t2s, s_len, t_len)
-        elif strategy == "GROW_DIAGONAL":
-            return _symmetrize_growDiagonal(s2t, t2s, s_len, t_len)
-        elif strategy == "GROW_DIAGONAL_FINAL_AND":
-            return _symmetrize_growDiagonalFinalAnd(s2t, t2s, s_len, t_len)
-        else:
-            raise ValueError('Invalid Symmetrization Strategy "%s"' % strategy)
-
     def serve_forever(self, stdin, stdout):
         try:
             while True:
@@ -413,170 +349,3 @@ class TransformerDecoder(object):
             stdout.flush()
 
             raise
-
-def _symmetrize_direct(i2o, o2i, ilen, olen):
-    return i2o
-
-def _symmetrize_inverse(i2o, o2i, ilen, olen):
-    return o2i
-
-def _symmetrize_intersect(i2o, o2i, ilen, olen):
-    return sorted(set(i2o) & set(o2i))
-
-def _symmetrize_union(i2o, o2i, ilen, olen):
-    return sorted(set(i2o) | set(o2i))
-
-def neighboring_points_orthogonal((o_index, i_index), e_len, f_len):
-    """
-    A function that returns list of neighboring points in
-    an alignment matrix for a given alignment (pair of indexes)
-    """
-    result = []
-
-    if o_index > 0:
-        result.append((o_index - 1, i_index))
-    if i_index > 0:
-        result.append((o_index, i_index - 1))
-    if o_index < e_len - 1:
-        result.append((o_index + 1, i_index))
-    if i_index < f_len - 1:
-        result.append((o_index, i_index + 1))
-
-    return result
-
-def neighboring_points_diagonal((o_index, i_index), e_len, f_len):
-    """
-    A function that returns list of neighboring points in
-    an alignment matrix for a given alignment (pair of indexes)
-    """
-    result = []
-
-    if o_index > 0 and i_index > 0:
-        result.append((o_index - 1, i_index - 1))
-    if o_index > 0 and i_index < f_len - 1:
-        result.append((o_index - 1, i_index + 1))
-    if o_index < e_len - 1 and i_index > 0:
-        result.append((o_index + 1, i_index - 1))
-    if o_index < e_len - 1 and i_index < f_len - 1:
-        result.append((o_index + 1, i_index + 1))
-
-    return result
-
-def neighboring_points((o_index, i_index), e_len, f_len):
-    """
-    A function that returns list of neighboring points in
-    an alignment matrix for a given alignment (pair of indexes)
-    """
-    result = []
-
-    if o_index > 0:
-        result.append((o_index - 1, i_index))
-    if i_index > 0:
-        result.append((o_index, i_index - 1))
-    if o_index < e_len - 1:
-        result.append((o_index + 1, i_index))
-    if i_index < f_len - 1:
-        result.append((o_index, i_index + 1))
-    if o_index > 0 and i_index > 0:
-        result.append((o_index - 1, i_index - 1))
-    if o_index > 0 and i_index < f_len - 1:
-        result.append((o_index - 1, i_index + 1))
-    if o_index < e_len - 1 and i_index > 0:
-        result.append((o_index + 1, i_index - 1))
-    if o_index < e_len - 1 and i_index < f_len - 1:
-        result.append((o_index + 1, i_index + 1))
-
-    return result
-
-def aligned_o(o, ilen, alignment):
-    """
-    A function that checks if a given 'english' word is aligned
-    to any foreign word in a given foreign sentence
-    """
-    for i in range(ilen):
-        if (i,o) in alignment:
-            return True
-
-    return False
-
-def aligned_i(i, olen, alignment):
-    """
-    A function that checks if a given foreign word is aligned
-    to any 'english' word in a given 'english' sentence
-    """
-    # print "i:%s" % (i)
-    # print "olen:%s" % (olen)
-    # print "len(alignment):%s" % (len(alignment))
-    for o in range(olen):
-        if (i,o) in alignment:
-            return True
-
-    return False
-
-def _symmetrize_grow(i2o, o2i, ilen, olen):
-
-    union = _symmetrize_union(i2o, o2i, ilen, olen)
-    alignment = _symmetrize_intersect(i2o, o2i, ilen, olen)
-
-    new_points_added = True
-    while new_points_added:
-        new_points_added = False
-        for i in range(ilen):
-            for o in range(olen):
-                if (i,o) in alignment:
-                    for (i_new, o_new) in neighboring_points_orthogonal((i, o), ilen, olen):
-                        if not (aligned_o(o_new, ilen, alignment) and aligned_i(i_new, olen, alignment)) \
-                                and ((i_new, o_new) in union):
-                            alignment.append((i_new,o_new))
-                            new_points_added = True
-
-    return alignment
-
-def _symmetrize_growDiagonal(i2o, o2i, ilen, olen):
-
-    union = _symmetrize_union(i2o, o2i, ilen, olen)
-    alignment = _symmetrize_intersect(i2o, o2i, ilen, olen)
-
-    new_points_added = True
-    while new_points_added:
-        new_points_added = False
-        for i in range(ilen):
-            for o in range(olen):
-                if (i,o) in alignment:
-                    for (i_new, o_new) in neighboring_points_orthogonal((i, o), ilen, olen):
-                        if not (aligned_o(o_new, ilen, alignment) and aligned_i(i_new, olen, alignment)) \
-                                and ((i_new, o_new) in union):
-                            alignment.append((i_new,o_new))
-                            new_points_added = True
-
-    while new_points_added:
-        new_points_added = False
-        for i in range(ilen):
-            for o in range(olen):
-                if (i, o) in alignment:
-                    for (i_new, o_new) in neighboring_points_diagonal((i, o), ilen, olen):
-                        if not (aligned_o(o_new, ilen, alignment) and aligned_i(i_new, olen,
-                                                                                alignment)) \
-                                and ((i_new, o_new) in union):
-                            alignment.append((i_new, o_new))
-                            new_points_added = True
-
-    return alignment
-
-def final(alignment, i2o, o2i, ilen, olen):
-    """
-    A function that implements both FINAL(e2f) and FINAL(f2e)
-    steps of GROW-DIAG-FINAL algorithm
-    """
-    for o in range(olen):
-        for i in range(ilen):
-            if not (aligned_o(o, ilen, alignment) and aligned_i(i, olen, alignment))\
-                    and ((i,o) in i2o or (i,o) in o2i):
-                alignment.append((i,o))
-
-def _symmetrize_growDiagonalFinalAnd(i2o, o2i, ilen, olen):
-    alignment = _symmetrize_growDiagonal(i2o, o2i, ilen, olen)
-
-    final(alignment, i2o, o2i, ilen, olen)
-
-    return alignment
