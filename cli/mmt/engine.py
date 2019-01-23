@@ -14,6 +14,10 @@ from cli.libs import osutils, nvidia_smi
 from cli.libs.osutils import ShellError
 from cli.mmt import BilingualCorpus
 
+import warnings
+warnings.filterwarnings('ignore', category=FutureWarning)
+warnings.filterwarnings("ignore", message="numpy.dtype size changed")
+
 __author__ = 'Davide Caroselli'
 
 
@@ -132,7 +136,7 @@ class NeuralDecoder(object):
             raise ValueError('Corpora must be contained in the same folder: ' + str(corpora))
         return roots.pop()
 
-    def prepare_data(self, train_corpora, eval_corpora, output_path, log=None, bpe_symbols=2 ** 15, fromCkpt=None):
+    def prepare_data(self, train_corpora, eval_corpora, output_path, log=None, bpe_symbols=2 ** 15, fromModel=None):
         if log is None:
             log = osutils.DEVNULL
 
@@ -145,13 +149,13 @@ class NeuralDecoder(object):
         shutil.rmtree(data_dir, ignore_errors=True)
         osutils.makedirs(data_dir)
 
-        # if an existing checkpoint is loaded for starting the training (i.e fromCkpt!=None)
+        # if an existing checkpoint is loaded for starting the training (i.e fromModel!=None)
         # copy the subtoken vocabulary associated to the existing checkpoint into the right location,
         # so that the subtoken vocabulary is not re-created from the new training data,
         # and so that it is only exploited to bpe-fy the new data
         # it assumes that the vocabulary is called "model.vcb" and is located in the same directory of the checkpoint
-        if fromCkpt is not None:
-            shutil.copyfile(os.path.join(fromCkpt, 'model.vcb'), os.path.join(data_dir, 'model.vcb'))
+        if fromModel is not None:
+            shutil.copyfile(os.path.join(fromModel, 'model.vcb'), os.path.join(data_dir, 'model.vcb'))
 
         if not os.path.isdir(tmp_dir):
             osutils.makedirs(tmp_dir)
@@ -163,17 +167,17 @@ class NeuralDecoder(object):
         osutils.shell_exec(command, stdout=log, stderr=log, env=env)
 
     def train_model(self, train_dir, output_dir, batch_size=1024, n_train_steps=None, n_eval_steps=1000,
-                    hparams='transformer_base', log=None, fromCkpt=None):
+                    hparams='transformer_base', log=None, fromModel=None):
         if log is None:
             log = osutils.DEVNULL
 
         if not os.path.isdir(output_dir):
             osutils.makedirs(output_dir)
 
-        # if an existing checkpoint is loaded for starting the training (i.e fromCkpt != None)
+        # if an existing checkpoint is loaded for starting the training (i.e fromModel != None)
         # copy the checkpoint files into the right location
-        if fromCkpt is not None:
-            self._copy_and_fix_model(fromCkpt, output_dir, gpus=self._gpus)
+        if fromModel is not None:
+            self._copy_and_fix_model(fromModel, output_dir, gpus=self._gpus)
 
         data_dir = os.path.join(train_dir, 'data')
 
@@ -206,10 +210,8 @@ class NeuralDecoder(object):
             process.kill()
 
     def finalize_model(self, train_dir, model_dir, n_checkpoints=None, gpus=None):
-        import warnings
 
         with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=FutureWarning)
 
             import tensorflow as tf
             import numpy as np
@@ -273,8 +275,8 @@ class NeuralDecoder(object):
 
         logger.info('(finalize_model) Running on device: %s' % device)
 
-        with tf.device(device):
-            tf_vars = [tf.get_variable(n, shape=var_values[n].shape, dtype=var_dtypes[n]) for n in var_values]
+        with tf.device(device), tf.variable_scope("average"):
+            tf_vars = [tf.get_variable(n, shape=var_values[n].shape, dtype=var_dtypes[n], reuse=True) for n in var_values]
             placeholders = [tf.placeholder(v.dtype, shape=v.shape) for v in tf_vars]
             assign_ops = [tf.assign(v, p) for (v, p) in zip(tf_vars, placeholders)]
             tf.Variable(0, name='global_step', trainable=False, dtype=tf.int64)
@@ -311,11 +313,9 @@ class NeuralDecoder(object):
             model_conf.write('%s__%s = %s__%s/\n' %
                              (self.source_lang, self.target_lang, self.source_lang, self.target_lang))
 
-    def _copy_and_fix_model(self, fromCkpt, output_dir, gpus=None):
-        import warnings
+    def _copy_and_fix_model(self, fromModel, output_dir, gpus=None):
 
         with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=FutureWarning)
 
             import tensorflow as tf
             import numpy as np
@@ -324,7 +324,7 @@ class NeuralDecoder(object):
             os.environ['TF_CPP_MIN_LOG_LEVEL'] = '9999'
 
         # get the checkpoint to load
-        wildcard = fromCkpt + "/model.ckpt*.meta"
+        wildcard = fromModel + "/model.ckpt*.meta"
         for file in glob.glob(wildcard):
             if os.path.isfile(file):
                 checkpoint = os.path.splitext(file)[0]
@@ -370,7 +370,7 @@ class NeuralDecoder(object):
         saver.save(sess, os.path.join(output_dir, 'model.ckpt'), global_step=0)
 
         # Copy auxiliary files
-        shutil.copyfile(os.path.join(fromCkpt, 'hparams.json'), os.path.join(output_dir, 'hparams.json'))
+        shutil.copyfile(os.path.join(fromModel, 'hparams.json'), os.path.join(output_dir, 'hparams.json'))
 
 
 class Engine(object):
@@ -595,7 +595,7 @@ class EngineBuilder:
 
     def __init__(self, engine_name, source_lang, target_lang, roots, gpus,
                  debug=False, steps=None, split_train=True, validation_path=None, batch_size=1024,
-                 n_train_steps=None, n_eval_steps=1000, hparams='transformer_base', bpe_symbols=2 ** 15, fromCkpt=None):
+                 n_train_steps=None, n_eval_steps=1000, hparams='transformer_base', bpe_symbols=2 ** 15, fromModel=None):
         self.source_lang = source_lang
         self.target_lang = target_lang
         self.roots = roots
@@ -610,7 +610,7 @@ class EngineBuilder:
         self._n_train_steps = n_train_steps
         self._n_eval_steps = n_eval_steps
         self._hparams = hparams
-        self._fromCkpt = fromCkpt
+        self._fromModel = fromModel
 
         self._temp_dir = None
 
@@ -835,7 +835,7 @@ class EngineBuilder:
             eval_corpora = args.processed_valid_corpora or BilingualCorpus.list(self.source_lang, self.target_lang,
                                                                                 self._validation_path)
             self._decoder.prepare_data(train_corpora, eval_corpora, args.prepared_data_path,
-                                       log=log, bpe_symbols=self._bpe_symbols, fromCkpt=self._fromCkpt)
+                                       log=log, bpe_symbols=self._bpe_symbols, fromModel=self._fromModel)
 
     @Step(6, 'Training model')
     def _train_model(self, args, skip=False, log=None):
@@ -845,7 +845,7 @@ class EngineBuilder:
             args.train_model_path = self._get_tempdir('neural_model')
             self._decoder.train_model(args.prepared_data_path, args.train_model_path, log=log,
                                       batch_size=self._batch_size, hparams=self._hparams,
-                                      n_train_steps=self._n_train_steps, n_eval_steps=self._n_eval_steps, fromCkpt=self._fromCkpt)
+                                      n_train_steps=self._n_train_steps, n_eval_steps=self._n_eval_steps, fromModel=self._fromModel)
 
     @Step(7, 'Pack model')
     def _pack_model(self, args, skip=False):
