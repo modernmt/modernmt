@@ -324,7 +324,7 @@ class NeuralDecoder(object):
             os.environ['TF_CPP_MIN_LOG_LEVEL'] = '9999'
 
         # get the checkpoint to load
-        wildcard = fromModel + "/model.ckpt*.meta"
+        wildcard = fromModel + "/*.meta"
         for file in glob.glob(wildcard):
             if os.path.isfile(file):
                 checkpoint = os.path.splitext(file)[0]
