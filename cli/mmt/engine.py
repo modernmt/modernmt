@@ -276,7 +276,7 @@ class NeuralDecoder(object):
         logger.info('(finalize_model) Running on device: %s' % device)
 
         with tf.device(device), tf.variable_scope("average"):
-            tf_vars = [tf.get_variable(n, shape=var_values[n].shape, dtype=var_dtypes[n], reuse=True) for n in var_values]
+            tf_vars = [tf.get_variable(n, shape=var_values[n].shape, dtype=var_dtypes[n]) for n in var_values]
             placeholders = [tf.placeholder(v.dtype, shape=v.shape) for v in tf_vars]
             assign_ops = [tf.assign(v, p) for (v, p) in zip(tf_vars, placeholders)]
             tf.Variable(0, name='global_step', trainable=False, dtype=tf.int64)
