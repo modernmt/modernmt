@@ -89,12 +89,19 @@ Number     = ((\-|\+)?[0-9]+)?([\.,][0-9]+)*
 /* Period in middle of a sentence */
 \.{_}[:lowercase:]                                                                                                       { yypushback(2); return PROTECT_ALL; }
 
-/* Placeholders */
+/* Placeholders and separators */
 \_\_+                                                                                                                    { return WORD; }
 \.\.+                                                                                                                    { return WORD; }
+\|\|+                                                                                                                    { return WORD; }
 
 /* Names with apostrophe, like "O'Malley" */
 {_}[A-Z]'[A-Z]{Letter}+                                                                                                  { return PROTECT; }
 
 /* Variable-like tokens such as ${dnt_1} */
-\$\{[a-zA-Z0-9_]+\}                                                                                                      { return PROTECT; }
+[\$\%]\{[a-zA-Z0-9_]+\}                                                                                                  { return PROTECT; }
+
+/**
+ * String formatting variables (reference: https://developer.android.com/reference/java/util/Formatter)
+ * %[argument_index$][flags][width][.precision]conversion
+ */
+\%([0-9]+\$)?([\-#+0,\(])?([0-9]+)?(\.[0-9]+)?([bBhHsScCdoxXeEfgGaA\%n]|[t|T][BbhAaCYyjmdeRTrDFc])[^a-zA-Z]              { yypushback(1); return WORD; }
