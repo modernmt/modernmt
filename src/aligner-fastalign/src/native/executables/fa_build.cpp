@@ -32,15 +32,16 @@ string model_path;
 Options builderOptions;
 
 struct option options[] = {
-        {"source",     required_argument, NULL, 0},
-        {"target",     required_argument, NULL, 0},
-        {"input",      required_argument, NULL, 0},
-        {"model",      required_argument, NULL, 0},
-        {"threads",    optional_argument, NULL, 0},
-        {"iterations", optional_argument, NULL, 0},
-        {"pruning",    optional_argument, NULL, 0},
-        {"length",     optional_argument, NULL, 0},
-        {0, 0, 0,                               0}
+        {"source",         required_argument, NULL, 0},
+        {"target",         required_argument, NULL, 0},
+        {"input",          required_argument, NULL, 0},
+        {"model",          required_argument, NULL, 0},
+        {"threads",        optional_argument, NULL, 0},
+        {"iterations",     optional_argument, NULL, 0},
+        {"pruning",        optional_argument, NULL, 0},
+        {"length",         optional_argument, NULL, 0},
+        {"case_sensitive", optional_argument, NULL, 0},
+        {0, 0, 0,                                   0}
 };
 
 void help(const char *name) {
@@ -52,13 +53,14 @@ void help(const char *name) {
          << "  -I: number of iterations in EM training (default = 5)\n"
          << "  -n: Number of threads. (default = number of CPUs)\n"
          << "  -p: Pruning threshold. (default = 1.e-20)\n"
-         << "  -l: Max sentence length. (default = 80)\n";
+         << "  -l: Max sentence length. (default = 80)\n"
+         << "  -c: create a case-insensitive model (default is case sensitive)\n";
 }
 
 bool InitCommandLine(int argc, char **argv) {
     while (true) {
         int oi;
-        int c = getopt_long(argc, argv, "s:t:i:m:I:n:p:l:", options, &oi);
+        int c = getopt_long(argc, argv, "s:t:i:m:I:n:p:l:c", options, &oi);
         if (c == -1) break;
 
         switch (c) {
@@ -85,6 +87,9 @@ bool InitCommandLine(int argc, char **argv) {
                 break;
             case 'l':
                 builderOptions.max_line_length = static_cast<size_t>(atoi(optarg));
+                break;
+            case 'c':
+                builderOptions.case_sensitive = false;
                 break;
             default:
                 return false;

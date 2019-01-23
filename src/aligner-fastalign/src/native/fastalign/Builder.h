@@ -15,6 +15,7 @@ namespace mmt {
     namespace fastalign {
 
         struct Options {
+            bool case_sensitive = true;
             int iterations = 5;
             bool favor_diagonal = true;
             double prob_align_null = 0.08;
@@ -71,6 +72,7 @@ namespace mmt {
             void Build(const std::vector<Corpus> &corpora, const std::string &path);
 
         private:
+            const bool case_sensitive;
             const double initial_diagonal_tension;
             const int iterations;
             const bool favor_diagonal;
