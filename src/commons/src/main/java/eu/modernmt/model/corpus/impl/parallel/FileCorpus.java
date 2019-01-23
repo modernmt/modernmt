@@ -56,6 +56,10 @@ public class FileCorpus implements Corpus {
         this.language = (language == null ? getLangFromFilename(file.getFilename()) : language);
     }
 
+    public FileProxy getFile() {
+        return file;
+    }
+
     @Override
     public String getName() {
         return name;

@@ -1,18 +1,17 @@
 package eu.modernmt.cleaning.filters;
 
-import eu.modernmt.cleaning.Filter;
+import eu.modernmt.cleaning.MultilingualCorpusFilter;
 import eu.modernmt.cleaning.filters.util.Sequence;
 import eu.modernmt.io.WordCounter;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
-import java.io.IOException;
 import java.util.HashMap;
 
 /**
  * Created by davide on 25/08/17.
  */
-public class SentenceLengthFilter implements Filter {
+public class SentenceLengthFilter implements MultilingualCorpusFilter {
 
     public static final int MIN_CORPUS_LINES = 1000;
     public static final int DEFAULT_MAX_LINE_LENGTH = 1024;
@@ -38,7 +37,7 @@ public class SentenceLengthFilter implements Filter {
             }
 
             @Override
-            public void onPair(MultilingualCorpus corpus, MultilingualCorpus.StringPair pair, int index) throws IOException {
+            public void onPair(MultilingualCorpus.StringPair pair, int index) {
                 int sourceLength = pair.source.length();
                 int targetLength = pair.target.length();
 
@@ -58,7 +57,7 @@ public class SentenceLengthFilter implements Filter {
     }
 
     @Override
-    public boolean accept(MultilingualCorpus.StringPair pair, int index) throws IOException {
+    public boolean accept(MultilingualCorpus.StringPair pair, int index) {
         int sourceLength = pair.source.length();
         int targetLength = pair.target.length();
 

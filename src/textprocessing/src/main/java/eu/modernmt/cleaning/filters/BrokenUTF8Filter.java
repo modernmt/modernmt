@@ -6,11 +6,9 @@ import eu.modernmt.lang.Language;
 import java.util.regex.Pattern;
 
 /**
- * Created by davide on 10/11/17.
+ * Created by davide on 14/03/16.
  */
-public class NumericTextFilter implements CorpusFilter {
-
-    private static final Pattern REGEX = Pattern.compile("[0-9\\s]+");
+public class BrokenUTF8Filter implements CorpusFilter {
 
     @Override
     public Initializer getInitializer(Language language) {
@@ -19,11 +17,12 @@ public class NumericTextFilter implements CorpusFilter {
 
     @Override
     public boolean accept(String line, int index) {
-        return !REGEX.matcher(line).matches();
+        return line.indexOf('\uFFFD') == -1 && line.indexOf('\uFFFE') == -1 && line.indexOf('\uFFFF') == -1;
     }
 
     @Override
     public void clear() {
         // Nothing to do
     }
+
 }

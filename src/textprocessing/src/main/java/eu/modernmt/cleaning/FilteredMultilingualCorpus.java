@@ -6,19 +6,32 @@ import eu.modernmt.model.corpus.MultilingualCorpusWrapper;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
-import java.util.List;
 
-/**
- * Created by davide on 14/03/16.
- */
 public class FilteredMultilingualCorpus extends BaseMultilingualCorpus implements MultilingualCorpusWrapper {
 
     private final MultilingualCorpus corpus;
-    private final FilterEngine filter;
+    private final MultilingualCorpusFilter filter;
+    private final CorpusNormalizer normalizer;
 
-    public FilteredMultilingualCorpus(MultilingualCorpus corpus, FilterEngine filter) {
+    public FilteredMultilingualCorpus(MultilingualCorpus corpus, CorpusNormalizer normalizer, MultilingualCorpusFilter filter) {
         this.corpus = corpus;
+        this.normalizer = normalizer;
         this.filter = filter;
+    }
+
+    @Override
+    public MultilingualCorpus getWrappedCorpus() {
+        return corpus;
+    }
+
+    @Override
+    public String getName() {
+        return corpus.getName();
+    }
+
+    @Override
+    public MultilingualLineWriter getContentWriter(boolean append) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -35,7 +48,11 @@ public class FilteredMultilingualCorpus extends BaseMultilingualCorpus implement
                 StringPair next;
 
                 while ((next = reader.read()) != null) {
-                    filter.normalize(next, index);
+                    if (normalizer != null) {
+                        next.source = normalizer.normalize(next.source);
+                        next.target = normalizer.normalize(next.target);
+                    }
+
                     boolean accept = filter.accept(next, index);
 
                     index++;
@@ -56,14 +73,12 @@ public class FilteredMultilingualCorpus extends BaseMultilingualCorpus implement
     }
 
     private void initialize() throws IOException {
-        List<Filter.Initializer> initializers = this.filter.getInitializers();
+        MultilingualCorpusFilter.Initializer initializer = filter.getInitializer();
 
-        if (initializers.size() > 0) {
-            for (Filter.Initializer initializer : initializers)
-                initializer.onBegin();
+        if (initializer != null) {
+            initializer.onBegin();
 
             MultilingualLineReader reader = null;
-
             try {
                 reader = corpus.getContentReader();
 
@@ -71,39 +86,20 @@ public class FilteredMultilingualCorpus extends BaseMultilingualCorpus implement
                 StringPair pair;
 
                 while ((pair = reader.read()) != null) {
-                    filter.normalize(pair, index);
+                    if (normalizer != null) {
+                        pair.source = normalizer.normalize(pair.source);
+                        pair.target = normalizer.normalize(pair.target);
+                    }
 
-                    for (Filter.Initializer initializer : initializers)
-                        initializer.onPair(corpus, pair, index);
-
+                    initializer.onPair(pair, index);
                     index++;
                 }
             } finally {
                 IOUtils.closeQuietly(reader);
             }
 
-            for (Filter.Initializer initializer : initializers)
-                initializer.onEnd();
+            initializer.onEnd();
         }
     }
 
-    @Override
-    public String getName() {
-        return corpus.getName();
-    }
-
-    @Override
-    public MultilingualLineWriter getContentWriter(boolean append) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public MultilingualCorpus getWrappedCorpus() {
-        return corpus;
-    }
-
-    @Override
-    public String toString() {
-        return corpus.toString();
-    }
 }

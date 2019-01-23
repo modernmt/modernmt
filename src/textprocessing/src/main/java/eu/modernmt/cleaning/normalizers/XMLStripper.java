@@ -1,8 +1,7 @@
 package eu.modernmt.cleaning.normalizers;
 
-import eu.modernmt.cleaning.Normalizer;
+import eu.modernmt.cleaning.CorpusNormalizer;
 import eu.modernmt.model.Tag;
-import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.processing.xml.XMLCharacterEntity;
 
 import java.util.regex.Pattern;
@@ -10,7 +9,7 @@ import java.util.regex.Pattern;
 /**
  * Created by davide on 17/11/16.
  */
-public class XMLStripper implements Normalizer {
+public class XMLStripper implements CorpusNormalizer {
 
     public static final Pattern DoubleEntityPattern = Pattern.compile("&amp;((#[0-9]{1,4})|(#x[0-9a-fA-F]{1,4})|([a-zA-Z]+));");
 
@@ -26,7 +25,7 @@ public class XMLStripper implements Normalizer {
         return XMLCharacterEntity.EntityPattern.matcher(line).find();
     }
 
-    private static String normalize(String line) {
+    private static String strip(String line) {
         while (true) {
             // if it has valid XML then we stop: if you put actual XML all subsequent entities should be intentional
             String plain = stripXML(line);
@@ -48,9 +47,8 @@ public class XMLStripper implements Normalizer {
     }
 
     @Override
-    public void normalize(MultilingualCorpus.StringPair pair, int index) {
-        pair.source = normalize(pair.source).trim();
-        pair.target = normalize(pair.target).trim();
+    public String normalize(String line) {
+        return strip(line).trim();
     }
 
 }

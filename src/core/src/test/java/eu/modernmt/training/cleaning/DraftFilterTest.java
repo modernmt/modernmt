@@ -1,6 +1,5 @@
 package eu.modernmt.training.cleaning;
 
-import eu.modernmt.cleaning.FilterEngine;
 import eu.modernmt.cleaning.FilteredMultilingualCorpus;
 import eu.modernmt.cleaning.filters.draft.DraftFilter;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -17,10 +16,7 @@ import static org.junit.Assert.assertEquals;
 public class DraftFilterTest {
 
     private static FilteredMultilingualCorpus wrap(MockMultilingualCorpus corpus) {
-        FilterEngine.Builder builder = new FilterEngine.Builder();
-        builder.add(new DraftFilter());
-
-        return new FilteredMultilingualCorpus(corpus, builder.build());
+        return new FilteredMultilingualCorpus(corpus, null, new DraftFilter());
     }
 
     @Test

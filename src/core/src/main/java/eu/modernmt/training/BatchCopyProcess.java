@@ -1,11 +1,12 @@
 package eu.modernmt.training;
 
 import eu.modernmt.io.IOCorporaUtils;
+import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.*;
 
 /**
@@ -17,11 +18,14 @@ public class BatchCopyProcess {
 
         MultilingualCorpus getOutput(MultilingualCorpus corpus);
 
+        Corpus getOutput(Corpus corpus);
+
     }
 
     private static final int MAX_IO_THREADS = 10;
 
-    private ArrayList<MultilingualCorpus> corpora = new ArrayList<>();
+    private ArrayList<MultilingualCorpus> multilingualCorpora = new ArrayList<>();
+    private ArrayList<Corpus> monolingualCorpora = new ArrayList<>();
 
     private final OutputCorpusFactory outputFactory;
 
@@ -32,11 +36,11 @@ public class BatchCopyProcess {
     }
 
     public void add(MultilingualCorpus corpus) {
-        this.corpora.add(corpus);
+        this.multilingualCorpora.add(corpus);
     }
 
-    public void addAll(Collection<? extends MultilingualCorpus> corpora) {
-        this.corpora.addAll(corpora);
+    public void add(Corpus corpus) {
+        this.monolingualCorpora.add(corpus);
     }
 
     public int getIoThreads() {
@@ -51,28 +55,36 @@ public class BatchCopyProcess {
     }
 
     public void run() throws IOException {
-        if (this.corpora.isEmpty())
+        if (this.multilingualCorpora.isEmpty() && this.monolingualCorpora.isEmpty())
             return;
 
-        int totalCorporaCount = this.corpora.size();
+        int totalCorporaCount = this.multilingualCorpora.size() + this.monolingualCorpora.size();
         int ioThreads = Math.min(Math.min(this.ioThreads, MAX_IO_THREADS), totalCorporaCount);
 
         ExecutorService executor = Executors.newFixedThreadPool(ioThreads);
-        Future<?>[] futures = new Future[totalCorporaCount];
+        List<Future<?>> futures = new ArrayList<>(totalCorporaCount);
 
-        // Enqueue bilingual corpora tasks
-        for (int i = 0; i < totalCorporaCount; i++) {
-            final MultilingualCorpus corpus = corpora.get(i);
+        // Enqueue multilingual corpora tasks
+        for (MultilingualCorpus corpus : multilingualCorpora) {
             final MultilingualCorpus output = outputFactory.getOutput(corpus);
-
-            futures[i] = executor.submit((Callable<Void>) () -> {
+            futures.add(executor.submit(() -> {
                 IOCorporaUtils.copy(corpus, output);
                 return null;
-            });
+            }));
+        }
+
+        // Enqueue monolingual corpora tasks
+        for (Corpus corpus : monolingualCorpora) {
+            final Corpus output = outputFactory.getOutput(corpus);
+            futures.add(executor.submit(() -> {
+                IOCorporaUtils.copy(corpus, output);
+                return null;
+            }));
         }
 
         try {
-            for (Future<?> future : futures) future.get();
+            for (Future<?> future : futures)
+                future.get();
         } catch (ExecutionException e) {
             Throwable cause = e.getCause();
 

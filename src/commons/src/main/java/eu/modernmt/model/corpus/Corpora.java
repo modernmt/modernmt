@@ -31,6 +31,14 @@ public class Corpora {
         return corpus;
     }
 
+    public static Corpus unwrap(Corpus corpus) {
+        while (corpus instanceof CorpusWrapper) {
+            corpus = ((CorpusWrapper) corpus).getWrappedCorpus();
+        }
+
+        return corpus;
+    }
+
     public static MultilingualCorpus rename(MultilingualCorpus corpus, File folder) {
         return rename(corpus, folder, corpus.getName());
     }
@@ -46,6 +54,16 @@ public class Corpora {
         } else {
             throw new IllegalArgumentException("Unknown multilingual corpus: " + corpus.getClass().getSimpleName());
         }
+    }
+
+    public static Corpus rename(Corpus corpus, File folder) {
+        return rename(corpus, folder, corpus.getName());
+    }
+
+    public static Corpus rename(Corpus corpus, File folder, String name) {
+        Language language = corpus.getLanguage();
+        File file = new File(folder, name + '.' + language.toLanguageTag());
+        return new FileCorpus(file, name, language);
     }
 
     public static long fileSize(MultilingualCorpus corpus) {
@@ -67,6 +85,17 @@ public class Corpora {
             return ((FileProxy.NativeFileProxy) proxy).getFile().length();
         else
             return -1;
+    }
+
+    public static long fileSize(Corpus corpus) {
+        corpus = unwrap(corpus);
+
+        if (corpus instanceof FileCorpus) {
+            FileCorpus fileCorpus = (FileCorpus) corpus;
+            return fileSize(fileCorpus.getFile());
+        } else {
+            throw new IllegalArgumentException("Unknown corpus: " + corpus.getClass().getSimpleName());
+        }
     }
 
     public static Map<LanguagePair, Integer> countLines(MultilingualCorpus corpus) throws IOException {
@@ -112,7 +141,7 @@ public class Corpora {
         return corpora;
     }
 
-    public static List<MultilingualCorpus> list(LanguagePair language, File... roots) throws IOException {
+    public static List<MultilingualCorpus> list(LanguagePair language, File... roots) {
         ArrayList<MultilingualCorpus> output = new ArrayList<>();
 
         for (File directory : roots) {
