@@ -67,7 +67,7 @@ class ModernMTSubwordTextEncoder(SubwordTextEncoder):
     def encode(self, raw_text):
         return self._tokens_to_subtoken_ids(text_encoder.native_to_unicode(raw_text).split(u' '))
 
-    def _remove_empty_subtokens(self, indexes):
+    def remove_empty_subtokens(self, indexes):
         cleaned = []
         final = True
         for idx in indexes:
