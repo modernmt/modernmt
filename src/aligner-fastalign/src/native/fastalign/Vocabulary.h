@@ -30,6 +30,10 @@ namespace mmt {
 
             void Store(const std::string &filename) const;
 
+            inline const size_t Size() const {
+                return vocab.size() + 2;
+            }
+
             inline const word_t Get(const std::string &term) const {
                 auto result = vocab.find(case_sensitive ? term : boost::locale::to_lower(term, locale));
                 return result == vocab.end() ? kUnknownWord : result->second;
