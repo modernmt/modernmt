@@ -17,19 +17,17 @@ public class ControlCharsRemover extends TextProcessor<String, String> {
     }
 
     public static String strip(String string) {
-        char[] buffer = string.toCharArray();
+        StringBuilder filtered = new StringBuilder(string.length());
 
-        int newSize = 0;
+        string.codePoints().filter(
+                code -> !(code < 0x09) &&
+                        !(0x0d < code && code < 0x20) &&
+                        !(0xe000 <= code && code <= 0xf8ff) &&
+                        !(0xf0000 <= code && code <= 0xffffd) &&
+                        !(0x100000 <= code && code <= 0x10fffd)
+        ).forEach(filtered::appendCodePoint);
 
-        for (int i = 0; i < buffer.length; i++) {
-            char c = buffer[i];
-            if ((0x09 <= c && c <= 0x0D) || (c >= 0x0020)) {
-                buffer[newSize] = c;
-                newSize++;
-            }
-        }
-
-        return new String(buffer, 0, newSize);
+        return filtered.toString();
     }
 
     @Override

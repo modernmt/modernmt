@@ -11,6 +11,8 @@ using namespace std;
 using namespace mmt;
 using namespace mmt::fastalign;
 
+const std::string kVocabularyHeader(" --- vocabulary header: ");
+
 bool __terms_compare(const pair<string, size_t> &a, const pair<string, size_t> &b) {
     return b.second < a.second;
 }
@@ -53,7 +55,11 @@ inline void PruneTerms(unordered_map<string, size_t> &terms, double threshold) {
     }
 }
 
-const Vocabulary *Vocabulary::FromCorpora(const vector<Corpus> &corpora, size_t maxLineLength, double threshold) {
+const Vocabulary *Vocabulary::FromCorpora(const vector<Corpus> &corpora,
+                                          size_t maxLineLength, bool case_sensitive, double threshold) {
+    boost::locale::generator gen;
+    std::locale locale = gen("C.UTF-8");
+
     // For model efficiency all source words have the lowest id possible
     unordered_map<string, size_t> src_terms;
     unordered_map<string, size_t> trg_terms;
@@ -65,10 +71,10 @@ const Vocabulary *Vocabulary::FromCorpora(const vector<Corpus> &corpora, size_t 
 
         while (reader.Read(src, trg)) {
             for (auto w = src.begin(); w != src.end(); ++w)
-                src_terms[*w] += 1;
+                src_terms[case_sensitive ? *w : boost::locale::to_lower(*w, locale)] += 1;
 
             for (auto w = trg.begin(); w != trg.end(); ++w)
-                trg_terms[*w] += 1;
+                trg_terms[case_sensitive ? *w : boost::locale::to_lower(*w, locale)] += 1;
         }
     }
 
@@ -76,11 +82,11 @@ const Vocabulary *Vocabulary::FromCorpora(const vector<Corpus> &corpora, size_t 
         PruneTerms(src_terms, threshold);
         PruneTerms(trg_terms, threshold);
     }
-    
+
     for (auto term = src_terms.begin(); term != src_terms.end(); ++term)
         trg_terms.erase(term->first);
 
-    Vocabulary *result = new Vocabulary();
+    Vocabulary *result = new Vocabulary(case_sensitive);
     result->terms.reserve(src_terms.size() + trg_terms.size());
 
     for (auto term = src_terms.begin(); term != src_terms.end(); ++term)
@@ -95,10 +101,26 @@ const Vocabulary *Vocabulary::FromCorpora(const vector<Corpus> &corpora, size_t 
 }
 
 Vocabulary::Vocabulary(const std::string &filename, bool direct, bool reverse) {
+    boost::locale::generator gen;
+    locale = gen("C.UTF-8");
+
     ifstream input(filename);
+
+    case_sensitive = true;
+    bool header_line = true;
 
     word_t index = 2;
     for (std::string line; getline(input, line); ++index) {
+        if (header_line) {
+            header_line = false;
+
+            if (line.find(kVocabularyHeader) == 0) {
+                case_sensitive = (line[kVocabularyHeader.length()] == '1');
+                index--;
+                continue;
+            }
+        }
+
         if (direct)
             vocab[line] = index;
 
@@ -109,6 +131,8 @@ Vocabulary::Vocabulary(const std::string &filename, bool direct, bool reverse) {
 
 void Vocabulary::Store(const std::string &filename) const {
     ofstream output(filename);
+
+    output << kVocabularyHeader << (case_sensitive ? '1' : '0') << '\n';
 
     for (auto term = terms.begin(); term != terms.end(); ++term)
         output << (*term) << '\n';

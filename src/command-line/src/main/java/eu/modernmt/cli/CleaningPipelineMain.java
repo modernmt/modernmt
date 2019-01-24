@@ -7,8 +7,11 @@ import eu.modernmt.facade.ModernMT;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.Corpora;
+import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.training.BatchCopyProcess;
 import org.apache.commons.cli.*;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.Level;
 
 import java.io.File;
@@ -20,7 +23,7 @@ import java.util.List;
 public class CleaningPipelineMain {
 
     public enum Filter {
-        NORMALIZE, PUNCTUATION, ODD_SENTENCES, DRAFTS, SENTENCE_LENGTH, VERBATIM, NUMERIC, LANGUAGE
+        ERASE_XML, PUNCTUATION, ODD_SENTENCES, DRAFTS, SENTENCE_LENGTH, VERBATIM, NUMERIC, LANGUAGE, BROKEN_UTF8
     }
 
     private static class Args {
@@ -44,7 +47,8 @@ public class CleaningPipelineMain {
             cliOptions.addOption(filters);
         }
 
-        public final LanguagePair language;
+        public final Language source;
+        public final Language target;
         public final File[] inputRoots;
         public final File outputRoot;
         public final FileFormat outputFormat;
@@ -54,9 +58,8 @@ public class CleaningPipelineMain {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
-            Language sourceLanguage = Language.fromString(cli.getOptionValue('s'));
-            Language targetLanguage = Language.fromString(cli.getOptionValue('t'));
-            language = new LanguagePair(sourceLanguage, targetLanguage);
+            source = Language.fromString(cli.getOptionValue('s'));
+            target = cli.hasOption('t') ? Language.fromString(cli.getOptionValue('t')) : null;
 
             String[] roots = cli.getOptionValues("input");
             inputRoots = new File[roots.length];
@@ -79,26 +82,21 @@ public class CleaningPipelineMain {
 
     }
 
-    public static void main(String[] _args) throws Throwable {
-        Log4jConfiguration.setup(Level.INFO);
-
-        Args args = new Args(_args);
-
-        List<MultilingualCorpus> corpora = Corpora.list(args.language, args.inputRoots);
-        if (corpora.isEmpty())
-            throw new ParseException("Input path does not contains valid bilingual data");
-
+    private static CorporaCleaning.Options getOptions(Filter[] filters) {
         CorporaCleaning.Options options;
 
-        if (args.filters == null) {
-            options = CorporaCleaning.Options.defaultOptions();
+        if (filters == null) {
+            options = CorporaCleaning.Options.defaultOptionsForTraining();
         } else {
             options = new CorporaCleaning.Options();
 
-            for (Filter filter : args.filters) {
+            for (Filter filter : filters) {
                 switch (filter) {
-                    case NORMALIZE:
-                        options.normalize = true;
+                    case ERASE_XML:
+                        options.eraseXml = true;
+                        break;
+                    case BROKEN_UTF8:
+                        options.filterBrokenUTF8 = true;
                         break;
                     case PUNCTUATION:
                         options.filterByPunctuation = true;
@@ -125,11 +123,47 @@ public class CleaningPipelineMain {
             }
         }
 
-        if (args.outputFormat == null) {
-            ModernMT.training.clean(corpora, args.outputRoot, options);
+        return options;
+    }
+
+    public static void main(String[] _args) throws Throwable {
+        Log4jConfiguration.setup(Level.INFO);
+
+        Args args = new Args(_args);
+        CorporaCleaning.Options options = getOptions(args.filters);
+
+        FileUtils.deleteDirectory(args.outputRoot);
+        FileUtils.forceMkdir(args.outputRoot);
+
+        if (args.target == null) {
+            List<Corpus> corpora = Corpora.list(args.source, args.inputRoots);
+            if (corpora.isEmpty())
+                throw new ParseException("Input path does not contains valid monolingual data");
+
+            ModernMT.training.cleanMonolingual(corpora, args.outputRoot, options);
         } else {
-            ModernMT.training.clean(corpora, args.outputRoot, options,
-                    corpus -> args.outputFormat.rename(args.language.source, args.language.target, corpus, args.outputRoot));
+            LanguagePair language = new LanguagePair(args.source, args.target);
+            List<MultilingualCorpus> corpora = Corpora.list(language, args.inputRoots);
+            if (corpora.isEmpty())
+                throw new ParseException("Input path does not contains valid bilingual data");
+
+            if (args.outputFormat == null) {
+                ModernMT.training.clean(corpora, args.outputRoot, options);
+            } else {
+                ModernMT.training.clean(corpora, options, new BatchCopyProcess.OutputCorpusFactory() {
+
+                    @Override
+                    public MultilingualCorpus getOutput(MultilingualCorpus corpus) {
+                        return args.outputFormat.rename(args.source, args.target, corpus, args.outputRoot);
+                    }
+
+                    @Override
+                    public Corpus getOutput(Corpus corpus) {
+                        throw new UnsupportedOperationException();
+                    }
+
+                });
+            }
         }
     }
 

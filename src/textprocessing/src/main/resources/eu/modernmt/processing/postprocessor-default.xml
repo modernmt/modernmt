@@ -3,9 +3,6 @@
         eu.modernmt.processing.WordTextGuessingProcessor
     </processor>
 
-    <!-- Detokenization -->
-    <processor>eu.modernmt.processing.detokenizer.jflex.KnownEntitiesDetokenizer</processor>
-
     <processorGroup>
         <!-- Language specific -->
         <processor target="en fr it de th">

@@ -72,11 +72,10 @@ public class XMLEntityEscaper extends TextProcessor<SentenceBuilder, SentenceBui
                 stringIndex = end;
 
             String entity = m.group();
-            Character c = XMLCharacterEntity.unescape(entity);
+            String c = XMLCharacterEntity.unescape(entity);
 
-            if (c != null) {
-                editor.replace(start, end - start, c.toString());
-            }
+            if (c != null)
+                editor.replace(start, end - start, c);
         }
         editor.commit();
         return builder;

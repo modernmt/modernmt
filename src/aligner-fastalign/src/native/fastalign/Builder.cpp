@@ -146,7 +146,8 @@ public:
     }
 };
 
-Builder::Builder(Options options) : initial_diagonal_tension(options.initial_diagonal_tension),
+Builder::Builder(Options options) : case_sensitive(options.case_sensitive),
+                                    initial_diagonal_tension(options.initial_diagonal_tension),
                                     iterations(options.iterations),
                                     favor_diagonal(options.favor_diagonal),
                                     prob_align_null(options.prob_align_null),
@@ -246,7 +247,7 @@ void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const std::vec
 
 void Builder::Build(const std::vector<Corpus> &corpora, const string &path) {
     if (listener) listener->VocabularyBuildBegin();
-    const Vocabulary *vocab = Vocabulary::FromCorpora(corpora, max_length, vocabulary_threshold);
+    const Vocabulary *vocab = Vocabulary::FromCorpora(corpora, max_length, case_sensitive, vocabulary_threshold);
     if (listener) listener->VocabularyBuildEnd();
 
     BuilderModel *forward = (BuilderModel *) BuildModel(vocab, corpora, true);

@@ -1,14 +1,12 @@
 package eu.modernmt.cleaning.filters;
 
-import eu.modernmt.cleaning.Filter;
+import eu.modernmt.cleaning.MultilingualCorpusFilter;
 import eu.modernmt.model.corpus.MultilingualCorpus;
-
-import java.io.IOException;
 
 /**
  * Created by davide on 10/11/17.
  */
-public class VerbatimTranslationFilter implements Filter {
+public class VerbatimTranslationFilter implements MultilingualCorpusFilter {
 
     @Override
     public Initializer getInitializer() {
@@ -16,7 +14,7 @@ public class VerbatimTranslationFilter implements Filter {
     }
 
     @Override
-    public boolean accept(MultilingualCorpus.StringPair pair, int index) throws IOException {
+    public boolean accept(MultilingualCorpus.StringPair pair, int index) {
         String source = normalize(pair.source);
         String target = normalize(pair.target);
 

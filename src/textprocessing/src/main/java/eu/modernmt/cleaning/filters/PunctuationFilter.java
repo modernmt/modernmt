@@ -1,34 +1,30 @@
 package eu.modernmt.cleaning.filters;
 
-import eu.modernmt.cleaning.Filter;
-import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.cleaning.CorpusFilter;
+import eu.modernmt.lang.Language;
 
-import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Created by davide on 28/08/17.
  */
-public class PunctuationFilter implements Filter {
+public class PunctuationFilter implements CorpusFilter {
 
     private static final Pattern PLACEHOLDER_REGEX = Pattern.compile("(_+)|(\\s+)|(\\.+)|(\\*+)|(…+)|(-+)");
     private static final Pattern LETTER_REGEX = Pattern.compile("[\\p{Digit}\\p{L}]");
 
     @Override
-    public Initializer getInitializer() {
+    public Initializer getInitializer(Language language) {
         return null;
     }
 
     @Override
-    public boolean accept(MultilingualCorpus.StringPair pair, int index) throws IOException {
-        String source = normalize(pair.source);
-        String target = normalize(pair.target);
+    public boolean accept(String line, int index) {
+        String norm = normalize(line);
 
-        double sourceRatio = countLetters(source) / ((double) source.length());
-        double targetRatio = countLetters(target) / ((double) target.length());
-
-        return sourceRatio >= .5 && targetRatio >= .5;
+        double sourceRatio = countLetters(norm) / ((double) norm.length());
+        return sourceRatio >= .5;
     }
 
     private static String normalize(String string) {

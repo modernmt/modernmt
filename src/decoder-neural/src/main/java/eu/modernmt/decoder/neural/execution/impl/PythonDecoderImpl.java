@@ -25,16 +25,26 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
 
     public static class Builder implements PythonDecoder.Builder {
 
-        private final File pythonExec;
+        private final String pythonExec;
+        private final File pythonModule;
         private final File model;
         private final String[] extraArgs;
 
-        public Builder(File pythonExec, File model) {
-            this(pythonExec, null, model);
+        public Builder(String pythonExec, File pythonModule, File model) {
+            this(pythonExec, pythonModule, null, model);
         }
 
-        public Builder(File pythonExec, String[] extraArgs, File model) {
+        public Builder(File pythonModule, File model) {
+            this("python", pythonModule, null, model);
+        }
+
+        public Builder(File pythonModule, String[] extraArgs, File model) {
+            this("python", pythonModule, extraArgs, model);
+        }
+
+        public Builder(String pythonExec, File pythonModule, String[] extraArgs, File model) {
             this.pythonExec = pythonExec;
+            this.pythonModule = pythonModule;
             this.model = model;
             this.extraArgs = extraArgs;
         }
@@ -51,8 +61,8 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
 
         private PythonDecoderImpl start(int gpu) throws IOException {
             ArrayList<String> command = new ArrayList<>(5);
-            command.add("python");
-            command.add(pythonExec.getAbsolutePath());
+            command.add(pythonExec);
+            command.add(pythonModule.getAbsolutePath());
             command.add(model.getAbsolutePath());
 
             if (extraArgs != null && extraArgs.length > 0)

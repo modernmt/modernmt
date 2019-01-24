@@ -1,7 +1,7 @@
 package eu.modernmt.facade;
 
+import eu.modernmt.cleaning.ChainedMultilingualCorpusFilter;
 import eu.modernmt.cleaning.CorporaCleaning;
-import eu.modernmt.cleaning.StringPairFilter;
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.NodeInfo;
 import eu.modernmt.data.DataManager;
@@ -14,7 +14,6 @@ import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.persistence.*;
 import org.apache.commons.io.IOUtils;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -23,7 +22,8 @@ import java.util.stream.Collectors;
  */
 public class MemoryFacade {
 
-    private final StringPairFilter contributionFilter = CorporaCleaning.forStringPairs();
+    private final ChainedMultilingualCorpusFilter contributionFilter = CorporaCleaning.makeMultilingualFilter(
+            CorporaCleaning.Options.defaultOptionsForStringPairs());
 
     public Collection<Memory> list() throws PersistenceException {
         Connection connection = null;
@@ -121,12 +121,8 @@ public class MemoryFacade {
         contributionFilter.normalize(pair);
 
         // Filtering
-        try {
-            if (!contributionFilter.accept(pair))
-                return ImportJob.createEphemeralJob(memoryId, 0, DataManager.CONTRIBUTIONS_CHANNEL_ID);
-        } catch (IOException e) {
-            throw new DataManagerException(e);
-        }
+        if (!contributionFilter.accept(pair, 0))
+            return ImportJob.createEphemeralJob(memoryId, 0, DataManager.CONTRIBUTIONS_CHANNEL_ID);
 
         direction = pair.language;
         source = pair.source;
@@ -169,12 +165,8 @@ public class MemoryFacade {
         contributionFilter.normalize(current);
 
         // Filtering
-        try {
-            if (!contributionFilter.accept(current))
-                return ImportJob.createEphemeralJob(memoryId, 0, DataManager.CONTRIBUTIONS_CHANNEL_ID);
-        } catch (IOException e) {
-            throw new DataManagerException(e);
-        }
+        if (!contributionFilter.accept(current, 0))
+            return ImportJob.createEphemeralJob(memoryId, 0, DataManager.CONTRIBUTIONS_CHANNEL_ID);
 
         direction = current.language;
         sentence = current.source;
@@ -223,7 +215,7 @@ public class MemoryFacade {
             if (memory == null)
                 return null;
 
-            corpus = CorporaCleaning.wrap(corpus);
+            corpus = CorporaCleaning.wrap(corpus, CorporaCleaning.Options.defaultOptionsForMemoryImport());
 
             DataManager dataManager = ModernMT.getNode().getDataManager();
             ImportJob job = dataManager.upload(memory, corpus, DataManager.MEMORY_UPLOAD_CHANNEL_ID);

@@ -12,8 +12,7 @@ class Batch {
     private static final int DEFAULT_BATCH_SIZE = 100;
 
     private final int size;
-    private final StringBuilder sourceBuffer = new StringBuilder();
-    private final StringBuilder targetBuffer = new StringBuilder();
+    private final StringBuilder buffer = new StringBuilder();
     private int count = 0;
     private int beginIndex = -1;
     private int endIndex = -1;
@@ -24,6 +23,10 @@ class Batch {
 
     Batch(int size) {
         this.size = size;
+    }
+
+    public int size() {
+        return count;
     }
 
     public boolean isEmpty() {
@@ -38,21 +41,18 @@ class Batch {
         count = 0;
         beginIndex = -1;
         endIndex = -1;
-        sourceBuffer.setLength(0);
-        targetBuffer.setLength(0);
+        buffer.setLength(0);
     }
 
-    public void add(String source, String target, int index) {
+    public void add(String line, int index) {
         if (beginIndex < 0)
             beginIndex = index;
         endIndex = index;
 
         count++;
 
-        sourceBuffer.append(source.toLowerCase());
-        sourceBuffer.append(' ');
-        targetBuffer.append(target.toLowerCase());
-        targetBuffer.append(' ');
+        buffer.append(line.toLowerCase());
+        buffer.append(' ');
     }
 
     public int getBeginIndex() {
@@ -63,17 +63,9 @@ class Batch {
         return endIndex;
     }
 
-    public String getSourceLanguage() {
-        List<DetectedLanguage> languages = OptimaizeLanguageFilter.getLanguageDetector().getProbabilities(sourceBuffer);
-        return detectLanguage(languages);
-    }
+    public String getLanguage() {
+        List<DetectedLanguage> languages = OptimaizeLanguageFilter.getLanguageDetector().getProbabilities(buffer);
 
-    public String getTargetLanguage() {
-        List<DetectedLanguage> languages = OptimaizeLanguageFilter.getLanguageDetector().getProbabilities(targetBuffer);
-        return detectLanguage(languages);
-    }
-
-    private static String detectLanguage(List<DetectedLanguage> languages) {
         if (languages.size() < 1)
             return null;
 

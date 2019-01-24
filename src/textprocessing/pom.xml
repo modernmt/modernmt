@@ -22,30 +22,6 @@
 
     <build>
         <plugins>
-            <!-- Native project -->
-            <plugin>
-                <artifactId>maven-clean-plugin</artifactId>
-                <version>3.0.0</version>
-                <configuration>
-                    <filesets>
-                        <fileset>
-                            <directory>${project.nativedir.javah}</directory>
-                            <includes>
-                                <include>**/*.h</include>
-                            </includes>
-                            <followSymlinks>false</followSymlinks>
-                        </fileset>
-                        <fileset>
-                            <directory>${mmt.build.lib}</directory>
-                            <includes>
-                                <include>*jcld2.*</include>
-                            </includes>
-                            <followSymlinks>false</followSymlinks>
-                        </fileset>
-                    </filesets>
-                </configuration>
-            </plugin>
-
             <!-- JFlex -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

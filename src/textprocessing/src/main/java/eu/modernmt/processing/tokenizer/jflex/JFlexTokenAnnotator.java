@@ -1,8 +1,8 @@
 package eu.modernmt.processing.tokenizer.jflex;
 
 import eu.modernmt.processing.ProcessingException;
-import eu.modernmt.processing.tokenizer.TokenizedString;
 import eu.modernmt.processing.tokenizer.BaseTokenizer;
+import eu.modernmt.processing.tokenizer.TokenizedString;
 
 import java.io.IOException;
 import java.io.Reader;
