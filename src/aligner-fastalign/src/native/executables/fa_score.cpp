@@ -40,27 +40,6 @@ namespace {
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 
-
-class RandomWordGenerator {
-public:
-    explicit RandomWordGenerator(const Vocabulary *vocabulary) {
-        size_t voc_size = vocabulary->Size();
-
-        std::random_device rd;
-        rng = std::mt19937(rd());
-        sequence = std::uniform_int_distribution<std::mt19937::result_type>(
-                static_cast<unsigned int>((2 * voc_size) / 3), static_cast<unsigned int>(voc_size - 1));
-    }
-
-    word_t Next() {
-        return (word_t) sequence(rng);
-    }
-
-private:
-    std::mt19937 rng;
-    std::uniform_int_distribution<std::mt19937::result_type> sequence;
-};
-
 class Sequence {
 public:
     Sequence() : sum(0), sum2(0), count(0) {}
@@ -127,20 +106,24 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
     return true;
 }
 
-void PrintScore(vector<alignment_t> &alignments, ofstream &out) {
-    for (auto a = alignments.begin(); a != alignments.end(); ++a) {
+void PrintScores(vector<alignment_t> &alignments, ofstream &out) {
+    for (auto a = alignments.begin(); a != alignments.end(); ++a)
         out << a->score << endl;
-    }
 }
 
-void RandomizeBatch(vector<pair<wordvec_t, wordvec_t>> &batch, RandomWordGenerator &rwg) {
-    for (auto pair = batch.begin(); pair != batch.end(); ++pair) {
-        for (size_t i = 0; i < pair->second.size(); ++i)
-            pair->second[i] = rwg.Next();
-    }
+void CollectScores(vector<alignment_t> &alignments, Sequence &seq) {
+    for (auto a = alignments.begin(); a != alignments.end(); ++a)
+        seq.Add(a->score);
 }
 
-void ScoreCorpus(FastAligner &aligner, RandomWordGenerator &rwg, Sequence &goodScores, Sequence &badScores,
+void ShiftBatch(vector<pair<wordvec_t, wordvec_t>> &batch) {
+    wordvec_t first = batch[0].second;
+    for (size_t i = 1; i < batch.size(); ++i)
+        batch[i - 1].second = batch[i].second;
+    batch[batch.size() - 1].second = first;
+}
+
+void ScoreCorpus(FastAligner &aligner, Sequence &goodScores, Sequence &badScores,
                  const Corpus &corpus, size_t buffer_size, const string &outputPath) {
     CorpusReader reader(corpus, aligner.vocabulary);
 
@@ -154,17 +137,17 @@ void ScoreCorpus(FastAligner &aligner, RandomWordGenerator &rwg, Sequence &goodS
     while (reader.Read(batch, buffer_size)) {
         aligner.GetAlignments(batch, alignments, GrowDiagonalFinalAnd);
 
-        PrintScore(alignments, scoreStream);
-        for (auto a = alignments.begin(); a != alignments.end(); ++a)
-            goodScores.Add(a->score);
+        PrintScores(alignments, scoreStream);
+        CollectScores(alignments, goodScores);
         alignments.clear();
 
-        RandomizeBatch(batch, rwg);
+        if (batch.size() > 1) {
+            ShiftBatch(batch);
 
-        aligner.GetAlignments(batch, alignments, GrowDiagonalFinalAnd);
-        for (auto a = alignments.begin(); a != alignments.end(); ++a)
-            badScores.Add(a->score);
-        alignments.clear();
+            aligner.GetAlignments(batch, alignments, GrowDiagonalFinalAnd);
+            CollectScores(alignments, badScores);
+            alignments.clear();
+        }
 
         batch.clear();
     }
@@ -205,13 +188,12 @@ int main(int argc, const char *argv[]) {
         exit(0);
 
     FastAligner aligner(args.model_path, threads);
-    RandomWordGenerator rwg(aligner.vocabulary);
     Sequence goodScores;
     Sequence badScores;
 
     // perform scoring of all corpora sequentially; multi-threading is used for each corpus
     for (auto corpus = corpora.begin(); corpus < corpora.end(); ++corpus) {
-        ScoreCorpus(aligner, rwg, goodScores, badScores, *corpus, args.buffer_size, args.output_path);
+        ScoreCorpus(aligner, goodScores, badScores, *corpus, args.buffer_size, args.output_path);
     }
 
     cout << "good_avg=" << goodScores.GetAverage() << "\n";
