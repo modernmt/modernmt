@@ -23,7 +23,7 @@ const Vocabulary *LoadVocabulary(const string &path) {
     if (!fs::is_regular(filename))
         throw invalid_argument("File not found: " + filename.string());
 
-    return new Vocabulary(filename.string(), true, false);
+    return new Vocabulary(filename.string());
 }
 
 FastAligner::FastAligner(const string &path, int threads) : vocabulary(LoadVocabulary(path)) {

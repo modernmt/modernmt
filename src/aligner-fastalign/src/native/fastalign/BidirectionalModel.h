@@ -40,8 +40,6 @@ namespace mmt {
                 // no-op
             }
 
-            void ExportLexicalModel(const std::string &filename, const Vocabulary *vb);
-
             static void Open(const std::string &filename, Model **outForward, Model **outBackward);
 
         private:
