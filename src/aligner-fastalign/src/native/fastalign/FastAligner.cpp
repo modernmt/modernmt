@@ -98,8 +98,8 @@ void FastAligner::GetAlignments(const std::vector<std::pair<wordvec_t, wordvec_t
     vector<alignment_t> forwards;
     vector<alignment_t> backwards;
 
-    forwardModel->ComputeAlignments(batch, forwards);
-    backwardModel->ComputeAlignments(batch, backwards);
+    forwardModel->ComputeAlignments(batch, forwards, vocabulary);
+    backwardModel->ComputeAlignments(batch, backwards, vocabulary);
 
     outAlignments.resize(batch.size());
 
