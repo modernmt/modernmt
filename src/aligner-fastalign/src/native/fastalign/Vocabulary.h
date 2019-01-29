@@ -18,17 +18,14 @@ namespace mmt {
         static const word_t kNullWord = 0;
         static const word_t kUnknownWord = 1;
 
-        static const std::string kEmptyResult;
-
         class Vocabulary {
         public:
 
-            static const Vocabulary *FromCorpora(const std::vector<Corpus> &corpora,
-                                                 size_t maxLineLength, bool case_sensitive, double threshold = 0.);
+            static const Vocabulary *BuildFromCorpora(const std::vector<Corpus> &corpora, const std::string &filename,
+                                                      size_t maxLineLength = 0, bool case_sensitive = true,
+                                                      double threshold = 0.);
 
             explicit Vocabulary(const std::string &filename);
-
-            void Store(const std::string &filename) const;
 
             inline const size_t Size() const {
                 return vocab.size() + 2;
@@ -59,11 +56,6 @@ namespace mmt {
             }
 
         private:
-            explicit Vocabulary(bool case_sensitive) : case_sensitive(case_sensitive) {
-                boost::locale::generator gen;
-                locale = gen("C.UTF-8");
-            };
-
             std::locale locale;
             bool case_sensitive;
             std::vector<std::pair<score_t, score_t>> probs;

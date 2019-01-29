@@ -11,7 +11,7 @@ using namespace std;
 using namespace mmt;
 using namespace mmt::fastalign;
 
-void ParseHeader(const string &header, size_t *outSize, bool *outCaseSensitive) {
+void ParseHeader(const string &header, size_t *outSize, bool *outCaseSensitive, size_t *outNDocs) {
     vector<string> properties;
 
     istringstream iss(header);
@@ -28,6 +28,8 @@ void ParseHeader(const string &header, size_t *outSize, bool *outCaseSensitive) 
                     *outSize = (size_t) stoi(value);
                 else if ("case_sensitive" == key)
                     *outCaseSensitive = (value[0] == '1');
+                else if ("n_docs" == key)
+                    *outNDocs = (size_t) stoi(value);
                 else
                     throw runtime_error("invalid header key: " + key);
             }
@@ -77,31 +79,45 @@ inline void PruneTerms(unordered_map<string, size_t> &terms, double threshold) {
     }
 }
 
-const Vocabulary *Vocabulary::FromCorpora(const vector<Corpus> &corpora,
-                                          size_t maxLineLength, bool case_sensitive, double threshold) {
+const Vocabulary *Vocabulary::BuildFromCorpora(const std::vector<Corpus> &corpora, const std::string &filename,
+                                               size_t maxLineLength, bool case_sensitive, double threshold) {
     boost::locale::generator gen;
     std::locale locale = gen("C.UTF-8");
 
     // For model efficiency all source words must have the lowest id possible
     unordered_map<string, size_t> src_terms;
     unordered_map<string, size_t> tgt_terms;
+    unordered_map<string, size_t> src_doc_term_freq;
+    unordered_map<string, size_t> tgt_doc_term_freq;
 
-    size_t src_corpora_size = 0;
-    size_t tgt_corpora_size = 0;
     vector<string> src, trg;
+    unordered_set<string> src_doc_terms, tgt_doc_terms;
+    size_t n_docs = 0;
 
     for (auto corpus = corpora.begin(); corpus != corpora.end(); ++corpus) {
         CorpusReader reader(*corpus, nullptr, maxLineLength, true);
 
         while (reader.Read(src, trg)) {
-            for (auto w = src.begin(); w != src.end(); ++w)
-                src_terms[case_sensitive ? *w : boost::locale::to_lower(*w, locale)] += 1;
+            src_doc_terms.clear();
+            tgt_doc_terms.clear();
 
-            for (auto w = trg.begin(); w != trg.end(); ++w)
-                tgt_terms[case_sensitive ? *w : boost::locale::to_lower(*w, locale)] += 1;
+            for (auto w = src.begin(); w != src.end(); ++w) {
+                string src_term = case_sensitive ? *w : boost::locale::to_lower(*w, locale);
+                src_terms[src_term] += 1;
+                src_doc_terms.insert(src_term);
+            }
 
-            src_corpora_size += src.size();
-            tgt_corpora_size += trg.size();
+            for (auto w = trg.begin(); w != trg.end(); ++w) {
+                string tgt_term = case_sensitive ? *w : boost::locale::to_lower(*w, locale);
+                tgt_terms[tgt_term] += 1;
+                tgt_doc_terms.insert(tgt_term);
+            }
+
+            n_docs += 1;
+            for (auto w = src_doc_terms.begin(); w != src_doc_terms.end(); ++w)
+                src_doc_term_freq[*w] += 1;
+            for (auto w = tgt_doc_terms.begin(); w != tgt_doc_terms.end(); ++w)
+                tgt_doc_term_freq[*w] += 1;
         }
     }
 
@@ -110,44 +126,61 @@ const Vocabulary *Vocabulary::FromCorpora(const vector<Corpus> &corpora,
         PruneTerms(tgt_terms, threshold);
     }
 
-    // Creating result Vocabulary
+    // Create source and target terms array
 
-    auto result = new Vocabulary(case_sensitive);
-    word_t id = 2; // 0 = kNullWord, 1 = kUnknownWord
+    vector<pair<string, size_t>> src_terms_array, tgt_terms_array;
+    src_terms_array.reserve(src_terms.size());
+    tgt_terms_array.reserve(tgt_terms.size());
 
     for (auto src_term = src_terms.begin(); src_term != src_terms.end(); ++src_term) {
-        double src_freq = src_term->second;
-        double tgt_freq = 0;
-
-        auto tgt_term = tgt_terms.find(src_term->first);
-        if (tgt_term != tgt_terms.end()) {
-            tgt_freq = tgt_term->second;
-            tgt_terms.erase(tgt_term->first);  // we don't want to register it twice with the next loop
-        }
-
-        result->vocab[src_term->first] = id;
-
-        result->probs.resize(id + 1);
-        result->probs[id].first = static_cast<score_t>(src_freq / src_corpora_size);
-        result->probs[id].second = static_cast<score_t>(tgt_freq / tgt_corpora_size);
-
-        id++;
+        src_terms_array.emplace_back(src_term->first, src_term->second);
     }
 
     for (auto tgt_term = tgt_terms.begin(); tgt_term != tgt_terms.end(); ++tgt_term) {
-        // "double src_freq" we cannot have a match here because we have erased shared terms at the previous loop
-        double tgt_freq = tgt_term->second;
-
-        result->vocab[tgt_term->first] = id;
-
-        result->probs.resize(id + 1);
-        result->probs[id].first = 0;
-        result->probs[id].second = static_cast<score_t>(tgt_freq / tgt_corpora_size);
-
-        id++;
+        auto src_term = src_terms.find(tgt_term->first);
+        if (src_term == src_terms.end())
+            tgt_terms_array.emplace_back(tgt_term->first, tgt_term->second);
     }
 
-    return result;
+    std::sort(src_terms_array.begin(), src_terms_array.end(), __terms_compare);
+    std::sort(tgt_terms_array.begin(), tgt_terms_array.end(), __terms_compare);
+
+    // Writing output model
+
+    ofstream output(filename);
+
+    output << "size=" << (src_terms_array.size() + tgt_terms_array.size() + 2) << ' '
+           << "case_sensitive=" << (case_sensitive ? '1' : '0') << ' '
+           << "n_docs=" << n_docs
+           << '\n';
+
+    for (auto src_term = src_terms_array.begin(); src_term != src_terms_array.end(); ++src_term) {
+        size_t src_doc_freq = src_doc_term_freq[src_term->first];
+        size_t tgt_doc_freq = 0;
+
+        auto tgt_term = tgt_doc_term_freq.find(src_term->first);
+        if (tgt_term != tgt_doc_term_freq.end())
+            tgt_doc_freq = tgt_term->second;
+
+        output << src_doc_freq << ' '
+               << tgt_doc_freq << ' '
+               << src_term->first << '\n';
+    }
+
+    for (auto tgt_term = tgt_terms_array.begin(); tgt_term != tgt_terms_array.end(); ++tgt_term) {
+        size_t src_doc_freq = 0;
+        size_t tgt_doc_freq = tgt_doc_term_freq[tgt_term->first];
+
+        output << src_doc_freq << ' '
+               << tgt_doc_freq << ' '
+               << tgt_term->first << '\n';
+    }
+
+    return new Vocabulary(filename);
+}
+
+inline score_t SmoothInverseDocumentFrequency(size_t n_docs, size_t doc_freq) {
+    return static_cast<score_t>(log(((double) n_docs) / (1. + doc_freq)));
 }
 
 Vocabulary::Vocabulary(const std::string &filename) {
@@ -158,44 +191,26 @@ Vocabulary::Vocabulary(const std::string &filename) {
     string line;
 
     size_t size;
+    size_t n_docs;
     getline(input, line);  // header
-    ParseHeader(line, &size, &case_sensitive);
+    ParseHeader(line, &size, &case_sensitive, &n_docs);
 
     probs.resize(size);
     vocab.reserve(size);
 
+    word_t id = 2; // 0 = kNullWord, 1 = kUnknownWord
     while (getline(input, line)) {
         istringstream line_ss(line);
 
+        size_t src_doc_freq, tgt_doc_freq;
         string word;
-        word_t id;
-        score_t src_prob;
-        score_t tgt_prob;
 
-        line_ss >> word;
-        line_ss >> id;
-        line_ss >> src_prob;
-        line_ss >> tgt_prob;
+        line_ss >> src_doc_freq >> tgt_doc_freq >> word;
 
-        probs[id].first = src_prob;
-        probs[id].second = tgt_prob;
+        probs[id].first = SmoothInverseDocumentFrequency(n_docs, src_doc_freq);
+        probs[id].second = SmoothInverseDocumentFrequency(n_docs, tgt_doc_freq);
         vocab[word] = id;
-    }
-}
 
-void Vocabulary::Store(const std::string &filename) const {
-    ofstream output(filename);
-
-    output << "size=" << Size() << ' '
-           << "case_sensitive=" << (case_sensitive ? '1' : '0')
-           << '\n';
-
-    for (auto term = vocab.begin(); term != vocab.end(); ++term) {
-        const pair<score_t, score_t> &prob = probs[term->second];
-        output << term->first << ' '
-               << term->second << ' '
-               << prob.first << ' '
-               << prob.second
-               << '\n';
+        id++;
     }
 }

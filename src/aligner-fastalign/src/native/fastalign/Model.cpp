@@ -124,9 +124,9 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
 
             if (max_index > 0) {
                 if (is_reverse)
-                    outAlignment->points.push_back(pair<length_t, length_t>(j, max_index - 1));
+                    outAlignment->points.emplace_back(j, max_index - 1);
                 else
-                    outAlignment->points.push_back(pair<length_t, length_t>(max_index - 1, j));
+                    outAlignment->points.emplace_back(max_index - 1, j);
             }
         }
     }
