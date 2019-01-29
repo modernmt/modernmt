@@ -47,8 +47,8 @@ namespace mmt {
             }
 
             inline const score_t GetProbability(word_t id, bool is_source) const {
-                if (id > 1 && (id - 2) < probs.size()) {
-                    const std::pair<score_t, score_t> &pair = probs[id - 2];
+                if (id < probs.size()) {
+                    const std::pair<score_t, score_t> &pair = probs[id];
                     return is_source ? pair.first : pair.second;
                 } else {
                     return 0;

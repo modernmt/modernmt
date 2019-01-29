@@ -136,7 +136,7 @@ alignment_t SymAlignment::ToAlignment() {
     for (size_t s = 0; s < source_length; ++s) {
         for (size_t t = 0; t < target_length; ++t) {
             if (m[idx(s, t)] > 0)
-                alignment.points.push_back(pair<size_t, size_t>(s, t));
+                alignment.points.emplace_back(s, t);
         }
     }
 

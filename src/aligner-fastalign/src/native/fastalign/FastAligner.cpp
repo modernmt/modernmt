@@ -56,8 +56,8 @@ alignment_t FastAligner::GetAlignment(const sentence_t &_source, const sentence_
 }
 
 alignment_t FastAligner::GetAlignment(const wordvec_t &source, const wordvec_t &target, Symmetrization symmetrization) {
-    alignment_t forward = forwardModel->ComputeAlignment(source, target);
-    alignment_t backward = backwardModel->ComputeAlignment(source, target);
+    alignment_t forward = forwardModel->ComputeAlignment(source, target, vocabulary);
+    alignment_t backward = backwardModel->ComputeAlignment(source, target, vocabulary);
 
     SymAlignment symmetrizer(source.size(), target.size());
 
