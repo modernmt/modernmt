@@ -176,6 +176,8 @@ const Vocabulary *Vocabulary::BuildFromCorpora(const std::vector<Corpus> &corpor
                << tgt_term->first << '\n';
     }
 
+    output.close();
+
     return new Vocabulary(filename);
 }
 
