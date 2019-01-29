@@ -6,6 +6,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <algorithm>
+#include <math.h>
 
 using namespace std;
 using namespace mmt;
@@ -77,6 +78,10 @@ inline void PruneTerms(unordered_map<string, size_t> &terms, double threshold) {
                 ++entry;
         }
     }
+}
+
+inline score_t SmoothInverseDocumentFrequency(size_t n_docs, size_t doc_freq) {
+    return static_cast<score_t>(log(((double) n_docs) / (1. + doc_freq)));
 }
 
 const Vocabulary *Vocabulary::BuildFromCorpora(const std::vector<Corpus> &corpora, const std::string &filename,
@@ -162,8 +167,8 @@ const Vocabulary *Vocabulary::BuildFromCorpora(const std::vector<Corpus> &corpor
         if (tgt_term != tgt_doc_term_freq.end())
             tgt_doc_freq = tgt_term->second;
 
-        output << src_doc_freq << ' '
-               << tgt_doc_freq << ' '
+        output << SmoothInverseDocumentFrequency(n_docs, src_doc_freq) << ' '
+               << SmoothInverseDocumentFrequency(n_docs, tgt_doc_freq) << ' '
                << src_term->first << '\n';
     }
 
@@ -171,18 +176,14 @@ const Vocabulary *Vocabulary::BuildFromCorpora(const std::vector<Corpus> &corpor
         size_t src_doc_freq = 0;
         size_t tgt_doc_freq = tgt_doc_term_freq[tgt_term->first];
 
-        output << src_doc_freq << ' '
-               << tgt_doc_freq << ' '
+        output << SmoothInverseDocumentFrequency(n_docs, src_doc_freq) << ' '
+               << SmoothInverseDocumentFrequency(n_docs, tgt_doc_freq) << ' '
                << tgt_term->first << '\n';
     }
 
     output.close();
 
     return new Vocabulary(filename);
-}
-
-inline score_t SmoothInverseDocumentFrequency(size_t n_docs, size_t doc_freq) {
-    return static_cast<score_t>(log(((double) n_docs) / (1. + doc_freq)));
 }
 
 Vocabulary::Vocabulary(const std::string &filename) {
@@ -204,13 +205,13 @@ Vocabulary::Vocabulary(const std::string &filename) {
     while (getline(input, line)) {
         istringstream line_ss(line);
 
-        size_t src_doc_freq, tgt_doc_freq;
+        score_t src_prob, tgt_prob;
         string word;
 
-        line_ss >> src_doc_freq >> tgt_doc_freq >> word;
+        line_ss >> src_prob >> tgt_prob >> word;
 
-        probs[id].first = SmoothInverseDocumentFrequency(n_docs, src_doc_freq);
-        probs[id].second = SmoothInverseDocumentFrequency(n_docs, tgt_doc_freq);
+        probs[id].first = src_prob;
+        probs[id].second = tgt_prob;
         vocab[word] = id;
 
         id++;
