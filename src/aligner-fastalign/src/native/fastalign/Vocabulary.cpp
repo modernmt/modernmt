@@ -83,11 +83,37 @@ inline score_t SmoothInverseDocumentFrequency(size_t n_docs, size_t doc_freq) {
     return static_cast<score_t>(log(((double) n_docs) / (1. + doc_freq)));
 }
 
-const Vocabulary *Vocabulary::BuildFromCorpora(const std::vector<Corpus> &corpora, const std::string &filename,
-                                               size_t maxLineLength, bool case_sensitive, double threshold) {
+Vocabulary::Vocabulary(bool case_sensitive) : case_sensitive(case_sensitive) {
     boost::locale::generator gen;
-    std::locale locale = gen("C.UTF-8");
+    locale = gen("C.UTF-8");
+}
 
+Vocabulary::Vocabulary(const std::string &filename) {
+    boost::locale::generator gen;
+    locale = gen("C.UTF-8");
+
+    ifstream in(filename);
+
+    string header;
+    io_read(in, header);
+
+    size_t size;
+    ParseHeader(header, &size, &case_sensitive);
+
+    probs.resize(size + 2);
+    vocab.reserve(size + 2);
+
+    for (word_t id = 2; id < size + 2; ++id) {
+        probs[id].first = io_read<score_t>(in);
+        probs[id].second = io_read<score_t>(in);
+
+        string word;
+        io_read(in, word);
+        vocab[word] = id;
+    }
+}
+
+void Vocabulary::BuildFromCorpora(const vector<Corpus> &corpora, size_t maxLineLength, double threshold) {
     // For model efficiency all source words must have the lowest id possible
     unordered_map<string, size_t> src_terms;
     unordered_map<string, size_t> tgt_terms;
@@ -149,16 +175,14 @@ const Vocabulary *Vocabulary::BuildFromCorpora(const std::vector<Corpus> &corpor
     std::sort(src_terms_array.begin(), src_terms_array.end(), __terms_compare);
     std::sort(tgt_terms_array.begin(), tgt_terms_array.end(), __terms_compare);
 
-    // Writing output model
+    // Storing model data
 
-    ofstream out(filename);
+    word_t id = 2;
+    size_t size = src_terms_array.size() + tgt_terms_array.size();
 
-    ostringstream header;
-    header << "size=" << (src_terms_array.size() + tgt_terms_array.size()) << ' '
-           << "case_sensitive=" << (case_sensitive ? '1' : '0');
-
-    string header_str = header.str();
-    io_write(out, header_str);
+    probs.resize(size + 2);
+    vocab.clear();
+    vocab.reserve(size + 2);
 
     for (auto src_term = src_terms_array.begin(); src_term != src_terms_array.end(); ++src_term) {
         size_t src_doc_freq = src_doc_term_freq[src_term->first];
@@ -168,46 +192,52 @@ const Vocabulary *Vocabulary::BuildFromCorpora(const std::vector<Corpus> &corpor
         if (tgt_term != tgt_doc_term_freq.end())
             tgt_doc_freq = tgt_term->second;
 
-        io_write(out, SmoothInverseDocumentFrequency(n_docs, src_doc_freq));
-        io_write(out, SmoothInverseDocumentFrequency(n_docs, tgt_doc_freq));
-        io_write(out, src_term->first);
+        probs[id].first = SmoothInverseDocumentFrequency(n_docs, src_doc_freq);
+        probs[id].second = SmoothInverseDocumentFrequency(n_docs, tgt_doc_freq);
+        vocab[src_term->first] = id;
+
+        id++;
     }
 
     for (auto tgt_term = tgt_terms_array.begin(); tgt_term != tgt_terms_array.end(); ++tgt_term) {
         size_t src_doc_freq = 0;
         size_t tgt_doc_freq = tgt_doc_term_freq[tgt_term->first];
 
-        io_write(out, SmoothInverseDocumentFrequency(n_docs, src_doc_freq));
-        io_write(out, SmoothInverseDocumentFrequency(n_docs, tgt_doc_freq));
-        io_write(out, tgt_term->first);
+        probs[id].first = SmoothInverseDocumentFrequency(n_docs, src_doc_freq);
+        probs[id].second = SmoothInverseDocumentFrequency(n_docs, tgt_doc_freq);
+        vocab[tgt_term->first] = id;
+
+        id++;
     }
-
-    out.close();
-
-    return new Vocabulary(filename);
 }
 
-Vocabulary::Vocabulary(const std::string &filename) {
-    boost::locale::generator gen;
-    locale = gen("C.UTF-8");
+void Vocabulary::Store(const std::string &filename) {
+    // Sorting entries by id
 
-    ifstream in(filename);
+    vector<pair<string, size_t>> entries;
+    entries.reserve(vocab.size());
 
-    string header;
-    io_read(in, header);
+    for (auto entry = vocab.begin(); entry != vocab.end(); ++entry)
+        entries.emplace_back(entry->first, entry->second);
 
-    size_t size;
-    ParseHeader(header, &size, &case_sensitive);
+    std::sort(entries.begin(), entries.end(), __terms_compare);
 
-    probs.resize(size + 2);
-    vocab.reserve(size + 2);
+    // Writing output model
 
-    for (word_t id = 2; id < size + 2; ++id) {
-        probs[id].first = io_read<score_t>(in);
-        probs[id].second = io_read<score_t>(in);
+    ofstream out(filename);
 
-        string word;
-        io_read(in, word);
-        vocab[word] = id;
+    ostringstream header;
+    header << "size=" << entries.size() << ' '
+           << "case_sensitive=" << (case_sensitive ? '1' : '0');
+
+    string header_str = header.str();
+    io_write(out, header_str);
+
+    for (auto entry = entries.rbegin(); entry != entries.rend(); ++entry) {
+        size_t id = entry->second;
+
+        io_write(out, probs[id].first);
+        io_write(out, probs[id].second);
+        io_write(out, entry->first);
     }
 }

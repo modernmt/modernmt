@@ -266,16 +266,17 @@ void Builder::Build(const std::vector<Corpus> &corpora, const string &path) {
 
     if (listener) listener->VocabularyBuildBegin();
     fs::path vocab_filename = fs::absolute(fs::path(path) / fs::path("model.voc"));
-    const Vocabulary *vocab = Vocabulary::BuildFromCorpora(
-            corpora, vocab_filename.string(), max_length, case_sensitive, vocabulary_threshold);
+    Vocabulary vocab(case_sensitive);
+    vocab.BuildFromCorpora(corpora, max_length, vocabulary_threshold);
+    vocab.Store(vocab_filename.string());
     if (listener) listener->VocabularyBuildEnd();
 
-    auto *forward = (BuilderModel *) BuildModel(vocab, corpora, true);
+    auto *forward = (BuilderModel *) BuildModel(&vocab, corpora, true);
     fs::path fwd_model_filename = fs::absolute(fs::path(path) / fs::path("fwd_model.tmp"));
     forward->Store(fwd_model_filename.string());
     delete forward;
 
-    auto *backward = (BuilderModel *) BuildModel(vocab, corpora, false);
+    auto *backward = (BuilderModel *) BuildModel(&vocab, corpora, false);
     fs::path bwd_model_filename = fs::absolute(fs::path(path) / fs::path("bwd_model.tmp"));
     backward->Store(bwd_model_filename.string());
     delete backward;
@@ -283,8 +284,6 @@ void Builder::Build(const std::vector<Corpus> &corpora, const string &path) {
     if (listener) listener->ModelDumpBegin();
     fs::path model_filename = fs::absolute(fs::path(path) / fs::path("model.dat"));
     MergeAndStore(fwd_model_filename.string(), bwd_model_filename.string(), model_filename.string());
-
-    delete vocab;
 
     if (remove(fwd_model_filename.c_str()) != 0)
         throw runtime_error("Error deleting the forward model file");

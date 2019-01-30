@@ -20,12 +20,11 @@ namespace mmt {
 
         class Vocabulary {
         public:
-
-            static const Vocabulary *BuildFromCorpora(const std::vector<Corpus> &corpora, const std::string &filename,
-                                                      size_t maxLineLength = 0, bool case_sensitive = true,
-                                                      double threshold = 0.);
+            explicit Vocabulary(bool case_sensitive = true);
 
             explicit Vocabulary(const std::string &filename);
+
+            void BuildFromCorpora(const std::vector<Corpus> &corpora, size_t maxLineLength = 0, double threshold = 0.);
 
             inline const size_t Size() const {
                 return vocab.size() + 2;
@@ -54,6 +53,8 @@ namespace mmt {
                     return 0;
                 }
             }
+
+            void Store(const std::string &filename);
 
         private:
             std::locale locale;
