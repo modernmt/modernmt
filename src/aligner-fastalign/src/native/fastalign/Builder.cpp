@@ -246,6 +246,28 @@ void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const std::vec
 }
 
 void Builder::Build(const std::vector<Corpus> &corpora, const string &path) {
+    if (listener) {
+        std::ostringstream opts;
+        opts << "{"
+             << "alpha=" << alpha << ", "
+             << "buffer_size=" << buffer_size << ", "
+             << "case_sensitive=" << (case_sensitive ? "true" : "false") << ", "
+             << "favor_diagonal=" << (favor_diagonal ? "true" : "false") << ", "
+             << "initial_diagonal_tension=" << initial_diagonal_tension << ", "
+             << "iterations=" << iterations << ", "
+             << "max_length=" << max_length << ", "
+             << "optimize_tension=" << (optimize_tension ? "true" : "false") << ", "
+             << "prob_align_null=" << prob_align_null << ", "
+             << "pruning=" << pruning << ", "
+             << "threads=" << threads << ", "
+             << "use_null=" << (use_null ? "true" : "false") << ", "
+             << "variational_bayes=" << (variational_bayes ? "true" : "false") << ", "
+             << "vocabulary_threshold=" << vocabulary_threshold
+             << "}";
+
+        listener->BuildStart(opts.str());
+    }
+
     if (listener) listener->VocabularyBuildBegin();
     fs::path vocab_filename = fs::absolute(fs::path(path) / fs::path("model.voc"));
     const Vocabulary *vocab = Vocabulary::BuildFromCorpora(

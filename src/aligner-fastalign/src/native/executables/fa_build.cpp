@@ -16,91 +16,98 @@
 #include <iostream>
 #include <getopt.h>
 #include <stdlib.h>
-#include <fastalign/Builder.h>
 #include <sys/time.h>
+#include <fastalign/Builder.h>
 #include <fastalign/FastAligner.h>
+#include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 
 using namespace std;
 using namespace mmt;
 using namespace mmt::fastalign;
 
-string source_lang;
-string target_lang;
-string input_path;
-string model_path;
+namespace {
+    const size_t ERROR_IN_COMMAND_LINE = 1;
+    const size_t GENERIC_ERROR = 2;
+    const size_t SUCCESS = 0;
 
-Options builderOptions;
+    struct args_t {
+        string source_lang;
+        string target_lang;
+        string input_path;
+        string model_path;
 
-struct option options[] = {
-        {"source",         required_argument, NULL, 0},
-        {"target",         required_argument, NULL, 0},
-        {"input",          required_argument, NULL, 0},
-        {"model",          required_argument, NULL, 0},
-        {"threads",        optional_argument, NULL, 0},
-        {"iterations",     optional_argument, NULL, 0},
-        {"pruning",        optional_argument, NULL, 0},
-        {"length",         optional_argument, NULL, 0},
-        {"case_sensitive", optional_argument, NULL, 0},
-        {0, 0, 0,                                   0}
-};
+        Options options = Options();
+    };
+} // namespace
 
-void help(const char *name) {
-    cerr << "Usage: " << name << " -s file.fr -t file.en -m model\n"
-         << "  -s: [REQ] Source language\n"
-         << "  -t: [REQ] Target language\n"
-         << "  -i: [REQ] Input path with training corpora\n"
-         << "  -m: [REQ] Output model path\n"
-         << "  -I: number of iterations in EM training (default = 5)\n"
-         << "  -n: Number of threads. (default = number of CPUs)\n"
-         << "  -p: Pruning threshold. (default = 1.e-20)\n"
-         << "  -l: Max sentence length. (default = 80)\n"
-         << "  -c: create a case-insensitive model (default is case sensitive)\n";
-}
+namespace po = boost::program_options;
+namespace fs = boost::filesystem;
 
-bool InitCommandLine(int argc, char **argv) {
-    while (true) {
-        int oi;
-        int c = getopt_long(argc, argv, "s:t:i:m:I:n:p:l:c", options, &oi);
-        if (c == -1) break;
 
-        switch (c) {
-            case 's':
-                source_lang = optarg;
-                break;
-            case 't':
-                target_lang = optarg;
-                break;
-            case 'i':
-                input_path = optarg;
-                break;
-            case 'm':
-                model_path = optarg;
-                break;
-            case 'I':
-                builderOptions.iterations = atoi(optarg);
-                break;
-            case 'n':
-                builderOptions.threads = atoi(optarg);
-                break;
-            case 'p':
-                builderOptions.pruning_threshold = atof(optarg);
-                break;
-            case 'l':
-                builderOptions.max_line_length = static_cast<size_t>(atoi(optarg));
-                break;
-            case 'c':
-                builderOptions.case_sensitive = false;
-                break;
-            default:
-                return false;
+bool ParseArgs(int argc, const char *argv[], args_t *args) {
+    po::options_description desc("Train a new FastAlign model from a collection of parallel files");
+    desc.add_options()
+            ("help,h", "print this help message")
+            ("source,s", po::value<string>()->required(), "source language")
+            ("target,t", po::value<string>()->required(), "target language")
+            ("input,i", po::value<string>()->required(), "input folder containing the parallel files collection")
+            ("model,m", po::value<string>()->required(), "the output path")
+            ("threads,T", po::value<unsigned int>(), "number of threads (default is number of CPU)")
+            ("iterations,I", po::value<unsigned int>(), "number of iterations in EM training (default is 5)")
+            ("prune,p", po::value<double>(), "final model pruning threshold (default is 1.e-20)")
+            ("vocabulary-thr,v", po::value<double>(), "keeps only the most relevant terms in vocabulary "
+                                                      "(default is 0.9999 - only the terms that cover "
+                                                      "the 99.99% of the input corpora)")
+            ("max-length,l", po::value<size_t>(), "max sentence length (default is 80)")
+            ("case-insensitive", "create a case insensitive model (default is case sensitive)")
+            ("no-favor-diagonal", "don't enforce diagonal form of alignment (default is use diagonal)");
+
+    po::variables_map vm;
+    try {
+        po::store(po::parse_command_line(argc, argv, desc), vm);
+
+        if (vm.count("help")) {
+            std::cout << desc << std::endl;
+            return false;
         }
+
+        po::notify(vm);
+        args->source_lang = vm["source"].as<string>();
+        args->target_lang = vm["target"].as<string>();
+        args->input_path = vm["input"].as<string>();
+        args->model_path = vm["model"].as<string>();
+
+        if (vm.count("threads"))
+            args->options.threads = vm["threads"].as<unsigned int>();
+        if (vm.count("iterations"))
+            args->options.iterations = vm["iterations"].as<unsigned int>();
+        if (vm.count("prune"))
+            args->options.pruning_threshold = vm["prune"].as<double>();
+        if (vm.count("vocabulary-thr"))
+            args->options.vocabulary_threshold = vm["vocabulary-thr"].as<double>();
+        if (vm.count("max-length"))
+            args->options.max_line_length = vm["max-length"].as<size_t>();
+
+        if (vm.count("case-insensitive"))
+            args->options.case_sensitive = false;
+        if (vm.count("no-favor-diagonal"))
+            args->options.favor_diagonal = false;
+    } catch (po::error &e) {
+        std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
+        std::cerr << desc << std::endl;
+        return false;
     }
 
-    return !source_lang.empty() && !target_lang.empty() && !input_path.empty() && !model_path.empty();
+    return true;
 }
 
 class ProcessListener : public Builder::Listener {
 public:
+    void BuildStart(const std::string &opts) override {
+        cerr << "Build started with options: " << opts << endl;
+    }
+
     void VocabularyBuildBegin() override {
         cerr << "Creating vocabulary... ";
         stepBegin = GetTime();
@@ -110,16 +117,16 @@ public:
         cerr << "DONE in " << (GetTime() - stepBegin) << "s" << endl;
     }
 
-    virtual void Begin(bool forward) override {
+    void Begin(bool forward) override {
         processBegin = GetTime();
         cerr << "== " << (forward ? "Forward" : "Backward") << " model training ==" << endl;
     }
 
-    virtual void IterationBegin(bool forward, int iteration) override {
+    void IterationBegin(bool forward, int iteration) override {
         cerr << "Iteration " << iteration << ":" << endl;
     }
 
-    virtual void Begin(bool forward, const BuilderStep step, int iteration) override {
+    void Begin(bool forward, const BuilderStep step, int iteration) override {
         if (iteration > 0)
             cerr << "\t";
 
@@ -149,15 +156,15 @@ public:
         stepBegin = GetTime();
     }
 
-    virtual void End(bool forward, const BuilderStep step, int iteration) override {
+    void End(bool forward, const BuilderStep step, int iteration) override {
         cerr << "DONE in " << (GetTime() - stepBegin) << "s" << endl;
     }
 
-    virtual void IterationEnd(bool forward, int iteration) override {
+    void IterationEnd(bool forward, int iteration) override {
         // Nothing to do
     }
 
-    virtual void End(bool forward) override {
+    void End(bool forward) override {
         cerr << "\nTraining DONE in " << (GetTime() - processBegin) << "s" << endl << endl;
     }
 
@@ -171,13 +178,13 @@ public:
     }
 
 private:
-    double stepBegin;
-    double processBegin;
+    double stepBegin = 0;
+    double processBegin = 0;
 
     double GetTime() {
-        struct timeval time;
+        struct timeval time{};
 
-        if (gettimeofday(&time, NULL)) {
+        if (gettimeofday(&time, nullptr)) {
             //  Handle error
             return 0;
         }
@@ -186,18 +193,20 @@ private:
     }
 };
 
-int main(int argc, char **argv) {
-    if (!InitCommandLine(argc, argv)) {
-        help(argv[0]);
-        return 1;
-    }
+int main(int argc, const char *argv[]) {
+    args_t args;
+
+    if (!ParseArgs(argc, argv, &args))
+        return ERROR_IN_COMMAND_LINE;
 
     ProcessListener listener;
     vector<Corpus> corpora;
-    Corpus::List(input_path, source_lang, target_lang, corpora);
+    Corpus::List(args.input_path, args.source_lang, args.target_lang, corpora);
 
-    Builder builder(builderOptions);
+    Builder builder(args.options);
     builder.setListener(&listener);
 
-    builder.Build(corpora, model_path);
+    builder.Build(corpora, args.model_path);
+
+    return SUCCESS;
 }

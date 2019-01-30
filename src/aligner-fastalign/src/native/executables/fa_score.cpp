@@ -68,15 +68,18 @@ private:
 
 
 bool ParseArgs(int argc, const char *argv[], args_t *args) {
-    po::options_description desc("Train a SuffixArray Phrase Table from scratch");
+    po::options_description desc("Runs FastAlign model on a collection of parallel files and outputs scores in the "
+                                 "output folder.\nThis script also prints to stdout the Average and Standard Deviation "
+                                 "of the \"good\" and \"bad\" alignment distributions\n(the bad distribution is "
+                                 "computed by shifting the target side of every batch by one position)");
     desc.add_options()
             ("help,h", "print this help message")
-            ("model,m", po::value<string>()->required(), "output model path")
-            ("output,o", po::value<string>()->required(), "output folder for the corpora alignment")
+            ("model,m", po::value<string>()->required(), "the FastAlign model path")
+            ("output,o", po::value<string>()->required(), "output folder for \"*.score\" files")
             ("source,s", po::value<string>()->required(), "source language")
             ("target,t", po::value<string>()->required(), "target language")
-            ("input,i", po::value<string>()->required(), "input folder with input corpora")
-            ("buffer,b", po::value<size_t>(), "size of the buffer");
+            ("input,i", po::value<string>()->required(), "input folder containing the parallel files collection")
+            ("batch-size,b", po::value<size_t>(), "input batch size, expressed in number of lines");
 
     po::variables_map vm;
     try {
@@ -95,8 +98,8 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
         args->source_lang = vm["source"].as<string>();
         args->target_lang = vm["target"].as<string>();
 
-        if (vm.count("buffer"))
-            args->buffer_size = vm["buffer"].as<size_t>();
+        if (vm.count("batch-size"))
+            args->buffer_size = vm["batch-size"].as<size_t>();
     } catch (po::error &e) {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         std::cerr << desc << std::endl;

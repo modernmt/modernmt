@@ -31,8 +31,8 @@ namespace {
         string input_path;
         string source_lang;
         string target_lang;
-        bool print_alignments;
-        bool print_scores;
+        bool print_alignments = true;
+        bool print_scores = true;
 
         Symmetrization strategy = GrowDiagonalFinalAnd;
         size_t buffer_size = 100000;
@@ -44,19 +44,21 @@ namespace fs = boost::filesystem;
 
 
 bool ParseArgs(int argc, const char *argv[], args_t *args) {
-    po::options_description desc("Train a SuffixArray Phrase Table from scratch");
+    po::options_description desc("Runs FastAlign model on a collection of parallel files "
+                                 "and outputs alignments and scores in the output folder");
     desc.add_options()
             ("help,h", "print this help message")
-            ("model,m", po::value<string>()->required(), "output model path")
-            ("output,o", po::value<string>()->required(), "output folder for the corpora alignment")
+            ("model,m", po::value<string>()->required(), "the FastAlign model path")
+            ("output,o", po::value<string>()->required(), "output folder for \"*.score\" and \"*.align\" files")
             ("source,s", po::value<string>()->required(), "source language")
             ("target,t", po::value<string>()->required(), "target language")
-            ("input,i", po::value<string>()->required(), "input folder with input corpora")
+            ("input,i", po::value<string>()->required(), "input folder containing the parallel files collection")
             ("strategy,a", po::value<size_t>(),
-             "Symmetrization (1 = GrowDiagonalFinal, 2 = GrowDiagonal, 3 = Intersection, 4 = Union)")
-            ("buffer,b", po::value<size_t>(), "size of the buffer")
-            ("skip-alignments,", "if specified, .align file will be omitted")
-            ("skip-scores,", "if specified, .score file will be omitted");
+             "symmetrization strategy, valid values are (1) GrowDiagonalFinalAnd, (2) GrowDiagonal, (3) Intersection "
+             "(4) Union. Default strategy is \"GrowDiagonalFinalAnd\"")
+            ("batch-size,b", po::value<size_t>(), "input batch size, expressed in number of lines")
+            ("skip-alignments", "skip the creation of \"*.align\" files")
+            ("skip-scores", "skip the creation of \"*.score\" files");
 
     po::variables_map vm;
     try {
@@ -81,8 +83,8 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
         if (vm.count("strategy"))
             args->strategy = (Symmetrization) vm["strategy"].as<size_t>();
 
-        if (vm.count("buffer"))
-            args->buffer_size = vm["buffer"].as<size_t>();
+        if (vm.count("batch-size"))
+            args->buffer_size = vm["batch-size"].as<size_t>();
     } catch (po::error &e) {
         std::cerr << "ERROR: " << e.what() << std::endl << std::endl;
         std::cerr << desc << std::endl;
@@ -93,7 +95,7 @@ bool ParseArgs(int argc, const char *argv[], args_t *args) {
 }
 
 
-void printAlignment(vector<alignment_t> &alignments, ofstream &out) {
+void PrintAlignment(vector<alignment_t> &alignments, ofstream &out) {
     for (auto a = alignments.begin(); a != alignments.end(); ++a) {
         for (size_t i = 0; i < a->points.size(); ++i) {
             if (i > 0)
@@ -105,7 +107,7 @@ void printAlignment(vector<alignment_t> &alignments, ofstream &out) {
     }
 }
 
-void printScore(vector<alignment_t> &alignments, ofstream &out) {
+void PrintScore(vector<alignment_t> &alignments, ofstream &out) {
     for (auto a = alignments.begin(); a != alignments.end(); ++a) {
         out << a->score << endl;
     }
@@ -133,9 +135,9 @@ void AlignCorpus(const Corpus &corpus, size_t buffer_size, Symmetrization strate
         aligner.GetAlignments(batch, alignments, strategy);
 
         if (printAlignments)
-            printAlignment(alignments, alignStream);
+            PrintAlignment(alignments, alignStream);
         if (printScores)
-            printScore(alignments, scoreStream);
+            PrintScore(alignments, scoreStream);
 
         alignments.clear();
         batch.clear();
