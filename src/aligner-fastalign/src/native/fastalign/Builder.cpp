@@ -187,7 +187,7 @@ void Builder::AllocateTTableSpace(Model *_model, const unordered_map<word_t, wor
     }
 }
 
-void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const std::vector<Corpus> &corpora,
+void Builder::InitialPass(const Vocabulary &vocab, Model *_model, const std::vector<Corpus> &corpora,
                           double *n_target_tokens, vector<pair<pair<length_t, length_t>, size_t>> *size_counts) {
     auto *model = (BuilderModel *) _model;
 
@@ -199,7 +199,7 @@ void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const std::vec
     wordvec_t src, trg;
 
     for (auto corpus = corpora.begin(); corpus != corpora.end(); ++corpus) {
-        CorpusReader reader(*corpus, vocab, max_length, true);
+        CorpusReader reader(*corpus, &vocab, max_length, true);
 
         while (reader.Read(src, trg)) {
             if (model->is_reverse)
@@ -271,12 +271,12 @@ void Builder::Build(const std::vector<Corpus> &corpora, const string &path) {
     vocab.Store(vocab_filename.string());
     if (listener) listener->VocabularyBuildEnd();
 
-    auto *forward = (BuilderModel *) BuildModel(&vocab, corpora, true);
+    auto *forward = (BuilderModel *) BuildModel(vocab, corpora, true);
     fs::path fwd_model_filename = fs::absolute(fs::path(path) / fs::path("fwd_model.tmp"));
     forward->Store(fwd_model_filename.string());
     delete forward;
 
-    auto *backward = (BuilderModel *) BuildModel(&vocab, corpora, false);
+    auto *backward = (BuilderModel *) BuildModel(vocab, corpora, false);
     fs::path bwd_model_filename = fs::absolute(fs::path(path) / fs::path("bwd_model.tmp"));
     backward->Store(bwd_model_filename.string());
     delete backward;
@@ -294,7 +294,7 @@ void Builder::Build(const std::vector<Corpus> &corpora, const string &path) {
     if (listener) listener->ModelDumpEnd();
 }
 
-Model *Builder::BuildModel(const Vocabulary *vocab, const std::vector<Corpus> &corpora, bool forward) {
+Model *Builder::BuildModel(const Vocabulary &vocab, const std::vector<Corpus> &corpora, bool forward) {
     BuilderModel *model = new BuilderModel(!forward, use_null, favor_diagonal, prob_align_null,
                                            initial_diagonal_tension);
 
@@ -316,7 +316,7 @@ Model *Builder::BuildModel(const Vocabulary *vocab, const std::vector<Corpus> &c
 
         if (listener) listener->Begin(forward, kBuilderStepAligning, iter + 1);
         for (auto corpus = corpora.begin(); corpus != corpora.end(); ++corpus) {
-            CorpusReader reader(*corpus, vocab, max_length, true);
+            CorpusReader reader(*corpus, &vocab, max_length, true);
 
             while (reader.Read(batch, buffer_size)) {
                 emp_feat += model->ComputeAlignments(batch, model, NULL);

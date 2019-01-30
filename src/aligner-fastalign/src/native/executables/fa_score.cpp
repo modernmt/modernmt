@@ -128,7 +128,7 @@ void ShiftBatch(vector<pair<wordvec_t, wordvec_t>> &batch) {
 
 void ScoreCorpus(FastAligner &aligner, Sequence &goodScores, Sequence &badScores,
                  const Corpus &corpus, size_t buffer_size, const string &outputPath) {
-    CorpusReader reader(corpus, aligner.vocabulary);
+    CorpusReader reader(corpus, &aligner.GetVocabulary());
 
     vector<pair<wordvec_t, wordvec_t>> batch;
     vector<alignment_t> alignments;

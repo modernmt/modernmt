@@ -21,9 +21,7 @@ namespace mmt {
 
         class FastAligner {
         public:
-            const Vocabulary *vocabulary;
-
-            FastAligner(const std::string &path, int threads = 0);
+            explicit FastAligner(const std::string &path, int threads = 0);
 
             alignment_t GetAlignment(const sentence_t &source, const sentence_t &target, Symmetrization symmetrization);
 
@@ -35,9 +33,14 @@ namespace mmt {
             void GetAlignments(const std::vector<std::pair<wordvec_t, wordvec_t>> &batch,
                                std::vector<alignment_t> &outAlignments, Symmetrization symmetrization);
 
+            const Vocabulary &GetVocabulary() const {
+                return vocabulary;
+            }
+
             virtual ~FastAligner();
 
         private:
+            Vocabulary vocabulary;
             Model *forwardModel;
             Model *backwardModel;
 

@@ -18,19 +18,16 @@ using namespace std;
 using namespace mmt;
 using namespace mmt::fastalign;
 
-const Vocabulary *LoadVocabulary(const string &path) {
-    fs::path filename = fs::absolute(fs::path(path) / fs::path("model.voc"));
-    if (!fs::is_regular(filename))
-        throw invalid_argument("File not found: " + filename.string());
+FastAligner::FastAligner(const string &path, int threads) {
+    fs::path vocab_filename = fs::absolute(fs::path(path) / fs::path("model.voc"));
+    if (!fs::is_regular(vocab_filename))
+        throw invalid_argument("File not found: " + vocab_filename.string());
 
-    return new Vocabulary(filename.string());
-}
-
-FastAligner::FastAligner(const string &path, int threads) : vocabulary(LoadVocabulary(path)) {
     fs::path model_filename = fs::absolute(fs::path(path) / fs::path("model.dat"));
     if (!fs::is_regular(model_filename))
         throw invalid_argument("File not found: " + model_filename.string());
 
+    vocabulary = Vocabulary(vocab_filename.string());
     BidirectionalModel::Open(model_filename.string(), &forwardModel, &backwardModel);
 
     this->threads = threads > 0 ? threads : (int) thread::hardware_concurrency();
@@ -43,21 +40,20 @@ FastAligner::FastAligner(const string &path, int threads) : vocabulary(LoadVocab
 FastAligner::~FastAligner() {
     delete forwardModel;
     delete backwardModel;
-    delete vocabulary;
 }
 
 alignment_t FastAligner::GetAlignment(const sentence_t &_source, const sentence_t &_target,
                                       Symmetrization symmetrization) {
     wordvec_t source, target;
-    vocabulary->Encode(_source, source);
-    vocabulary->Encode(_target, target);
+    vocabulary.Encode(_source, source);
+    vocabulary.Encode(_target, target);
 
     return GetAlignment(source, target, symmetrization);
 }
 
 alignment_t FastAligner::GetAlignment(const wordvec_t &source, const wordvec_t &target, Symmetrization symmetrization) {
-    alignment_t forward = forwardModel->ComputeAlignment(source, target, vocabulary);
-    alignment_t backward = backwardModel->ComputeAlignment(source, target, vocabulary);
+    alignment_t forward = forwardModel->ComputeAlignment(source, target, &vocabulary);
+    alignment_t backward = backwardModel->ComputeAlignment(source, target, &vocabulary);
 
     SymAlignment symmetrizer(source.size(), target.size());
 
@@ -86,8 +82,8 @@ void FastAligner::GetAlignments(const std::vector<std::pair<sentence_t, sentence
 
 #pragma omp parallel for schedule(dynamic)
     for (size_t i = 0; i < batch.size(); ++i) {
-        vocabulary->Encode(_batch[i].first, batch[i].first);
-        vocabulary->Encode(_batch[i].second, batch[i].second);
+        vocabulary.Encode(_batch[i].first, batch[i].first);
+        vocabulary.Encode(_batch[i].second, batch[i].second);
     }
 
     GetAlignments(batch, outAlignments, symmetrization);
@@ -98,8 +94,8 @@ void FastAligner::GetAlignments(const std::vector<std::pair<wordvec_t, wordvec_t
     vector<alignment_t> forwards;
     vector<alignment_t> backwards;
 
-    forwardModel->ComputeAlignments(batch, forwards, vocabulary);
-    backwardModel->ComputeAlignments(batch, backwards, vocabulary);
+    forwardModel->ComputeAlignments(batch, forwards, &vocabulary);
+    backwardModel->ComputeAlignments(batch, backwards, &vocabulary);
 
     outAlignments.resize(batch.size());
 

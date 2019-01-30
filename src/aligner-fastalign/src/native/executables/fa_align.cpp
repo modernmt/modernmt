@@ -115,7 +115,7 @@ void PrintScore(vector<alignment_t> &alignments, ofstream &out) {
 
 void AlignCorpus(const Corpus &corpus, size_t buffer_size, Symmetrization strategy, FastAligner &aligner,
                  const string &outputPath, bool printAlignments, bool printScores) {
-    CorpusReader reader(corpus, aligner.vocabulary);
+    CorpusReader reader(corpus, &aligner.GetVocabulary());
 
     vector<pair<wordvec_t, wordvec_t>> batch;
     vector<alignment_t> alignments;
