@@ -751,8 +751,9 @@ class EngineBuilder:
 
     @Step(5, 'Preparing data')
     def _prepare_data(self, args, skip=False, log=None):
+        args.prepared_data_path = self._get_tempdir('neural_train_data')
+
         if not skip:
-            args.prepared_data_path = self._get_tempdir('neural_train_data')
             train_corpora = filter(None, [args.processed_train_corpora, args.corpora])[0]
             eval_corpora = args.processed_valid_corpora or BilingualCorpus.list(self.source_lang, self.target_lang,
                                                                                 self._validation_path)
@@ -761,8 +762,9 @@ class EngineBuilder:
 
     @Step(6, 'Training model')
     def _train_model(self, args, skip=False, log=None):
+        args.train_model_path = self._get_tempdir('neural_model')
+
         if not skip:
-            args.train_model_path = self._get_tempdir('neural_model')
             self._decoder.train_model(args.prepared_data_path, args.train_model_path, log=log,
                                       batch_size=self._batch_size, hparams=self._hparams,
                                       n_train_steps=self._n_train_steps, n_eval_steps=self._n_eval_steps)
@@ -770,9 +772,4 @@ class EngineBuilder:
     @Step(7, 'Pack model')
     def _pack_model(self, args, skip=False):
         if not skip:
-            if args.prepared_data_path == None:
-                args.prepared_data_path = self._get_tempdir('neural_train_data')
-            if args.train_model_path == None:
-                args.train_model_path = self._get_tempdir('neural_model')
-
             self._decoder.finalize_model(args.prepared_data_path, args.train_model_path, gpus=self._gpus)
