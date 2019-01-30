@@ -1,10 +1,9 @@
 package eu.modernmt.api;
 
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.MultiPartFormInputStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.util.MultiException;
-import org.eclipse.jetty.util.MultiPartInputStreamParser;
 
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
@@ -19,6 +18,7 @@ import java.io.IOException;
  */
 class MultipartConfigInjectionHandler extends HandlerWrapper {
 
+    private static final String MULTIPART = "org.eclipse.jetty.servlet.MultiPartFile.multiPartInputStream";
     private static final String MULTIPART_FORMDATA_TYPE = "multipart/form-data";
 
     private final MultipartConfigElement multipartConfig;
@@ -49,16 +49,9 @@ class MultipartConfigInjectionHandler extends HandlerWrapper {
             super.handle(target, baseRequest, request, response);
         } finally {
             if (multipartRequest) {
-                MultiPartInputStreamParser multipartInputStream = (MultiPartInputStreamParser) request
-                        .getAttribute(Request.__MULTIPART_INPUT_STREAM);
+                MultiPartFormInputStream multipartInputStream = (MultiPartFormInputStream) request.getAttribute(MULTIPART);
                 if (multipartInputStream != null) {
-                    try {
-                        // A multipart request to a servlet will have the parts cleaned up correctly, but
-                        // the repeated call to deleteParts() here will safely do nothing.
-                        multipartInputStream.deleteParts();
-                    } catch (MultiException e) {
-                        // Ignore it
-                    }
+                    multipartInputStream.deleteParts();
                 }
             }
         }
