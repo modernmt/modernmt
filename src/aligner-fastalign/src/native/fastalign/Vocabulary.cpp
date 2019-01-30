@@ -88,11 +88,9 @@ Vocabulary::Vocabulary(bool case_sensitive) : case_sensitive(case_sensitive) {
     locale = gen("C.UTF-8");
 }
 
-Vocabulary::Vocabulary(const std::string &filename) {
+Vocabulary::Vocabulary(std::istream &in) {
     boost::locale::generator gen;
     locale = gen("C.UTF-8");
-
-    ifstream in(filename);
 
     string header;
     io_read(in, header);
@@ -211,9 +209,8 @@ void Vocabulary::BuildFromCorpora(const vector<Corpus> &corpora, size_t maxLineL
     }
 }
 
-void Vocabulary::Store(const std::string &filename) {
+void Vocabulary::Store(ostream &out) {
     // Sorting entries by id
-
     vector<pair<string, size_t>> entries;
     entries.reserve(vocab.size());
 
@@ -223,9 +220,6 @@ void Vocabulary::Store(const std::string &filename) {
     std::sort(entries.begin(), entries.end(), __terms_compare);
 
     // Writing output model
-
-    ofstream out(filename);
-
     ostringstream header;
     header << "size=" << entries.size() << ' '
            << "case_sensitive=" << (case_sensitive ? '1' : '0');

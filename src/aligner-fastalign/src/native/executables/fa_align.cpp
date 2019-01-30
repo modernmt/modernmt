@@ -164,7 +164,7 @@ int main(int argc, const char *argv[]) {
         return GENERIC_ERROR;
     }
 
-    if (!fs::is_directory(args.model_path)) {
+    if (!fs::is_regular(args.model_path)) {
         cerr << "ERROR: model path is not a valid directory" << endl;
         return GENERIC_ERROR;
     }

@@ -22,7 +22,7 @@ namespace mmt {
         public:
             explicit Vocabulary(bool case_sensitive = true);
 
-            explicit Vocabulary(const std::string &filename);
+            explicit Vocabulary(std::istream &in);
 
             void BuildFromCorpora(const std::vector<Corpus> &corpora, size_t maxLineLength = 0, double threshold = 0.);
 
@@ -54,7 +54,7 @@ namespace mmt {
                 }
             }
 
-            void Store(const std::string &filename);
+            void Store(std::ostream &out);
 
         private:
             std::locale locale;

@@ -264,26 +264,28 @@ void Builder::Build(const std::vector<Corpus> &corpora, const string &path) {
         listener->BuildStart(opts.str());
     }
 
+    fs::path model_path = fs::absolute(fs::path(path));
+    fs::path fwd_model_filename = model_path.parent_path() / fs::path("fwd_model.tmp");
+    fs::path bwd_model_filename = model_path.parent_path() / fs::path("bwd_model.tmp");
+
     if (listener) listener->VocabularyBuildBegin();
-    fs::path vocab_filename = fs::absolute(fs::path(path) / fs::path("model.voc"));
     Vocabulary vocab(case_sensitive);
     vocab.BuildFromCorpora(corpora, max_length, vocabulary_threshold);
-    vocab.Store(vocab_filename.string());
     if (listener) listener->VocabularyBuildEnd();
 
     auto *forward = (BuilderModel *) BuildModel(vocab, corpora, true);
-    fs::path fwd_model_filename = fs::absolute(fs::path(path) / fs::path("fwd_model.tmp"));
     forward->Store(fwd_model_filename.string());
     delete forward;
 
     auto *backward = (BuilderModel *) BuildModel(vocab, corpora, false);
-    fs::path bwd_model_filename = fs::absolute(fs::path(path) / fs::path("bwd_model.tmp"));
     backward->Store(bwd_model_filename.string());
     delete backward;
 
     if (listener) listener->ModelDumpBegin();
-    fs::path model_filename = fs::absolute(fs::path(path) / fs::path("model.dat"));
-    MergeAndStore(fwd_model_filename.string(), bwd_model_filename.string(), model_filename.string());
+    ofstream out(model_path.string(), ios::binary | ios::out);
+    vocab.Store(out);
+    MergeAndStore(out, fwd_model_filename.string(), bwd_model_filename.string());
+    out.close();
 
     if (remove(fwd_model_filename.c_str()) != 0)
         throw runtime_error("Error deleting the forward model file");
@@ -295,8 +297,7 @@ void Builder::Build(const std::vector<Corpus> &corpora, const string &path) {
 }
 
 Model *Builder::BuildModel(const Vocabulary &vocab, const std::vector<Corpus> &corpora, bool forward) {
-    BuilderModel *model = new BuilderModel(!forward, use_null, favor_diagonal, prob_align_null,
-                                           initial_diagonal_tension);
+    auto *model = new BuilderModel(!forward, use_null, favor_diagonal, prob_align_null, initial_diagonal_tension);
 
     if (listener) listener->Begin(forward);
 
@@ -319,7 +320,7 @@ Model *Builder::BuildModel(const Vocabulary &vocab, const std::vector<Corpus> &c
             CorpusReader reader(*corpus, &vocab, max_length, true);
 
             while (reader.Read(batch, buffer_size)) {
-                emp_feat += model->ComputeAlignments(batch, model, NULL);
+                emp_feat += model->ComputeAlignments(batch, model, nullptr);
                 batch.clear();
             }
         }
@@ -367,7 +368,7 @@ Model *Builder::BuildModel(const Vocabulary &vocab, const std::vector<Corpus> &c
     return model;
 }
 
-void Builder::MergeAndStore(const string &fwd_path, const string &bwd_path, const string &out_path) {
+void Builder::MergeAndStore(std::ostream &out, const string &fwd_path, const string &bwd_path) {
     // creating the bitable
     auto *table = new bitable_t;
 
@@ -450,9 +451,6 @@ void Builder::MergeAndStore(const string &fwd_path, const string &bwd_path, cons
     // closing backward model file
     bwd_in.close();
 
-    // opening bidirectional model file for writing
-    ofstream out(out_path, ios::binary | ios::out);
-
     // writing header
     io_write(out, fwd_use_null);
     io_write(out, fwd_favor_diagonal);
@@ -474,9 +472,6 @@ void Builder::MergeAndStore(const string &fwd_path, const string &bwd_path, cons
             io_write(out, tgt_entry->second.second);
         }
     }
-
-    // closing bidirectional model file
-    out.close();
 
     // deleting bitable
     delete table;

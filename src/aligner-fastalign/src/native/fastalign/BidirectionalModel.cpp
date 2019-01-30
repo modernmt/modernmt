@@ -13,13 +13,11 @@ BidirectionalModel::BidirectionalModel(shared_ptr<bitable_t> table, bool forward
         : Model(!forward, use_null, favor_diagonal, prob_align_null, diagonal_tension), table(table) {
 }
 
-void BidirectionalModel::Open(const string &filename, Model **outForward, Model **outBackward) {
+void BidirectionalModel::Open(istream &in, Model **outForward, Model **outBackward) {
     bool use_null;
     bool favor_diagonal;
     double prob_align_null;
     double fwd_diagonal_tension, bwd_diagonal_tension;
-
-    ifstream in(filename, ios::binary | ios::in);
 
     in.read((char *) &use_null, sizeof(bool));
     in.read((char *) &favor_diagonal, sizeof(bool));

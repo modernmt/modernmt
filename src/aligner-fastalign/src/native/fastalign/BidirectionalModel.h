@@ -40,7 +40,7 @@ namespace mmt {
                 // no-op
             }
 
-            static void Open(const std::string &filename, Model **outForward, Model **outBackward);
+            static void Open(std::istream &in, Model **outForward, Model **outBackward);
 
         private:
             const std::shared_ptr<bitable_t> table;

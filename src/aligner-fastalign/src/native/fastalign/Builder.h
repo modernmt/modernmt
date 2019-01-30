@@ -100,7 +100,7 @@ namespace mmt {
 
             Model *BuildModel(const Vocabulary &vocab, const std::vector<Corpus> &corpora, bool forward);
 
-            void MergeAndStore(const std::string &fwd_path, const std::string &bwd_path, const std::string &out_path);
+            void MergeAndStore(std::ostream &out, const std::string &fwd_path, const std::string &bwd_path);
         };
     }
 }

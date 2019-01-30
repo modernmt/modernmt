@@ -19,16 +19,14 @@ using namespace mmt;
 using namespace mmt::fastalign;
 
 FastAligner::FastAligner(const string &path, int threads) {
-    fs::path vocab_filename = fs::absolute(fs::path(path) / fs::path("model.voc"));
-    if (!fs::is_regular(vocab_filename))
-        throw invalid_argument("File not found: " + vocab_filename.string());
+    fs::path model_path = fs::absolute(fs::path(path));
+    if (!fs::is_regular(model_path))
+        throw invalid_argument("file not found: " + model_path.string());
 
-    fs::path model_filename = fs::absolute(fs::path(path) / fs::path("model.dat"));
-    if (!fs::is_regular(model_filename))
-        throw invalid_argument("File not found: " + model_filename.string());
-
-    vocabulary = Vocabulary(vocab_filename.string());
-    BidirectionalModel::Open(model_filename.string(), &forwardModel, &backwardModel);
+    ifstream in(model_path.string(), ios::binary | ios::in);
+    vocabulary = Vocabulary(in);
+    BidirectionalModel::Open(in, &forwardModel, &backwardModel);
+    in.close();
 
     this->threads = threads > 0 ? threads : (int) thread::hardware_concurrency();
 #ifdef _OPENMP
