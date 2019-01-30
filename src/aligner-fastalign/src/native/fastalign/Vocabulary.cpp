@@ -7,12 +7,13 @@
 #include <unordered_map>
 #include <algorithm>
 #include <math.h>
+#include "ioutils.h"
 
 using namespace std;
 using namespace mmt;
 using namespace mmt::fastalign;
 
-void ParseHeader(const string &header, size_t *outSize, bool *outCaseSensitive, size_t *outNDocs) {
+void ParseHeader(const string &header, size_t *outSize, bool *outCaseSensitive) {
     vector<string> properties;
 
     istringstream iss(header);
@@ -29,8 +30,6 @@ void ParseHeader(const string &header, size_t *outSize, bool *outCaseSensitive, 
                     *outSize = (size_t) stoi(value);
                 else if ("case_sensitive" == key)
                     *outCaseSensitive = (value[0] == '1');
-                else if ("n_docs" == key)
-                    *outNDocs = (size_t) stoi(value);
                 else
                     throw runtime_error("invalid header key: " + key);
             }
@@ -152,12 +151,14 @@ const Vocabulary *Vocabulary::BuildFromCorpora(const std::vector<Corpus> &corpor
 
     // Writing output model
 
-    ofstream output(filename);
+    ofstream out(filename);
 
-    output << "size=" << (src_terms_array.size() + tgt_terms_array.size() + 2) << ' '
-           << "case_sensitive=" << (case_sensitive ? '1' : '0') << ' '
-           << "n_docs=" << n_docs
-           << '\n';
+    ostringstream header;
+    header << "size=" << (src_terms_array.size() + tgt_terms_array.size()) << ' '
+           << "case_sensitive=" << (case_sensitive ? '1' : '0');
+
+    string header_str = header.str();
+    io_write(out, header_str);
 
     for (auto src_term = src_terms_array.begin(); src_term != src_terms_array.end(); ++src_term) {
         size_t src_doc_freq = src_doc_term_freq[src_term->first];
@@ -167,21 +168,21 @@ const Vocabulary *Vocabulary::BuildFromCorpora(const std::vector<Corpus> &corpor
         if (tgt_term != tgt_doc_term_freq.end())
             tgt_doc_freq = tgt_term->second;
 
-        output << SmoothInverseDocumentFrequency(n_docs, src_doc_freq) << ' '
-               << SmoothInverseDocumentFrequency(n_docs, tgt_doc_freq) << ' '
-               << src_term->first << '\n';
+        io_write(out, SmoothInverseDocumentFrequency(n_docs, src_doc_freq));
+        io_write(out, SmoothInverseDocumentFrequency(n_docs, tgt_doc_freq));
+        io_write(out, src_term->first);
     }
 
     for (auto tgt_term = tgt_terms_array.begin(); tgt_term != tgt_terms_array.end(); ++tgt_term) {
         size_t src_doc_freq = 0;
         size_t tgt_doc_freq = tgt_doc_term_freq[tgt_term->first];
 
-        output << SmoothInverseDocumentFrequency(n_docs, src_doc_freq) << ' '
-               << SmoothInverseDocumentFrequency(n_docs, tgt_doc_freq) << ' '
-               << tgt_term->first << '\n';
+        io_write(out, SmoothInverseDocumentFrequency(n_docs, src_doc_freq));
+        io_write(out, SmoothInverseDocumentFrequency(n_docs, tgt_doc_freq));
+        io_write(out, tgt_term->first);
     }
 
-    output.close();
+    out.close();
 
     return new Vocabulary(filename);
 }
@@ -190,30 +191,23 @@ Vocabulary::Vocabulary(const std::string &filename) {
     boost::locale::generator gen;
     locale = gen("C.UTF-8");
 
-    ifstream input(filename);
-    string line;
+    ifstream in(filename);
+
+    string header;
+    io_read(in, header);
 
     size_t size;
-    size_t n_docs;
-    getline(input, line);  // header
-    ParseHeader(line, &size, &case_sensitive, &n_docs);
+    ParseHeader(header, &size, &case_sensitive);
 
-    probs.resize(size);
-    vocab.reserve(size);
+    probs.resize(size + 2);
+    vocab.reserve(size + 2);
 
-    word_t id = 2; // 0 = kNullWord, 1 = kUnknownWord
-    while (getline(input, line)) {
-        istringstream line_ss(line);
+    for (word_t id = 2; id < size + 2; ++id) {
+        probs[id].first = io_read<score_t>(in);
+        probs[id].second = io_read<score_t>(in);
 
-        score_t src_prob, tgt_prob;
         string word;
-
-        line_ss >> src_prob >> tgt_prob >> word;
-
-        probs[id].first = src_prob;
-        probs[id].second = tgt_prob;
+        io_read(in, word);
         vocab[word] = id;
-
-        id++;
     }
 }

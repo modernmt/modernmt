@@ -16,7 +16,7 @@ set(SOURCE_FILES
         symal/SymAlignment.cpp symal/SymAlignment.h
 
         java/jniutil.h
-        javah/eu_modernmt_aligner_fastalign_FastAlign.h java/eu_modernmt_aligner_fastalign_FastAlign.cpp)
+        javah/eu_modernmt_aligner_fastalign_FastAlign.h java/eu_modernmt_aligner_fastalign_FastAlign.cpp fastalign/ioutils.h)
 
 include_directories(${CMAKE_SOURCE_DIR})
 
