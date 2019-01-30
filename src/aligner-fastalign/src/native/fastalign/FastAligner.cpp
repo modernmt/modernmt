@@ -23,7 +23,7 @@ const Vocabulary *LoadVocabulary(const string &path) {
     if (!fs::is_regular(filename))
         throw invalid_argument("File not found: " + filename.string());
 
-    return new Vocabulary(filename.string(), true, false);
+    return new Vocabulary(filename.string());
 }
 
 FastAligner::FastAligner(const string &path, int threads) : vocabulary(LoadVocabulary(path)) {
@@ -56,8 +56,8 @@ alignment_t FastAligner::GetAlignment(const sentence_t &_source, const sentence_
 }
 
 alignment_t FastAligner::GetAlignment(const wordvec_t &source, const wordvec_t &target, Symmetrization symmetrization) {
-    alignment_t forward = forwardModel->ComputeAlignment(source, target);
-    alignment_t backward = backwardModel->ComputeAlignment(source, target);
+    alignment_t forward = forwardModel->ComputeAlignment(source, target, vocabulary);
+    alignment_t backward = backwardModel->ComputeAlignment(source, target, vocabulary);
 
     SymAlignment symmetrizer(source.size(), target.size());
 
@@ -98,8 +98,8 @@ void FastAligner::GetAlignments(const std::vector<std::pair<wordvec_t, wordvec_t
     vector<alignment_t> forwards;
     vector<alignment_t> backwards;
 
-    forwardModel->ComputeAlignments(batch, forwards);
-    backwardModel->ComputeAlignments(batch, backwards);
+    forwardModel->ComputeAlignments(batch, forwards, vocabulary);
+    backwardModel->ComputeAlignments(batch, backwards, vocabulary);
 
     outAlignments.resize(batch.size());
 

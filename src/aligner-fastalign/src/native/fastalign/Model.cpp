@@ -20,7 +20,7 @@ Model::Model(bool is_reverse, bool use_null, bool favor_diagonal, double prob_al
 }
 
 double Model::ComputeAlignments(const vector<pair<wordvec_t, wordvec_t>> &batch, Model *outModel,
-                                vector<alignment_t> *outAlignments) {
+                                vector<alignment_t> *outAlignments, const Vocabulary *vocab) {
     double emp_feat = 0.0;
 
     if (outAlignments)
@@ -29,7 +29,7 @@ double Model::ComputeAlignments(const vector<pair<wordvec_t, wordvec_t>> &batch,
 #pragma omp parallel for schedule(dynamic) reduction(+:emp_feat)
     for (size_t i = 0; i < batch.size(); ++i) {
         const pair<wordvec_t, wordvec_t> &p = batch[i];
-        emp_feat += ComputeAlignment(p.first, p.second, outModel, outAlignments ? &outAlignments->at(i) : NULL);
+        emp_feat += ComputeAlignment(p.first, p.second, outModel, outAlignments ? &outAlignments->at(i) : NULL, vocab);
     }
 
     assert(isnormal(emp_feat));
@@ -37,18 +37,20 @@ double Model::ComputeAlignments(const vector<pair<wordvec_t, wordvec_t>> &batch,
 }
 
 double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target, Model *outModel,
-                               alignment_t *outAlignment) {
+                               alignment_t *outAlignment, const Vocabulary *vocab) {
     double emp_feat = 0.0;
 
-    const wordvec_t src = is_reverse ? target : source;
-    const wordvec_t trg = is_reverse ? source : target;
+    const wordvec_t &src = is_reverse ? target : source;
+    const wordvec_t &trg = is_reverse ? source : target;
 
     vector<double> probs(src.size() + 1);
 
     length_t src_size = (length_t) src.size();
     length_t trg_size = (length_t) trg.size();
 
-    double outProb = 0.0;
+    // Geometric mean of grouped data: antilog(sum(f * log x) / N)
+    double alg_prob = 0.0;
+    double alg_prob_d = 0.0;
 
     for (length_t j = 0; j < trg_size; ++j) {
         const word_t &f_j = trg[j];
@@ -120,19 +122,24 @@ double Model::ComputeAlignment(const wordvec_t &source, const wordvec_t &target,
                 }
             }
 
-            outProb += log(max_p);
+            score_t word_score = 1;
+            if (vocab)
+                word_score = vocab->GetProbability(trg[j], is_reverse);
+
+            alg_prob += word_score * log(max_p);
+            alg_prob_d += word_score;
 
             if (max_index > 0) {
                 if (is_reverse)
-                    outAlignment->points.push_back(pair<length_t, length_t>(j, max_index - 1));
+                    outAlignment->points.emplace_back(j, max_index - 1);
                 else
-                    outAlignment->points.push_back(pair<length_t, length_t>(max_index - 1, j));
+                    outAlignment->points.emplace_back(max_index - 1, j);
             }
         }
     }
 
     if (outAlignment)
-        outAlignment->score = (score_t) (outProb / trg_size);
+        outAlignment->score = (score_t) (alg_prob / alg_prob_d);
 
     return emp_feat;
 }

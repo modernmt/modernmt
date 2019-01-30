@@ -246,8 +246,32 @@ void Builder::InitialPass(const Vocabulary *vocab, Model *_model, const std::vec
 }
 
 void Builder::Build(const std::vector<Corpus> &corpora, const string &path) {
+    if (listener) {
+        std::ostringstream opts;
+        opts << "{"
+             << "alpha=" << alpha << ", "
+             << "buffer_size=" << buffer_size << ", "
+             << "case_sensitive=" << (case_sensitive ? "true" : "false") << ", "
+             << "favor_diagonal=" << (favor_diagonal ? "true" : "false") << ", "
+             << "initial_diagonal_tension=" << initial_diagonal_tension << ", "
+             << "iterations=" << iterations << ", "
+             << "max_length=" << max_length << ", "
+             << "optimize_tension=" << (optimize_tension ? "true" : "false") << ", "
+             << "prob_align_null=" << prob_align_null << ", "
+             << "pruning=" << pruning << ", "
+             << "threads=" << threads << ", "
+             << "use_null=" << (use_null ? "true" : "false") << ", "
+             << "variational_bayes=" << (variational_bayes ? "true" : "false") << ", "
+             << "vocabulary_threshold=" << vocabulary_threshold
+             << "}";
+
+        listener->BuildStart(opts.str());
+    }
+
     if (listener) listener->VocabularyBuildBegin();
-    const Vocabulary *vocab = Vocabulary::FromCorpora(corpora, max_length, case_sensitive, vocabulary_threshold);
+    fs::path vocab_filename = fs::absolute(fs::path(path) / fs::path("model.voc"));
+    const Vocabulary *vocab = Vocabulary::BuildFromCorpora(
+            corpora, vocab_filename.string(), max_length, case_sensitive, vocabulary_threshold);
     if (listener) listener->VocabularyBuildEnd();
 
     BuilderModel *forward = (BuilderModel *) BuildModel(vocab, corpora, true);
@@ -264,8 +288,6 @@ void Builder::Build(const std::vector<Corpus> &corpora, const string &path) {
     fs::path model_filename = fs::absolute(fs::path(path) / fs::path("model.dat"));
     MergeAndStore(fwd_model_filename.string(), bwd_model_filename.string(), model_filename.string());
 
-    fs::path vocab_filename = fs::absolute(fs::path(path) / fs::path("model.voc"));
-    vocab->Store(vocab_filename.string());
     delete vocab;
 
     if (remove(fwd_model_filename.c_str()) != 0)

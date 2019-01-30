@@ -38,7 +38,7 @@ namespace mmt {
         class CorpusReader {
         public:
             explicit CorpusReader(const Corpus &corpus, const Vocabulary *vocabulary = nullptr,
-                                  size_t maxLineLength = 0, const bool skipEmptyLines = false);
+                                  size_t maxLineLength = 0, bool skipEmptyLines = false);
 
             bool Read(sentence_t &outSource, sentence_t &outTarget);
 

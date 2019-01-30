@@ -6,12 +6,37 @@
 #include <iostream>
 #include <unordered_map>
 #include <algorithm>
+#include <math.h>
 
 using namespace std;
 using namespace mmt;
 using namespace mmt::fastalign;
 
-const std::string kVocabularyHeader(" --- vocabulary header: ");
+void ParseHeader(const string &header, size_t *outSize, bool *outCaseSensitive, size_t *outNDocs) {
+    vector<string> properties;
+
+    istringstream iss(header);
+    copy(istream_iterator<string>(iss), istream_iterator<string>(), back_inserter(properties));
+
+    for (auto property = properties.begin(); property != properties.end(); ++property) {
+        istringstream property_ss(*property);
+
+        string key;
+        if (getline(property_ss, key, '=')) {
+            string value;
+            if (getline(property_ss, value)) {
+                if ("size" == key)
+                    *outSize = (size_t) stoi(value);
+                else if ("case_sensitive" == key)
+                    *outCaseSensitive = (value[0] == '1');
+                else if ("n_docs" == key)
+                    *outNDocs = (size_t) stoi(value);
+                else
+                    throw runtime_error("invalid header key: " + key);
+            }
+        }
+    }
+}
 
 bool __terms_compare(const pair<string, size_t> &a, const pair<string, size_t> &b) {
     return b.second < a.second;
@@ -55,85 +80,140 @@ inline void PruneTerms(unordered_map<string, size_t> &terms, double threshold) {
     }
 }
 
-const Vocabulary *Vocabulary::FromCorpora(const vector<Corpus> &corpora,
-                                          size_t maxLineLength, bool case_sensitive, double threshold) {
+inline score_t SmoothInverseDocumentFrequency(size_t n_docs, size_t doc_freq) {
+    return static_cast<score_t>(log(((double) n_docs) / (1. + doc_freq)));
+}
+
+const Vocabulary *Vocabulary::BuildFromCorpora(const std::vector<Corpus> &corpora, const std::string &filename,
+                                               size_t maxLineLength, bool case_sensitive, double threshold) {
     boost::locale::generator gen;
     std::locale locale = gen("C.UTF-8");
 
-    // For model efficiency all source words have the lowest id possible
+    // For model efficiency all source words must have the lowest id possible
     unordered_map<string, size_t> src_terms;
-    unordered_map<string, size_t> trg_terms;
+    unordered_map<string, size_t> tgt_terms;
+    unordered_map<string, size_t> src_doc_term_freq;
+    unordered_map<string, size_t> tgt_doc_term_freq;
 
     vector<string> src, trg;
+    unordered_set<string> src_doc_terms, tgt_doc_terms;
+    size_t n_docs = 0;
 
     for (auto corpus = corpora.begin(); corpus != corpora.end(); ++corpus) {
         CorpusReader reader(*corpus, nullptr, maxLineLength, true);
 
         while (reader.Read(src, trg)) {
-            for (auto w = src.begin(); w != src.end(); ++w)
-                src_terms[case_sensitive ? *w : boost::locale::to_lower(*w, locale)] += 1;
+            src_doc_terms.clear();
+            tgt_doc_terms.clear();
 
-            for (auto w = trg.begin(); w != trg.end(); ++w)
-                trg_terms[case_sensitive ? *w : boost::locale::to_lower(*w, locale)] += 1;
+            for (auto w = src.begin(); w != src.end(); ++w) {
+                string src_term = case_sensitive ? *w : boost::locale::to_lower(*w, locale);
+                src_terms[src_term] += 1;
+                src_doc_terms.insert(src_term);
+            }
+
+            for (auto w = trg.begin(); w != trg.end(); ++w) {
+                string tgt_term = case_sensitive ? *w : boost::locale::to_lower(*w, locale);
+                tgt_terms[tgt_term] += 1;
+                tgt_doc_terms.insert(tgt_term);
+            }
+
+            n_docs += 1;
+            for (auto w = src_doc_terms.begin(); w != src_doc_terms.end(); ++w)
+                src_doc_term_freq[*w] += 1;
+            for (auto w = tgt_doc_terms.begin(); w != tgt_doc_terms.end(); ++w)
+                tgt_doc_term_freq[*w] += 1;
         }
     }
 
     if (threshold > 0) {
         PruneTerms(src_terms, threshold);
-        PruneTerms(trg_terms, threshold);
+        PruneTerms(tgt_terms, threshold);
     }
 
-    for (auto term = src_terms.begin(); term != src_terms.end(); ++term)
-        trg_terms.erase(term->first);
+    // Create source and target terms array
 
-    Vocabulary *result = new Vocabulary(case_sensitive);
-    result->terms.reserve(src_terms.size() + trg_terms.size());
+    vector<pair<string, size_t>> src_terms_array, tgt_terms_array;
+    src_terms_array.reserve(src_terms.size());
+    tgt_terms_array.reserve(tgt_terms.size());
 
-    for (auto term = src_terms.begin(); term != src_terms.end(); ++term)
-        result->terms.push_back(term->first);
-    for (auto term = trg_terms.begin(); term != trg_terms.end(); ++term)
-        result->terms.push_back(term->first);
+    for (auto src_term = src_terms.begin(); src_term != src_terms.end(); ++src_term) {
+        src_terms_array.emplace_back(src_term->first, src_term->second);
+    }
 
-    for (word_t id = 0; id < result->terms.size(); ++id)
-        result->vocab[result->terms[id]] = (id + 2);
+    for (auto tgt_term = tgt_terms.begin(); tgt_term != tgt_terms.end(); ++tgt_term) {
+        auto src_term = src_terms.find(tgt_term->first);
+        if (src_term == src_terms.end())
+            tgt_terms_array.emplace_back(tgt_term->first, tgt_term->second);
+    }
 
-    return result;
+    std::sort(src_terms_array.begin(), src_terms_array.end(), __terms_compare);
+    std::sort(tgt_terms_array.begin(), tgt_terms_array.end(), __terms_compare);
+
+    // Writing output model
+
+    ofstream output(filename);
+
+    output << "size=" << (src_terms_array.size() + tgt_terms_array.size() + 2) << ' '
+           << "case_sensitive=" << (case_sensitive ? '1' : '0') << ' '
+           << "n_docs=" << n_docs
+           << '\n';
+
+    for (auto src_term = src_terms_array.begin(); src_term != src_terms_array.end(); ++src_term) {
+        size_t src_doc_freq = src_doc_term_freq[src_term->first];
+        size_t tgt_doc_freq = 0;
+
+        auto tgt_term = tgt_doc_term_freq.find(src_term->first);
+        if (tgt_term != tgt_doc_term_freq.end())
+            tgt_doc_freq = tgt_term->second;
+
+        output << SmoothInverseDocumentFrequency(n_docs, src_doc_freq) << ' '
+               << SmoothInverseDocumentFrequency(n_docs, tgt_doc_freq) << ' '
+               << src_term->first << '\n';
+    }
+
+    for (auto tgt_term = tgt_terms_array.begin(); tgt_term != tgt_terms_array.end(); ++tgt_term) {
+        size_t src_doc_freq = 0;
+        size_t tgt_doc_freq = tgt_doc_term_freq[tgt_term->first];
+
+        output << SmoothInverseDocumentFrequency(n_docs, src_doc_freq) << ' '
+               << SmoothInverseDocumentFrequency(n_docs, tgt_doc_freq) << ' '
+               << tgt_term->first << '\n';
+    }
+
+    output.close();
+
+    return new Vocabulary(filename);
 }
 
-Vocabulary::Vocabulary(const std::string &filename, bool direct, bool reverse) {
+Vocabulary::Vocabulary(const std::string &filename) {
     boost::locale::generator gen;
     locale = gen("C.UTF-8");
 
     ifstream input(filename);
+    string line;
 
-    case_sensitive = true;
-    bool header_line = true;
+    size_t size;
+    size_t n_docs;
+    getline(input, line);  // header
+    ParseHeader(line, &size, &case_sensitive, &n_docs);
 
-    word_t index = 2;
-    for (std::string line; getline(input, line); ++index) {
-        if (header_line) {
-            header_line = false;
+    probs.resize(size);
+    vocab.reserve(size);
 
-            if (line.find(kVocabularyHeader) == 0) {
-                case_sensitive = (line[kVocabularyHeader.length()] == '1');
-                index--;
-                continue;
-            }
-        }
+    word_t id = 2; // 0 = kNullWord, 1 = kUnknownWord
+    while (getline(input, line)) {
+        istringstream line_ss(line);
 
-        if (direct)
-            vocab[line] = index;
+        score_t src_prob, tgt_prob;
+        string word;
 
-        if (reverse)
-            terms.push_back(line);
+        line_ss >> src_prob >> tgt_prob >> word;
+
+        probs[id].first = src_prob;
+        probs[id].second = tgt_prob;
+        vocab[word] = id;
+
+        id++;
     }
-}
-
-void Vocabulary::Store(const std::string &filename) const {
-    ofstream output(filename);
-
-    output << kVocabularyHeader << (case_sensitive ? '1' : '0') << '\n';
-
-    for (auto term = terms.begin(); term != terms.end(); ++term)
-        output << (*term) << '\n';
 }

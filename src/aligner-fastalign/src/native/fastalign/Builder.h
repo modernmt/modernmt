@@ -44,6 +44,8 @@ namespace mmt {
 
             class Listener {
             public:
+                virtual void BuildStart(const std::string &opts) = 0;
+
                 virtual void Begin(bool forward) = 0;
 
                 virtual void VocabularyBuildBegin() = 0;

@@ -18,17 +18,14 @@ namespace mmt {
         static const word_t kNullWord = 0;
         static const word_t kUnknownWord = 1;
 
-        static const std::string kEmptyResult;
-
         class Vocabulary {
         public:
 
-            static const Vocabulary *FromCorpora(const std::vector<Corpus> &corpora,
-                                                 size_t maxLineLength, bool case_sensitive, double threshold = 0.);
+            static const Vocabulary *BuildFromCorpora(const std::vector<Corpus> &corpora, const std::string &filename,
+                                                      size_t maxLineLength = 0, bool case_sensitive = true,
+                                                      double threshold = 0.);
 
-            explicit Vocabulary(const std::string &filename, bool direct = true, bool reverse = true);
-
-            void Store(const std::string &filename) const;
+            explicit Vocabulary(const std::string &filename);
 
             inline const size_t Size() const {
                 return vocab.size() + 2;
@@ -39,25 +36,29 @@ namespace mmt {
                 return result == vocab.end() ? kUnknownWord : result->second;
             }
 
-            inline const std::string &Get(word_t id) const {
-                return (id > 1 && (id - 2) < terms.size()) ? terms[id - 2] : kEmptyResult;
-            }
-
             inline const void Encode(const sentence_t &sentence, wordvec_t &output) const {
                 output.resize(sentence.size());
                 for (size_t i = 0; i < sentence.size(); ++i)
                     output[i] = Get(sentence[i]);
             }
 
-        private:
-            explicit Vocabulary(bool case_sensitive) : case_sensitive(case_sensitive) {
-                boost::locale::generator gen;
-                locale = gen("C.UTF-8");
-            };
+            inline const score_t GetProbability(const std::string &term, bool is_source) const {
+                return GetProbability(Get(term), is_source);
+            }
 
+            inline const score_t GetProbability(word_t id, bool is_source) const {
+                if (id < probs.size()) {
+                    const std::pair<score_t, score_t> &pair = probs[id];
+                    return is_source ? pair.first : pair.second;
+                } else {
+                    return 0;
+                }
+            }
+
+        private:
             std::locale locale;
             bool case_sensitive;
-            std::vector<std::string> terms;
+            std::vector<std::pair<score_t, score_t>> probs;
             std::unordered_map<std::string, word_t> vocab;
         };
 
