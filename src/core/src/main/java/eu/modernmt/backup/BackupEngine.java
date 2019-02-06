@@ -33,6 +33,7 @@ public class BackupEngine {
     private LuceneAnalyzer contextAnalyzer = null;
     private LuceneTranslationMemory memory = null;
     private DataManager dataManager = null;
+    private CorporaBackupStorage storage = null;
 
     public BackupEngine(NodeConfig config, File models) {
         this.uuid = UUID.randomUUID().toString();
@@ -62,11 +63,13 @@ public class BackupEngine {
 
         contextAnalyzer = new LuceneAnalyzer(Paths.join(models, "context"));
         memory = new LuceneTranslationMemory(Paths.join(models, "memory"), 1);
+        storage = new CorporaBackupStorage(Paths.join(models, "storage"));
 
         dataManager = new KafkaDataManager(config.getEngineConfig().getLanguageIndex(), new Preprocessor(), null, uuid, config.getDataStreamConfig());
         for (DataListener listener : contextAnalyzer.getDataListeners())
             dataManager.addDataListener(listener);
         dataManager.addDataListener(memory);
+        dataManager.addDataListener(storage);
 
         Map<Short, Long> positions;
         try {
@@ -87,6 +90,7 @@ public class BackupEngine {
         IOException dmError = close(dataManager);
         IOException caError;
         IOException mError;
+        IOException sError;
 
         try {
             if (optimize) {
@@ -105,6 +109,7 @@ public class BackupEngine {
         } finally {
             caError = close(contextAnalyzer);
             mError = close(memory);
+            sError = close(storage);
         }
 
         if (dmError != null)
@@ -113,10 +118,13 @@ public class BackupEngine {
             throw caError;
         if (mError != null)
             throw mError;
+        if (sError != null)
+            throw sError;
 
         dataManager = null;
         contextAnalyzer = null;
         memory = null;
+        storage = null;
 
         logger.info("Backup engine stopped");
     }
