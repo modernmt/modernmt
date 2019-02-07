@@ -288,7 +288,7 @@ public class SentenceBuilder {
             /*compute hasRightSpace and rightSpace*/
             /*if the current transformation is the last one in the list*/
             if (i == transformations.size() - 1) {
-                hasRightSpace = (transformation.end != originalChars.length);
+                hasRightSpace = transformation.end < originalChars.length;
 
                 /*RightSpace can only be extracted by the original string,
                 as the transformation indexes refer to positions in the original string.
@@ -314,7 +314,7 @@ public class SentenceBuilder {
                 /*if the current transformation is not the last one in the list*/
             } else {
                 Transformation nextTransformation = transformations.get(i + 1);
-                hasRightSpace = (transformation.end != nextTransformation.start);
+                hasRightSpace = transformation.end < nextTransformation.start;
 
                 if (hasRightSpace) {
                     /*unescape the rightspace (see comment above to understand why)*/
