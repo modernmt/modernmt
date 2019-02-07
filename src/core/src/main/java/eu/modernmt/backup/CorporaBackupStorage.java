@@ -151,7 +151,7 @@ public class CorporaBackupStorage implements DataListener, Closeable {
                 target = temp;
             }
 
-            File file = new File(corporaPath, "ModernMT_" + memory + "-" + source + "__" + target + ".cc");
+            File file = new File(corporaPath, "ModernMT_" + memory + "-" + source + "__" + target + ".cfc");
 
             return writers.computeIfAbsent(file, f -> {
                 try {
