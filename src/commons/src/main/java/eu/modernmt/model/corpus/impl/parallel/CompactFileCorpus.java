@@ -39,6 +39,10 @@ public class CompactFileCorpus extends BaseMultilingualCorpus {
         this.file = file;
     }
 
+    public FileProxy getFile() {
+        return file;
+    }
+
     @Override
     public String getName() {
         return name;

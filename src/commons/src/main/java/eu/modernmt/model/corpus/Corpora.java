@@ -3,6 +3,7 @@ package eu.modernmt.model.corpus;
 import eu.modernmt.io.FileProxy;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 public class Corpora {
 
     public static final String TMX_EXTENSION = "tmx";
+    public static final String CFC_EXTENSION = "cfc";
 
     public static MultilingualCorpus unwrap(MultilingualCorpus corpus) {
         while (corpus instanceof MultilingualCorpusWrapper) {
@@ -51,6 +53,8 @@ public class Corpora {
         } else if (corpus instanceof ParallelFileCorpus) {
             LanguagePair language = ((ParallelFileCorpus) corpus).getLanguage();
             return new ParallelFileCorpus(folder, name, language);
+        } else if (corpus instanceof CompactFileCorpus) {
+            return new CompactFileCorpus(new File(folder, name + ".cfc"));
         } else {
             throw new IllegalArgumentException("Unknown multilingual corpus: " + corpus.getClass().getSimpleName());
         }
@@ -75,6 +79,9 @@ public class Corpora {
         } else if (corpus instanceof ParallelFileCorpus) {
             ParallelFileCorpus parallelFileCorpus = ((ParallelFileCorpus) corpus);
             return fileSize(parallelFileCorpus.getSourceFile()) + fileSize(parallelFileCorpus.getTargetFile());
+        } else if (corpus instanceof CompactFileCorpus) {
+            CompactFileCorpus cfCorpus = (CompactFileCorpus) corpus;
+            return fileSize(cfCorpus.getFile());
         } else {
             throw new IllegalArgumentException("Unknown multilingual corpus: " + corpus.getClass().getSimpleName());
         }
@@ -160,6 +167,8 @@ public class Corpora {
 
                 if (TMX_EXTENSION.equalsIgnoreCase(extension)) {
                     output.add(new TMXCorpus(filename, file));
+                } else if (CFC_EXTENSION.equalsIgnoreCase(extension)) {
+                    output.add(new CompactFileCorpus(filename, file));
                 } else {
                     if (matchLang(language.source, extension)) {
                         File pair;
