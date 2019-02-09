@@ -3,15 +3,14 @@ package eu.modernmt.processing.tokenizer.languagetool;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
-import eu.modernmt.processing.tokenizer.TokenizedString;
 import eu.modernmt.processing.tokenizer.BaseTokenizer;
+import eu.modernmt.processing.tokenizer.TokenizedString;
 import org.languagetool.language.tokenizers.TagalogWordTokenizer;
 import org.languagetool.tokenizers.br.BretonWordTokenizer;
 import org.languagetool.tokenizers.eo.EsperantoWordTokenizer;
 import org.languagetool.tokenizers.gl.GalicianWordTokenizer;
 import org.languagetool.tokenizers.km.KhmerWordTokenizer;
 import org.languagetool.tokenizers.ml.MalayalamWordTokenizer;
-import org.languagetool.tokenizers.uk.UkrainianWordTokenizer;
 
 import java.util.HashMap;
 import java.util.List;
@@ -27,7 +26,6 @@ public class LanguageToolTokenAnnotator implements BaseTokenizer.Annotator {
         TOKENIZERS.put(Language.GALICIAN, GalicianWordTokenizer.class);
         TOKENIZERS.put(Language.KHMER, KhmerWordTokenizer.class);
         TOKENIZERS.put(Language.MALAYALAM, MalayalamWordTokenizer.class);
-        TOKENIZERS.put(Language.UKRAINIAN, UkrainianWordTokenizer.class);
         TOKENIZERS.put(Language.TAGALOG, TagalogWordTokenizer.class);
 
         /* Excluded tokenizers */
@@ -39,6 +37,7 @@ public class LanguageToolTokenAnnotator implements BaseTokenizer.Annotator {
 //        TOKENIZERS.put(Language.DUTCH, DutchWordTokenizer.class);
 //        TOKENIZERS.put(Language.POLISH, PolishWordTokenizer.class);
 //        TOKENIZERS.put(Language.ROMANIAN, RomanianWordTokenizer.class);
+//        TOKENIZERS.put(Language.UKRAINIAN, UkrainianWordTokenizer.class); " 6228.05.55954 "
     }
 
     private final org.languagetool.tokenizers.Tokenizer tokenizer;

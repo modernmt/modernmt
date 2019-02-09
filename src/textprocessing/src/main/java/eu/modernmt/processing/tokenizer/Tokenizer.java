@@ -61,7 +61,7 @@ public class Tokenizer extends TextProcessor<SentenceBuilder, SentenceBuilder> {
         TOKENIZERS.put(Language.TAMIL, TamilTokenizer.class);
         TOKENIZERS.put(Language.THAI, ThaiTokenizer.class);
         TOKENIZERS.put(Language.TURKISH, TurkishTokenizer.class);
-        TOKENIZERS.put(Language.UKRAINIAN, UkrainianTokenizer.class);
+        TOKENIZERS.put(Language.UKRAINIAN, RussianTokenizer.class);
     }
 
     private final BaseTokenizer tokenizer;
