@@ -11,6 +11,7 @@ import eu.modernmt.io.FileConst;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
 
 import java.io.File;
 
@@ -61,6 +62,8 @@ public class BackupDaemonMain {
         try (BackupDaemon daemon = new BackupDaemon(args.config, policy, args.interval)) {
             daemon.runForever();
         }
+
+        LogManager.shutdown();
     }
 
 }

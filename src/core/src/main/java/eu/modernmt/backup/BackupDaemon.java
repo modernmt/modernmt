@@ -48,11 +48,12 @@ public class BackupDaemon implements Closeable {
 
             if (awaitFor > 0) {
                 logger.info("Next backup in " + (int) (awaitFor / 1000.) + "s");
-                Object object = null;
+
+                Object object;
                 try {
                     object = shutdown.poll(awaitFor, TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
-                    // Ignore it
+                    break;
                 }
 
                 if (object != null)
@@ -63,6 +64,8 @@ public class BackupDaemon implements Closeable {
             this.engine.stop(true);
             this.backup();
         }
+
+        logger.info("Exiting daemon main thread");
     }
 
     private void backup() throws IOException {
@@ -91,6 +94,7 @@ public class BackupDaemon implements Closeable {
 
     public void interrupt() {
         try {
+            logger.info("Interrupt signal received, sending shutdown signal");
             shutdown.put(new Object());
         } catch (InterruptedException e) {
             // Ignore it
