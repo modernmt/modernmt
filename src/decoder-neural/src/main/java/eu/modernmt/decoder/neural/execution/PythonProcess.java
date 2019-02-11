@@ -89,6 +89,14 @@ public abstract class PythonProcess implements Closeable {
         return process == null || this.process.isAlive();
     }
 
+    protected int waitFor() throws InterruptedException {
+        return process.waitFor();
+    }
+
+    protected boolean waitFor(long timeout, TimeUnit unit) throws InterruptedException {
+        return process.waitFor(timeout, unit);
+    }
+
     @Override
     public void close() {
         if (logThread != null)
