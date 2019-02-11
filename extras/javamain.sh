@@ -12,4 +12,4 @@ shift
 MMT_HOME=$(cd $SCRIPT_HOME/../ ; pwd -P)
 JAR=${MMT_HOME}/build/mmt-*.jar
 
-java -Dmmt.home=$MMT_HOME -Djava.library.path=$MMT_HOME/build/lib -cp $JAR $CLASS $@
+exec java -Dmmt.home=$MMT_HOME -Djava.library.path=$MMT_HOME/build/lib -cp $JAR $CLASS $@
