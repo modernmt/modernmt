@@ -1,6 +1,5 @@
 package eu.modernmt.cli.utils;
 
-import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
@@ -23,21 +22,19 @@ public interface FileFormat {
         }
     }
 
-    MultilingualCorpus parse(Language source, Language target, File[] files) throws IllegalArgumentException;
+    MultilingualCorpus parse(LanguagePair language, File file) throws IllegalArgumentException;
 
-    MultilingualCorpus rename(Language source, Language target, MultilingualCorpus corpus, File directory);
+    MultilingualCorpus rename(LanguagePair language, MultilingualCorpus corpus, File directory);
 
     class TMXFileFormat implements FileFormat {
 
         @Override
-        public MultilingualCorpus parse(Language source, Language target, File[] files) throws IllegalArgumentException {
-            if (files.length != 1)
-                throw new IllegalArgumentException("Invalid number of arguments: expected 1 file");
-            return new TMXCorpus(files[0]);
+        public MultilingualCorpus parse(LanguagePair language, File file) throws IllegalArgumentException {
+            return new TMXCorpus(file);
         }
 
         @Override
-        public MultilingualCorpus rename(Language source, Language target, MultilingualCorpus corpus, File directory) {
+        public MultilingualCorpus rename(LanguagePair language, MultilingualCorpus corpus, File directory) {
             return new TMXCorpus(corpus.getName(), new File(directory, corpus.getName() + ".tmx"));
         }
 
@@ -46,14 +43,12 @@ public interface FileFormat {
     class CompactFileFormat implements FileFormat {
 
         @Override
-        public MultilingualCorpus parse(Language source, Language target, File[] files) throws IllegalArgumentException {
-            if (files.length != 1)
-                throw new IllegalArgumentException("Invalid number of arguments: expected 1 file");
-            return new CompactFileCorpus(files[0]);
+        public MultilingualCorpus parse(LanguagePair language, File file) throws IllegalArgumentException {
+            return new CompactFileCorpus(file);
         }
 
         @Override
-        public MultilingualCorpus rename(Language source, Language target, MultilingualCorpus corpus, File directory) {
+        public MultilingualCorpus rename(LanguagePair language, MultilingualCorpus corpus, File directory) {
             return new CompactFileCorpus(corpus.getName(), new File(directory, corpus.getName() + ".cq"));
         }
 
@@ -62,20 +57,15 @@ public interface FileFormat {
     class ParallelFileFormat implements FileFormat {
 
         @Override
-        public MultilingualCorpus parse(Language source, Language target, File[] files) throws IllegalArgumentException {
-            if (files.length != 2)
-                throw new IllegalArgumentException("Invalid number of arguments: expected 2 files");
-            if (source == null)
-                throw new IllegalArgumentException("Invalid input: source language is mandatory for parallel corpora");
-            if (target == null)
-                throw new IllegalArgumentException("Invalid input: target language is mandatory for parallel corpora");
-
-            return new ParallelFileCorpus(new LanguagePair(source, target), files[0], files[1]);
+        public MultilingualCorpus parse(LanguagePair language, File file) throws IllegalArgumentException {
+            File parent = file.getParentFile();
+            String name = file.getName();
+            return new ParallelFileCorpus(parent, name, language);
         }
 
         @Override
-        public MultilingualCorpus rename(Language source, Language target, MultilingualCorpus corpus, File directory) {
-            return new ParallelFileCorpus(directory, corpus.getName(), new LanguagePair(source, target));
+        public MultilingualCorpus rename(LanguagePair language, MultilingualCorpus corpus, File directory) {
+            return new ParallelFileCorpus(directory, corpus.getName(), language);
         }
 
     }

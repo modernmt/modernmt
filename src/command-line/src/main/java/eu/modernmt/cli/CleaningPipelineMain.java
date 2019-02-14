@@ -32,7 +32,7 @@ public class CleaningPipelineMain {
 
         static {
             Option sourceLanguage = Option.builder("s").hasArg().required().build();
-            Option targetLanguage = Option.builder("t").hasArg().required().build();
+            Option targetLanguage = Option.builder("t").hasArg().build();
             Option inputPath = Option.builder().longOpt("input").hasArgs().required().build();
             Option outputPath = Option.builder().longOpt("output").hasArg().required().build();
             Option outputFormat = Option.builder().longOpt("output-format").hasArgs().build();
@@ -154,7 +154,7 @@ public class CleaningPipelineMain {
 
                     @Override
                     public MultilingualCorpus getOutput(MultilingualCorpus corpus) {
-                        return args.outputFormat.rename(args.source, args.target, corpus, args.outputRoot);
+                        return args.outputFormat.rename(language, corpus, args.outputRoot);
                     }
 
                     @Override
