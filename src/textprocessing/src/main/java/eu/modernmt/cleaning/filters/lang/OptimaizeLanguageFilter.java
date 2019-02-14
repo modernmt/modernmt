@@ -52,13 +52,22 @@ public class OptimaizeLanguageFilter implements CorpusFilter {
         return SUPPORTED_LANGUAGES.contains(language.getLanguage());
     }
 
+    private static String normalizeLanguage(String language) {
+        // We cannot rely on identification of these languages
+        if ("sr".equalsIgnoreCase(language) || "hr".equalsIgnoreCase(language) || "bs".equalsIgnoreCase(language)) {
+            return "sr_hr_bs";
+        } else {
+            return language;
+        }
+    }
+
     @Override
-    public Initializer getInitializer(Language language) {
-        boolean isLanguageSupported = isSupported(language);
+    public Initializer getInitializer(Language _language) {
+        boolean isLanguageSupported = isSupported(_language);
+        String language = normalizeLanguage(_language.getLanguage());
 
         return new Initializer() {
 
-            private int count = 0;
             private final Batch batch = new Batch();
 
             @Override
@@ -73,16 +82,14 @@ public class OptimaizeLanguageFilter implements CorpusFilter {
 
                     if (batch.isFull())
                         analyze(batch);
-
-                    count++;
                 }
             }
 
             private void analyze(Batch batch) {
                 if (batch.size() >= MIN_SIZE) {
-                    String lang = batch.getLanguage();
+                    String lang = normalizeLanguage(batch.getLanguage());
 
-                    if (!language.getLanguage().equalsIgnoreCase(lang)) {
+                    if (!language.equalsIgnoreCase(lang)) {
                         int beginIndex = batch.getBeginIndex();
                         int endIndex = batch.getEndIndex();
 
