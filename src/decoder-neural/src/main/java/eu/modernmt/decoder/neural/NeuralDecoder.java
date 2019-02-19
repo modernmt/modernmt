@@ -209,6 +209,9 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
     @Override
     public void test() throws DecoderException {
+        if (echoServer)
+            return;
+
         if (decoderQueue.availability() < 1)
             throw new DecoderException("No decoder process available");
 

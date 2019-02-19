@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import eu.modernmt.cluster.error.SystemShutdownException;
 import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.facade.exceptions.AuthenticationException;
+import eu.modernmt.facade.exceptions.TestFailedException;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.api.framework.Parameters;
 import eu.modernmt.api.framework.RESTRequest;
@@ -38,7 +39,7 @@ public abstract class JSONAction implements Action {
             if (logger.isDebugEnabled())
                 logger.debug("Unable to complete action " + this + ": system is shutting down", e);
             resp.unavailable(e);
-        } catch (DecoderUnavailableException e) {
+        } catch (DecoderUnavailableException | TestFailedException e) {
             resp.unavailable(e);
         } catch (Throwable e) {
             logger.error("Internal error while executing action " + this, e);
@@ -46,7 +47,7 @@ public abstract class JSONAction implements Action {
         }
     }
 
-    protected final void unsecureExecute(RESTRequest req, RESTResponse resp) throws Throwable {
+    private void unsecureExecute(RESTRequest req, RESTResponse resp) throws Throwable {
         Parameters params = getParameters(req);
         JSONActionResult result = getResult(req, params);
 
