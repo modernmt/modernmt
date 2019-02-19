@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by davide on 22/05/17.
@@ -221,10 +222,14 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
             PythonDecoder decoder = null;
             try {
-                decoder = decoderQueue.take(null);
-                decoder.test();
+                decoder = decoderQueue.poll(null, 100, TimeUnit.MILLISECONDS);
 
-                lastSuccessfulTranslation = now;
+                // if timeout expired the system is busy translating,
+                // we assume it is healthy for the moment.
+                if (decoder != null) {
+                    decoder.test();
+                    lastSuccessfulTranslation = now;
+                }
             } finally {
                 if (decoder != null)
                     decoderQueue.release(decoder);
