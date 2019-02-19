@@ -175,7 +175,7 @@ public class TranslationFacade {
     private LanguagePair mapLanguagePair(LanguagePair pair) {
         LanguageIndex index = ModernMT.getNode().getEngine().getLanguageIndex();
 
-        LanguagePair mapped = index.map(pair, true);
+        LanguagePair mapped = index.map(pair);
         if (mapped == null)
             throw new UnsupportedLanguageException(pair);
 

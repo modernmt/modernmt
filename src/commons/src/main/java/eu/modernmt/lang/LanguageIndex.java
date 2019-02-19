@@ -44,15 +44,7 @@ public class LanguageIndex {
     private final Map<LanguageKey, List<LanguageEntry>> index;
     private final Map<String, List<LanguageRule>> rules;
     private final Set<Language> rulesSkipList;
-    private final ConcurrentHashMap<LanguagePair, CacheEntry> mappingCache;
-
-    protected LanguageIndex() {
-        this.languages = null;
-        this.index = null;
-        this.rules = null;
-        this.rulesSkipList = null;
-        this.mappingCache = null;
-    }
+    private final ConcurrentHashMap<LanguagePair, LanguagePair> mappingCache;
 
     private LanguageIndex(Set<LanguagePair> languages, Map<LanguageKey, List<LanguageEntry>> index, Map<String, List<LanguageRule>> rules) {
         this.languages = Collections.unmodifiableSet(languages);
@@ -82,18 +74,30 @@ public class LanguageIndex {
         return languages.size() == 1 ? languages.iterator().next() : null;
     }
 
-    public LanguagePair mapIgnoringDirection(LanguagePair pair, boolean mask) {
-        CacheEntry cached = mappingCache.get(pair);
+    /**
+     * Map the input language pair to one that is compatible with the supported ones,
+     * trying to adapt language and region if necessary.
+     * It does not try to map the reversed language pair, if needed call mapIgnoringDirection()
+     *
+     * @param pair the pair to search for
+     * @return the supported language pair that matches the input pair
+     */
+    public LanguagePair map(LanguagePair pair) {
+        return mappingCache.computeIfAbsent(pair, this::search);
+    }
+
+    public LanguagePair mapIgnoringDirection(LanguagePair pair) {
+        LanguagePair cached = mappingCache.get(pair);
         if (cached != null)
-            return mask ? cached.masked : cached.normalized;
+            return cached;
         cached = mappingCache.get(pair.reversed());
         if (cached != null)
-            return (mask ? cached.masked : cached.normalized).reversed();
+            return cached.reversed();
 
-        LanguagePair mapped = map(pair, mask);
+        LanguagePair mapped = map(pair);
 
         if (mapped == null) {
-            mapped = map(pair.reversed(), mask);
+            mapped = map(pair.reversed());
             if (mapped != null)
                 mapped = mapped.reversed();
         }
@@ -101,23 +105,7 @@ public class LanguageIndex {
         return mapped;
     }
 
-    /**
-     * Map the input language pair to one that is compatible with the supported ones,
-     * trying to adapt language and region if necessary.
-     * It does not try to map the reversed language pair, if needed call mapIgnoringDirection()
-     *
-     * @param pair the pair to search for
-     * @param mask if true, forces the result to be one of the supported languages
-     * @return the supported language pair that matches the input pair
-     */
-    public LanguagePair map(LanguagePair pair, boolean mask) {
-        CacheEntry cached = mappingCache.computeIfAbsent(pair, this::search);
-        if (cached == null)
-            return null;
-        return mask ? cached.masked : cached.normalized;
-    }
-
-    private CacheEntry search(LanguagePair language) {
+    private LanguagePair search(LanguagePair language) {
         language = transform(language);
 
         LanguageKey key = LanguageKey.fromLanguage(language);
@@ -128,7 +116,7 @@ public class LanguageIndex {
 
         for (LanguageEntry entry : entries) {
             if (entry.match(language))
-                return new CacheEntry(language, entry.getLanguagePair());
+                return entry.getLanguagePair();
         }
 
         return null;
@@ -175,7 +163,7 @@ public class LanguageIndex {
         private final String source;
         private final String target;
 
-        public static LanguageKey fromLanguage(LanguagePair language) {
+        private static LanguageKey fromLanguage(LanguagePair language) {
             return new LanguageKey(language.source.getLanguage(), language.target.getLanguage());
         }
 
@@ -210,7 +198,7 @@ public class LanguageIndex {
 
     private static final class LanguageEntry {
 
-        public static LanguageEntry fromLanguage(LanguagePair pair) {
+        private static LanguageEntry fromLanguage(LanguagePair pair) {
             return new LanguageEntry(pair, Matcher.forLanguage(pair.source), Matcher.forLanguage(pair.target));
         }
 
@@ -228,7 +216,7 @@ public class LanguageIndex {
             return this.target.match(pair.target) && this.source.match(pair.source);
         }
 
-        public LanguagePair getLanguagePair() {
+        private LanguagePair getLanguagePair() {
             return pair;
         }
 
@@ -273,18 +261,6 @@ public class LanguageIndex {
 
         static Matcher exactMatcher(Language language) {
             return language::equals;
-        }
-
-    }
-
-    private static final class CacheEntry {
-
-        public final LanguagePair normalized;
-        public final LanguagePair masked;
-
-        public CacheEntry(LanguagePair normalized, LanguagePair masked) {
-            this.normalized = normalized;
-            this.masked = masked;
         }
 
     }
