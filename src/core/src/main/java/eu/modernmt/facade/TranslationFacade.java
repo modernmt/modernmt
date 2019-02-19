@@ -121,16 +121,15 @@ public class TranslationFacade {
 
     public ContextVector getContextVector(UUID user, LanguagePair direction, File context, int limit) throws ContextAnalyzerException {
         direction = mapLanguagePair(direction);
-
-        Engine engine = ModernMT.getNode().getEngine();
-        ContextAnalyzer analyzer = engine.getContextAnalyzer();
-
-        return analyzer.getContextVector(user, direction, context, limit);
+        return getContextVector(user, direction, new FileCorpus(context, null, direction.source), limit);
     }
 
     public ContextVector getContextVector(UUID user, LanguagePair direction, String context, int limit) throws ContextAnalyzerException {
         direction = mapLanguagePair(direction);
+        return getContextVector(user, direction, new StringCorpus(null, direction.source, context), limit);
+    }
 
+    private ContextVector getContextVector(UUID user, LanguagePair direction, Corpus context, int limit) throws ContextAnalyzerException {
         Engine engine = ModernMT.getNode().getEngine();
         ContextAnalyzer analyzer = engine.getContextAnalyzer();
 

@@ -146,11 +146,11 @@ public class KafkaPacket {
         return new Deletion(channel, position, memory);
     }
 
-    public TranslationUnit asTranslationUnit(LanguagePair direction) {
-        return this.asTranslationUnit(direction, null, null, null);
+    public TranslationUnit asTranslationUnit() {
+        return this.asTranslationUnit(null, null, null);
     }
 
-    public TranslationUnit asTranslationUnit(LanguagePair direction, Sentence sSentence, Sentence sTranslation, Alignment alignment) {
+    public TranslationUnit asTranslationUnit(Sentence sSentence, Sentence sTranslation, Alignment alignment) {
         if (channel < 0 || position < 0)
             throw new IllegalStateException("Call setChannelInfo() before parsing methods.");
 
