@@ -55,28 +55,6 @@
                 <version>1.4.0</version>
                 <executions>
 
-                    <!-- Generate headers with javah -->
-                    <execution>
-                        <id>headers-generate</id>
-                        <phase>generate-sources</phase>
-
-                        <goals>
-                            <goal>exec</goal>
-                        </goals>
-
-                        <configuration>
-                            <executable>javah</executable>
-                            <workingDirectory>${project.build.sourceDirectory}</workingDirectory>
-                            <arguments>
-                                <argument>-d</argument>
-                                <argument>${project.nativedir.javah}</argument>
-
-                                <!-- All native classes -->
-                                <argument>eu.modernmt.aligner.fastalign.FastAlign</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-
                     <!-- Run CMake to generate makefile -->
                     <execution>
                         <id>cmake-generate</id>
