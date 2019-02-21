@@ -213,8 +213,6 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # reopen stdout in unbuffered mode
-
     if not args.skip_cassandra:
         download_cassandra()
     if not args.skip_kafka:
