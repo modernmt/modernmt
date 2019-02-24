@@ -56,6 +56,8 @@ public class OptimaizeLanguageFilter implements CorpusFilter {
         // We cannot rely on identification of these languages
         if ("sr".equalsIgnoreCase(language) || "hr".equalsIgnoreCase(language) || "bs".equalsIgnoreCase(language)) {
             return "sr_hr_bs";
+        } else if ("id".equalsIgnoreCase(language) || "ms".equalsIgnoreCase(language)) {
+            return "id_ms";
         } else {
             return language;
         }
