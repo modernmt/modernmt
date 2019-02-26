@@ -6,6 +6,7 @@ import edu.stanford.nlp.process.PTBTokenizer;
 import edu.stanford.nlp.process.WordToSentenceProcessor;
 import eu.modernmt.io.*;
 import org.apache.commons.cli.*;
+import org.apache.commons.io.IOUtils;
 
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -64,20 +65,25 @@ public class StandfordSplitter {
         LineWriter output = new UnixLineWriter(System.out, UTF8Charset.get());
         ArrayList<String> strings = new ArrayList<>();
 
-        String line;
-        while ((line = input.readLine()) != null) {
-            line = line.trim();
+        try {
+            String line;
+            while ((line = input.readLine()) != null) {
+                line = line.trim();
 
-            if (line.length() > 0) {
-                if (line.length() <= args.minChars) {
-                    output.writeLine(line);
-                } else {
-                    strings.clear();
-                    split(line, strings);
-                    for (String string : strings)
-                        output.writeLine(string);
+                if (line.length() > 0) {
+                    if (line.length() <= args.minChars) {
+                        output.writeLine(line);
+                    } else {
+                        strings.clear();
+                        split(line, strings);
+                        for (String string : strings)
+                            output.writeLine(string);
+                    }
                 }
             }
+        } finally {
+            IOUtils.closeQuietly(output);
+            IOUtils.closeQuietly(input);
         }
     }
 
