@@ -90,6 +90,8 @@ def main_create(argv):
     parser.add_argument('--gpus', dest='gpus', nargs='+', type=int, default=None,
                         help='the list of GPUs available to MMT (default is all available GPUs, '
                              'use "-1" to train on CPU).')
+    parser.add_argument('--from-model', dest='fromModel', default=None,
+                        help='The model to initialize the training. Default is None')
 
     if len(argv) == 0:
         parser.print_help()
@@ -135,7 +137,7 @@ def main_create(argv):
                             debug=args.debug, steps=args.train_steps, split_train=args.split_corpora,
                             validation_path=args.validation_corpora, batch_size=args.batch_size,
                             n_train_steps=args.n_train_steps, n_eval_steps=args.eval_freq, hparams=args.hparams,
-                            bpe_symbols=args.bpe_symbols)
+                            bpe_symbols=args.bpe_symbols, fromModel=args.fromModel)
 
     if args.resume:
         builder.resume()

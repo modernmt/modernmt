@@ -6,11 +6,17 @@ import shutil
 import time
 from xml.dom import minidom
 
+import glob
+
 import cli
 from cli import IllegalArgumentException, CorpusNotFoundInFolderException, mmt_javamain
 from cli.libs import osutils, nvidia_smi
 from cli.libs.osutils import ShellError
 from cli.mmt import BilingualCorpus
+
+import warnings
+warnings.filterwarnings('ignore', category=FutureWarning)
+warnings.filterwarnings("ignore", message="numpy.dtype size changed")
 
 __author__ = 'Davide Caroselli'
 
@@ -130,7 +136,7 @@ class NeuralDecoder(object):
             raise ValueError('Corpora must be contained in the same folder: ' + str(corpora))
         return roots.pop()
 
-    def prepare_data(self, train_corpora, eval_corpora, output_path, log=None, bpe_symbols=2 ** 15):
+    def prepare_data(self, train_corpora, eval_corpora, output_path, log=None, bpe_symbols=2 ** 15, fromModel=None):
         if log is None:
             log = osutils.DEVNULL
 
@@ -143,6 +149,14 @@ class NeuralDecoder(object):
         shutil.rmtree(data_dir, ignore_errors=True)
         osutils.makedirs(data_dir)
 
+        # if an existing checkpoint is loaded for starting the training (i.e fromModel!=None)
+        # copy the subtoken vocabulary associated to the existing checkpoint into the right location,
+        # so that the subtoken vocabulary is not re-created from the new training data,
+        # and so that it is only exploited to bpe-fy the new data
+        # it assumes that the vocabulary is called "model.vcb" and is located in the same directory of the checkpoint
+        if fromModel is not None:
+            shutil.copyfile(os.path.join(fromModel, 'model.vcb'), os.path.join(data_dir, 'model.vcb'))
+
         if not os.path.isdir(tmp_dir):
             osutils.makedirs(tmp_dir)
 
@@ -153,12 +167,17 @@ class NeuralDecoder(object):
         osutils.shell_exec(command, stdout=log, stderr=log, env=env)
 
     def train_model(self, train_dir, output_dir, batch_size=1024, n_train_steps=None, n_eval_steps=1000,
-                    hparams='transformer_base', log=None):
+                    hparams='transformer_base', log=None, fromModel=None):
         if log is None:
             log = osutils.DEVNULL
 
         if not os.path.isdir(output_dir):
             osutils.makedirs(output_dir)
+
+        # if an existing checkpoint is loaded for starting the training (i.e fromModel != None)
+        # copy the checkpoint files into the right location
+        if fromModel is not None:
+            self._copy_and_fix_model(fromModel, output_dir, gpus=self._gpus)
 
         data_dir = os.path.join(train_dir, 'data')
 
@@ -191,10 +210,8 @@ class NeuralDecoder(object):
             process.kill()
 
     def finalize_model(self, train_dir, model_dir, n_checkpoints=None, gpus=None):
-        import warnings
 
         with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=FutureWarning)
 
             import tensorflow as tf
             import numpy as np
@@ -210,7 +227,7 @@ class NeuralDecoder(object):
         checkpoint_paths = {}
 
         # Used to select only one (the last) of the two checkpoints created at each validation;
-        # it assumes that the validation is computed with a frquency higher or equal to 100.
+        # it assumes that the validation is computed with a frequency higher or equal to 100.
         mask_value = 100
 
         for checkpoint_path in tf.train.get_checkpoint_state(model_dir).all_model_checkpoint_paths:
@@ -258,7 +275,7 @@ class NeuralDecoder(object):
 
         logger.info('(finalize_model) Running on device: %s' % device)
 
-        with tf.device(device):
+        with tf.device(device), tf.variable_scope("average"):
             tf_vars = [tf.get_variable(n, shape=var_values[n].shape, dtype=var_dtypes[n]) for n in var_values]
             placeholders = [tf.placeholder(v.dtype, shape=v.shape) for v in tf_vars]
             assign_ops = [tf.assign(v, p) for (v, p) in zip(tf_vars, placeholders)]
@@ -279,8 +296,6 @@ class NeuralDecoder(object):
             session_config.gpu_options.visible_device_list = str(gpu)
 
         sess = tf.Session(config=session_config)
-
-        # with tf.Session() as sess:
         sess.run(tf.initialize_all_variables())
         for p, assign_op, (name, value) in zip(placeholders, assign_ops, six.iteritems(var_values)):
             sess.run(assign_op, {p: value})
@@ -297,6 +312,65 @@ class NeuralDecoder(object):
             model_conf.write('[models]\n')
             model_conf.write('%s__%s = %s__%s/\n' %
                              (self.source_lang, self.target_lang, self.source_lang, self.target_lang))
+
+    def _copy_and_fix_model(self, fromModel, output_dir, gpus=None):
+
+        with warnings.catch_warnings():
+
+            import tensorflow as tf
+            import numpy as np
+            import six
+
+            os.environ['TF_CPP_MIN_LOG_LEVEL'] = '9999'
+
+        # get the checkpoint to load
+        wildcard = fromModel + "/*.meta"
+        for file in glob.glob(wildcard):
+            if os.path.isfile(file):
+                checkpoint = os.path.splitext(file)[0]
+
+        # Read variables from the checkpoint.
+        var_list = tf.contrib.framework.list_variables(checkpoint)
+        var_dtypes = {}
+        var_values = {name: np.zeros(shape) for name, shape in var_list if not name.startswith('global_step')}
+
+        reader = tf.contrib.framework.load_checkpoint(checkpoint)
+        for name in var_values:
+            tensor = reader.get_tensor(name)
+            var_dtypes[name] = tensor.dtype
+            var_values[name] = tensor
+
+        if gpus is not None:
+            gpu = gpus[0]
+            device = '/device:GPU:%s' % gpu
+        else:
+            gpu = None
+            device = '/cpu:0'
+
+        with tf.device(device):
+            tf_vars = [tf.get_variable(n, shape=var_values[n].shape, dtype=var_dtypes[n]) for n in var_values]
+            placeholders = [tf.placeholder(v.dtype, shape=v.shape) for v in tf_vars]
+            assign_ops = [tf.assign(v, p) for (v, p) in zip(tf_vars, placeholders)]
+            tf.Variable(0, name='global_step', trainable=False, dtype=tf.int64)
+
+        saver = tf.train.Saver(tf.global_variables(), save_relative_paths=True)
+
+        session_config = tf.ConfigProto(allow_soft_placement=True)
+        session_config.gpu_options.allow_growth = True
+        if gpu is not None:
+            session_config.gpu_options.force_gpu_compatible = True
+            session_config.gpu_options.visible_device_list = str(gpu)
+
+        sess = tf.Session(config=session_config)
+        sess.run(tf.initialize_all_variables())
+        for p, assign_op, (name, value) in zip(placeholders, assign_ops, six.iteritems(var_values)):
+            sess.run(assign_op, {p: value})
+
+        # Use the built saver to save the checkpoint.
+        saver.save(sess, os.path.join(output_dir, 'model.ckpt'), global_step=0)
+
+        # Copy auxiliary files
+        shutil.copyfile(os.path.join(fromModel, 'hparams.json'), os.path.join(output_dir, 'hparams.json'))
 
 
 class Engine(object):
@@ -454,7 +528,7 @@ class EngineBuilder:
             all_steps = self.all_steps()
 
             if filtered_steps is not None:
-                self._scheduled_steps = filtered_steps
+                self._scheduled_steps = self.required_steps(filtered_steps)
 
                 unknown_steps = [step for step in self._scheduled_steps if step not in all_steps]
                 if len(unknown_steps) > 0:
@@ -479,6 +553,10 @@ class EngineBuilder:
                         raise StopIteration
 
             return __Inner([el for el in self._plan if el.id in self._scheduled_steps or not el.is_optional()])
+
+        def required_steps(self, steps):
+            max_seq_num = max([x.pos() for x in self._plan if x.id in steps])
+            return [x.id for x in self._plan if x.pos() <= max_seq_num]
 
         def visible_steps(self):
             return [x.id for x in self._plan if x.id in self._scheduled_steps and not x.is_hidden()]
@@ -517,7 +595,7 @@ class EngineBuilder:
 
     def __init__(self, engine_name, source_lang, target_lang, roots, gpus,
                  debug=False, steps=None, split_train=True, validation_path=None, batch_size=1024,
-                 n_train_steps=None, n_eval_steps=1000, hparams='transformer_base', bpe_symbols=2 ** 15):
+                 n_train_steps=None, n_eval_steps=1000, hparams='transformer_base', bpe_symbols=2 ** 15, fromModel=None):
         self.source_lang = source_lang
         self.target_lang = target_lang
         self.roots = roots
@@ -532,6 +610,7 @@ class EngineBuilder:
         self._n_train_steps = n_train_steps
         self._n_eval_steps = n_eval_steps
         self._hparams = hparams
+        self._fromModel = fromModel
 
         self._temp_dir = None
 
@@ -587,7 +666,6 @@ class EngineBuilder:
         logger = logging.getLogger('EngineBuilder')
 
         # Start the engine building (training) phases
-
         steps_count = len(self._schedule.visible_steps())
         log_line_len = 70
 
@@ -758,7 +836,7 @@ class EngineBuilder:
             eval_corpora = args.processed_valid_corpora or BilingualCorpus.list(self.source_lang, self.target_lang,
                                                                                 self._validation_path)
             self._decoder.prepare_data(train_corpora, eval_corpora, args.prepared_data_path,
-                                       log=log, bpe_symbols=self._bpe_symbols)
+                                       log=log, bpe_symbols=self._bpe_symbols, fromModel=self._fromModel)
 
     @Step(6, 'Training model')
     def _train_model(self, args, skip=False, log=None):
@@ -767,7 +845,7 @@ class EngineBuilder:
         if not skip:
             self._decoder.train_model(args.prepared_data_path, args.train_model_path, log=log,
                                       batch_size=self._batch_size, hparams=self._hparams,
-                                      n_train_steps=self._n_train_steps, n_eval_steps=self._n_eval_steps)
+                                      n_train_steps=self._n_train_steps, n_eval_steps=self._n_eval_steps, fromModel=self._fromModel)
 
     @Step(7, 'Pack model')
     def _pack_model(self, args, skip=False):
