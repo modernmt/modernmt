@@ -19,7 +19,7 @@
         </processor>
     </processorGroup>
 
-    <processor source="^ ja ko zh" target="^ ja ko zh">
+    <processor source="^ ja ko zh th" target="^ ja ko zh th">
         eu.modernmt.processing.detokenizer.WhitespaceProjector
     </processor>
 
