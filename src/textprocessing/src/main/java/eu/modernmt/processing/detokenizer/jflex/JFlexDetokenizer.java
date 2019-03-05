@@ -21,6 +21,7 @@ public class JFlexDetokenizer extends Detokenizer {
     private static final Map<Language, Class<? extends JFlexSpaceAnnotator>> ANNOTATORS = new HashMap<>();
 
     static {
+        ANNOTATORS.put(Language.CATALAN, CatalanSpaceAnnotator.class);
         ANNOTATORS.put(Language.ENGLISH, EnglishSpaceAnnotator.class);
         ANNOTATORS.put(Language.ITALIAN, ItalianSpaceAnnotator.class);
         ANNOTATORS.put(Language.GERMAN, GermanSpaceAnnotator.class);

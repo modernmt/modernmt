@@ -31,6 +31,7 @@
     <processor>eu.modernmt.processing.recaser.SimpleRecaser</processor>
 
     <processor target="zh">eu.modernmt.processing.lang.ChineseCharacterConverter</processor>
+    <processor target="ca">eu.modernmt.processing.lang.CatalanWordFixer</processor>
 
     <processor>eu.modernmt.processing.xml.XMLTagProcessor</processor>
 
