@@ -23,13 +23,13 @@ public class BackupDaemonMain {
 
         static {
             Option engine = Option.builder("e").longOpt("engine").hasArg().required().build();
-            Option limit = Option.builder("i").longOpt("interval").hasArg().required().build();
-            Option time = Option.builder("l").longOpt("limit").hasArg().required().build();
+            Option interval = Option.builder("i").longOpt("interval").hasArg().required().build();
+            Option limit = Option.builder("l").longOpt("limit").hasArg().required().build();
 
             cliOptions = new Options();
             cliOptions.addOption(engine);
+            cliOptions.addOption(interval);
             cliOptions.addOption(limit);
-            cliOptions.addOption(time);
         }
 
         public final String engine;

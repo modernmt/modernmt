@@ -1,5 +1,6 @@
 package eu.modernmt.backup;
 
+import eu.modernmt.backup.storage.CorporaBackupStorage;
 import eu.modernmt.cluster.kafka.KafkaDataManager;
 import eu.modernmt.config.DataStreamConfig;
 import eu.modernmt.config.NodeConfig;
@@ -94,10 +95,12 @@ public class BackupEngine {
 
         try {
             if (optimize) {
+                long begin, elapsed;
+
                 logger.info("Running optimization for Context Analyzer...");
-                long begin = System.currentTimeMillis();
+                begin = System.currentTimeMillis();
                 contextAnalyzer.optimize();
-                long elapsed = System.currentTimeMillis() - begin;
+                elapsed = System.currentTimeMillis() - begin;
                 logger.info("Optimization for Context Analyzer completed in " + (elapsed / 1000.) + "s");
 
                 logger.info("Running optimization for Memory...");
@@ -105,6 +108,12 @@ public class BackupEngine {
                 memory.optimize();
                 elapsed = System.currentTimeMillis() - begin;
                 logger.info("Optimization for Memory completed in " + (elapsed / 1000.) + "s");
+
+                logger.info("Running optimization for Storage...");
+                begin = System.currentTimeMillis();
+                storage.optimize();
+                elapsed = System.currentTimeMillis() - begin;
+                logger.info("Optimization for Storage completed in " + (elapsed / 1000.) + "s");
             }
         } finally {
             caError = close(contextAnalyzer);
