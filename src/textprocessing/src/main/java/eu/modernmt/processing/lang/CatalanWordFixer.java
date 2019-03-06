@@ -101,7 +101,7 @@ public class CatalanWordFixer extends TextProcessor<Translation, Translation> {
                     "collegiat", "allèrgia", "cristallina", "allèrgic", "postilla", "pollinitzaci", "cancellaran",
                     "colla", "desinstallant", "illustra", "estellars", "metallíferes", "metallisteria", "intranquilla",
                     "desillusionaràs", "vacillaci", "collocarem", "titullat", "caravella", "solliciar", "ellipses",
-                    "illustradors", "èllit", "hepatocellular", "oscillant", "allà", "cristallins", "encollaboraci",
+                    "illustradors", "èllit", "hepatocellular", "oscillant", "cristallins", "encollaboraci",
                     "èllic", "èllid", "entitatcollaboradora", "unainstallaci", "pellicular", "cristallines",
                     "desfibrillaci", "sillogisme", "tranquillitant", "destilleries", "collecciono", "fellaci",
                     "colleccions", "ninstalleu", "collectiu", "collisionen", "caramellitzat", "apellant", "flagellin",
