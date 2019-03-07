@@ -81,7 +81,8 @@ class WritersCache implements Closeable {
             }
         }
 
-        FileUtils.forceDelete(folder);
+        if (folder.exists())
+            FileUtils.forceDelete(folder);
     }
 
     public void flush() throws IOException {
