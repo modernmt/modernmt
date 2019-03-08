@@ -87,7 +87,7 @@ public class FastAlign implements Aligner {
         if (!modelPath.isDirectory())
             throw new IOException("Invalid model path: " + modelPath);
 
-        File[] paths = modelPath.listFiles(path -> path.isDirectory() && path.getName().endsWith(".mdl"));
+        File[] paths = modelPath.listFiles(path -> path.isFile() && path.getName().endsWith(".mdl"));
 
         if (paths == null || paths.length == 0)
             throw new IOException("Could not load any FastAlign model from path " + modelPath);
@@ -111,7 +111,7 @@ public class FastAlign implements Aligner {
         }
     }
 
-    private native long instantiate(String modelDirectory, int threads);
+    private native long instantiate(String modelFile, int threads);
 
     @Override
     public boolean isSupported(LanguagePair direction) {

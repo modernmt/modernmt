@@ -81,20 +81,19 @@ class TrainingPreprocessor:
 class FastAlign:
     def __init__(self, model, source_lang, target_lang):
         # FastAlign only supports base languages, without regions
+        self._parent = model
         self._model = os.path.join(model, '%s__%s.mdl' % (source_lang.split('-')[0], target_lang.split('-')[0]))
         self._source_lang = source_lang
         self._target_lang = target_lang
 
         self._build_bin = os.path.join(cli.BIN_DIR, 'fa_build')
-        self._align_bin = os.path.join(cli.BIN_DIR, 'fa_align')
-        self._export_bin = os.path.join(cli.BIN_DIR, 'fa_export')
 
     def build(self, corpora, log=None):
         if log is None:
             log = osutils.DEVNULL
 
-        shutil.rmtree(self._model, ignore_errors=True)
-        osutils.makedirs(self._model, exist_ok=True)
+        shutil.rmtree(self._parent, ignore_errors=True)
+        osutils.makedirs(self._parent, exist_ok=True)
 
         source_path = set([corpus.get_folder() for corpus in corpora])
         assert len(source_path) == 1
