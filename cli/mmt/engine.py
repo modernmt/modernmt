@@ -15,6 +15,7 @@ from cli.libs.osutils import ShellError
 from cli.mmt import BilingualCorpus
 
 import warnings
+
 warnings.filterwarnings('ignore', category=FutureWarning)
 warnings.filterwarnings("ignore", message="numpy.dtype size changed")
 
@@ -210,9 +211,7 @@ class NeuralDecoder(object):
             process.kill()
 
     def finalize_model(self, train_dir, model_dir, n_checkpoints=None, gpus=None):
-
         with warnings.catch_warnings():
-
             import tensorflow as tf
             import numpy as np
             import six
@@ -275,7 +274,7 @@ class NeuralDecoder(object):
 
         logger.info('(finalize_model) Running on device: %s' % device)
 
-        with tf.device(device), tf.variable_scope("average"):
+        with tf.device(device):
             tf_vars = [tf.get_variable(n, shape=var_values[n].shape, dtype=var_dtypes[n]) for n in var_values]
             placeholders = [tf.placeholder(v.dtype, shape=v.shape) for v in tf_vars]
             assign_ops = [tf.assign(v, p) for (v, p) in zip(tf_vars, placeholders)]
@@ -314,9 +313,7 @@ class NeuralDecoder(object):
                              (self.source_lang, self.target_lang, self.source_lang, self.target_lang))
 
     def _copy_and_fix_model(self, fromModel, output_dir, gpus=None):
-
         with warnings.catch_warnings():
-
             import tensorflow as tf
             import numpy as np
             import six
@@ -595,7 +592,8 @@ class EngineBuilder:
 
     def __init__(self, engine_name, source_lang, target_lang, roots, gpus,
                  debug=False, steps=None, split_train=True, validation_path=None, batch_size=1024,
-                 n_train_steps=None, n_eval_steps=1000, hparams='transformer_base', bpe_symbols=2 ** 15, fromModel=None):
+                 n_train_steps=None, n_eval_steps=1000, hparams='transformer_base', bpe_symbols=2 ** 15,
+                 fromModel=None):
         self.source_lang = source_lang
         self.target_lang = target_lang
         self.roots = roots
@@ -845,7 +843,8 @@ class EngineBuilder:
         if not skip:
             self._decoder.train_model(args.prepared_data_path, args.train_model_path, log=log,
                                       batch_size=self._batch_size, hparams=self._hparams,
-                                      n_train_steps=self._n_train_steps, n_eval_steps=self._n_eval_steps, fromModel=self._fromModel)
+                                      n_train_steps=self._n_train_steps, n_eval_steps=self._n_eval_steps,
+                                      fromModel=self._fromModel)
 
     @Step(7, 'Pack model')
     def _pack_model(self, args, skip=False):
