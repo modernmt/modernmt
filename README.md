@@ -141,14 +141,10 @@ MMT Community is free, is open source and welcomes contributions and donations.
 MMT Community is sponsored by its funding members (Translated, FBK, UEDIN and TAUS) and the European Commission. 
 
 We also have an **MMT Enterprise Edition**, managed by the MMT company and not available on GitHub, with some extra features:
-- Pre-trained generic and custom models in 31 language pairs (and more to come!) on multiple billion words of premium data.
+- Pre-trained generic and custom models in 45 language pairs (and more to come!) on multiple billion words of premium data.
 - Support for cluster of servers for higher throughput, load balancing and high availability. 
 - Support for 71 files formats without format loss (Office, Adobe, Localization, etc).
 - Enterprise Customer Support via Video Conference Call, Phone and Email on business hours (CET) and optionally 24x7.
 - Custom developments billed per hour of work.
 
-ModernMT Enterprise is available in two cloud-based operating modes:
-- **Private**  Privacy of data, adaptivity, low cost for excellent throughput and maintenance, customer support.
-- **Confidential** Higher privacy of data, adaptivity, higher cost for throughput and maintenance, customer support.
-
-We can provide support for large **On-Premise** installations, too. For any information please email us at info@modernmt.eu
+For any information please email us at info@modernmt.eu
