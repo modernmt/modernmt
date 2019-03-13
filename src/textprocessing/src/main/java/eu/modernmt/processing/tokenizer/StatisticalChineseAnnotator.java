@@ -18,7 +18,7 @@ public class StatisticalChineseAnnotator implements BaseTokenizer.Annotator {
         InputStream stream = null;
 
         try {
-            this.words = new HashSet<>(80000);
+            this.words = new HashSet<>(21000);
             int maxLength = 0;
 
             stream = getClass().getResourceAsStream("chinese-words.list");
