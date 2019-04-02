@@ -64,6 +64,7 @@ cp /usr/lib/x86_64-linux-gnu/libboost_program_options.so.1.* . || { echo 'ERROR 
 cp /usr/lib/x86_64-linux-gnu/libboost_system.so.1.* . || { echo 'ERROR failed to copy lib' ; exit 1; }
 cp /usr/lib/x86_64-linux-gnu/libboost_thread.so.1.* . || { echo 'ERROR failed to copy lib' ; exit 1; }
 cp /usr/lib/x86_64-linux-gnu/libboost_serialization.so.1.* . || { echo 'ERROR failed to copy lib' ; exit 1; }
+cp /usr/lib/x86_64-linux-gnu/libboost_locale.so.1.* . || { echo 'ERROR failed to copy lib' ; exit 1; }
 popd
 
 pushd $temp
