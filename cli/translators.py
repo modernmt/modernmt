@@ -126,7 +126,7 @@ class MMTTranslator(TranslateEngine):
         cluster_info = self._api.info()['cluster']
         node_count = max(len(cluster_info['nodes']), 1)
 
-        return executors * node_count
+        return max(10, executors * node_count * 2)
 
     @property
     def context_vector(self):

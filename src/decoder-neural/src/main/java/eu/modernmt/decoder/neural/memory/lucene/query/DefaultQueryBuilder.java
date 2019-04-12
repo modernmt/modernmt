@@ -1,7 +1,7 @@
 package eu.modernmt.decoder.neural.memory.lucene.query;
 
-import eu.modernmt.decoder.neural.memory.lucene.Analyzers;
 import eu.modernmt.decoder.neural.memory.lucene.DocumentBuilder;
+import eu.modernmt.decoder.neural.memory.lucene.analysis.AnalyzerFactory;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
@@ -36,12 +36,9 @@ public class DefaultQueryBuilder implements QueryBuilder {
     }
 
     @Override
-    public Query bestMatchingSuggestion(UUID user, LanguagePair direction, Sentence sentence, ContextVector context) {
+    public Query bestMatchingSuggestion(Analyzer analyzer, UUID user, LanguagePair direction, Sentence sentence, ContextVector context) {
         int length = sentence.getWords().length;
-        boolean isLongQuery = length > 4;
-
-        int minMatches = isLongQuery ? Math.max(1, (int) (length * .5)) : length;
-        Analyzer analyzer = isLongQuery ? Analyzers.getLongQueryAnalyzer() : Analyzers.getShortQueryAnalyzer();
+        int minMatches = length > 4 ? Math.max(1, (int) (length * .5)) : length;
 
         // Content query
         BooleanQuery termsQuery = makeTermsQuery(direction, sentence, analyzer);
