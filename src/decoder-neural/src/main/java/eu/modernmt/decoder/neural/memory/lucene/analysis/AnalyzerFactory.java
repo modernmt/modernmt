@@ -9,8 +9,6 @@ public interface AnalyzerFactory {
 
     Analyzer createHashAnalyzer();
 
-    boolean isLongQuery(int queryLength);
-
     Analyzer createShortQueryAnalyzer();
 
     Analyzer createLongQueryAnalyzer();

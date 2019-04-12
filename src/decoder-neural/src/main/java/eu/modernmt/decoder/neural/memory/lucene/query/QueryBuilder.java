@@ -13,6 +13,8 @@ import java.util.UUID;
  */
 public interface QueryBuilder {
 
+    boolean isLongQuery(int queryLength);
+
     Query getByHash(long memory, String hash);
 
     Query bestMatchingSuggestion(Analyzer analyzer, UUID user, LanguagePair direction, Sentence sentence, ContextVector context);

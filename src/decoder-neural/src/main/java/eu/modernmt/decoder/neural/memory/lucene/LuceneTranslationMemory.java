@@ -196,7 +196,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     public ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, ContextVector contextVector, Rescorer rescorer, int limit) throws IOException {
-        Analyzer analyzer = this.analyzerFactory.isLongQuery(source.getWords().length) ? longQueryAnalyzer : shortQueryAnalyzer;
+        Analyzer analyzer = this.queryBuilder.isLongQuery(source.getWords().length) ? longQueryAnalyzer : shortQueryAnalyzer;
         Query query = this.queryBuilder.bestMatchingSuggestion(analyzer, user, direction, source, contextVector);
 
         IndexSearcher searcher = getIndexSearcher();

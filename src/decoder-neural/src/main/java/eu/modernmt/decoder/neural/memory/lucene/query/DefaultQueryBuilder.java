@@ -20,6 +20,13 @@ import java.util.UUID;
  */
 public class DefaultQueryBuilder implements QueryBuilder {
 
+    public static final int SHORT_QUERY_SIZE = 4;
+
+    @Override
+    public boolean isLongQuery(int queryLength) {
+        return queryLength > SHORT_QUERY_SIZE;
+    }
+
     @Override
     public Query getByHash(long memory, String hash) {
         PhraseQuery hashQuery = new PhraseQuery();
@@ -38,7 +45,7 @@ public class DefaultQueryBuilder implements QueryBuilder {
     @Override
     public Query bestMatchingSuggestion(Analyzer analyzer, UUID user, LanguagePair direction, Sentence sentence, ContextVector context) {
         int length = sentence.getWords().length;
-        int minMatches = length > 4 ? Math.max(1, (int) (length * .5)) : length;
+        int minMatches = length > SHORT_QUERY_SIZE ? Math.max(1, (int) (length * .5)) : length;
 
         // Content query
         BooleanQuery termsQuery = makeTermsQuery(direction, sentence, analyzer);

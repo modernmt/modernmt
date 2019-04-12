@@ -5,7 +5,6 @@ import org.apache.lucene.search.similarities.Similarity;
 
 public class DefaultAnalyzerFactory implements AnalyzerFactory {
 
-    private static final int SHORT_QUERY_SIZE = 4;
     private static final int SHINGLE_SIZE = 2;
 
     @Override
@@ -16,11 +15,6 @@ public class DefaultAnalyzerFactory implements AnalyzerFactory {
     @Override
     public Analyzer createHashAnalyzer() {
         return new HashAnalyzer();
-    }
-
-    @Override
-    public boolean isLongQuery(int queryLength) {
-        return queryLength > SHORT_QUERY_SIZE;
     }
 
     @Override
