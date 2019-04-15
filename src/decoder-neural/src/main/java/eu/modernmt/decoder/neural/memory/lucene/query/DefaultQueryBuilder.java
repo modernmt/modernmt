@@ -89,7 +89,7 @@ public class DefaultQueryBuilder implements QueryBuilder {
         String text = TokensOutputStream.serialize(sentence, false, true);
 
         try {
-            TokenStream stream = analyzer.tokenStream("content", text);
+            TokenStream stream = analyzer.tokenStream(fieldName, text);
             CharTermAttribute charTermAttribute = stream.addAttribute(CharTermAttribute.class);
 
             stream.reset();

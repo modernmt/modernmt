@@ -85,6 +85,23 @@ public class DocumentBuilder {
         return Long.parseLong(self.get(MEMORY_FIELD));
     }
 
+    public static String getSourceLanguage(String fieldName) {
+        if (!fieldName.startsWith(CONTENT_PREFIX_FIELD))
+            throw new IllegalArgumentException("Unexpected field name: " + fieldName);
+
+        int lastUnderscore = fieldName.lastIndexOf('_');
+        return fieldName.substring(CONTENT_PREFIX_FIELD.length(), lastUnderscore);
+    }
+
+    public static String getTargetLanguage(String fieldName) {
+        if (!fieldName.startsWith(CONTENT_PREFIX_FIELD))
+            throw new IllegalArgumentException("Unexpected field name: " + fieldName);
+
+        int lastUnderscore = fieldName.lastIndexOf('_');
+
+        return fieldName.substring(lastUnderscore + 1);
+    }
+
     // Parsing
 
     public static ScoreEntry asEntry(Document self) {
