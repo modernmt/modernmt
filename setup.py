@@ -3,8 +3,8 @@ import shutil
 import tarfile
 import tempfile
 
-import cli
-from cli.libs.progressbar import Progressbar, UndefinedProgressbar
+from cli import mmt
+from cli.utils.progressbar import Progressbar, UndefinedProgressbar
 
 CASSANDRA_VERSION = '3.11.4'
 CASSANDRA_FILE_SIZE = 41235177
@@ -64,7 +64,7 @@ class ApacheDownloader(object):
             shutil.rmtree(destination_folder, ignore_errors=True)
             shutil.move(folder, destination_folder)
 
-            chown(destination_folder, *get_owner(cli.MMT_VENDOR_DIR))
+            chown(destination_folder, *get_owner(mmt.MMT_VENDOR_DIR))
 
             progressbar.complete()
         except Exception as e:
@@ -158,7 +158,7 @@ class ApacheDownloader(object):
 # - Main functions -----------------------------------------------------------------------------------------------------
 
 def install_cassandra():
-    cassandra_home = os.path.join(cli.MMT_VENDOR_DIR, 'cassandra-' + CASSANDRA_VERSION)
+    cassandra_home = os.path.join(mmt.MMT_VENDOR_DIR, 'cassandra-' + CASSANDRA_VERSION)
     cassandra_apache_path = '/cassandra/' + CASSANDRA_VERSION + '/apache-cassandra-' + CASSANDRA_VERSION + '-bin.tar.gz'
 
     downloader = ApacheDownloader()
@@ -181,17 +181,17 @@ def install_cassandra():
 
 
 def install_kafka():
-    kafka_home = os.path.join(cli.MMT_VENDOR_DIR, 'kafka-' + KAFKA_VERSION)
+    kafka_home = os.path.join(mmt.MMT_VENDOR_DIR, 'kafka-' + KAFKA_VERSION)
 
     downloader = ApacheDownloader()
     downloader.download_from_mirrors('Kafka', [KAFKA_DOWNLOAD_URL], kafka_home, expected_file_size=KAFKA_FILE_SIZE)
 
 
 def copy_opennlp_resources():
-    opennlp_home = os.path.join(cli.MMT_VENDOR_DIR, 'opennlp')
+    opennlp_home = os.path.join(mmt.MMT_VENDOR_DIR, 'opennlp')
     assert os.path.exists(opennlp_home)
 
-    opennlp_res = os.path.join(cli.MMT_RES_DIR, 'opennlp')
+    opennlp_res = os.path.join(mmt.MMT_RES_DIR, 'opennlp')
     if not os.path.exists(opennlp_res):
         os.makedirs(opennlp_res)
 
@@ -209,7 +209,7 @@ def copy_opennlp_resources():
     finally:
         progressbar.complete()
 
-    chown(cli.MMT_RES_DIR, *get_owner(cli.MMT_BUILD_DIR))
+    chown(mmt.MMT_RES_DIR, *get_owner(mmt.MMT_BUILD_DIR))
 
 
 def pip_install(dependency):
