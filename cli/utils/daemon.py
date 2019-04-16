@@ -1,16 +1,15 @@
 import errno
 import os
+import signal
 import subprocess
 import time
-
-import signal
 
 
 class _TimeoutExpired(Exception):
     pass
 
 
-class DaemonController(object):
+class Daemon(object):
     def __init__(self, pid_file):
         self._pid_file = pid_file
 
@@ -120,7 +119,7 @@ class DaemonController(object):
         while 1:
             try:
                 retpid, status = waitcall()
-            except OSError, err:
+            except OSError as err:
                 if err.errno == errno.EINTR:
                     delay = check_timeout(delay)
                     continue

@@ -1,8 +1,6 @@
-import errno
-import os
-import shutil
-import subprocess
 import logging
+import os
+import subprocess
 
 DEVNULL = open(os.devnull, 'wb')
 
@@ -24,7 +22,7 @@ class ShellError(Exception):
 
 
 def shell_exec(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, background=False, env=None):
-    str_cmd = cmd if isinstance(cmd, basestring) else ' '.join(cmd)
+    str_cmd = cmd if isinstance(cmd, str) else ' '.join(cmd)
     logging.getLogger('shell_exec').debug(str_cmd)
 
     message = None
@@ -33,12 +31,11 @@ def shell_exec(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
             stdout = DEVNULL
         if stderr == subprocess.PIPE:
             stderr = DEVNULL
-    elif stdin is not None and isinstance(stdin, basestring):
+    elif stdin is not None and isinstance(stdin, str):
         message = stdin
         stdin = subprocess.PIPE
 
-    process = subprocess.Popen(cmd, stdin=stdin, stdout=stdout, stderr=stderr,
-                               shell=(True if isinstance(cmd, basestring) else False), env=env)
+    process = subprocess.Popen(cmd, stdin=stdin, stdout=stdout, stderr=stderr, shell=isinstance(cmd, str), env=env)
 
     stdout_dump = None
     stderr_dump = None
@@ -53,36 +50,17 @@ def shell_exec(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
     if background:
         return process
     else:
+        if stdout_dump is not None:
+            stdout_dump = stdout_dump.decode('utf-8')
+        if stderr_dump is not None:
+            stderr_dump = stderr_dump.decode('utf-8')
+
         if return_code != 0:
             raise ShellError(str_cmd, return_code, stderr_dump)
         else:
             return stdout_dump, stderr_dump
 
 
-def makedirs(name, mode=0777, exist_ok=False):
-    try:
-        os.makedirs(name, mode)
-    except OSError as exception:
-        if not exist_ok or exception.errno != errno.EEXIST:
-            raise
-
-
 def mem_size(megabytes=True):
     mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
     return mem_bytes / (1024. ** 2) if megabytes else mem_bytes
-
-
-def lc(filename):
-    with open(filename) as stream:
-        count = 0
-        for _ in stream:
-            count += 1
-
-        return count
-
-
-def concat(files, output, buffer_size=10 * 1024 * 1024):
-    with open(output, 'wb') as blob:
-        for f in files:
-            with open(f, 'rb') as source:
-                shutil.copyfileobj(source, blob, buffer_size)
