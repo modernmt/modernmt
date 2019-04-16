@@ -185,7 +185,10 @@ class NeuralDecoder(object):
         tgt_model_vocab = os.path.join(output_dir, 'model.vcb')
 
         if not os.path.isfile(tgt_model_vocab):
+          try:
             os.symlink(src_model_vocab, tgt_model_vocab)
+          except OSError:
+            pass
 
         env = self._get_env()
         hparams_p = 'batch_size=%d' % batch_size
