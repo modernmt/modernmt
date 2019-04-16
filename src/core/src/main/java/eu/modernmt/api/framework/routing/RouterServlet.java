@@ -42,7 +42,9 @@ public abstract class RouterServlet extends HttpServlet {
                 for (String path : route.aliases()) {
                     RouteTemplate template = new RouteTemplate('/' + path, actionClass, method);
                     routes.add(template);
-                    logger.info("Action found: " + template);
+
+                    if (logger.isDebugEnabled())
+                        logger.debug("REST API registered: " + template);
                 }
             }
         }
