@@ -30,7 +30,7 @@ def sym_grow(i2o, o2i, ilen, olen):
         for i in range(ilen):
             for o in range(olen):
                 if (i, o) in alignment:
-                    for (i_new, o_new) in _neighboring_points_orthogonal((i, o), ilen, olen):
+                    for (i_new, o_new) in _neighboring_points_orthogonal(i, o, ilen, olen):
                         if not (_aligned_o(o_new, ilen, alignment) and _aligned_i(i_new, olen, alignment)) \
                                 and ((i_new, o_new) in union):
                             alignment.append((i_new, o_new))
@@ -49,7 +49,7 @@ def sym_grow_diagonal(i2o, o2i, ilen, olen):
         for i in range(ilen):
             for o in range(olen):
                 if (i, o) in alignment:
-                    for (i_new, o_new) in _neighboring_points_orthogonal((i, o), ilen, olen):
+                    for (i_new, o_new) in _neighboring_points_orthogonal(i, o, ilen, olen):
                         if not (_aligned_o(o_new, ilen, alignment) and _aligned_i(i_new, olen, alignment)) \
                                 and ((i_new, o_new) in union):
                             alignment.append((i_new, o_new))
@@ -60,7 +60,7 @@ def sym_grow_diagonal(i2o, o2i, ilen, olen):
         for i in range(ilen):
             for o in range(olen):
                 if (i, o) in alignment:
-                    for (i_new, o_new) in _neighboring_points_diagonal((i, o), ilen, olen):
+                    for (i_new, o_new) in _neighboring_points_diagonal(i, o, ilen, olen):
                         if not (_aligned_o(o_new, ilen, alignment) and _aligned_i(i_new, olen, alignment)) \
                                 and ((i_new, o_new) in union):
                             alignment.append((i_new, o_new))
@@ -72,56 +72,60 @@ def sym_grow_diagonal(i2o, o2i, ilen, olen):
 def sym_grow_diagonal_final_and(i2o, o2i, ilen, olen):
     alignment = sym_grow_diagonal(i2o, o2i, ilen, olen)
     _final(alignment, i2o, o2i, ilen, olen)
-
     return alignment
 
 
 # - Make alignment -----------------------------------------------------------------------------------------------------
 
-def make_alignment(source_indexes, target_indexes, attention_matrix, symmetrize=sym_intersect):
-    attention_matrix = np.asarray(attention_matrix)
 
+def make_alignment(source_indexes, target_indexes, attention_matrix, prefix_lang=None, symmetrize=sym_intersect):
     # resulting shape (layers, batch, heads, output, input);
     # last two dimensions truncated to the size of trg_sub_tokens and src_sub_tokens
-    reduced_attention_matrix = attention_matrix[:, :, :, :len(target_indexes), :len(source_indexes)]
-    # get average over layers and heads; resulting shape (batch, output, input)
-    average_encdec_atts_mats = reduced_attention_matrix.mean((0, 2))
-    # get first batch only; resulting shape (output, input)
-    alignment_matrix = average_encdec_atts_mats[0]
+    reduced_attention_matrix = attention_matrix[:len(source_indexes), :len(target_indexes)]
+    alignment_matrix = reduced_attention_matrix
+    norm_axis0 = (alignment_matrix / alignment_matrix.sum(axis=0)[np.newaxis])
+    norm_axis1 = (alignment_matrix / alignment_matrix.sum(axis=1)[:, np.newaxis])
 
-    s2t_best_indexes = (alignment_matrix / alignment_matrix.sum(axis=0)[np.newaxis:]).argmax(0)
-    t2s_best_indexes = (alignment_matrix / alignment_matrix.sum(axis=1)[:, np.newaxis]).argmax(1)
+    s2t_best_indexes = norm_axis0.argmax(1)
+    t2s_best_indexes = norm_axis1.argmax(0)
 
-    threshold = 0.8
-    s_len = alignment_matrix.shape[1]
-    t_len = alignment_matrix.shape[0]
+    threshold = 0.80  # TODO: find the best setting (0.85?, 0.75?, 0.90?, 1.00?)
+    s_len = alignment_matrix.shape[0]
+    t_len = alignment_matrix.shape[1]
 
     # select points of the direct alignment (having score >= threshold*best)
-    s2t_sub_alignment = []
+    t2s_sub_alignment = []
     for t in range(t_len):
-        threshold_value = threshold * alignment_matrix[t, t2s_best_indexes[t]]
-        s2t_sub_alignment += [(s, t) for s in range(s_len) if alignment_matrix[t, s] >= threshold_value]
+        threshold_value = threshold * norm_axis1[t2s_best_indexes[t], t]
+        t2s_sub_alignment += [(s, t) for s in range(s_len) if norm_axis1[s, t] >= threshold_value]
 
     # select points of the inverted alignment (having score >= threshold*best)
-    t2s_sub_alignment = []
+    s2t_sub_alignment = []
     for s in range(s_len):
-        threshold_value = threshold * alignment_matrix[s2t_best_indexes[s], s]
-        t2s_sub_alignment += [(s, t) for t in range(t_len) if alignment_matrix[t, s] >= threshold_value]
+        threshold_value = threshold * norm_axis0[s, s2t_best_indexes[s]]
+        s2t_sub_alignment += [(s, t) for t in range(t_len) if norm_axis0[s, t] >= threshold_value]
 
-    if not s2t_sub_alignment and not t2s_sub_alignment:
+    if not t2s_sub_alignment and not s2t_sub_alignment:
         return []
 
     # symmetrization on token-based alignment
-    s2t_alignment = sorted(set([(source_indexes[al[0]], target_indexes[al[1]]) for al in s2t_sub_alignment]))
     t2s_alignment = sorted(set([(source_indexes[al[0]], target_indexes[al[1]]) for al in t2s_sub_alignment]))
-    alignment = sorted(symmetrize(s2t_alignment, t2s_alignment, source_indexes[-1] + 1, target_indexes[-1] + 1))
+    s2t_alignment = sorted(set([(source_indexes[al[0]], target_indexes[al[1]]) for al in s2t_sub_alignment]))
+    highest_source_index = source_indexes[-1]
+    highest_target_index = target_indexes[-1]
+    alignment = sorted(symmetrize(t2s_alignment, s2t_alignment, highest_source_index + 1, highest_target_index + 1))
+
+    # shift source indexes if a language prefix has been used
+    if prefix_lang:
+        alignment = [(al[0] - 1, al[1]) for al in alignment if al[0] > 0]
 
     return alignment
 
 
 # - Alignment util functions -------------------------------------------------------------------------------------------
 
-def _neighboring_points_orthogonal((o_index, i_index), e_len, f_len):
+
+def _neighboring_points_orthogonal(o_index, i_index, e_len, f_len):
     """
     A function that returns list of neighboring points in
     an alignment matrix for a given alignment (pair of indexes)
@@ -140,7 +144,7 @@ def _neighboring_points_orthogonal((o_index, i_index), e_len, f_len):
     return result
 
 
-def _neighboring_points_diagonal((o_index, i_index), e_len, f_len):
+def _neighboring_points_diagonal(o_index, i_index, e_len, f_len):
     """
     A function that returns list of neighboring points in
     an alignment matrix for a given alignment (pair of indexes)
@@ -159,7 +163,7 @@ def _neighboring_points_diagonal((o_index, i_index), e_len, f_len):
     return result
 
 
-def _neighboring_points((o_index, i_index), e_len, f_len):
+def _neighboring_points(o_index, i_index, e_len, f_len):
     """
     A function that returns list of neighboring points in
     an alignment matrix for a given alignment (pair of indexes)
@@ -220,6 +224,6 @@ def _final(alignment, i2o, o2i, ilen, olen):
     """
     for o in range(olen):
         for i in range(ilen):
-            if not (aligned_o(o, ilen, alignment) and aligned_i(i, olen, alignment)) \
+            if not (_aligned_o(o, ilen, alignment) and _aligned_i(i, olen, alignment)) \
                     and ((i, o) in i2o or (i, o) in o2i):
                 alignment.append((i, o))
