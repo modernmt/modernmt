@@ -1,25 +1,10 @@
-import argparse
 import os
 import shutil
-import sys
 import tarfile
 import tempfile
 
-import requests
-
-try:
-    sys.path.insert(0, os.path.abspath(os.path.join(__file__, os.pardir, os.pardir)))
-    from cli.libs.progressbar import Progressbar, UndefinedProgressbar
-except ImportError:
-    raise
-
-try:
-    from requests.packages.urllib3.exceptions import InsecureRequestWarning
-
-    # Suppress InsecureRequestWarning
-    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-except ImportError:
-    pass
+import cli
+from cli.libs.progressbar import Progressbar, UndefinedProgressbar
 
 CASSANDRA_VERSION = '3.11.4'
 CASSANDRA_FILE_SIZE = 41235177
@@ -28,33 +13,32 @@ KAFKA_SCALA_VERSION = '2.11'
 KAFKA_FILE_SIZE = 56969154
 KAFKA_DOWNLOAD_URL = 'https://archive.apache.org/dist/kafka/1.1.0/kafka_2.11-1.1.0.tgz'
 
-vendor_dir = os.path.dirname(os.path.realpath(__file__))
-mmt_home = os.path.join(vendor_dir, os.path.pardir)
-mmt_build_dir = os.path.join(mmt_home, 'build')
-mmt_install_res = os.path.join(mmt_build_dir, 'res')
+
+def chown(folder, uid, gid):
+    os.chown(folder, uid, gid)
+
+    for root, dirs, files in os.walk(folder):
+        for d in dirs:
+            os.chown(os.path.join(root, d), uid, gid)
+        for f in files:
+            os.chown(os.path.join(root, f), uid, gid)
 
 
-def untar(filename, destination):
-    if filename.endswith('.tar.gz') or filename.endswith('.tgz'):
-        tar = tarfile.open(filename, 'r:gz')
-    elif filename.endswith('.tar'):
-        tar = tarfile.open(filename, 'r:')
-    else:
-        raise Exception('Unknown file type (supported .tar.gz or .tar): ' + filename)
-
-    folder = tar.getnames()[0]
-    if '/' in folder:
-        folder = folder[:folder.index('/')]
-
-    tar.extractall(destination)
-    tar.close()
-
-    return os.path.join(destination, folder)
+def get_owner(folder):
+    stat_info = os.stat(folder)
+    return stat_info.st_uid, stat_info.st_gid
 
 
 class ApacheDownloader(object):
     def __init__(self):
-        pass
+        try:
+            import requests.packages.urllib3 as urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+            import logging
+            logging.getLogger("requests.packages.urllib3").setLevel(logging.CRITICAL)
+        except ImportError:
+            pass
 
     def download(self, name, apache_path, destination_folder, expected_file_size=None):
         return self.download_from_mirrors(name, self._get_mirrors(apache_path), destination_folder, expected_file_size)
@@ -74,21 +58,43 @@ class ApacheDownloader(object):
             tar_file = self._download_from_mirrors(mirrors, work_directory,
                                                    callback=None if expected_file_size is None else _callback)
 
-            folder = untar(tar_file, work_directory)
+            folder = self._untar(tar_file, work_directory)
             progressbar.set_progress(0.9)
 
             shutil.rmtree(destination_folder, ignore_errors=True)
             shutil.move(folder, destination_folder)
 
+            chown(destination_folder, *get_owner(cli.MMT_VENDOR_DIR))
+
             progressbar.complete()
         except Exception as e:
-            progressbar.abort(e.message)
+            progressbar.abort(str(e))
             raise
         finally:
             shutil.rmtree(work_directory, ignore_errors=True)
 
     @staticmethod
+    def _untar(filename, destination):
+        if filename.endswith('.tar.gz') or filename.endswith('.tgz'):
+            tar = tarfile.open(filename, 'r:gz')
+        elif filename.endswith('.tar'):
+            tar = tarfile.open(filename, 'r:')
+        else:
+            raise Exception('Unknown file type (supported .tar.gz or .tar): ' + filename)
+
+        folder = tar.getnames()[0]
+        if '/' in folder:
+            folder = folder[:folder.index('/')]
+
+        tar.extractall(destination)
+        tar.close()
+
+        return os.path.join(destination, folder)
+
+    @staticmethod
     def _get_mirrors(apache_path):
+        import requests
+
         current_attempt = 0
         attempts_limit = 3
         while True:
@@ -124,6 +130,8 @@ class ApacheDownloader(object):
 
     @staticmethod
     def _download_from_mirrors(mirrors, output_folder, callback=None):
+        import requests
+
         for mirror in mirrors:
             try:
                 r = requests.get(mirror, timeout=10, stream=True)
@@ -147,12 +155,10 @@ class ApacheDownloader(object):
         raise Exception('Failed to download from Apache repository')
 
 
-# =========================================================================================
-# Main functions
-# =========================================================================================
+# - Main functions -----------------------------------------------------------------------------------------------------
 
-def download_cassandra():
-    cassandra_home = os.path.join(vendor_dir, 'cassandra-' + CASSANDRA_VERSION)
+def install_cassandra():
+    cassandra_home = os.path.join(cli.MMT_VENDOR_DIR, 'cassandra-' + CASSANDRA_VERSION)
     cassandra_apache_path = '/cassandra/' + CASSANDRA_VERSION + '/apache-cassandra-' + CASSANDRA_VERSION + '-bin.tar.gz'
 
     downloader = ApacheDownloader()
@@ -174,18 +180,18 @@ def download_cassandra():
         f.write(content)
 
 
-def download_kafka():
-    kafka_home = os.path.join(vendor_dir, 'kafka-' + KAFKA_VERSION)
+def install_kafka():
+    kafka_home = os.path.join(cli.MMT_VENDOR_DIR, 'kafka-' + KAFKA_VERSION)
 
     downloader = ApacheDownloader()
     downloader.download_from_mirrors('Kafka', [KAFKA_DOWNLOAD_URL], kafka_home, expected_file_size=KAFKA_FILE_SIZE)
 
 
-def copy_opennlp():
-    opennlp_home = os.path.join(vendor_dir, 'opennlp')
+def copy_opennlp_resources():
+    opennlp_home = os.path.join(cli.MMT_VENDOR_DIR, 'opennlp')
     assert os.path.exists(opennlp_home)
 
-    opennlp_res = os.path.join(mmt_install_res, 'opennlp')
+    opennlp_res = os.path.join(cli.MMT_RES_DIR, 'opennlp')
     if not os.path.exists(opennlp_res):
         os.makedirs(opennlp_res)
 
@@ -203,18 +209,42 @@ def copy_opennlp():
     finally:
         progressbar.complete()
 
+    chown(cli.MMT_RES_DIR, *get_owner(cli.MMT_BUILD_DIR))
 
-if __name__ == '__main__':
+
+def pip_install(dependency):
+    from pip import __main__
+
+    try:
+        __main__._main(['install', dependency])
+    except SystemExit:
+        pass
+
+
+def main(argv=None):
+    import argparse
+
     parser = argparse.ArgumentParser(description='Download all dependencies needed by ModernMT system.')
     parser.add_argument('--skip-kafka', dest='skip_kafka', action='store_true', default=False,
                         help='skip Apache Kafka download')
     parser.add_argument('--skip-cassandra', dest='skip_cassandra', action='store_true', default=False,
                         help='skip Apache Cassandra download')
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
+    # Install python modules
+    pip_install('requests')
+    pip_install('cachetools')
+    pip_install('torch')
+    pip_install('fairseq==0.6.2')
+
+    # Install third-party requirements
     if not args.skip_cassandra:
-        download_cassandra()
+        install_cassandra()
     if not args.skip_kafka:
-        download_kafka()
-    copy_opennlp()
+        install_kafka()
+    copy_opennlp_resources()
+
+
+if __name__ == '__main__':
+    main()
