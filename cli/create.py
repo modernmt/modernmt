@@ -32,7 +32,7 @@ class CreateActivity(StatefulActivity):
         self.state.corpora_clean = self.wdir('corpora_clean')
 
         args = Namespace(src_lang=self.args.src_lang, tgt_lang=self.args.tgt_lang, input_path=self.args.input_path,
-                         output_path=self.state.corpora_clean)
+                         output_path=self.state.corpora_clean, debug=self.args.debug)
         activity = cleaning.CleaningActivity(args, wdir=self.wdir('_temp_cleaning'), log_file=self.log_fobj,
                                              delete_on_exit=self.delete_on_exit)
         activity.indentation = 4
@@ -64,7 +64,7 @@ class CreateActivity(StatefulActivity):
         input_path = self.state.corpora_clean or self.args.input_path
         self.state.datagen_dir = self.wdir('data_generated')
 
-        args = Namespace(lang_pairs='%s:%s' % (self.args.src_lang, self.args.tgt_lang),
+        args = Namespace(lang_pairs='%s:%s' % (self.args.src_lang, self.args.tgt_lang), debug=self.args.debug,
                          input_paths=[input_path], output_path=self.state.datagen_dir,
                          voc_size=self.args.voc_size, threads=self.args.threads,
                          count_threshold=self.args.count_threshold, vocabulary_path=self.args.vocabulary_path,
@@ -77,7 +77,7 @@ class CreateActivity(StatefulActivity):
     @activitystep('Training neural model')
     def train(self):
         self.state.nn_path = self.wdir('nn_model')
-        args = Namespace(data_path=self.state.datagen_dir, output_path=self.state.nn_path,
+        args = Namespace(data_path=self.state.datagen_dir, output_path=self.state.nn_path, debug=self.args.debug,
                          num_checkpoints=self.args.num_checkpoints, resume=self.args.resume)
 
         activity = train.TrainActivity(args, self.extra_argv, wdir=self.wdir('_temp_train'),

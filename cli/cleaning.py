@@ -5,7 +5,7 @@ import multiprocessing
 import os
 
 from cli import CLIArgsException, StatefulActivity, activitystep
-from cli.mmt import ParallelWriter
+from cli.mmt.fileformats import ParallelFileFormat, DevNullFileFormat
 from cli.mmt.mmtcli import mmt_tmsclean, mmt_dedup, mmt_preprocess, fastalign_build, fastalign_score
 
 
@@ -44,16 +44,16 @@ def _filtered_corpus(stats, src_lang, tgt_lang, name, in_path, score_path):
 
 
 def _apply_filter(stats, src_lang, tgt_lang, name, in_path, score_path, out_path, trash_path=None):
-    out_writer = ParallelWriter.from_path(src_lang, tgt_lang, name, out_path)
-    trash_writer = ParallelWriter.from_path(src_lang, tgt_lang, name, trash_path) \
-        if trash_path is not None else ParallelWriter.null_writer()
+    out_file = ParallelFileFormat.from_path(src_lang, tgt_lang, name, out_path)
+    trash_file = ParallelFileFormat.from_path(src_lang, tgt_lang, name, trash_path) \
+        if trash_path is not None else DevNullFileFormat()
 
-    with out_writer as out_writer_obj, trash_writer as trash_writer_obj:
+    with out_file.writer() as out_writer, trash_file.writer() as trash_writer:
         for src_line, tgt_line, accept in _filtered_corpus(stats, src_lang, tgt_lang, name, in_path, score_path):
             if accept:
-                out_writer_obj.writelines(src_line, tgt_line)
+                out_writer.write(src_line, tgt_line)
             else:
-                trash_writer_obj.writelines(src_line, tgt_line)
+                trash_writer.write(src_line, tgt_line)
 
 
 class CleaningActivity(StatefulActivity):

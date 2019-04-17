@@ -54,36 +54,3 @@ def collect_parallel_files(src_lang, tgt_lang, paths):
         all_tgt_files.extend(tgt_files)
 
     return all_src_files, all_tgt_files
-
-
-class ParallelWriter:
-    @classmethod
-    def from_path(cls, src_lang, tgt_lang, name, path):
-        src_file = os.path.join(path, name + '.' + src_lang)
-        tgt_file = os.path.join(path, name + '.' + tgt_lang)
-
-        return cls([src_file, tgt_file])
-
-    @classmethod
-    def null_writer(cls):
-        return cls(None)
-
-    def __init__(self, files):
-        self._filenames = files
-        self._files = None
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self._files is not None:
-            for f in self._files:
-                f.close()
-
-    def writelines(self, *args):
-        if self._files is None and self._filenames is not None and len(self._filenames) > 0:
-            self._files = [open(f, 'w', encoding='utf-8') for f in self._filenames]
-
-        if self._files is not None:
-            for f, line in zip(self._files, args):
-                f.write(line)
