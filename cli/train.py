@@ -30,6 +30,9 @@ class TrainActivity(StatefulActivity):
     def __init__(self, args, extra_argv=None, wdir=None, log_file=None, start_step=None, delete_on_exit=True):
         super().__init__(args, extra_argv, wdir, log_file, start_step, delete_on_exit)
 
+        if args.resume:
+            self.state.step_no = -1
+
     @activitystep('Train neural network')
     def train_nn(self):
         # Start training
@@ -169,6 +172,8 @@ def parse_args(argv=None):
     parser.add_argument('-d', '--debug', action='store_true', dest='debug', default=False,
                         help='prevents temporary files to be removed after execution')
     parser.add_argument('--log', dest='log_file', default=None, help='detailed log file')
+    parser.add_argument('--resume', action='store_true', dest='resume', default=False,
+                        help='resume training from last saved checkpoint even after training completion')
 
     args, extra_argv = parser.parse_known_args(argv)
     if args.debug and args.wdir is None:

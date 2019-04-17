@@ -2,7 +2,7 @@ import argparse
 import os
 import shutil
 
-from cli import StatefulActivity, cleaning, datagen, train, Namespace, activitystep
+from cli import StatefulActivity, cleaning, datagen, train, Namespace, activitystep, SkipException
 from cli.mmt.engine import Engine, EngineNode
 
 
@@ -13,51 +13,29 @@ class CreateActivity(StatefulActivity):
         self._engine = engine
         self.has_sub_activities = True
 
+        if args.resume:
+            # force train step to be executed even if completed
+            for i, step in enumerate(self.steps()):
+                if step.id == 'train':
+                    self.state.step_no = min(self.state.step_no, i - 1)
+                    break
+
     @activitystep('Cleaning corpora')
     def clean(self):
         if self.args.skip_cleaning:
-            return
+            raise SkipException
 
         self.state.corpora_clean = self.wdir('corpora_clean')
 
         args = Namespace(src_lang=self.args.src_lang, tgt_lang=self.args.tgt_lang, input_path=self.args.input_path,
                          output_path=self.state.corpora_clean)
-        activity = cleaning.CleaningActivity(args, wdir=self.wdir('_temp_cleaning'), log_file=self.log_fobj.name,
+        activity = cleaning.CleaningActivity(args, wdir=self.wdir('_temp_cleaning'), log_file=self.log_fobj,
                                              delete_on_exit=self.delete_on_exit)
         activity.indentation = 4
         activity.run()
 
-    @activitystep('Generating binary archives')
-    def datagen(self):
-        input_path = self.state.corpora_clean or self.args.input_path
-        self.state.datagen_dir = self.wdir('data_generated')
-
-        args = Namespace(lang_pairs='%s:%s' % (self.args.src_lang, self.args.tgt_lang),
-                         input_paths=[input_path], output_path=self.state.datagen_dir,
-                         voc_size=self.args.voc_size, threads=self.args.threads,
-                         count_threshold=self.args.count_threshold, vocabulary_path=self.args.vocabulary_path)
-        activity = datagen.DatagenActivity(args, wdir=self.wdir('_temp_datagen'), log_file=self.log_fobj.name,
-                                           delete_on_exit=self.delete_on_exit)
-        activity.indentation = 4
-        activity.run()
-
-    @activitystep('Training neural model')
-    def train(self):
-        self.state.nn_path = self.wdir('nn_model')
-        args = Namespace(data_path=self.state.datagen_dir, output_path=self.state.nn_path,
-                         num_checkpoints=self.args.num_checkpoints)
-
-        activity = train.TrainActivity(args, self.extra_argv, wdir=self.wdir('_temp_train'),
-                                       log_file=self.log_fobj.name, delete_on_exit=self.delete_on_exit)
-        activity.indentation = 4
-        activity.run()
-
     @activitystep('Creating engine')
-    def finalize(self):
-        if os.path.isdir(self._engine.path):
-            shutil.rmtree(self._engine.path)
-        os.makedirs(self._engine.path)
-
+    def mkengine(self):
         # Write engine config
         config_content = \
             '<node xsi:schemaLocation="http://www.modernmt.eu/schema/config mmt-config-1.0.xsd"\n' \
@@ -71,13 +49,43 @@ class CreateActivity(StatefulActivity):
 
         # Create decoder folder
         lang_tag = '%s__%s' % (self.args.src_lang, self.args.tgt_lang)
-        decoder_dir = os.path.join(self._engine.models_path, 'decoder')
-        os.makedirs(decoder_dir)
+        self.state.decoder_dir = os.path.join(self._engine.models_path, 'decoder')
+        os.makedirs(self.state.decoder_dir)
 
-        with open(os.path.join(decoder_dir, 'model.conf'), 'w', encoding='utf-8') as config:
+        with open(os.path.join(self.state.decoder_dir, 'model.conf'), 'w', encoding='utf-8') as config:
             config.write('[models]\n%s = %s/\n' % (lang_tag, lang_tag))
 
-        os.rename(self.state.nn_path, os.path.join(decoder_dir, lang_tag))
+    @activitystep('Generating binary archives')
+    def datagen(self):
+        input_path = self.state.corpora_clean or self.args.input_path
+        self.state.datagen_dir = self.wdir('data_generated')
+
+        args = Namespace(lang_pairs='%s:%s' % (self.args.src_lang, self.args.tgt_lang),
+                         input_paths=[input_path], output_path=self.state.datagen_dir,
+                         voc_size=self.args.voc_size, threads=self.args.threads,
+                         count_threshold=self.args.count_threshold, vocabulary_path=self.args.vocabulary_path,
+                         test_dir=self._engine.test_data_path if self.args.test_set else None)
+        activity = datagen.DatagenActivity(args, wdir=self.wdir('_temp_datagen'), log_file=self.log_fobj,
+                                           delete_on_exit=self.delete_on_exit)
+        activity.indentation = 4
+        activity.run()
+
+    @activitystep('Training neural model')
+    def train(self):
+        self.state.nn_path = self.wdir('nn_model')
+        args = Namespace(data_path=self.state.datagen_dir, output_path=self.state.nn_path,
+                         num_checkpoints=self.args.num_checkpoints, resume=self.args.resume)
+
+        activity = train.TrainActivity(args, self.extra_argv, wdir=self.wdir('_temp_train'),
+                                       log_file=self.log_fobj, delete_on_exit=self.delete_on_exit)
+        activity.indentation = 4
+        activity.run()
+
+        output_nn_path = os.path.join(self.state.decoder_dir, '%s__%s' % (self.args.src_lang, self.args.tgt_lang))
+        if os.path.exists(output_nn_path):
+            shutil.rmtree(output_nn_path)
+
+        os.rename(self.state.nn_path, output_nn_path)
 
 
 def parse_args(argv=None):
@@ -92,6 +100,9 @@ def parse_args(argv=None):
                         help='prevents temporary files to be removed after execution')
     parser.add_argument('-y', '--yes', action='store_true', dest='force_delete', default=False,
                         help='if set, skip engine overwrite confirmation check')
+    parser.add_argument('--resume', action='store_true', dest='resume', default=False,
+                        help='resume an interrupted training, '
+                             'it can be used also to resume a training after its completion')
 
     cleaning_args = parser.add_argument_group('Data cleaning arguments')
     cleaning_args.add_argument('--skip-cleaning', action='store_true', dest='skip_cleaning', default=False,
@@ -107,6 +118,8 @@ def parse_args(argv=None):
                                    'only for alphabet generation in vocabulary creation, useful for very large corpus')
     datagen_args.add_argument('--vocabulary', metavar='VOCABULARY_PATH', dest='vocabulary_path', default=None,
                               help='use the specified bpe vocabulary model instead of re-train a new one from scratch')
+    datagen_args.add_argument('--no-test', action='store_false', dest='test_set', default=True,
+                              help='skip automatically extraction of a test set from the provided training corpora')
 
     train_args = parser.add_argument_group('Train arguments (note: you can use all fairseq cli options)')
     train_args.add_argument('-n', '--checkpoints-num', dest='num_checkpoints', type=int, default=10,
@@ -117,39 +130,48 @@ def parse_args(argv=None):
     return args, train.parse_extra_argv(parser, extra_argv)
 
 
+def confirm_or_die(engine_name):
+    proceed = True
+
+    while True:
+        resp = input('An engine named "%s" already exists, '
+                     'are you sure you want to overwrite it? [y/N] ' % engine_name)
+        resp = resp.lower()
+        if len(resp) == 0 or resp == 'n':
+            proceed = False
+            break
+        elif resp == 'y':
+            break
+
+    if not proceed:
+        print('Aborted')
+        exit(2)
+
+
 def main(argv=None):
     args, extra_argv = parse_args(argv)
     engine = Engine(args.engine)
 
     wdir = engine.get_tempdir('training')
-    log_file = engine.get_logfile('training')
+    log_file = engine.get_logfile('training', ensure=True, append=True)
 
     if engine.exists():
-        proceed = True
+        if not args.resume and not args.force_delete:
+            confirm_or_die(args.engine)
 
-        if not args.force_delete:
-            while True:
-                resp = input('An engine named "%s" already exists, '
-                             'are you sure you want to overwrite it? [y/N] ' % args.engine)
-                resp = resp.lower()
-                if len(resp) == 0 or resp == 'n':
-                    proceed = False
-                    break
-                elif resp == 'y':
-                    break
+        node = EngineNode(engine)
+        node.stop()
 
-        if not proceed:
-            print('Aborted')
-            exit(0)
-        else:
-            shutil.rmtree(wdir, ignore_errors=True)
-            os.makedirs(wdir)
+    if not args.resume:
+        if os.path.isdir(engine.path):
+            shutil.rmtree(engine.path)
+        os.makedirs(engine.path)
 
-            if os.path.isfile(log_file):
-                os.remove(log_file)
+        shutil.rmtree(wdir, ignore_errors=True)
+        os.makedirs(wdir)
 
-            node = EngineNode(engine)
-            node.stop()
+        if os.path.isfile(log_file):
+            os.remove(log_file)
 
     activity = CreateActivity(engine, args, extra_argv, wdir=wdir, log_file=log_file, delete_on_exit=not args.debug)
     activity.run()

@@ -18,6 +18,11 @@ class CLIArgsException(Exception):
         return '{prog}: error: {message}'.format(prog=self.parser.prog, message=self.message)
 
 
+class SkipException(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+
+
 def pp_time(elapsed):
     elapsed = int(elapsed)
     parts = []
@@ -108,8 +113,14 @@ class StatefulActivity(object):
 
         # Configuring logging file
         self._log_fobj = None
+        self._close_log_on_exit = False
         if log_file is not None:
-            self._log_fobj = open(log_file, 'a')
+            if isinstance(log_file, str):
+                self._log_fobj = open(log_file, 'a')
+                self._close_log_on_exit = True
+            else:
+                self._log_fobj = log_file
+
             logging.basicConfig(format='%(asctime)-15s [%(levelname)s] - %(message)s', level=logging.DEBUG,
                                 stream=self._log_fobj)
         self._logger = logging.getLogger(type(self).__name__)
@@ -154,13 +165,18 @@ class StatefulActivity(object):
                     print(format_str.format('%s...' % step_desc), end='', flush=True)
 
                 if self.state.step_no < i:
-                    begin = time.time()
-                    step(self)
-                    elapsed_time = time.time() - begin
+                    try:
+                        begin = time.time()
+                        step(self)
+                        elapsed_time = time.time() - begin
 
-                    if self.has_sub_activities:
-                        print(step_desc + ' ', end='')
-                    print('DONE in %s' % pp_time(elapsed_time), flush=True)
+                        if self.has_sub_activities:
+                            print(step_desc + ' ', end='')
+                        print('DONE in %s' % pp_time(elapsed_time), flush=True)
+                    except SkipException:
+                        if self.has_sub_activities:
+                            print(step_desc + ' ', end='')
+                        print('SKIPPED', flush=True)
 
                     self.state.step_no = i
                     self._save_state()
@@ -172,7 +188,7 @@ class StatefulActivity(object):
             if self.delete_on_exit:
                 shutil.rmtree(self._wdir, ignore_errors=True)
         finally:
-            if self._log_fobj is not None:
+            if self._log_fobj is not None and self._close_log_on_exit:
                 self._log_fobj.close()
             if self._temp_dir is not None and os.path.isdir(self._temp_dir):
                 shutil.rmtree(self._temp_dir, ignore_errors=True)
