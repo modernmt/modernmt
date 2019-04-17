@@ -17,7 +17,7 @@ class Engine(object):
                    for name in os.listdir(mmt.MMT_ENGINES_DIR)
                    if os.path.isdir(os.path.join(mmt.MMT_ENGINES_DIR, name))]
 
-        return sorted([engine for engine in engines if engine.exists()])
+        return sorted([engine for engine in engines if engine.exists()], key=lambda e: e.name)
 
     @classmethod
     def get_languages_from_config(cls, config_file):

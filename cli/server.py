@@ -138,7 +138,7 @@ def main_status(argv=None):
         engine = Engine(args.engine)
         ensure_exists(engine)
 
-        engines = [args.engine]
+        engines = [engine]
 
     if len(engines) == 0:
         print('No engine found.')
