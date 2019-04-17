@@ -31,7 +31,7 @@ class TrainActivity(StatefulActivity):
         super().__init__(args, extra_argv, wdir, log_file, start_step, delete_on_exit)
 
         if args.resume:
-            self.state.step_no = -1
+            self.state.step_no = self._index_of_step('train_nn') - 1
 
     @activitystep('Train neural network')
     def train_nn(self):

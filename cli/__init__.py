@@ -149,6 +149,17 @@ class StatefulActivity(object):
 
         return path
 
+    def _index_of_step(self, step_id):
+        for i, step in enumerate(self._steps):
+            if step.id == step_id:
+                return i
+        return None
+
+    def _remove_step(self, step_id):
+        idx = self._index_of_step(step_id)
+        if idx is not None:
+            del self._steps[idx]
+
     def _save_state(self):
         with open(self._state_file, 'w', encoding='utf-8') as f_output:
             f_output.write(json.dumps(self.state.__dict__, indent=2, sort_keys=True))

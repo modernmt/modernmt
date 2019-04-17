@@ -2,7 +2,7 @@ import argparse
 import os
 import shutil
 
-from cli import StatefulActivity, cleaning, datagen, train, Namespace, activitystep, SkipException
+from cli import StatefulActivity, cleaning, datagen, train, Namespace, activitystep
 from cli.mmt.engine import Engine, EngineNode
 
 
@@ -13,18 +13,16 @@ class CreateActivity(StatefulActivity):
         self._engine = engine
         self.has_sub_activities = True
 
+        if self.args.skip_cleaning:
+            self._remove_step('clean')
+
         if args.resume:
             # force train step to be executed even if completed
-            for i, step in enumerate(self.steps()):
-                if step.id == 'train':
-                    self.state.step_no = min(self.state.step_no, i - 1)
-                    break
+            train_step_idx = self._index_of_step('train')
+            self.state.step_no = min(self.state.step_no, train_step_idx - 1)
 
     @activitystep('Cleaning corpora')
     def clean(self):
-        if self.args.skip_cleaning:
-            raise SkipException
-
         self.state.corpora_clean = self.wdir('corpora_clean')
 
         args = Namespace(src_lang=self.args.src_lang, tgt_lang=self.args.tgt_lang, input_path=self.args.input_path,
