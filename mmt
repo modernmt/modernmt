@@ -64,7 +64,7 @@ def main():
         exit(1)
     except Exception as e:
         sys.stderr.write('\nERROR Unexpected exception: {message}\n'.format(message=str(e)))
-        raise
+        exit(1)
 
 
 if __name__ == '__main__':

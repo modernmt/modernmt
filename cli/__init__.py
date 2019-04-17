@@ -177,9 +177,11 @@ class StatefulActivity(object):
 
                 if self.state.step_no < i:
                     try:
+                        self._logger.info('Training step "%s" started' % step.id)
                         begin = time.time()
                         step(self)
                         elapsed_time = time.time() - begin
+                        self._logger.info('Training step "%s" completed in %s' % (step.id, pp_time(elapsed_time)))
 
                         if self.has_sub_activities:
                             print(step_desc + ' ', end='')
