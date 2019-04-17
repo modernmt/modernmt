@@ -4,6 +4,12 @@ import shutil
 
 from cli import StatefulActivity, cleaning, datagen, train, Namespace, activitystep
 from cli.mmt.engine import Engine, EngineNode
+from cli.utils import nvidia_smi
+
+
+class HWConstraintViolated(Exception):
+    def __init__(self, cause):
+        self.cause = cause
 
 
 class CreateActivity(StatefulActivity):
@@ -84,6 +90,47 @@ class CreateActivity(StatefulActivity):
             shutil.rmtree(output_nn_path)
 
         os.rename(self.state.nn_path, output_nn_path)
+
+    def run(self):
+        self._logger.info('Training started: engine=%s, lang_pair=%s__%s' %
+                          (self._engine.name, self.args.src_lang, self.args.tgt_lang))
+
+        print('\n=========== TRAINING STARTED ===========\n')
+        print('ENGINE:   %s' % self._engine.name)
+        print('LANGUAGE: %s > %s' % (self.args.src_lang, self.args.tgt_lang))
+        print(flush=True)
+
+        # Check if all requirements are fulfilled before actual engine training
+        try:
+            self._check_constraints()
+        except HWConstraintViolated as e:
+            print('\033[91mWARNING\033[0m: %s\n' % e.cause)
+
+        # Run actual training
+        super().run()
+
+        print('\n=========== TRAINING SUCCESS ===========\n')
+        print('You can now start, stop or check the status of the server with command:')
+        print('\t./mmt start|stop|status ' + ('' if self._engine.name == 'default' else '-e %s' % self._engine.name))
+        print(flush=True)
+
+    @staticmethod
+    def _check_constraints():
+        gb = 1024 * 1024 * 1024
+        gpu_list = nvidia_smi.list_gpus()
+        recommended_gpu_ram = 10 * gb
+
+        if len(gpu_list) == 0:
+            raise HWConstraintViolated(
+                'No GPU for Neural engine training, the process will take very long time to complete.')
+
+        for gpu in gpu_list:
+            gpu_ram = nvidia_smi.get_ram(gpu)
+
+            if gpu_ram < recommended_gpu_ram:
+                raise HWConstraintViolated(
+                    'The RAM of GPU %d is only %.fG. More than %.fG of RAM recommended for each GPU.' %
+                    (gpu, round(float(gpu_ram) / gb), recommended_gpu_ram / gb))
 
 
 def parse_args(argv=None):

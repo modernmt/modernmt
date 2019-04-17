@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 import subprocess
 
 DEVNULL = open(os.devnull, 'wb')
@@ -64,3 +65,19 @@ def shell_exec(cmd, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
 def mem_size(megabytes=True):
     mem_bytes = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
     return mem_bytes / (1024. ** 2) if megabytes else mem_bytes
+
+
+def lc(filename):
+    with open(filename) as stream:
+        count = 0
+        for _ in stream:
+            count += 1
+
+        return count
+
+
+def cat(files, output, buffer_size=10 * 1024 * 1024):
+    with open(output, 'wb') as blob:
+        for f in files:
+            with open(f, 'rb') as source:
+                shutil.copyfileobj(source, blob, buffer_size)
