@@ -1,26 +1,11 @@
 import argparse
 
+from cli import ensure_engine_exists, ensure_node_running, ensure_node_not_running
 from cli.mmt.engine import EngineNode, Engine
 
 
-def ensure_exists(engine):
-    if not engine.exists():
-        raise ValueError('Invalid engine name "%s", engine does not exist.' % engine.name)
-
-
-def ensure_not_running(node):
-    if node.running:
-        raise RuntimeError('ModernMT engine "%s" is already running.' % node.engine.name)
-
-
-def ensure_running(node):
-    if not node.running:
-        raise RuntimeError('ModernMT engine "%s" is not running.' % node.engine.name)
-
-
 def parse_args_start(argv=None):
-    parser = argparse.ArgumentParser(description='Start the ModernMT server on this machine')
-    parser.prog = 'mmt start'
+    parser = argparse.ArgumentParser(description='Start the ModernMT server on this machine', prog='mmt start')
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
     parser.add_argument('-v', '--verbosity', dest='verbosity', help='log verbosity (0 = only severe errors, '
@@ -48,8 +33,7 @@ def parse_args_start(argv=None):
 
 
 def parse_args_stop(argv=None):
-    parser = argparse.ArgumentParser(description='Stop the local instance of ModernMT server')
-    parser.prog = 'mmt stop'
+    parser = argparse.ArgumentParser(description='Stop the local instance of ModernMT server', prog='mmt stop')
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
     parser.add_argument('-f', '--forced', action='store_true', dest='forced', default=False,
@@ -61,8 +45,7 @@ def parse_args_stop(argv=None):
 
 
 def parse_args_status(argv=None):
-    parser = argparse.ArgumentParser(description='Show the ModernMT server status')
-    parser.prog = 'mmt status'
+    parser = argparse.ArgumentParser(description='Show the ModernMT server status', prog='mmt status')
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name', default=None)
 
     return parser.parse_args(argv)
@@ -72,9 +55,9 @@ def main_start(argv=None):
     args = parse_args_start(argv)
 
     engine = Engine(args.engine)
-    ensure_exists(engine)
+    ensure_engine_exists(engine)
     node = EngineNode(engine)
-    ensure_not_running(node)
+    ensure_node_not_running(node)
 
     success = False
 
@@ -116,9 +99,9 @@ def main_stop(argv=None):
     args = parse_args_stop(argv)
 
     engine = Engine(args.engine)
-    ensure_exists(engine)
+    ensure_engine_exists(engine)
     node = EngineNode(engine)
-    ensure_running(node)
+    ensure_node_running(node)
 
     try:
         print('Halting engine "%s"...' % engine.name, end='', flush=True)
@@ -136,7 +119,7 @@ def main_status(argv=None):
         engines = Engine.list()
     else:
         engine = Engine(args.engine)
-        ensure_exists(engine)
+        ensure_engine_exists(engine)
 
         engines = [engine]
 

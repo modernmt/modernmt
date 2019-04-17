@@ -160,8 +160,7 @@ def parse_extra_argv(parser, extra_argv):
 
 
 def parse_args(argv=None):
-    parser = argparse.ArgumentParser(description='Train the neural model')
-    parser.prog = 'mmt train'
+    parser = argparse.ArgumentParser(description='Train the neural model', prog='mmt train')
     parser.add_argument('data_path', metavar='DATA_FOLDER',
                         help='data folder holding binarized training and validation sets')
     parser.add_argument('output_path', metavar='OUTPUT', help='the model output path')

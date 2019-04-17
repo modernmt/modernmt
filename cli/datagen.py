@@ -233,8 +233,7 @@ class DatagenActivity(StatefulActivity):
 
 
 def parse_args(argv=None):
-    parser = argparse.ArgumentParser(description='Generate archives for neural training')
-    parser.prog = 'mmt datagen'
+    parser = argparse.ArgumentParser(description='Generate archives for neural training', prog='mmt datagen')
     parser.add_argument('lang_pairs', metavar='LANGUAGE_PAIRS',
                         help='the language pair list encoded as <ls1>:<t1>[,<lsn>:<ltn>] (i.e. en:it,it:en,en:fr)')
     parser.add_argument('output_path', metavar='OUTPUT', help='the destination folder')

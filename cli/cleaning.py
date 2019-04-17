@@ -119,8 +119,7 @@ class CleaningActivity(StatefulActivity):
 
 
 def parse_args(argv=None):
-    parser = argparse.ArgumentParser(description='Clean parallel corpora before training')
-    parser.prog = 'mmt clean'
+    parser = argparse.ArgumentParser(description='Clean parallel corpora before training', prog='mmt clean')
     parser.add_argument('src_lang', metavar='SOURCE_LANGUAGE', help='the source language (ISO 639-1)')
     parser.add_argument('tgt_lang', metavar='TARGET_LANGUAGE', help='the target language (ISO 639-1)')
     parser.add_argument('input_path', metavar='INPUT', help='the path to the corpora to clean')

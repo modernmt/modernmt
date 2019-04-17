@@ -205,3 +205,23 @@ class StatefulActivity(object):
                 self._log_fobj.close()
             if self._temp_dir is not None and os.path.isdir(self._temp_dir):
                 shutil.rmtree(self._temp_dir, ignore_errors=True)
+
+
+def ensure_engine_exists(engine):
+    if not engine.exists():
+        raise ValueError('Invalid engine name "%s", engine does not exist.' % engine.name)
+
+
+def ensure_node_not_running(node):
+    if node.running:
+        raise RuntimeError('ModernMT engine "%s" is already running.' % node.engine.name)
+
+
+def ensure_node_running(node):
+    if not node.running:
+        raise RuntimeError('ModernMT engine "%s" is not running.' % node.engine.name)
+
+
+def ensure_node_has_api(node):
+    if node.api is None:
+        raise RuntimeError('ModernMT engine "%s" has no running REST API.' % node.engine.name)

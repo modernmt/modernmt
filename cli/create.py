@@ -134,8 +134,7 @@ class CreateActivity(StatefulActivity):
 
 
 def parse_args(argv=None):
-    parser = argparse.ArgumentParser(description='Create and train a new ModernMT engine from scratch')
-    parser.prog = 'mmt create'
+    parser = argparse.ArgumentParser(description='Create a new ModernMT engine from scratch', prog='mmt create')
     parser.add_argument('src_lang', metavar='SOURCE_LANGUAGE', help='the source language (ISO 639-1)')
     parser.add_argument('tgt_lang', metavar='TARGET_LANGUAGE', help='the target language (ISO 639-1)')
     parser.add_argument('input_path', metavar='INPUT', help='the path to the parallel corpora collection')

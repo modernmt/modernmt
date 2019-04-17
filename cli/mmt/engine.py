@@ -89,8 +89,15 @@ class Engine(object):
 
 
 class ApiException(Exception):
-    def __init__(self, *args: object) -> None:
-        super().__init__(*args)
+    def __init__(self, cause) -> None:
+        super().__init__()
+        self.cause = cause
+
+    def __repr__(self):
+        return '%s: %s' % (self.__class__.__name__, self.cause)
+
+    def __str__(self):
+        return self.cause
 
 
 class _RestApi(object):
