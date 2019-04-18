@@ -233,6 +233,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     # Install python modules
+    pip_install('regex')
+    pip_install('sacrebleu==1.3.1')
     pip_install('requests')
     pip_install('cachetools')
     pip_install('torch')
