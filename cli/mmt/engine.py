@@ -62,6 +62,9 @@ class Engine(object):
         else:
             self.languages = []
 
+    def get_test_path(self, src_lang, tgt_lang):
+        return os.path.join(self.test_data_path, '%s__%s' % (src_lang, tgt_lang))
+
     def exists(self):
         return os.path.isfile(self.config_path)
 
@@ -204,7 +207,7 @@ class _RestApi(object):
         return self._get('decoder/features')
 
     def get_context_f(self, source, target, document, limit=None, user=None):
-        params = {'local_file': document, 'source': source, 'targets': target}
+        params = {'local_file': os.path.abspath(document), 'source': source, 'targets': target}
         if limit is not None:
             params['limit'] = limit
         if user is not None:
@@ -222,7 +225,7 @@ class _RestApi(object):
     @staticmethod
     def _unpack_context(data):
         result = data['vectors']
-        return None if len(result) != 1 else result.values()[0]
+        return None if len(result) != 1 else list(result.values())[0]
 
     def translate(self, source, target, text, context=None, nbest=None, verbose=False, priority=None, user=None):
         p = {'q': text, 'source': source, 'target': target}

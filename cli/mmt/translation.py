@@ -1,9 +1,8 @@
-import os
 import threading
 import time
 from multiprocessing.dummy import Pool
 from queue import Queue
-from random import random
+from random import random, randint
 
 import requests
 
@@ -92,15 +91,6 @@ class TranslateEngine(object):
         with open(input_file, 'r', encoding='utf-8') as input_stream:
             with open(output_file, 'w', encoding='utf-8') as output_stream:
                 return self.translate_stream(input_stream, output_stream, threads=threads)
-
-    def translate_corpora(self, corpora, output_folder, threads=None):
-        count = 0
-        for corpus in corpora:
-            input_file = corpus.get_file(self.source_lang)
-            output_file = os.path.join(output_folder, corpus.name + '.' + self.target_lang)
-
-            count += self.translate_file(input_file, output_file, threads=threads)
-        return count
 
 
 class ModernMTTranslate(TranslateEngine):
@@ -261,7 +251,7 @@ class GoogleTranslate(TranslateEngine):
             'target': self._normalize_language(self.target_lang),
             'q': text,
             'key': self._key,
-            'userip': '.'.join(map(str, (random.randint(0, 200) for _ in range(4))))
+            'userip': '.'.join(map(str, (randint(0, 200) for _ in range(4))))
         }
 
         headers = {

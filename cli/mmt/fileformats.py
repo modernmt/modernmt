@@ -1,4 +1,5 @@
 import copy
+import glob
 import os
 import re
 from xml.etree import ElementTree
@@ -94,11 +95,28 @@ class ParallelFileFormat(FileFormat):
 
         return cls(src_lang, tgt_lang, src_file, tgt_file)
 
+    @classmethod
+    def list(cls, src_lang, tgt_lang, path):
+        result = []
+
+        for src_file in glob.glob(os.path.join(path, '*.' + src_lang)):
+            tgt_file = os.path.splitext(src_file)[0] + '.' + tgt_lang
+
+            if os.path.isfile(tgt_file):
+                result.append(cls(src_lang, tgt_lang, src_file, tgt_file))
+
+        return result
+
     def __init__(self, src_lang, tgt_lang, src_file, tgt_file) -> None:
         self._src_lang = src_lang
         self._tgt_lang = tgt_lang
         self._src_file = src_file
         self._tgt_file = tgt_file
+        self._name = os.path.splitext(os.path.basename(src_file))[0]
+
+    @property
+    def name(self):
+        return self._name
 
     @property
     def src_lang(self):

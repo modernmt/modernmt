@@ -22,7 +22,7 @@ __description = '''\
 
 
 def main():
-    from cli import cleaning, datagen, train, create, server, translate
+    from cli import cleaning, datagen, train, create, server, translate, evaluate
 
     actions = {
         'clean': cleaning.main,
@@ -33,6 +33,7 @@ def main():
         'stop': server.main_stop,
         'status': server.main_status,
         'translate': translate.main,
+        'evaluate': evaluate.main,
     }
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=__description,
