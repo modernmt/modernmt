@@ -226,6 +226,10 @@ class EvaluateActivity(StatefulActivity):
             print('  %s: %s' % (entry.name.ljust(20), text))
         print()
 
+        if self.args.human_eval_path is not None:
+            print('Files for Human Evaluation are available here: %s' % os.path.abspath(self.args.human_eval_path))
+            print()
+
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description='Evaluate a ModernMT engine', prog='mmt evaluate')
