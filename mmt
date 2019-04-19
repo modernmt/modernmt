@@ -22,7 +22,7 @@ __description = '''\
 
 
 def main():
-    from cli import cleaning, datagen, train, create, server, translate, evaluate
+    from cli import cleaning, datagen, train, create, server, translate, evaluate, memory
 
     actions = {
         'clean': cleaning.main,
@@ -34,6 +34,7 @@ def main():
         'status': server.main_status,
         'translate': translate.main,
         'evaluate': evaluate.main,
+        'memory': memory.main,
     }
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter, description=__description,
@@ -66,7 +67,6 @@ def main():
         exit(1)
     except Exception as e:
         sys.stderr.write('\nERROR Unexpected exception: {message}\n'.format(message=str(e)))
-        raise
         exit(1)
 
 

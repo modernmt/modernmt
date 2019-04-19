@@ -260,20 +260,20 @@ class _RestApi(object):
         if tmx is not None:
             params = {
                 'content_type': 'tmx',
-                'local_file': tmx
+                'local_file': os.path.abspath(tmx)
             }
         elif compact is not None:
             params = {
                 'content_type': 'compact',
-                'local_file': compact
+                'local_file': os.path.abspath(compact)
             }
         else:
             params = {
                 'content_type': 'parallel',
                 'source': source_lang,
                 'target': target_lang,
-                'source_local_file': source_file,
-                'target_local_file': target_file
+                'source_local_file': os.path.abspath(source_file),
+                'target_local_file': os.path.abspath(target_file)
             }
 
         return self._post('memories/' + str(memory) + '/corpus', params=params)
