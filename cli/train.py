@@ -6,6 +6,7 @@ import re
 import shutil
 
 import torch
+from torch.serialization import default_restore_location
 
 from cli import CLIArgsException, StatefulActivity, activitystep
 from cli.mmt import MMT_FAIRSEQ_USER_DIR
@@ -37,6 +38,10 @@ class TrainActivity(StatefulActivity):
     def train_nn(self):
         # Start training
         self.state.nn_path = self.wdir('nn_model')
+
+        last_ckpt_path = os.path.join(self.state.nn_path, 'checkpoint_last.pt')
+        if not os.path.isfile(last_ckpt_path) and self.args.init_model is not None:
+            shutil.copy(self.args.init_model, last_ckpt_path)
 
         cmd = ['fairseq-train', self.args.data_path, '--save-dir', self.state.nn_path, '--task', 'mmt_translation',
                '--user-dir', MMT_FAIRSEQ_USER_DIR, '--share-all-embeddings', '--no-progress-bar']
@@ -173,6 +178,8 @@ def parse_args(argv=None):
     parser.add_argument('--log', dest='log_file', default=None, help='detailed log file')
     parser.add_argument('--resume', action='store_true', dest='resume', default=False,
                         help='resume training from last saved checkpoint even after training completion')
+    parser.add_argument('--from-model', dest='init_model', default=None,
+                        help='start the training from the specified model.pt file')
 
     args, extra_argv = parser.parse_known_args(argv)
     if args.debug and args.wdir is None:

@@ -2,7 +2,7 @@ import argparse
 import os
 import shutil
 
-from cli import StatefulActivity, cleaning, datagen, train, Namespace, activitystep
+from cli import StatefulActivity, cleaning, datagen, train, Namespace, activitystep, CLIArgsException
 from cli.mmt.engine import Engine, EngineNode
 from cli.utils import nvidia_smi
 
@@ -64,10 +64,14 @@ class CreateActivity(StatefulActivity):
         input_path = self.state.corpora_clean or self.args.input_path
         self.state.datagen_dir = self.wdir('data_generated')
 
+        vocabulary_path = self.args.vocabulary_path
+        if self.args.init_model is not None:
+            vocabulary_path = os.path.join(self.args.init_model, 'model.vcb')
+
         args = Namespace(lang_pairs='%s:%s' % (self.args.src_lang, self.args.tgt_lang), debug=self.args.debug,
                          input_paths=[input_path], output_path=self.state.datagen_dir,
                          voc_size=self.args.voc_size, threads=self.args.threads,
-                         count_threshold=self.args.count_threshold, vocabulary_path=self.args.vocabulary_path,
+                         count_threshold=self.args.count_threshold, vocabulary_path=vocabulary_path,
                          test_dir=self._engine.test_data_path if self.args.test_set else None)
         activity = datagen.DatagenActivity(args, wdir=self.wdir('_temp_datagen'), log_file=self.log_fobj,
                                            delete_on_exit=self.delete_on_exit)
@@ -77,8 +81,13 @@ class CreateActivity(StatefulActivity):
     @activitystep('Training neural model')
     def train(self):
         self.state.nn_path = self.wdir('nn_model')
+
+        init_model = None
+        if self.args.init_model is not None:
+            init_model = os.path.join(self.args.init_model, 'model.pt')
+
         args = Namespace(data_path=self.state.datagen_dir, output_path=self.state.nn_path, debug=self.args.debug,
-                         num_checkpoints=self.args.num_checkpoints, resume=self.args.resume)
+                         num_checkpoints=self.args.num_checkpoints, resume=self.args.resume, init_model=init_model)
 
         activity = train.TrainActivity(args, self.extra_argv, wdir=self.wdir('_temp_train'),
                                        log_file=self.log_fobj, delete_on_exit=self.delete_on_exit)
@@ -166,10 +175,16 @@ def parse_args(argv=None):
                               help='skip automatically extraction of a test set from the provided training corpora')
 
     train_args = parser.add_argument_group('Train arguments (note: you can use all fairseq cli options)')
+    train_args.add_argument('--from-model', dest='init_model', default=None,
+                            help='start the training from the specified model, '
+                                 'the path must contain "model.pt" and "model.vcb" files')
     train_args.add_argument('-n', '--checkpoints-num', dest='num_checkpoints', type=int, default=10,
                             help='number of checkpoints to average (default is 10)')
 
     args, extra_argv = parser.parse_known_args(argv)
+
+    if args.vocabulary_path is not None and args.init_model is not None:
+        raise CLIArgsException(parser, 'Cannot specify both options: "--vocabulary" and "--from-model"')
 
     return args, train.parse_extra_argv(parser, extra_argv)
 
