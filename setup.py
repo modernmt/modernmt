@@ -214,14 +214,17 @@ def copy_opennlp_resources():
     chown(mmt.MMT_RES_DIR, *get_owner(mmt.MMT_BUILD_DIR))
 
 
-def pip_install(dependency):
-    osutils.shell_exec(['pip3', 'install', dependency], stderr=sys.stderr, stdout=sys.stdout)
+def pip_install():
+    requirements_txt = os.path.join(mmt.MMT_HOME_DIR, 'requirements.txt')
+    osutils.shell_exec(['pip3', 'install', '-r', requirements_txt], stderr=sys.stderr, stdout=sys.stdout)
 
 
 def main(argv=None):
     import argparse
 
     parser = argparse.ArgumentParser(description='Download all dependencies needed by ModernMT system.')
+    parser.add_argument('--skip-pip', dest='skip_pip', action='store_true', default=False,
+                        help='skip pip dependencies')
     parser.add_argument('--skip-kafka', dest='skip_kafka', action='store_true', default=False,
                         help='skip Apache Kafka download')
     parser.add_argument('--skip-cassandra', dest='skip_cassandra', action='store_true', default=False,
@@ -229,19 +232,15 @@ def main(argv=None):
 
     args = parser.parse_args(argv)
 
-    # Install python modules
-    pip_install('regex')
-    pip_install('sacrebleu==1.3.1')
-    pip_install('requests')
-    pip_install('cachetools')
-    pip_install('torch')
-    pip_install('fairseq==0.6.2')
+    if not args.skip_pip:
+        pip_install()
 
-    # Install third-party requirements
     if not args.skip_cassandra:
         install_cassandra()
+
     if not args.skip_kafka:
         install_kafka()
+
     copy_opennlp_resources()
 
 
