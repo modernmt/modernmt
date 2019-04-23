@@ -1,9 +1,11 @@
 import os
 import shutil
+import sys
 import tarfile
 import tempfile
 
 from cli import mmt
+from cli.utils import osutils
 from cli.utils.progressbar import Progressbar, UndefinedProgressbar
 
 CASSANDRA_VERSION = '3.11.4'
@@ -213,12 +215,7 @@ def copy_opennlp_resources():
 
 
 def pip_install(dependency):
-    from pip import __main__
-
-    try:
-        __main__._main(['install', dependency])
-    except SystemExit:
-        pass
+    osutils.shell_exec(['pip3', 'install', dependency], stderr=sys.stderr, stdout=sys.stdout)
 
 
 def main(argv=None):
