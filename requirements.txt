@@ -1,0 +1,6 @@
+regex
+sacrebleu==1.3.1
+requests
+cachetools
+https://download.pytorch.org/whl/cu100/torch-1.0.1.post2-cp36-cp36m-linux_x86_64.whl
+fairseq==0.6.2
