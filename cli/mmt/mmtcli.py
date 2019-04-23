@@ -38,7 +38,7 @@ def __mmt_env():
 
 
 if 'MMT_HOME' not in os.environ:
-    raise Exception('environment variable MMT_HOME is not set')
+    os.environ['MMT_HOME'] = MMT_HOME_DIR
 
 
 # - ModernMT CLI functions ---------------------------------------------------------------------------------------------
