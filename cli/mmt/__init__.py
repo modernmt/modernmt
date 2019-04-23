@@ -5,7 +5,7 @@ from glob import glob
 def __mmt_jar():
     jars = [f for f in glob(os.path.join(MMT_BUILD_DIR, 'mmt-*.jar'))]
     jars.sort(key=lambda x: os.path.getmtime(x))
-    return jars[-1]
+    return jars[-1] if len(jars) > 0 else None
 
 
 __this_dir = os.path.dirname(os.path.realpath(__file__))
@@ -23,7 +23,7 @@ MMT_RES_DIR = os.path.join(MMT_BUILD_DIR, 'res')
 
 MMT_JAR = __mmt_jar()
 MMT_PLUGINS_JARS = [f for f in glob(os.path.join(MMT_PLUGINS_DIR, '*.jar'))] if os.path.isdir(MMT_PLUGINS_DIR) else []
-MMT_FAIRSEQ_USER_DIR = os.path.join(MMT_JAR, 'mmt')
+MMT_FAIRSEQ_USER_DIR = os.path.join(MMT_JAR, 'mmt') if MMT_JAR is not None else None
 
 
 def collect_parallel_files(src_lang, tgt_lang, paths):
