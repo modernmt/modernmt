@@ -81,18 +81,18 @@ In order to finalize the installation you need to **reboot your machine**.
 Then you need to install the **CUDA Toolkit 10**, on Ubuntu 18.04 follow these steps:
 ```bash
 # Download .deb package locally
-wget -O cuda-repo-ubuntu1804-10-1-local-10.1.105-418.39_1.0-1_amd64.deb https://developer.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1804-10-1-local-10.1.105-418.39_1.0-1_amd64.deb
+wget -O cuda-repo-ubuntu1804-10-0-local-10.0.130-410.48_1.0-1_amd64.deb https://developer.nvidia.com/compute/cuda/10.0/Prod/local_installers/cuda-repo-ubuntu1804-10-0-local-10.0.130-410.48_1.0-1_amd64
 
 # Install cuda
-sudo dpkg -i cuda-repo-ubuntu1804-10-1-local-10.1.105-418.39_1.0-1_amd64.deb
+sudo dpkg -i cuda-repo-ubuntu1804-10-0-local-10.0.130-410.48_1.0-1_amd64.deb
 sudo apt-key add /var/cuda-repo-<version>/7fa2af80.pub
 sudo apt update
 sudo apt install -y cuda
 ```
 
-Next install the **NVIDIA cuDNN library** from: [NVIDIA cuDNN Download](https://developer.nvidia.com/rdp/cudnn-download). Select the option *"Download cuDNN v7.5.1 (April 22, 2019), for CUDA 10.1"* and then *"cuDNN Runtime Library for Ubuntu18.04 (Deb)"*. Finally simply run this command on the downloaded package:
+Next install the **NVIDIA cuDNN library** from: [NVIDIA cuDNN Download](https://developer.nvidia.com/rdp/cudnn-download). Select the option *"Download cuDNN v7.5.1 (April 22, 2019), for CUDA 10.0"* and then *"cuDNN Runtime Library for Ubuntu18.04 (Deb)"*. Finally simply run this command on the downloaded package:
 ```bash
-sudo dpkg -i libcudnn7_7.5.1.10-1+cuda10.1_amd64.deb
+sudo dpkg -i libcudnn7_7.5.1.10-1+cuda10.0_amd64.deb
 ```
 
 ### Install Java 8 and Python 3
