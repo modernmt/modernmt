@@ -23,7 +23,109 @@
   </tr>
 </table>
 
-# Pre-installation actions
+# Install ModernMT via Docker
+
+If you are familiar with Docker, this is usually the easiest option to use ModernMT. This section assumes you have already a running instance of Docker, if this is not the case please [follow these instructions](https://docs.docker.com/install/linux/docker-ce/ubuntu/) in order to properly install Docker.
+
+### NVIDIA drivers
+
+The first step is **NVIDIA drivers** installation:
+```bash
+sudo add-apt-repository -y ppa:graphics-drivers
+sudo apt update
+sudo apt install -y nvidia-driver-410
+```
+
+In order to finalize the installation you need to **reboot your machine**.
+
+### NVIDIA Docker
+Next step is to install [nvidia-docker2](https://github.com/NVIDIA/nvidia-docker) package that allow docker images to directly access the underlying GPU hardware with the CUDA library:
+```bash
+# Add the package repositories
+curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | \
+  sudo apt-key add -
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | \
+  sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+sudo apt-get update
+
+# Install nvidia-docker2 and reload the Docker daemon configuration
+sudo apt-get install -y nvidia-docker2
+sudo pkill -SIGHUP dockerd
+```
+
+### Run latest ModernMT image
+Finally, you are able to run the latest ModernMT image with Docker:
+```bash
+sudo docker run --runtime=nvidia --rm -it --publish 8045:8045 modernmt/master bash
+```
+
+Done! Go to [README.md](README.md) to create your first engine.
+
+
+# Install ModernMT from binaries
+
+With every ModernMT release in Github we also include a binary version of the package that can be used directly without the need to compile the source code.
+
+### NVIDIA drivers and CUDA Toolkit
+
+First you need to install the **NVIDIA drivers**:
+```bash
+sudo add-apt-repository -y ppa:graphics-drivers
+sudo apt update
+sudo apt install -y nvidia-driver-410
+```
+
+In order to finalize the installation you need to **reboot your machine**.
+
+Then you need to install the **CUDA Toolkit 10**, on Ubuntu 18.04 follow this steps:
+```bash
+# Download .deb package locally
+wget -O cuda-repo-ubuntu1804-10-1-local-10.1.105-418.39_1.0-1_amd64.deb https://developer.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1804-10-1-local-10.1.105-418.39_1.0-1_amd64.deb
+
+# Install cuda
+sudo dpkg -i cuda-repo-ubuntu1804-10-1-local-10.1.105-418.39_1.0-1_amd64.deb
+sudo apt-key add /var/cuda-repo-<version>/7fa2af80.pub
+sudo apt update
+sudo apt install cuda
+```
+
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
 
 ## CUDA/cuDNN libraries and software
 ### CUDA library
@@ -72,29 +174,6 @@ In order to avoid this error, in Ubuntu 16.04 you have to set the option `nofile
 * soft nofile 1048576
 * hard nofile 1048576
 ```
-
-# Option 1 - Using Docker
-
-**Important**: follow [pre-installation steps](#pre-installation-actions) before continuing with this installation.
-
-If you want to use the NVIDIA CUDA drivers with Docker (recommended for the neural adaptive engine), you need to install [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) tool:
-```
-wget -P /tmp https://github.com/NVIDIA/nvidia-docker/releases/download/v1.0.1/nvidia-docker_1.0.1-1_amd64.deb
-sudo dpkg -i /tmp/nvidia-docker*.deb && rm /tmp/nvidia-docker*.deb
-```
-Then you can pull the modernmt image:
-
-```
-nvidia-docker pull modernmt/master
-```
-
-To run your istance and publish the API on port 8045 of your host, execute
-
-```
-nvidia-docker run -it --publish 8045:8045 modernmt/master bash
-```
-
-Done! go to [README.md](README.md) to create your first engine.
 
 # Option 2 - Install Binaries on Your Server
 
