@@ -13,14 +13,14 @@ We want to consolidate the current state of the art into a single easy to use pr
 To achieve our goals we need a better MT technology that is able to extract more from data, adapt to context and be easy to deploy. We know that the challenge is big, but the reward is potentially so big that we think it is worth trying hard.
 
 ## About ModernMT
-ModernMT is a context-aware, incremental and distributed general purpose Neural Machine Translation technology based on **Tensorflow Transformer model**. ModernMT is:
+ModernMT is a context-aware, incremental and distributed general purpose Neural Machine Translation technology based on **Fairseq Transformer model**. ModernMT is:
 - Easy to use and scale with respect to domains, data, and users.
 - Trained by pooling all available projects/customers data and translation memories in one folder.
 - Queried by providing the sentence to be translated and optionally some context text.
 
 ModernMT goal is to deliver the quality of multiple custom engines by adapting on the fly to the provided context.
 
-You can find more information on: http://www.modernmt.eu
+You can find more information on: http://www.modernmt.eu/
 
 ## Your first translation with ModernMT
 
@@ -29,95 +29,125 @@ You can find more information on: http://www.modernmt.eu
 Read [INSTALL.md](INSTALL.md)
 
 The distribution includes a small dataset (folder `examples/data/train`) to train and test translations from 
-English to Italian in three domains. 
+English to Italian. 
 
 ### Create an engine
 
-We will now demonstrate how easy it is to train your first engine with MMT. *Please notice* however that the provided training set is tiny and exclusively intended for this demo. If you wish to train a proper engine please follow the instructions provided in this guide: [Create an engine from scratch](https://github.com/ModernMT/MMT/wiki/Create-an-engine-from-scratch).
+We will now demonstrate how easy it is to train your first engine with ModernMT. *Please notice* however that the provided training set is tiny and exclusively intended for this demo. If you wish to train a proper engine please follow the instructions provided in this guide: [Create an engine from scratch](https://github.com/ModernMT/MMT/wiki/Create-an-engine-from-scratch).
 
 Creating an engine in ModernMT is this simple:
 ```bash
-$ ./mmt create en it examples/data/train --train-steps 6000
+$ ./mmt create en it examples/data/train/ --max-update 10000
 ```
 
-This command will start a fast training process that will last approximately 30mins; not enough to achieve good translation performance, but enough to demonstrate its functioning.
+This command will start a fast training process that will last approximately 20 minutes; **not enough to achieve good translation performance**, but enough to demonstrate its functioning. Please consider that a real training will require much more time and parallel data.
 
 ### Start the engine
 
 ```bash
 $ ./mmt start
+
+Starting engine "default"...OK
+Loading models...OK
+
+Engine "default" started successfully
+
+You can try the API with:
+	curl "http://localhost:8045/translate?q=world&source=en&target=it&context=computer" | python -mjson.tool
+
 ```
-You can stop it with the command `stop`.
+You can check the status of the engine with the `status` command like this:
+
+```bash
+$ ./mmt status
+
+[Engine: "default"]
+    REST API:   running - 8045/translate
+    Cluster:    running - port 5016
+    Datastream: running - localhost:9092
+    Database:   running - localhost:9042
+```
+
+and finally, you can stop a running engine with the `stop` command.
 
 ### Start translating
 
-Let's now use the command-line tool `mmt` to query the engine with the sentence *hello world* and context *computer*:
+Let's now use the command-line tool `mmt` to query the engine with the sentence *This is an example*:
 ```
-$ ./mmt translate "This is an example"
-Si tratta di un esempio
+$ ./mmt translate "this is an example"
+ad esempio, è un esempio
 ```
 
-*Note:* You can query MMT directly via REST API, to learn more on how to do it, visit the [Translate API](https://github.com/ModernMT/MMT/wiki/API-Translate) page in the project Wiki.
+Why this translation? An engine trained with so little data, and for so little time is not able to output nothing more than gibberish. Follow these instructions to create a proper engine: [Create an engine from scratch](https://github.com/ModernMT/MMT/wiki/Create-an-engine-from-scratch)
+
+*Note:* You can query ModernMT directly via REST API, to learn more on how to do it, visit the [Translate API](https://github.com/modernmt/modernmt/wiki/API-Translate) page in this project Wiki.
 
 
 ### How to import a TMX file
 
 Importing a TMX file is very simple and fast. We will use again the command-line tool `mmt`:
 ```
-$ ./mmt import -x /path/to/file.tmx
+$ ./mmt memory import -x  /path/to/example.tmx
 Importing example... [========================================] 100.0% 00:35
 IMPORT SUCCESS
 ```
 
 ## Evaluating quality
 
-How is your engine performing vs the commercial state-of-the-art technologies?
-
+How is your engine performing compared to the commercial state-of-the-art technologies?
 Should I use Google Translate or ModernMT given this data? 
 
 Evaluate helps you answer these questions.
 
-Before training, MMT has removed sentences corresponding to 1% of the training set (or up to 1200 lines at most).
-During evaluate these sentences are used to compute the BLUE Score and Matecat Post-Editing Score against the MMT and Google Translate.
+During engine training, ModernMT has automatically removed a subset of sentences corresponding to 1% of the training set (or up to 1200 lines at most).
+With `evaluate` command, these sentences are used to compute the BLEU Score and Matecat Post-Editing Score against the ModernMT and Google Translate engines.
 
 With your engine running, just type:
-```
+
+```bash
 ./mmt evaluate
 ```
-The typical output will be
+
+The typical output will be like the following:
+
 ```
-Testing on 980 sentences...
+============== EVALUATION ==============
+
+Testing on 980 lines:
+
+(1/5) Translating with ModernMT...                               DONE in 1m 27s
+(2/5) Translating with Google Translate...                       DONE in 1m 3s
+(3/5) Preparing data for scoring...                              DONE in 0s
+(4/5) Scoring with Matecat Post-Editing Score...                 DONE in 3s
+(5/5) Scoring with BLEU Score...                                 DONE in 0s
+
+=============== RESULTS ================
 
 Matecat Post-Editing Score:
-  MMT              : 75.10 (Winner)
-  Google Translate : 73.40 | API Limit Exeeded | Connection Error
+  ModernMT            : 57.2 (Winner)
+  Google Translate    : 53.9
 
-BLEU:
-  MMT              : 37.50 (Winner)
-  Google Translate : 36.10 | API Limit Exeeded | Connection Error
+BLEU Score:
+  ModernMT            : 35.4 (Winner)
+  Google Translate    : 33.1
 
 Translation Speed:
-  MMT              :  1.75s per sentence
-  Google Translate :  0.76s per sentence
-  
+  Google Translate    : 0.07s per sentence
+  ModernMT            : 0.09s per sentence
 ```
 
 If you want to test on a different test-set just type:
-```
+```bash
 ./mmt evaluate --path path/to/your/test-set
 ```
 
-*Notes:* To run Evaluate you need internet connection for Google Translate API and the Matecat Post-Editing Score API.
-MMT comes with a limited Google Translate API key. 
+*Notes:* To run `evaluate` you need internet connection for Google Translate API and the Matecat Post-Editing Score API.
+ModernMT comes with a limited Google Translate API key, Matecat kindly provides unlimited-fair-usage, access to their API to ModernMT users.
 
-Matecat kindly provides unlimited-fair-usage, access to their API to MMT users.
-
-You can select your Google Translate API Key by typing:
-```
+You can select your own Google Translate API key by typing:
+```bash
 ./mmt evaluate --gt-key YOUR_GOOGLE_TRANSLATE_API_KEY
 ```
-
-If you don't want to use Google Translate just type a random key.
 
 ## What's next?
 
