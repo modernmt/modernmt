@@ -95,9 +95,9 @@ Next install the **NVIDIA cuDNN library** from: [NVIDIA cuDNN Download](https://
 sudo dpkg -i libcudnn7_7.5.1.10-1+cuda10.1_amd64.deb
 ```
 
-### Java 8 and Python 3.6
+### Java 8 and Python 3
 
-ModernMT requires Java 8 and Python 3. If not already installed on your system, you can run the following command:
+ModernMT requires Java 8 and Python 3.6 (or higher). If not already installed on your system, you can run the following command:
 ```bash
 sudo apt install openjdk-8-jdk python3 python3-pip
 ```
@@ -112,7 +112,7 @@ $  python3 --version
 Python 3.6.7
 ```
 
-If your output is not the expected one, please go to the [Troubleshooting](#troubleshooting) section of this guide.
+If your output is not the expected one, please go to the [Troubleshooting](#troubleshooting-and-support) section of this guide.
 
 ### Download ModernMT
 
@@ -123,84 +123,75 @@ rm mmt-*.tar.gz
 cd mmt
 ```
 
-Finally run the installation script:
+Finally install the python dependencies:
 ```bash
-python3 setup.py
+pip3 install -r requirements.txt
 ```
 
 Done! Go to [README.md](README.md) to create your first engine.
 
-# Troubleshooting
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
+
+# Install ModernMT from source
+
+This option is most suitable for developers, contributors or enthusiasts willing to work with the bleeding-edge development code, before a stable release. Installing ModernMT from source in fact gives you the ability to keep your code continously up-to-date and modify the source code yourself.
+
+### Common installation steps
+
+Please, follow these installation steps from the previous option (binary installation):
+- [NVIDIA drivers and CUDA Toolkit](#nvidia-drivers-and-cuda-toolkit)
+- [Java 8 and Python 3.6](#java-8-and-python-3)
+
+### Install development libraries and tools
+
+Next install Git, Maven, CMake and Boost together with few more c++ libraries with the following command:
+```bash
+sudo apt install git maven cmake libboost-all-dev zlib1g-dev libbz2-dev
+```
+
+### Clone ModernMT repository from GitHub
+
+We are now ready to clone the ModernMT repository from Github:
+```bash
+git clone https://github.com/modernmt/modernmt.git modernmt && cd modernmt
+```
+
+Next, run the installation script:
+```bash
+python3 setup.py
+```
+
+Finally you can compile the cource code with maven:
+```bash
+pushd src
+mvn clean install
+popd
+```
+
+You have now a working instance of ModernMT. Go to [README.md](README.md) to create your first engine.
 
 
+# Troubleshooting and support
 
-## Max open files limit
-The current version of ModernMT does not limit the maximum number of open files for performance reasons. For this reason, if you plan to create an engine with a high number of different domains you could hit the OS limit and MMT will crash.
+### "Too many open files" errors when runnning ModernMT
 
-In order to avoid this error, in Ubuntu 16.04 you have to set the option `nofile` in `/etc/security/limits.conf` to a high limit and restart the machine, for example:
+For performance reasons ModernMT does not limit the maximum number of open files. This could lead to errors reporting too many open files, or max open file limit reached.
+
+In order to avoid this error, set the option `nofile` in `/etc/security/limits.conf` to a high limit and restart the machine, for example:
 ```
 * soft nofile 1048576
 * hard nofile 1048576
 ```
 
-# Option 2 - Install Binaries on Your Server
+### Wrong version of Java
 
-**Important**: follow [pre-installation steps](#pre-installation-actions) before continuing with this installation.
-
-This release was tested on a clean Ubuntu 16.04 server.
-
-## Libraries that MMT requires:
-
-### Java 8
-Install **Java 8** if not present
+First, check your Java version with the following command:
 ```bash
-sudo add-apt-repository ppa:openjdk-r/ppa && sudo apt-get update && sudo apt-get install openjdk-8-jdk
-```
-
-Check Java version with command:
-
-```
 java -version
 ```
 
-If the first line report a version of Java prior 1.8, you need to **update default Java version**. Run command:
-
-```
+If the first line report a version of Java different from 1.8, you need to **update default Java version**.
+In order to do so, just run the command:
+```bash
 sudo update-alternatives --config java
 ```
 
@@ -219,102 +210,7 @@ There are 2 choices for the alternative java (providing /usr/bin/java).
 Press enter to keep the current choice[*], or type selection number: 2
 ```
 
-### Python module `requests`
-You can install `requests` module with the following commands:
-```bash
-sudo apt-get install python-pip
-pip install -U requests
-```
+### Support
 
-### Tensorflow and Tensor2Tensor
-
-In order to install Tensorflow and Tensor2Tensor just type:
-
-```bash
-pip install -U requests
-pip install numpy==1.14.5
-pip install tensorflow-gpu==1.8.0
-pip install tensor2tensor==1.6.3
-
-pip install --upgrade oauth2client
-```
-
-## Install the MMT Binaries
-
-Download from here: https://github.com/ModernMT/MMT/releases and then untar the files:
-
-```
-tar xvfz mmt-<version-number>.tar.gz
-rm mmt-*.tar.gz
-cd mmt
-```
-
-Done! go to [README.md](README.md)
-
-# Option 3 - Installing from source
-
-**Important**: follow [pre-installation steps](#pre-installation-actions) before continuing with this installation.
-
-The following procedure describes how to build MMT from source in an Ubuntu 16.04 environment.
-
-## Installing third-party libraries
-
-Open a bash shell and type:
-```
-sudo add-apt-repository ppa:george-edison55/cmake-3.x
-sudo add-apt-repository ppa:openjdk-r/ppa
-sudo apt-get update
-
-sudo apt-get install python-pip
-pip install -U requests
-
-sudo apt-get install openjdk-8-jdk zlib1g-dev libbz2-dev libboost-all-dev cmake git maven
-```
-
-### Tensorflow and Tensor2Tensor
-
-In order to install Tensorflow and Tensor2Tensor just type:
-
-```bash
-pip install -U requests
-pip install numpy==1.14.5
-pip install tensorflow-gpu==1.8.0
-pip install tensor2tensor==1.6.3
-
-pip install --upgrade oauth2client
-```
-
-## Install MMT
-
-First, clone ModernMT repository:
-
-```
-git clone https://github.com/ModernMT/MMT.git ModernMT
-
-cd ModernMT
-```
-
-Download MMT dependencies:
-
-```
-cd vendor
-python download_dependencies.py
-cd ..
-```
-
-Check your Java version and if necessary update it and select the latest jdk, as described in the Option 2 paragraph.
-
-You can now build your MMT distribution:
-
-```
-cd src
-mvn clean install
-cd ..
-```
-
-You have now a working instance of MMT. Go to [README.md](README.md) to find how to test your installation.
-
-# Support
-
-You can report issues on [GitHub](https://github.com/ModernMT/MMT/issues).
-For customizations and enterprise support: info@modernmt.eu
+Our [GitHub issues page](https://github.com/ModernMT/MMT/issues) is the best option to search for solutions to your problems or open new issues regarding the code.
+For customizations and enterprise support, please contact us at info@modernmt.eu
