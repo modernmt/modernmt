@@ -99,7 +99,7 @@ sudo dpkg -i libcudnn7_7.5.1.10-1+cuda10.1_amd64.deb
 
 ModernMT requires Java 8 and Python 3.6 (or higher). If not already installed on your system, you can run the following command:
 ```bash
-sudo apt install openjdk-8-jdk python3 python3-pip
+sudo apt install -y openjdk-8-jdk python3 python3-pip
 ```
 
 In order to check if the installation completed successfully you can run these two commands and check the output:
@@ -145,7 +145,7 @@ Please, follow these installation steps from the previous option (binary install
 
 Next install Git, Maven, CMake and Boost together with few more c++ libraries with the following command:
 ```bash
-sudo apt install git maven cmake libboost-all-dev zlib1g-dev libbz2-dev
+sudo apt install -y git maven cmake libboost-all-dev zlib1g-dev libbz2-dev
 ```
 
 ### Clone ModernMT repository from GitHub
