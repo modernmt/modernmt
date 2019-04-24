@@ -1,21 +1,27 @@
-# HW Requirements
+# Hardware requirements
 
-### Storage
-At least 10 times the corpus size, min 10GB. If your unzipped training data is 10GB, make sure you have at least 100GB on drive.
-
-### Platform
-A x86_64 platform is required.
-
-### CPU
-No minimum required. We suggest a least a 8-cores CPU for decoding.
-
-### GPU
-At least one [CUDA-capable GPU](https://developer.nvidia.com/cuda-gpus). Multiple GPUs can speedup both training and translation.
-
-We recommend at least 8GB GPU memory for training and at least 2GB GPU memory for runtime.
-
-### Memory
-*  Min 16GB
+<table>
+  <tr>
+    <td valign="top"><b>STORAGE</b></td>
+    <td>At least 10 times the corpus size, min 10GB. For example, if your unzipped training data is 10GB, make sure you have at least 100GB on drive.</td>
+  </tr>
+  <tr>
+    <td valign="top"><b>PLATFORM</b></td>
+    <td>ModernMT is developed and tested on a Linux, x86_64 platform.</td>
+  </tr>
+  <tr>
+    <td valign="top"><b>CPU</b></td>
+    <td>No minimum hardware specifications are required. Thus, we suggest a least a 8-cores CPU for training and decoding.</td>
+  </tr>
+  <tr>
+    <td valign="top"><b>GPU</b></td>
+    <td>At least one <a href="https://developer.nvidia.com/cuda-gpus">CUDA-capable GPU</a> with minimum 8GB of internal memory. Multiple GPUs are recommended in order to speedup both training and decoding.</td>
+  </tr>
+  <tr>
+    <td valign="top"><b>RAM</b></td>
+    <td>Minimum 16GB, highly depending on parallel data during training</td>
+  </tr>
+</table>
 
 # Pre-installation actions
 
