@@ -152,25 +152,27 @@ You can select your own Google Translate API key by typing:
 ## What's next?
 
 #### Create an engine from scratch
-Following this README you have learned the basic usage of ModernMT. Most users would be interested in creating their own engine with their own data, you can find more info in the Wiki [Create an engine from scratch](https://github.com/ModernMT/MMT/wiki/Create-an-engine-from-scratch)
+Following this README you have learned the basic usage of ModernMT. You are now ready to create your engine with your own data; you can find more info in the Wiki [Create an engine from scratch](https://github.com/modernmt/modernmt/wiki/Create-an-engine-from-scratch)
 
 #### See API Documentation
-ModernMT comes with built-in REST API that allows the user to control every single feature of MMT via a simple and powerful interface. You can find the [API Documentation](https://github.com/ModernMT/MMT/wiki/API-Documentation) in the [ModernMT Wiki](https://github.com/ModernMT/MMT/wiki).
+ModernMT comes with built-in REST API that allows the user to control every single feature of the tool via a simple and powerful interface. You can find the [API Documentation](https://github.com/modernmt/modernmt/wiki/API-Documentation) in the [ModernMT Wiki](https://github.com/modernmt/modernmt/wiki).
 
 #### Run ModernMT cluster
-You can setup a cluster of MMT nodes in order to load balancing translation requests. In fact also tuning and evaluation can be drastically speed-up if runned on an MMT cluster.
-You can learn more on the Wiki page [MMT Cluster](https://github.com/ModernMT/MMT/wiki/MMT-Cluster).
+You can setup a cluster of ModernMT nodes in order to load balancing translation requests.
+You can learn more on the Wiki page [ModernMT Cluster](https://github.com/modernmt/modernmt/wiki/MMT-Cluster).
 
 #### Use advanced configurations
 If you need to customize the properties and behaviour of your engines, you can specify advanced settings in their configuration files. 
-You can learn how on the Wiki page [Advanced Configurations](https://github.com/ModernMT/MMT/wiki/Advanced-Configurations)
+You can learn how on the Wiki page [Advanced Configurations](https://github.com/modernmt/modernmt/wiki/Advanced-Configurations)
 
 # Enterprise Edition
 
-MMT Community is free, is open source and welcomes contributions and donations.
-MMT Community is sponsored by its funding members (Translated, FBK, UEDIN and TAUS) and the European Commission. 
+ModernMT is **free and Open Source**, and it welcomes contributions and donations. ModernMT is sponsored by its funding members (Translated, FBK, UEDIN and TAUS) and the European Commission.
 
-We also have an **MMT Enterprise Edition**, managed by the MMT company and not available on GitHub, with some extra features:
+**ModernMT Enterprise Edition** is our cloud solution for professional translators and enterprises. It is proprietary, and it includes an improved adaptation algorithm, "crafted" with months of optimization and fine-tuning of the system. Moreover, Enterprise Edition comes with top-quality baseline models trained on billions of high-quality training data.
+
+In a nutshell **ModernMT Enterprise Edition** offers:
+- A top-notch adaptation algorithm refined with our inner knowledge of the tool.
 - Pre-trained generic and custom models in 45 language pairs (and more to come!) on multiple billion words of premium data.
 - Support for cluster of servers for higher throughput, load balancing and high availability. 
 - Support for 71 files formats without format loss (Office, Adobe, Localization, etc).
