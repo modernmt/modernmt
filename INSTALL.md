@@ -78,7 +78,7 @@ sudo apt install -y nvidia-driver-410
 
 In order to finalize the installation you need to **reboot your machine**.
 
-Then you need to install the **CUDA Toolkit 10**, on Ubuntu 18.04 follow this steps:
+Then you need to install the **CUDA Toolkit 10**, on Ubuntu 18.04 follow these steps:
 ```bash
 # Download .deb package locally
 wget -O cuda-repo-ubuntu1804-10-1-local-10.1.105-418.39_1.0-1_amd64.deb https://developer.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1804-10-1-local-10.1.105-418.39_1.0-1_amd64.deb
@@ -90,81 +90,84 @@ sudo apt update
 sudo apt install cuda
 ```
 
-
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-
-## CUDA/cuDNN libraries and software
-### CUDA library
-In order to run ModernMT Enterprise Edition, [CUDA 9.0 library](https://developer.nvidia.com/cuda-90-download-archive?target_os=Linux) are required.
-
+Next install the **NVIDIA cuDNN library** from: [NVIDIA cuDNN Download](https://developer.nvidia.com/rdp/cudnn-download). Select the option *"Download cuDNN v7.5.1 (April 22, 2019), for CUDA 10.1"* and then *"cuDNN Runtime Library for Ubuntu18.04 (Deb)"*. Finally simply run this command on the downloaded package:
 ```bash
-# IMPORTANT: Tensorflow **won't work** with CUDA > 9.0
-wget -O cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64.deb https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64-deb
-
-sudo dpkg -i cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64.deb
-sudo apt-key add /var/cuda-repo-<version>/7fa2af80.pub
-sudo apt-get update
-sudo apt-get install cuda
-
-# Install Patch 1
-wget -O cuda-repo-ubuntu1604-9-0-local-cublas-performance-update_1.0-1_amd64.deb https://developer.nvidia.com/compute/cuda/9.0/Prod/patches/1/cuda-repo-ubuntu1604-9-0-local-cublas-performance-update_1.0-1_amd64-deb
-
-sudo dpkg -i cuda-repo-ubuntu1604-9-0-local-cublas-performance-update_1.0-1_amd64.deb
-sudo apt-get update
-sudo apt-get upgrade cuda
-
-# Install Patch 2
-wget -O cuda-repo-ubuntu1604-9-0-local-cublas-performance-update-2_1.0-1_amd64.deb https://developer.nvidia.com/compute/cuda/9.0/Prod/patches/2/cuda-repo-ubuntu1604-9-0-local-cublas-performance-update-2_1.0-1_amd64-deb
-
-sudo dpkg -i cuda-repo-ubuntu1604-9-0-local-cublas-performance-update-2_1.0-1_amd64.deb 
-sudo apt-get update
-sudo apt-get upgrade cuda
+sudo dpkg -i libcudnn7_7.5.1.10-1+cuda10.1_amd64.deb
 ```
 
-### cuDNN library
+### Java 8 and Python 3.6
 
-Install cuDNN 7.1 library from: [NVIDIA cuDNN Download](https://developer.nvidia.com/rdp/cudnn-download)
-
-Select option `Download cuDNN v7.1.4 (May 16, 2018), for CUDA 9.0` and version `cuDNN v7.1.4 Runtime Library for Ubuntu16.04 (Deb)`
-
+ModernMT requires Java 8 and Python 3. If not already installed on your system, you can run the following command:
+```bash
+sudo apt install openjdk-8-jdk python3 python3-pip
 ```
-curl [...] --output libcudnn7_7.1.4.18-1+cuda9.0_amd64.deb
-sudo dpkg -i libcudnn7_7.1.4.18-1+cuda9.0_amd64.deb
+
+In order to check if the installation completed successfully you can run these two commands and check the output:
+```bash
+$ java -version
+openjdk version "1.8.0_191"
+[...]
+
+$  python3 --version
+Python 3.6.7
 ```
+
+If your output is not the expected one, please go to the [Troubleshooting](#troubleshooting) section of this guide.
+
+### Download ModernMT
+
+Download the latest ModernMT binary file from [ModernMT releases page](https://github.com/modernmt/modernmt/releases) and extract the archive:
+```bash
+tar xvfz mmt-<version-number>-ubuntu.tar.gz
+rm mmt-*.tar.gz
+cd mmt
+```
+
+Finally run the installation script:
+```bash
+python3 setup.py
+```
+
+Done! Go to [README.md](README.md) to create your first engine.
+
+# Troubleshooting
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+
 
 ## Max open files limit
 The current version of ModernMT does not limit the maximum number of open files for performance reasons. For this reason, if you plan to create an engine with a high number of different domains you could hit the OS limit and MMT will crash.
