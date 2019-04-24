@@ -27,7 +27,7 @@
 
 If you are familiar with Docker, this is usually the easiest option to use ModernMT. This section assumes you have already a running instance of Docker, if this is not the case please [follow these instructions](https://docs.docker.com/install/linux/docker-ce/ubuntu/) in order to properly install Docker.
 
-### NVIDIA drivers
+### Install NVIDIA drivers
 
 The first step is **NVIDIA drivers** installation:
 ```bash
@@ -38,7 +38,7 @@ sudo apt install -y nvidia-driver-410
 
 In order to finalize the installation you need to **reboot your machine**.
 
-### NVIDIA Docker
+### Install NVIDIA Docker
 Next step is to install [nvidia-docker2](https://github.com/NVIDIA/nvidia-docker) package that allow docker images to directly access the underlying GPU hardware with the CUDA library:
 ```bash
 # Add the package repositories
@@ -67,7 +67,7 @@ Done! Go to [README.md](README.md) to create your first engine.
 
 With every ModernMT release in Github we also include a binary version of the package that can be used directly without the need to compile the source code.
 
-### NVIDIA drivers and CUDA Toolkit
+### Install NVIDIA drivers and CUDA Toolkit
 
 First you need to install the **NVIDIA drivers**:
 ```bash
@@ -95,7 +95,7 @@ Next install the **NVIDIA cuDNN library** from: [NVIDIA cuDNN Download](https://
 sudo dpkg -i libcudnn7_7.5.1.10-1+cuda10.1_amd64.deb
 ```
 
-### Java 8 and Python 3
+### Install Java 8 and Python 3
 
 ModernMT requires Java 8 and Python 3.6 (or higher). If not already installed on your system, you can run the following command:
 ```bash
