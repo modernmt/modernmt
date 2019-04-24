@@ -138,8 +138,8 @@ This option is most suitable for developers, contributors or enthusiasts willing
 ### Common installation steps
 
 Please, follow these installation steps from the previous option (binary installation):
-- [NVIDIA drivers and CUDA Toolkit](#nvidia-drivers-and-cuda-toolkit)
-- [Java 8 and Python 3.6](#java-8-and-python-3)
+- [Install NVIDIA drivers and CUDA Toolkit](#install-nvidia-drivers-and-cuda-toolkit)
+- [Install Java 8 and Python 3](#install-java-8-and-python-3)
 
 ### Install development libraries and tools
 
