@@ -169,7 +169,7 @@ You can learn how on the Wiki page [Advanced Configurations](https://github.com/
 
 **ModernMT is free and Open Source**, and it welcomes contributions and donations. ModernMT is sponsored by its funding members (Translated, FBK, UEDIN and TAUS) and the European Commission.
 
-**ModernMT Enterprise Edition** is our cloud solution for professional translators and enterprises. It is proprietary, and it includes an improved adaptation algorithm, "crafted" with months of optimization and fine-tuning of the system. Moreover, Enterprise Edition comes with top-quality baseline models trained on billions of high-quality training data.
+**ModernMT Enterprise Edition** is our cloud solution for professional translators and enterprises. It is proprietary, and it includes an improved adaptation algorithm, "crafted" with months of optimization and fine-tuning of the system. Moreover, our Enterprise Edition comes with top-quality baseline models trained on billions of high-quality training data.
 
 In a nutshell **ModernMT Enterprise Edition** offers:
 - A top-notch adaptation algorithm refined with our inner knowledge of the tool.
