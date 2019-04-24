@@ -213,4 +213,4 @@ Press enter to keep the current choice[*], or type selection number: 2
 ### Support
 
 Our [GitHub issues page](https://github.com/ModernMT/MMT/issues) is the best option to search for solutions to your problems or open new issues regarding the code.
-For customizations and enterprise support, please contact us at info@modernmt.eu
+For customizations and enterprise support, please contact us at info@modernmt.eu .
