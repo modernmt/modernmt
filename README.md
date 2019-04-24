@@ -165,7 +165,7 @@ You can learn more on the Wiki page [ModernMT Cluster](https://github.com/modern
 If you need to customize the properties and behaviour of your engines, you can specify advanced settings in their configuration files. 
 You can learn how on the Wiki page [Advanced Configurations](https://github.com/modernmt/modernmt/wiki/Advanced-Configurations)
 
-# Enterprise Edition
+# ModernMT Enterprise Edition
 
 **ModernMT is free and Open Source**, and it welcomes contributions and donations. ModernMT is sponsored by its funding members (Translated, FBK, UEDIN and TAUS) and the European Commission.
 
