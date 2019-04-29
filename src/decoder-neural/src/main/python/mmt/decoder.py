@@ -34,14 +34,14 @@ class Suggestion(object):
 class ModelConfig(object):
     __custom_values = {'True': True, 'False': False, 'None': None}
 
-    @staticmethod
-    def load(model_path):
+    @classmethod
+    def load(cls, model_path):
         config = configparser.ConfigParser()
         config.read(os.path.join(model_path, 'model.conf'))
-        return ModelConfig(model_path, config)
+        return cls(model_path, config)
 
-    def __init__(self, basepath, config_parser):
-        self._basepath = basepath
+    def __init__(self, base_path, config_parser):
+        self._base_path = base_path
         self._config = config_parser
 
     def _parse(self, value):
@@ -83,7 +83,7 @@ class ModelConfig(object):
 
         for name, value in self._config.items('models'):
             if not os.path.isabs(value):
-                value = os.path.join(self._basepath, value)
+                value = os.path.join(self._base_path, value)
 
             source, target = name.split('__')
             name = '%s__%s' % (normalize_lang(source), normalize_lang(target))

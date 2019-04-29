@@ -1,14 +1,14 @@
+import logging
 import os
 from collections import defaultdict
 
 import torch
 from fairseq import tasks
+from mmt import SubwordDictionary
 from torch.serialization import default_restore_location
 
-from mmt import SubwordDictionary
 
-
-def _resize_embeddings(tensor, size):
+def resize_embeddings(tensor, size):
     embed_size = tensor.shape[1]
     stub_embeds_count = size - tensor.shape[0]
 
@@ -26,9 +26,10 @@ class UnsupportedLanguageException(KeyError):
 class Checkpoint(object):
     def __init__(self, task, model_state, decode_stats, multilingual_target=False):
         self.task = task
-        self._decode_stats = decode_stats
+        self._decode_stats = decode_stats or {}
         self._state = model_state
         self._multilingual_target = multilingual_target
+        self._logger = logging.getLogger(self.__class__.__name__)
 
     @property
     def multilingual_target(self):
@@ -42,9 +43,20 @@ class Checkpoint(object):
     def subword_dictionary(self):
         return self.task.source_dictionary
 
+    def size_in_bytes(self):
+        size = 0
+        for tensor in self._state.values():
+            size += tensor.element_size() * tensor.nelement()
+
+        return int(size * 1.6)  # overhead
+
     def decode_length(self, source_lang, target_lang, source_length):
         lang_key = '%s__%s' % (source_lang, target_lang)
-        avg, std_dev = self._decode_stats[lang_key]
+        if lang_key not in self._decode_stats:
+            self._logger.warning('No decoding stats found for key "%s"' % lang_key)
+            avg, std_dev = 2, 0
+        else:
+            avg, std_dev = self._decode_stats[lang_key]
 
         return int(source_length * (avg + 4 * std_dev)) + 20
 
@@ -99,40 +111,45 @@ class CheckpointRegistry(object):
 
                 target_languages = set([key.split('__', 1)[1] for key in keys])
 
-                checkpoint = Checkpoint(task, model_state, decode_stats, multilingual_target=len(target_languages) > 1)
+                checkpoint = self._mk_checkpoint(task, model_state, decode_stats,
+                                                 multilingual_target=len(target_languages) > 1)
 
                 for key in keys:
                     checkpoints[key] = checkpoint
 
-            return CheckpointRegistry(checkpoints, device=device)
+            return self._mk_registry(checkpoints, device)
 
-        @classmethod
-        def _load(cls, checkpoint_path, embeddings_size=None):
+        def _load(self, checkpoint_path, embeddings_size=None):
             model_pt_path = os.path.join(checkpoint_path, 'model.pt')
             if not os.path.isfile(model_pt_path):
                 raise IOError('Model file not found: {}'.format(model_pt_path))
 
             # Load model from file
             model_pt = torch.load(model_pt_path, map_location=lambda s, l: default_restore_location(s, 'cpu'))
-            args, model_state, decode_stats = model_pt['args'], model_pt['model'], model_pt['decode_stats']
+            args, model_state, decode_stats = model_pt['args'], model_pt['model'], \
+                                              model_pt['decode_stats'] if 'decode_stats' in model_pt else None
 
             # Resize embeddings
             if embeddings_size is not None and model_state['encoder.embed_tokens.weight'].shape[0] < embeddings_size:
                 model_state['encoder.embed_tokens.weight'] = \
-                    _resize_embeddings(model_state['encoder.embed_tokens.weight'], embeddings_size)
+                    resize_embeddings(model_state['encoder.embed_tokens.weight'], embeddings_size)
                 model_state['decoder.embed_tokens.weight'] = \
-                    _resize_embeddings(model_state['decoder.embed_tokens.weight'], embeddings_size)
+                    resize_embeddings(model_state['decoder.embed_tokens.weight'], embeddings_size)
 
             args.data = [checkpoint_path]
             return args, model_state, decode_stats
+
+        def _mk_checkpoint(self, task, model_state, decode_stats, multilingual_target):
+            return Checkpoint(task, model_state, decode_stats, multilingual_target=multilingual_target)
+
+        def _mk_registry(self, checkpoints, device):
+            return CheckpointRegistry(checkpoints, device=device)
 
     def __init__(self, checkpoints, device=None) -> None:
         self._checkpoints = checkpoints
         self._device = device
 
-        sample = None
-        for sample in checkpoints.values():
-            break
+        sample = next(iter(checkpoints.values()))
 
         self.task = sample.task
         self.args = sample.task.args
