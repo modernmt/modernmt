@@ -65,3 +65,17 @@ def transformer_mmt_tiny(args):
     args.decoder_layers = getattr(args, 'decoder_layers', 4)
     args.dropout = getattr(args, 'dropout', 0.3)
     transformer_mmt_base(args)
+
+
+@register_model_architecture('transformer', 'transformer_mmt_unit_testing')
+def transformer_mmt_unit_testing(args):
+    args.encoder_embed_dim = getattr(args, 'encoder_embed_dim', 8)
+    args.encoder_ffn_embed_dim = getattr(args, 'encoder_ffn_embed_dim', 8)
+    args.encoder_attention_heads = getattr(args, 'encoder_attention_heads', 1)
+    args.encoder_layers = getattr(args, 'encoder_layers', 1)
+    args.decoder_embed_dim = getattr(args, 'decoder_embed_dim', 8)
+    args.decoder_ffn_embed_dim = getattr(args, 'decoder_ffn_embed_dim', 8)
+    args.decoder_attention_heads = getattr(args, 'decoder_attention_heads', 1)
+    args.decoder_layers = getattr(args, 'decoder_layers', 1)
+    args.dropout = getattr(args, 'dropout', 0.3)
+    transformer_mmt_base(args)
