@@ -69,7 +69,8 @@ public class ContextUtils {
             if (score < 0.f || score > 1.f)
                 throw new Parameters.ParameterParsingException(name, value);
 
-            builder.add(memoryId, score);
+            if (score > 0.f)
+                builder.add(memoryId, score);
         }
 
         return builder.build();

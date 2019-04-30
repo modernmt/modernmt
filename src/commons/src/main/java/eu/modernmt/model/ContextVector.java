@@ -37,6 +37,9 @@ public class ContextVector implements Iterable<ContextVector.Entry>, Serializabl
         }
 
         public ContextVector build() {
+            if (this.entries.isEmpty())
+                return null;
+
             List<Entry> list = new ArrayList<>(this.entries.size());
             for (Map.Entry<Memory, Float> e : this.entries.entrySet())
                 list.add(new Entry(e.getKey(), e.getValue()));
@@ -47,7 +50,7 @@ public class ContextVector implements Iterable<ContextVector.Entry>, Serializabl
             if (limit > 0 && list.size() > limit)
                 list = list.subList(0, limit);
 
-            return new ContextVector(list.toArray(new Entry[list.size()]));
+            return new ContextVector(list.toArray(new Entry[0]));
         }
     }
 
