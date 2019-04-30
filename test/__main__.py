@@ -25,7 +25,7 @@ if __name__ == '__main__':
     sys.path.insert(0, __home)
 
     # noinspection PyUnresolvedReferences
-    # from testcases.training import *
+    from testcases.training import *
     # noinspection PyUnresolvedReferences
     from testcases.privacy import *
 

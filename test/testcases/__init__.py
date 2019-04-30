@@ -26,9 +26,7 @@ class ModernMTTestCase(unittest.TestCase):
             self.mmt.start()
 
     def tearDown(self):
-        self.mmt.stop()
-        pass
-        # self.mmt.delete()
+        self.mmt.delete()
 
     def assertInContent(self, content, element):
         element = ''.join(element.split())
