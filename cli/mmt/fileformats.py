@@ -141,6 +141,77 @@ class ParallelFileFormat(FileFormat):
         return self.Writer(self._src_file, self._tgt_file, append=append)
 
 
+class CompactFileFormat(FileFormat):
+    class Reader(object):
+        def __init__(self, file_path) -> None:
+            self._file_path = file_path
+            self._stream = None
+
+        def __enter__(self):
+            self._stream = open(self._file_path, 'r', encoding='utf-8')
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self._stream.close()
+
+        def __iter__(self):
+            for src_line in self._stream:
+                tgt_line = self._stream.readline()
+                _ = self._stream.readline()
+
+                yield src_line.rstrip('\n'), tgt_line.rstrip('\n')
+
+    class Writer(object):
+        def __init__(self, src_lang, tgt_lang, file_path, append=False) -> None:
+            self._src_lang = src_lang
+            self._tgt_lang = tgt_lang
+            self._file_path = file_path
+            self._stream = None
+            self._append = append
+
+        def __enter__(self):
+            mode = 'a' if self._append else 'w'
+            self._stream = open(self._file_path, mode, encoding='utf-8')
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self._stream.close()
+
+        def write(self, src_line, tgt_line):
+            src_line, tgt_line = src_line.rstrip('\n').replace('\n', ' '), tgt_line.rstrip('\n').replace('\n', ' ')
+            self._stream.write(src_line + '\n')
+            self._stream.write(tgt_line + '\n')
+            self._stream.write('0,%s %s\n' % (self._src_lang, self._tgt_lang))
+
+    def __init__(self, src_lang, tgt_lang, file_path) -> None:
+        self._src_lang = src_lang
+        self._tgt_lang = tgt_lang
+        self._file_path = file_path
+        self._name = os.path.splitext(os.path.basename(file_path))[0]
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def src_lang(self):
+        return self._src_lang
+
+    @property
+    def tgt_lang(self):
+        return self._tgt_lang
+
+    @property
+    def file_path(self):
+        return self._file_path
+
+    def reader(self):
+        return self.Reader(self._file_path)
+
+    def writer(self, append=False):
+        return self.Writer(self._src_lang, self._tgt_lang, self._file_path, append=append)
+
+
 class XLIFFFileFormat(FileFormat):
     NAMESPACES = {
         'xlf': 'urn:oasis:names:tc:xliff:document:1.2',
