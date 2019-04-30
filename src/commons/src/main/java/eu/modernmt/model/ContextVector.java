@@ -54,6 +54,40 @@ public class ContextVector implements Iterable<ContextVector.Entry>, Serializabl
         }
     }
 
+    public static ContextVector fromString(String string) throws IllegalArgumentException {
+        String[] elements = string.split(",");
+
+        ContextVector.Builder builder = new ContextVector.Builder(elements.length);
+
+        for (String element : elements) {
+            String[] kv = element.split(":");
+
+            if (kv.length != 2)
+                throw new IllegalArgumentException(string);
+
+            long memory;
+            float score;
+
+            try {
+                memory = Long.parseLong(kv[0]);
+                score = Float.parseFloat(kv[1]);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException(string);
+            }
+
+            if (memory < 1)
+                throw new IllegalArgumentException(string);
+
+            if (score < 0.f || score > 1.f)
+                throw new IllegalArgumentException(string);
+
+            if (score > 0.f)
+                builder.add(memory, score);
+        }
+
+        return builder.build();
+    }
+
     public static class Entry implements Comparable<Entry>, Serializable {
 
         public final Memory memory;
@@ -115,5 +149,19 @@ public class ContextVector implements Iterable<ContextVector.Entry>, Serializabl
                 return entries[i++];
             }
         };
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < entries.length; i++) {
+            if (i > 0)
+                builder.append(',');
+            builder.append(entries[i].memory.getId());
+            builder.append(':');
+            builder.append(entries[i].score);
+        }
+
+        return builder.toString();
     }
 }

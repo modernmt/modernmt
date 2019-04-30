@@ -10,9 +10,11 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.search.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.UUID;
 
 /**
@@ -51,32 +53,18 @@ public class DefaultQueryBuilder implements QueryBuilder {
         BooleanQuery termsQuery = makeTermsQuery(direction, sentence, analyzer);
         termsQuery.setMinimumNumberShouldMatch(minMatches);
 
-        // Owner filter
-        BooleanQuery privacyQuery = makePrivacyQuery(user, context);
+        // Context filter
+        TermsFilter contextFilter = makeContextFilter(context);
 
         // Result
-        return new FilteredQuery(termsQuery, new QueryWrapperFilter(privacyQuery));
+        return new FilteredQuery(termsQuery, contextFilter);
     }
 
-    protected static BooleanQuery makePrivacyQuery(UUID user, ContextVector context) {
-        BooleanQuery privacyQuery = new BooleanQuery();
-
-        if (user == null) {
-            privacyQuery.add(DocumentBuilder.makePublicOwnerMatchingQuery(), BooleanClause.Occur.SHOULD);
-        } else {
-            privacyQuery.add(DocumentBuilder.makePublicOwnerMatchingQuery(), BooleanClause.Occur.SHOULD);
-            privacyQuery.add(DocumentBuilder.makeOwnerMatchingQuery(user), BooleanClause.Occur.SHOULD);
-        }
-
-        if (context != null) {
-            for (ContextVector.Entry entry : context) {
-                privacyQuery.add(new TermQuery(DocumentBuilder.makeMemoryTerm(entry.memory.getId())), BooleanClause.Occur.SHOULD);
-            }
-        }
-
-        privacyQuery.setMinimumNumberShouldMatch(1);
-
-        return privacyQuery;
+    protected static TermsFilter makeContextFilter(ContextVector context) {
+        ArrayList<Term> terms = new ArrayList<>(context.size());
+        for (ContextVector.Entry entry : context)
+            terms.add(DocumentBuilder.makeMemoryTerm(entry.memory.getId()));
+        return new TermsFilter(terms);
     }
 
     protected static BooleanQuery makeTermsQuery(LanguagePair direction, Sentence sentence, Analyzer analyzer) {

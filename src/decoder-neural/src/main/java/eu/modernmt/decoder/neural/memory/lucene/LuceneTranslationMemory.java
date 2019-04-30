@@ -182,15 +182,6 @@ public class LuceneTranslationMemory implements TranslationMemory {
     // TranslationMemory
 
     @Override
-    public ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, int limit) throws IOException {
-        return search(user, direction, source, null, this.rescorer, limit);
-    }
-
-    public ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, Rescorer rescorer, int limit) throws IOException {
-        return search(user, direction, source, null, rescorer, limit);
-    }
-
-    @Override
     public ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, ContextVector contextVector, int limit) throws IOException {
         return search(user, direction, source, contextVector, this.rescorer, limit);
     }
