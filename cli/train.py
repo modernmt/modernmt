@@ -6,7 +6,6 @@ import re
 import shutil
 
 import torch
-from torch.serialization import default_restore_location
 
 from cli import CLIArgsException, StatefulActivity, activitystep
 from cli.mmt import MMT_FAIRSEQ_USER_DIR
@@ -36,18 +35,26 @@ class TrainActivity(StatefulActivity):
 
     @activitystep('Train neural network')
     def train_nn(self):
-        # Start training
         self.state.nn_path = self.wdir('nn_model')
 
         last_ckpt_path = os.path.join(self.state.nn_path, 'checkpoint_last.pt')
         if not os.path.isfile(last_ckpt_path) and self.args.init_model is not None:
             shutil.copy(self.args.init_model, last_ckpt_path)
 
+        # Create command
         cmd = ['fairseq-train', self.args.data_path, '--save-dir', self.state.nn_path, '--task', 'mmt_translation',
                '--user-dir', MMT_FAIRSEQ_USER_DIR, '--share-all-embeddings', '--no-progress-bar']
         cmd += self.extra_argv
 
-        process = osutils.shell_exec(cmd, stderr=self.log_fobj, stdout=self.log_fobj, background=True)
+        # Create environment
+        env = None
+        if self.args.gpus is not None:
+            env = os.environ.copy()
+            env['CUDA_VISIBLE_DEVICES'] = ','.join([str(gpu) for gpu in self.args.gpus])
+
+        # Start process
+        process = osutils.shell_exec(cmd, stderr=self.log_fobj, stdout=self.log_fobj, background=True, env=env)
+
         try:
             process.wait()
         except KeyboardInterrupt:
@@ -180,6 +187,8 @@ def parse_args(argv=None):
                         help='resume training from last saved checkpoint even after training completion')
     parser.add_argument('--from-model', dest='init_model', default=None,
                         help='start the training from the specified model.pt file')
+    parser.add_argument('--gpus', dest='gpus', nargs='+', type=int, default=None,
+                        help='the list of GPUs available for training (default is all available GPUs)')
 
     args, extra_argv = parser.parse_known_args(argv)
     if args.debug and args.wdir is None:
