@@ -37,7 +37,7 @@
                         </goals>
 
                         <configuration>
-                            <executable>python</executable>
+                            <executable>python3</executable>
                             <workingDirectory>${project.build.sourceDirectory}</workingDirectory>
                             <arguments>
                                 <argument>${mmt.textprocessing.pyflex}</argument>
