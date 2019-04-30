@@ -10,6 +10,7 @@ import torch
 from cli import CLIArgsException, StatefulActivity, activitystep
 from cli.mmt import MMT_FAIRSEQ_USER_DIR
 from cli.utils import osutils
+from cli.utils.osutils import ShellError
 
 
 def _last_n_checkpoints(path, n, regex):
@@ -56,7 +57,10 @@ class TrainActivity(StatefulActivity):
         process = osutils.shell_exec(cmd, stderr=self.log_fobj, stdout=self.log_fobj, background=True, env=env)
 
         try:
-            process.wait()
+            return_code = process.wait()
+
+            if return_code != 0:
+                raise ShellError(' '.join(cmd), return_code)
         except KeyboardInterrupt:
             process.terminate()
 
