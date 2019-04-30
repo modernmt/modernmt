@@ -2,6 +2,8 @@ package eu.modernmt.engine;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.fastalign.FastAlign;
+import eu.modernmt.config.AlignerConfig;
+import eu.modernmt.config.AnalyzerConfig;
 import eu.modernmt.config.DecoderConfig;
 import eu.modernmt.config.EngineConfig;
 import eu.modernmt.context.ContextAnalyzer;
@@ -53,8 +55,6 @@ public class Engine implements Closeable, DataListenerProvider {
     private final Decoder decoder;
 
     public static Engine load(EngineConfig config) throws BootstrapException {
-        DecoderConfig decoderConfig = config.getDecoderConfig();
-
         String name = config.getName();
         LanguageIndex languageIndex = config.getLanguageIndex();
 
@@ -74,8 +74,9 @@ public class Engine implements Closeable, DataListenerProvider {
             throw new BootstrapException("Failed to load post-processor", e);
         }
 
+        AlignerConfig alignerConfig = config.getAlignerConfig();
         Aligner aligner = null;
-        if (config.getAlignerConfig().isEnabled()) {
+        if (alignerConfig.isEnabled()) {
             try {
                 aligner = new FastAlign(Paths.join(models, "aligner"));
             } catch (IOException e) {
@@ -83,13 +84,17 @@ public class Engine implements Closeable, DataListenerProvider {
             }
         }
 
-        ContextAnalyzer contextAnalyzer;
-        try {
-            contextAnalyzer = new LuceneAnalyzer(Paths.join(models, "context"));
-        } catch (IOException e) {
-            throw new BootstrapException("Failed to instantiate context analyzer", e);
+        AnalyzerConfig analyzerConfig = config.getAnalyzerConfig();
+        ContextAnalyzer contextAnalyzer = null;
+        if (analyzerConfig.isEnabled()) {
+            try {
+                contextAnalyzer = new LuceneAnalyzer(Paths.join(models, "context"), analyzerConfig);
+            } catch (IOException e) {
+                throw new BootstrapException("Failed to instantiate context analyzer", e);
+            }
         }
 
+        DecoderConfig decoderConfig = config.getDecoderConfig();
         Decoder decoder = null;
         if (decoderConfig.isEnabled()) {
             try {

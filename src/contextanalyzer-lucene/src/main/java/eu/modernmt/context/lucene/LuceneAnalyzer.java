@@ -1,5 +1,6 @@
 package eu.modernmt.context.lucene;
 
+import eu.modernmt.config.AnalyzerConfig;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.context.lucene.analysis.ContextAnalyzerIndex;
@@ -36,20 +37,16 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
     private final CorporaStorage storage;
     private final AnalysisThread analysis;
 
-    public LuceneAnalyzer(File indexPath) throws IOException {
-        this(indexPath, new AnalysisOptions());
+    public LuceneAnalyzer(File indexPath, AnalyzerConfig config) throws IOException {
+        this(new ContextAnalyzerIndex(new File(indexPath, "index")), new CorporaStorage(new File(indexPath, "storage")), config);
     }
 
-    public LuceneAnalyzer(File indexPath, AnalysisOptions options) throws IOException {
-        this(new ContextAnalyzerIndex(new File(indexPath, "index")), new CorporaStorage(new File(indexPath, "storage")), options);
-    }
-
-    protected LuceneAnalyzer(ContextAnalyzerIndex index, CorporaStorage storage, AnalysisOptions options) {
+    protected LuceneAnalyzer(ContextAnalyzerIndex index, CorporaStorage storage, AnalyzerConfig config) {
         this.index = index;
         this.storage = storage;
 
-        if (options.enabled) {
-            this.analysis = new AnalysisThread(options);
+        if (config.analyze()) {
+            this.analysis = new AnalysisThread(config);
             this.analysis.start();
         } else {
             this.analysis = null;
@@ -163,13 +160,19 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
         private final SynchronousQueue<Object> handoff;
         private boolean active = true;
 
-        public AnalysisThread(AnalysisOptions options) {
-            this.timeout = options.timeout;
-            this.batchSize = options.batchSize;
-            this.maxToleratedMisalignment = options.maxToleratedMisalignment;
+        public AnalysisThread(AnalyzerConfig config) {
+            this.timeout = config.getTimeout();
+            this.batchSize = config.getBatchSize();
+            this.maxToleratedMisalignment = config.getMaxToleratedMisalignment();
 
-            this.executor = Executors.newFixedThreadPool(options.threads);
+            int threads = config.getThreads();
+            this.executor = Executors.newFixedThreadPool(config.getThreads());
             this.handoff = new SynchronousQueue<>();
+
+            if (logger.isDebugEnabled()) {
+                logger.debug("AnalysisThread started with: timeout=" + timeout + ", batchSize=" + batchSize +
+                        ", maxToleratedMisalignment=" + maxToleratedMisalignment + ", threads=" + threads);
+            }
         }
 
         public void run() {

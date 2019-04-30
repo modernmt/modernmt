@@ -1,5 +1,6 @@
 package eu.modernmt.context.lucene;
 
+import eu.modernmt.config.AnalyzerConfig;
 import eu.modernmt.context.lucene.analysis.ContextAnalyzerIndex;
 import eu.modernmt.context.lucene.analysis.DocumentBuilder;
 import eu.modernmt.context.lucene.analysis.LuceneUtils;
@@ -50,15 +51,15 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
     }
 
     public TLuceneAnalyzer() throws IOException {
-        this(new AnalysisOptions());
+        this(new AnalyzerConfig());
     }
 
-    public TLuceneAnalyzer(AnalysisOptions options) throws IOException {
-        this(getTempDirectory(), options);
+    public TLuceneAnalyzer(AnalyzerConfig config) throws IOException {
+        this(getTempDirectory(), config);
     }
 
-    private TLuceneAnalyzer(File path, AnalysisOptions options) throws IOException {
-        super(new ContextAnalyzerIndex(new File(path, "index")), new TCorporaStorage(new File(path, "storage")), options);
+    private TLuceneAnalyzer(File path, AnalyzerConfig config) throws IOException {
+        super(new ContextAnalyzerIndex(new File(path, "index")), new TCorporaStorage(new File(path, "storage")), config);
         this.path = path;
     }
 

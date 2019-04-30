@@ -1,9 +1,6 @@
 package eu.modernmt.config.xml;
 
-import eu.modernmt.config.AlignerConfig;
-import eu.modernmt.config.ConfigException;
-import eu.modernmt.config.DecoderConfig;
-import eu.modernmt.config.EngineConfig;
+import eu.modernmt.config.*;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.LanguagePair;
@@ -16,11 +13,13 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
 
     private final XMLDecoderConfigBuilder decoderConfigBuilder;
     private final XMLAlignerConfigBuilder alignerConfigBuilder;
+    private final XMLAnalyzerConfigBuilder analyzerConfigBuilder;
 
     public XMLEngineConfigBuilder(Element element) {
         super(element);
         decoderConfigBuilder = new XMLDecoderConfigBuilder(getChild("decoder"));
         alignerConfigBuilder = new XMLAlignerConfigBuilder(getChild("aligner"));
+        analyzerConfigBuilder = new XMLAnalyzerConfigBuilder(getChild("analyzer"));
     }
 
     public EngineConfig build(EngineConfig config) throws ConfigException {
@@ -46,6 +45,7 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
 
         decoderConfigBuilder.build(config.getDecoderConfig());
         alignerConfigBuilder.build(config.getAlignerConfig());
+        analyzerConfigBuilder.build(config.getAnalyzerConfig());
 
         return config;
     }
@@ -148,6 +148,35 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
 
             if (config.isUsingGPUs() && hasAttribute("threads"))
                 throw new ConfigException("In order to specify 'threads', you have to add gpus='none'");
+
+            return config;
+        }
+    }
+
+    private static class XMLAnalyzerConfigBuilder extends XMLAbstractBuilder {
+
+        public XMLAnalyzerConfigBuilder(Element element) {
+            super(element);
+        }
+
+        public AnalyzerConfig build(AnalyzerConfig config) {
+            if (hasAttribute("enabled"))
+                config.setEnabled(getBooleanAttribute("enabled"));
+
+            if (hasAttribute("analyze"))
+                config.setAnalyze(getBooleanAttribute("analyze"));
+
+            if (hasAttribute("batch"))
+                config.setBatchSize(getIntAttribute("batch"));
+
+            if (hasAttribute("threads"))
+                config.setThreads(getIntAttribute("threads"));
+
+            if (hasAttribute("timeout"))
+                config.setTimeout(getIntAttribute("timeout"));
+
+            if (hasAttribute("max-misalignment"))
+                config.setMaxToleratedMisalignment(getLongAttribute("max-misalignment"));
 
             return config;
         }
