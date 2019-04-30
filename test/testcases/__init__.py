@@ -2,7 +2,6 @@ import os
 import tarfile
 import unittest
 
-from cli import mmt
 from testcases.utils.connectors import ModernMTConnector
 
 __this_dir = os.path.dirname(os.path.realpath(__file__))
@@ -18,12 +17,18 @@ class ModernMTTestCase(unittest.TestCase):
         if self.mmt_engine_archive is not None:
             self.mmt.delete()
 
+            os.makedirs(self.mmt.engine.path)
+
             tar = tarfile.open(self.mmt_engine_archive, 'r:gz')
-            tar.extractall(mmt.MMT_ENGINES_DIR)
+            tar.extractall(self.mmt.engine.path)
             tar.close()
 
+            self.mmt.start()
+
     def tearDown(self):
-        self.mmt.delete()
+        self.mmt.stop()
+        pass
+        # self.mmt.delete()
 
     def assertInContent(self, content, element):
         element = ''.join(element.split())
