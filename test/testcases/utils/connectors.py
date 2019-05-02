@@ -3,6 +3,7 @@ import re
 import shutil
 import subprocess
 import time
+from collections import defaultdict
 
 from cli import mmt
 from cli.mmt.engine import Engine, EngineNode
@@ -52,6 +53,16 @@ class ModernMTConnector(object):
         while import_job['progress'] != 1.0:
             time.sleep(refresh_rate_in_seconds)
             import_job = self.api.get_import_job(import_job['id'])
+
+    def dump_context_analyzer(self):
+        return _ContextAnalyzerContent(os.path.join(self.engine.models_path, 'context'))
+
+    def dump_translation_memory(self):
+        return _MemoryContent(os.path.join(self.engine.models_path, 'decoder', 'memory'))
+
+    def get_channels(self):
+        node = self.api.info()['cluster']['nodes'].pop()
+        return {int(k): v for k, v in node['channels'].items()}
 
 
 class _LogListener(object):
@@ -125,3 +136,124 @@ class _LogListener(object):
                 )
 
         return __Listener()
+
+
+class _ContextAnalyzerContent(object):
+    def __init__(self, model_path) -> None:
+        std_out, _ = osutils.shell_exec(['java', '-cp', mmt.MMT_JAR, 'eu.modernmt.context.lucene.storage.utils.Dump',
+                                         os.path.join(model_path, 'storage')])
+
+        self._content_by_memory = defaultdict(set)
+
+        for line in std_out.splitlines(keepends=False):
+            memory, src_lang, tgt_lang, line = line.strip().split('\t', maxsplit=3)
+            self._content_by_memory[int(memory)].add('%s\t%s\t%s' % (src_lang, tgt_lang, line))
+
+    def __len__(self):
+        return len(self._content_by_memory)
+
+    def __contains__(self, memory):
+        return memory in self._content_by_memory
+
+    def __getitem__(self, item):
+        class __Content(object):
+            def __init__(self, entries):
+                self._entries = entries
+
+            def __len__(self):
+                return len(self._entries)
+
+            def __contains__(self, _item):
+                src_lang, tgt_lang, line = _item
+                _key = '%s\t%s\t%s' % (self._norm_lang(src_lang), self._norm_lang(tgt_lang), line)
+                return _key in self._entries
+
+            @staticmethod
+            def _norm_lang(lang):
+                if '-' in lang:
+                    lang = lang[:lang.index('-')]
+                return lang.lower()
+
+        if item in self._content_by_memory:
+            return __Content(self._content_by_memory[item])
+        else:
+            raise KeyError(item)
+
+
+class _MemoryContent(object):
+    class Entry(object):
+        def __init__(self, src_lang, tgt_lang, src_line, tgt_line):
+            self._src_lang = src_lang
+            self._tgt_lang = tgt_lang
+            self._src_line = src_line
+            self._tgt_line = tgt_line
+
+            if src_lang < tgt_lang:
+                self._id = '%s %s %s %s' % (src_lang, tgt_lang, src_line.replace(' ', ''), tgt_line.replace(' ', ''))
+            else:  # reversed
+                self._id = '%s %s %s %s' % (tgt_lang, src_lang, tgt_line.replace(' ', ''), src_line.replace(' ', ''))
+
+        @property
+        def src_lang(self):
+            return self._src_lang
+
+        @property
+        def tgt_lang(self):
+            return self._tgt_lang
+
+        @property
+        def src_line(self):
+            return self._src_line
+
+        @property
+        def tgt_line(self):
+            return self._tgt_line
+
+        def __eq__(self, o: object) -> bool:
+            return (type(o) == type(self)) and (self._id == o._id)
+
+        def __str__(self) -> str:
+            return '%s\t%s\t%s\t%s' % (self._src_lang, self._tgt_lang, self._src_line, self._tgt_line)
+
+        def __repr__(self) -> str:
+            return str(self)
+
+        def __hash__(self) -> int:
+            return hash(self._id)
+
+    def __init__(self, model_path) -> None:
+        cmd = ['java', '-cp', mmt.MMT_JAR, 'eu.modernmt.decoder.neural.memory.lucene.utils.Dump', model_path]
+        std_out, _ = osutils.shell_exec(cmd)
+
+        self._content_by_memory = defaultdict(set)
+
+        for line in std_out.splitlines(keepends=False):
+            memory, src_lang, tgt_lang, src_line, tgt_line = line.strip().split('\t')
+            self._content_by_memory[int(memory)].add(self.Entry(src_lang, tgt_lang, src_line, tgt_line))
+
+    def __len__(self):
+        return len(self._content_by_memory)
+
+    def __contains__(self, memory):
+        return memory in self._content_by_memory
+
+    def __getitem__(self, item):
+        class __Memory(object):
+            def __init__(self, entries):
+                self._entries = entries
+
+            def __len__(self):
+                return len(self._entries)
+
+            def __iter__(self):
+                for entry in self._entries:
+                    yield entry
+
+            def __contains__(self, _item):
+                src_lang, tgt_lang, src_line, tgt_line = _item
+                return _MemoryContent.Entry(src_lang, tgt_lang, src_line, tgt_line) in self._entries
+
+        if item in self._content_by_memory:
+            return __Memory(self._content_by_memory[item])
+        else:
+            raise KeyError(item)

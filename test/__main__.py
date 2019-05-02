@@ -2,10 +2,10 @@ import argparse
 import os
 import sys
 
-import unittest
-
 
 def main(argv=None):
+    import unittest
+
     parser = argparse.ArgumentParser(description='Test suite for ModernMT',
                                      usage='%(prog)s [-h] [TEST_CASE]', prog='test')
     parser.add_argument('test_case', help='run the specified Test Case (run all available tests by default)',
@@ -28,8 +28,7 @@ if __name__ == '__main__':
     from testcases.training import *
     # noinspection PyUnresolvedReferences
     from testcases.privacy import *
-
     # noinspection PyUnresolvedReferences
-    # from testcases.onlinelearning import *
+    from testcases.onlinelearning import *
 
     main()

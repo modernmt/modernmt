@@ -136,22 +136,32 @@ public class BucketRegistry implements Closeable {
 
         try {
             statement = connection.createStatement();
-            result = statement.executeQuery("SELECT source, target, owner_lsb, owner_msb, size, plain_size, gz_size FROM buckets WHERE id = " + id);
+            result = statement.executeQuery("SELECT id, source, target, owner_lsb, owner_msb, size, plain_size, gz_size FROM buckets WHERE id = " + id);
 
-            while (result.next()) {
-                final Language source = Language.fromString(result.getString(1));
-                final Language target = Language.fromString(result.getString(2));
-                final UUID owner = getUUID(result, 3, 4);
-                final long size = result.getLong(5);
-                final long plainSize = result.getLong(6);
-                final long gzSize = result.getLong(7);
+            while (result.next())
+                set.add(parseBucket(result));
 
-                CacheKey key = new CacheKey(id, new LanguagePair(source, target), this.maskLanguageRegion);
-                Bucket bucket = cache.computeIfAbsent(key,
-                        arg -> new Bucket(getBucketFolder(root, arg.id), arg.id, arg.language, owner, plainSize, gzSize, size));
+            return set;
+        } catch (SQLException e) {
+            throw new IOException(e);
+        } finally {
+            close(result);
+            close(statement);
+        }
+    }
 
-                set.add(bucket);
-            }
+    public synchronized Set<Bucket> getAll() throws IOException {
+        Set<Bucket> set = new HashSet<>();
+
+        Statement statement = null;
+        ResultSet result = null;
+
+        try {
+            statement = connection.createStatement();
+            result = statement.executeQuery("SELECT id, source, target, owner_lsb, owner_msb, size, plain_size, gz_size FROM buckets");
+
+            while (result.next())
+                set.add(parseBucket(result));
 
             return set;
         } catch (SQLException e) {
@@ -177,21 +187,8 @@ public class BucketRegistry implements Closeable {
                             "ORDER BY ABS(mark - size) DESC " +
                             "LIMIT " + limit);
 
-            while (result.next()) {
-                long id = result.getLong(1);
-                final Language source = Language.fromString(result.getString(2));
-                final Language target = Language.fromString(result.getString(3));
-                final UUID owner = getUUID(result, 4, 5);
-                final long size = result.getLong(6);
-                final long plainSize = result.getLong(7);
-                final long gzSize = result.getLong(8);
-
-                CacheKey key = new CacheKey(id, new LanguagePair(source, target), this.maskLanguageRegion);
-                Bucket bucket = cache.computeIfAbsent(key,
-                        arg -> new Bucket(getBucketFolder(root, arg.id), arg.id, arg.language, owner, plainSize, gzSize, size));
-
-                set.add(bucket);
-            }
+            while (result.next())
+                set.add(parseBucket(result));
 
             return set;
         } catch (SQLException e) {
@@ -202,6 +199,22 @@ public class BucketRegistry implements Closeable {
             close(result);
             close(statement);
         }
+    }
+
+    private Bucket parseBucket(ResultSet result) throws SQLException {
+        long id = result.getLong(1);
+        final Language source = Language.fromString(result.getString(2));
+        final Language target = Language.fromString(result.getString(3));
+        final UUID owner = getUUID(result, 4, 5);
+        final long size = result.getLong(6);
+        final long plainSize = result.getLong(7);
+        final long gzSize = result.getLong(8);
+
+        CacheKey key = new CacheKey(id, new LanguagePair(source, target), this.maskLanguageRegion);
+        Bucket bucket = cache.computeIfAbsent(key,
+                arg -> new Bucket(getBucketFolder(root, arg.id), arg.id, arg.language, owner, plainSize, gzSize, size));
+
+        return bucket;
     }
 
     public synchronized void mark(Bucket bucket, long mark) throws IOException {

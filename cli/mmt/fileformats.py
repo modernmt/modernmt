@@ -143,9 +143,10 @@ class ParallelFileFormat(FileFormat):
 
 class CompactFileFormat(FileFormat):
     class Reader(object):
-        def __init__(self, file_path) -> None:
+        def __init__(self, file_path, include_lang=False) -> None:
             self._file_path = file_path
             self._stream = None
+            self._include_lang = include_lang
 
         def __enter__(self):
             self._stream = open(self._file_path, 'r', encoding='utf-8')
@@ -156,10 +157,15 @@ class CompactFileFormat(FileFormat):
 
         def __iter__(self):
             for src_line in self._stream:
-                tgt_line = self._stream.readline()
-                _ = self._stream.readline()
+                src_line = src_line.rstrip('\n')
+                tgt_line = self._stream.readline().rstrip('\n')
+                meta = self._stream.readline().strip()
 
-                yield src_line.rstrip('\n'), tgt_line.rstrip('\n')
+                if self._include_lang:
+                    src_lang, tgt_lang = meta.split(',')[1].split()
+                    yield src_lang, tgt_lang, src_line, tgt_line
+                else:
+                    yield src_line, tgt_line
 
     class Writer(object):
         def __init__(self, src_lang, tgt_lang, file_path, append=False) -> None:
@@ -206,7 +212,10 @@ class CompactFileFormat(FileFormat):
         return self._file_path
 
     def reader(self):
-        return self.Reader(self._file_path)
+        return self.Reader(self._file_path, include_lang=False)
+
+    def reader_with_languages(self):
+        return self.Reader(self._file_path, include_lang=True)
 
     def writer(self, append=False):
         return self.Writer(self._src_lang, self._tgt_lang, self._file_path, append=append)
