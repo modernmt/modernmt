@@ -128,7 +128,7 @@ class CreateActivity(StatefulActivity):
     def _check_constraints():
         gb = 1024 * 1024 * 1024
         gpu_list = nvidia_smi.list_gpus()
-        recommended_gpu_ram = 10 * gb
+        recommended_gpu_ram = 8 * gb
 
         if len(gpu_list) == 0:
             raise HWConstraintViolated(
