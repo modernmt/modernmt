@@ -54,6 +54,17 @@ class TrainActivity(StatefulActivity):
             env['CUDA_VISIBLE_DEVICES'] = ','.join([str(gpu) for gpu in self.args.gpus])
 
         # Start process
+        tensorboard = None
+
+        if self.args.tensorboard_port is not None:
+            tensorboard_logdir = self.state.tensorboard_logdir = self.wdir('tensorboard_logdir')
+            tensorboard_log = open(os.path.join(self.state.tensorboard_logdir, 'server.log'), 'wb')
+            tensorboard_cmd = ['tensorboard', '--logdir', tensorboard_logdir, '--port', str(self.args.tensorboard_port)]
+            tensorboard = osutils.shell_exec(tensorboard_cmd,
+                                             stderr=tensorboard_log, stdout=tensorboard_log, background=True)
+
+            cmd += ['--tensorboard-logdir', tensorboard_logdir]
+
         process = osutils.shell_exec(cmd, stderr=self.log_fobj, stdout=self.log_fobj, background=True, env=env)
 
         try:
@@ -63,6 +74,9 @@ class TrainActivity(StatefulActivity):
                 raise ShellError(' '.join(cmd), return_code)
         except KeyboardInterrupt:
             process.terminate()
+        finally:
+            if tensorboard is not None:
+                tensorboard.terminate()
 
     @activitystep('Averaging checkpoints')
     def avg_checkpoints(self):
@@ -127,7 +141,8 @@ class TrainActivity(StatefulActivity):
 
 
 def parse_extra_argv(parser, extra_argv):
-    for reserved_opt in ['--save-dir', '--user-dir', '--task', '--no-progress-bar', '--share-all-embeddings']:
+    for reserved_opt in ['--save-dir', '--user-dir', '--task', '--no-progress-bar', '--share-all-embeddings',
+                         '--tensorboard-logdir']:
         if reserved_opt in extra_argv:
             raise CLIArgsException(parser, 'overriding option "%s" is not allowed' % reserved_opt)
 
@@ -175,6 +190,15 @@ def parse_extra_argv(parser, extra_argv):
     return cmd_extra_args
 
 
+def verify_tensorboard_dependencies(parser):
+    try:
+        import tensorflow
+        import tensorboard
+    except ImportError:
+        raise CLIArgsException(parser, '"--tensorboard-port" options requires "tensorflow" and "tensorboard" '
+                                       'python modules, but they could not be found, please install them using pip3')
+
+
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description='Train the neural model', prog='mmt train')
     parser.add_argument('data_path', metavar='DATA_FOLDER',
@@ -193,10 +217,15 @@ def parse_args(argv=None):
                         help='start the training from the specified model.pt file')
     parser.add_argument('--gpus', dest='gpus', nargs='+', type=int, default=None,
                         help='the list of GPUs available for training (default is all available GPUs)')
+    parser.add_argument('--tensorboard-port', dest='tensorboard_port', type=int, default=None,
+                        help='if specified, starts a tensorboard instance during training on the given port')
 
     args, extra_argv = parser.parse_known_args(argv)
     if args.debug and args.wdir is None:
         raise CLIArgsException(parser, '"--debug" options requires explicit working dir with "--working-dir"')
+
+    if args.tensorboard_port is not None:
+        verify_tensorboard_dependencies(parser)
 
     return args, parse_extra_argv(parser, extra_argv)
 

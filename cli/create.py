@@ -88,7 +88,7 @@ class CreateActivity(StatefulActivity):
 
         args = Namespace(data_path=self.state.datagen_dir, output_path=self.state.nn_path, debug=self.args.debug,
                          num_checkpoints=self.args.num_checkpoints, resume=self.args.resume, init_model=init_model,
-                         gpus=self.args.gpus)
+                         gpus=self.args.gpus, tensorboard_port=self.args.tensorboard_port)
 
         activity = train.TrainActivity(args, self.extra_argv, wdir=self.wdir('_temp_train'),
                                        log_file=self.log_fobj, delete_on_exit=self.delete_on_exit)
@@ -183,11 +183,16 @@ def parse_args(argv=None):
                             help='number of checkpoints to average (default is 10)')
     train_args.add_argument('--gpus', dest='gpus', nargs='+', type=int, default=None,
                             help='the list of GPUs available for training (default is all available GPUs)')
+    train_args.add_argument('--tensorboard-port', dest='tensorboard_port', type=int, default=None,
+                            help='if specified, starts a tensorboard instance during training on the given port')
 
     args, extra_argv = parser.parse_known_args(argv)
 
     if args.vocabulary_path is not None and args.init_model is not None:
         raise CLIArgsException(parser, 'Cannot specify both options: "--vocabulary" and "--from-model"')
+
+    if args.tensorboard_port is not None:
+        train.verify_tensorboard_dependencies(parser)
 
     return args, train.parse_extra_argv(parser, extra_argv)
 
