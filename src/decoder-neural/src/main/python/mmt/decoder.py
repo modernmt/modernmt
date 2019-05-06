@@ -58,17 +58,15 @@ class ModelConfig(object):
 
     @property
     def tuning(self):
-        if self._config.has_section('settings'):
-            ops = TuningOptions()
+        ops = TuningOptions()
 
+        if self._config.has_section('settings'):
             for name, value in self._config.items('settings'):
                 if not hasattr(ops, name):
                     raise ValueError('Invalid option "%s"' % name)
                 setattr(ops, name, self._parse(value))
 
-            return ops
-        else:
-            return None
+        return ops
 
     @property
     def checkpoints(self):
