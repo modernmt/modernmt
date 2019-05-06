@@ -32,14 +32,12 @@ public class ContextVector implements Iterable<ContextVector.Entry>, Serializabl
         }
 
         public Builder add(Memory memory, float score) {
-            entries.put(memory, score);
+            if (score > 0.f)
+                entries.put(memory, score);
             return this;
         }
 
         public ContextVector build() {
-            if (this.entries.isEmpty())
-                return null;
-
             List<Entry> list = new ArrayList<>(this.entries.size());
             for (Map.Entry<Memory, Float> e : this.entries.entrySet())
                 list.add(new Entry(e.getKey(), e.getValue()));
@@ -81,8 +79,7 @@ public class ContextVector implements Iterable<ContextVector.Entry>, Serializabl
             if (score < 0.f || score > 1.f)
                 throw new IllegalArgumentException(string);
 
-            if (score > 0.f)
-                builder.add(memory, score);
+            builder.add(memory, score);
         }
 
         return builder.build();
@@ -131,6 +128,10 @@ public class ContextVector implements Iterable<ContextVector.Entry>, Serializabl
 
     public int size() {
         return entries.length;
+    }
+
+    public boolean isEmpty() {
+        return entries.length == 0;
     }
 
     @Override
