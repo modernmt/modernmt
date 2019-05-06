@@ -7,7 +7,7 @@
   </tr>
   <tr>
     <td valign="top"><b>PLATFORM</b></td>
-    <td>ModernMT is developed and tested on a Linux, x86_64 platform.</td>
+    <td>An Ubuntu 18.04 distribution, x86_64 platform. Thus it should be possible to install ModernMT on other Linux distributions (for experts).</td>
   </tr>
   <tr>
     <td valign="top"><b>CPU</b></td>
