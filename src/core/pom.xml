@@ -3,7 +3,7 @@
     <parent>
         <artifactId>mmt-root</artifactId>
         <groupId>eu.modernmt</groupId>
-        <version>3.3.1</version>
+        <version>4.0</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -59,12 +59,12 @@
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
-            <version>9.4.14.v20181114</version>
+            <version>9.4.17.v20190418</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-servlet</artifactId>
-            <version>9.4.14.v20181114</version>
+            <version>9.4.17.v20190418</version>
         </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>

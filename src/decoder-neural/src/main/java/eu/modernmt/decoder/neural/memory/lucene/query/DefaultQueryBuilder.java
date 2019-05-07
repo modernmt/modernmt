@@ -1,7 +1,7 @@
 package eu.modernmt.decoder.neural.memory.lucene.query;
 
-import eu.modernmt.decoder.neural.memory.lucene.Analyzers;
 import eu.modernmt.decoder.neural.memory.lucene.DocumentBuilder;
+import eu.modernmt.decoder.neural.memory.lucene.analysis.AnalyzerFactory;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ContextVector;
@@ -10,15 +10,24 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.TermsFilter;
 import org.apache.lucene.search.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.UUID;
 
 /**
  * Created by davide on 24/05/17.
  */
 public class DefaultQueryBuilder implements QueryBuilder {
+
+    public static final int SHORT_QUERY_SIZE = 4;
+
+    @Override
+    public boolean isLongQuery(int queryLength) {
+        return queryLength > SHORT_QUERY_SIZE;
+    }
 
     @Override
     public Query getByHash(long memory, String hash) {
@@ -36,43 +45,26 @@ public class DefaultQueryBuilder implements QueryBuilder {
     }
 
     @Override
-    public Query bestMatchingSuggestion(UUID user, LanguagePair direction, Sentence sentence, ContextVector context) {
+    public Query bestMatchingSuggestion(Analyzer analyzer, UUID user, LanguagePair direction, Sentence sentence, ContextVector context) {
         int length = sentence.getWords().length;
-        boolean isLongQuery = length > 4;
-
-        int minMatches = isLongQuery ? Math.max(1, (int) (length * .5)) : length;
-        Analyzer analyzer = isLongQuery ? Analyzers.getLongQueryAnalyzer() : Analyzers.getShortQueryAnalyzer();
+        int minMatches = length > SHORT_QUERY_SIZE ? Math.max(1, (int) (length * .5)) : length;
 
         // Content query
         BooleanQuery termsQuery = makeTermsQuery(direction, sentence, analyzer);
         termsQuery.setMinimumNumberShouldMatch(minMatches);
 
-        // Owner filter
-        BooleanQuery privacyQuery = makePrivacyQuery(user, context);
+        // Context filter
+        TermsFilter contextFilter = makeContextFilter(context);
 
         // Result
-        return new FilteredQuery(termsQuery, new QueryWrapperFilter(privacyQuery));
+        return new FilteredQuery(termsQuery, contextFilter);
     }
 
-    protected static BooleanQuery makePrivacyQuery(UUID user, ContextVector context) {
-        BooleanQuery privacyQuery = new BooleanQuery();
-
-        if (user == null) {
-            privacyQuery.add(DocumentBuilder.makePublicOwnerMatchingQuery(), BooleanClause.Occur.SHOULD);
-        } else {
-            privacyQuery.add(DocumentBuilder.makePublicOwnerMatchingQuery(), BooleanClause.Occur.SHOULD);
-            privacyQuery.add(DocumentBuilder.makeOwnerMatchingQuery(user), BooleanClause.Occur.SHOULD);
-        }
-
-        if (context != null) {
-            for (ContextVector.Entry entry : context) {
-                privacyQuery.add(new TermQuery(DocumentBuilder.makeMemoryTerm(entry.memory.getId())), BooleanClause.Occur.SHOULD);
-            }
-        }
-
-        privacyQuery.setMinimumNumberShouldMatch(1);
-
-        return privacyQuery;
+    protected static TermsFilter makeContextFilter(ContextVector context) {
+        ArrayList<Term> terms = new ArrayList<>(context.size());
+        for (ContextVector.Entry entry : context)
+            terms.add(DocumentBuilder.makeMemoryTerm(entry.memory.getId()));
+        return new TermsFilter(terms);
     }
 
     protected static BooleanQuery makeTermsQuery(LanguagePair direction, Sentence sentence, Analyzer analyzer) {
@@ -85,7 +77,7 @@ public class DefaultQueryBuilder implements QueryBuilder {
         String text = TokensOutputStream.serialize(sentence, false, true);
 
         try {
-            TokenStream stream = analyzer.tokenStream("content", text);
+            TokenStream stream = analyzer.tokenStream(fieldName, text);
             CharTermAttribute charTermAttribute = stream.addAttribute(CharTermAttribute.class);
 
             stream.reset();

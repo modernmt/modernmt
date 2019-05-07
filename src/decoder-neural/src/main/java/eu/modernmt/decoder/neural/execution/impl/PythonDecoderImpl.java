@@ -36,11 +36,11 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
         }
 
         public Builder(File pythonModule, File model) {
-            this("python", pythonModule, null, null, model);
+            this("python3", pythonModule, null, null, model);
         }
 
         public Builder(File pythonModule, String[] extraArgs, File model) {
-            this("python", pythonModule, null, extraArgs, model);
+            this("python3", pythonModule, null, extraArgs, model);
         }
 
         public Builder(String pythonExec, File pythonModule, String main, String[] extraArgs, File model) {

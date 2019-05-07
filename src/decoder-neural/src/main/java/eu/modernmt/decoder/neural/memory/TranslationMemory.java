@@ -14,8 +14,6 @@ import java.util.UUID;
  */
 public interface TranslationMemory extends Closeable, DataListener {
 
-    ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, int limit) throws IOException;
-
     ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, ContextVector contextVector, int limit) throws IOException;
 
 }

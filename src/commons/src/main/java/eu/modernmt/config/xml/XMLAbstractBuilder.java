@@ -128,6 +128,15 @@ abstract class XMLAbstractBuilder {
         return getIntAttribute(element, attr);
     }
 
+    protected static long getLongAttribute(Element element, String attr) {
+        String value = getAttribute(element, attr);
+        return value == null ? 0L : Long.parseLong(value);
+    }
+
+    protected long getLongAttribute(String attr) {
+        return getLongAttribute(element, attr);
+    }
+
     protected static Language getLanguageAttribute(Element element, String attr) {
         String value = getAttribute(element, attr);
         return value == null ? null : Language.fromString(value);

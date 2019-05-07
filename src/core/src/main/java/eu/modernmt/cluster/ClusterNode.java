@@ -203,9 +203,11 @@ public class ClusterNode {
         }
 
         /* for the translation service use as many threads as the decoder threads */
-        EngineConfig engineConfig = nodeConfig.getEngineConfig();
+        DecoderConfig decoderConfig = nodeConfig.getEngineConfig().getDecoderConfig();
         TranslationQueueConfig queueConfig = nodeConfig.getTranslationQueueConfig();
-        int threads = engineConfig.getDecoderConfig().getParallelismDegree();
+
+        int threads = decoderConfig.getParallelismDegree();
+        threads = Math.max(threads, Runtime.getRuntime().availableProcessors());
 
         TranslationService.getConfig(hazelcastConfig)
                 .setThreads(threads)

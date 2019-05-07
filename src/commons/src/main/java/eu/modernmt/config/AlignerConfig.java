@@ -5,7 +5,7 @@ package eu.modernmt.config;
  */
 public class AlignerConfig {
 
-    protected boolean enabled = true;
+    protected boolean enabled = false;
 
     public boolean isEnabled() {
         return enabled;

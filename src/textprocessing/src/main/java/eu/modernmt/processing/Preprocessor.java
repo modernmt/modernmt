@@ -41,7 +41,7 @@ public class Preprocessor implements Closeable {
     }
 
     public List<Sentence> process(LanguagePair language, List<String> batch) throws ProcessingException {
-        Sentence[] result = this.executor.processBatch(language, batch.toArray(new String[batch.size()]), new Sentence[batch.size()]);
+        Sentence[] result = this.executor.processBatch(language, batch.toArray(new String[0]), new Sentence[batch.size()]);
         return Arrays.asList(result);
     }
 

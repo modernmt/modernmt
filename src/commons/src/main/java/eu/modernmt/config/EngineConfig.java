@@ -11,6 +11,7 @@ public class EngineConfig {
     private LanguageIndex languageIndex = null;
     private DecoderConfig decoderConfig = new DecoderConfig();
     private AlignerConfig alignerConfig = new AlignerConfig();
+    private AnalyzerConfig analyzerConfig = new AnalyzerConfig();
 
     public String getName() {
         return name;
@@ -37,11 +38,17 @@ public class EngineConfig {
         return alignerConfig;
     }
 
+    public AnalyzerConfig getAnalyzerConfig() {
+        return analyzerConfig;
+    }
+
     @Override
     public String toString() {
         return "[Engine]\n" +
                 "  name = " + name + "\n" +
                 "  languages = " + languageIndex + "\n" +
-                "  " + decoderConfig.toString().replace("\n", "\n  ");
+                "  " + decoderConfig.toString().replace("\n", "\n  ") +
+                "  " + alignerConfig.toString().replace("\n", "\n  ") +
+                "  " + analyzerConfig.toString().replace("\n", "\n  ");
     }
 }

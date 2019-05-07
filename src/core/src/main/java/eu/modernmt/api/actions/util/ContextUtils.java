@@ -1,10 +1,10 @@
 package eu.modernmt.api.actions.util;
 
+import eu.modernmt.api.framework.Parameters;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Memory;
 import eu.modernmt.persistence.PersistenceException;
-import eu.modernmt.api.framework.Parameters;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -43,36 +43,11 @@ public class ContextUtils {
     }
 
     public static ContextVector parseParameter(String name, String value) throws Parameters.ParameterParsingException {
-        String[] elements = value.split(",");
-
-        ContextVector.Builder builder = new ContextVector.Builder(elements.length);
-
-        for (String element : elements) {
-            String[] keyvalue = element.split(":");
-
-            if (keyvalue.length != 2)
-                throw new Parameters.ParameterParsingException(name, value);
-
-            long memoryId;
-            float score;
-
-            try {
-                memoryId = Long.parseLong(keyvalue[0]);
-                score = Float.parseFloat(keyvalue[1]);
-            } catch (NumberFormatException e) {
-                throw new Parameters.ParameterParsingException(name, value);
-            }
-
-            if (memoryId < 1)
-                throw new Parameters.ParameterParsingException(name, value);
-
-            if (score < 0.f || score > 1.f)
-                throw new Parameters.ParameterParsingException(name, value);
-
-            builder.add(memoryId, score);
+        try {
+            return ContextVector.fromString(value);
+        } catch (IllegalArgumentException e) {
+            throw new Parameters.ParameterParsingException(name, value);
         }
-
-        return builder.build();
     }
 
 }

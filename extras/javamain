@@ -1,0 +1,19 @@
+#!/bin/bash
+
+SCRIPT_HOME="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+if [ -z "$1" ]; then
+  >&2 echo "Missing main class name. Usage: $0 MAIN_CLASS_NAME [args]";
+  exit 1
+fi
+
+if [[ "$1" == eu.modernmt.* ]]; then
+  CLASS="$1"
+else
+  CLASS="eu.modernmt.cli.$1"
+fi
+shift
+MMT_HOME=$(cd $SCRIPT_HOME/../ ; pwd -P)
+JAR=`ls -t ${MMT_HOME}/build/mmt-*.jar | head -n 1`
+
+exec java -Dmmt.home=$MMT_HOME -Djava.library.path=$MMT_HOME/build/lib -cp $JAR $CLASS $@

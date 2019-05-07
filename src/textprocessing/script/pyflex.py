@@ -1,11 +1,17 @@
-# coding=utf-8
-import codecs
 import os
-import re
-
 import sys
 
 __author__ = 'Davide Caroselli'
+
+
+def escape(string):
+    escaped = ''
+    for c in string:
+        if ('0' <= c <= '9') or ('A' <= c <= 'Z') or ('a' <= c <= 'z'):
+            escaped += c
+        else:
+            escaped += '\\' + c
+    return escaped
 
 
 def _abspath(root, path):
@@ -36,7 +42,7 @@ def _class(classname, super_class=None):
 
 
 def _include(path):
-    with codecs.open(path, encoding='utf-8') as content:
+    with open(path, 'r', encoding='utf-8') as content:
         return content.read()
 
 
@@ -54,12 +60,11 @@ def _process_prefix(line, caseless, patterns):
 
     if match_anycase:
         string = ''
-        for i in range(0, len(line)):
-            c = line[i]
-            string += '(' + re.escape(c.upper()) + '|' + re.escape(c.lower()) + ')'
+        for c in line:
+            string += '(' + escape(c.upper()) + '|' + escape(c.lower()) + ')'
         line = string + '\\.'
     else:
-        line = re.escape(line + '.')
+        line = escape(line + '.')
 
     return '(' + line + ')'
 
@@ -73,7 +78,7 @@ def _prefixes(path, caseless=None):
     regular_patterns = []
     numeric_only_patterns = []
 
-    with codecs.open(path, encoding='utf-8') as source:
+    with open(path, 'r', encoding='utf-8') as source:
         for line in source:
             line = line.strip()
 
@@ -97,7 +102,7 @@ def _prefixes(path, caseless=None):
 def _contractions(path):
     result = []
 
-    with codecs.open(path, encoding='utf-8') as source:
+    with open(path, 'r', encoding='utf-8') as source:
         for line in source:
             line = line.strip()
 
@@ -126,32 +131,26 @@ def _encode_prefixes(regular_patterns, numeric_only_patterns):
 
 
 def generate_jflex(parent_dir, template_file, target_dir):
-    relpath = os.path.dirname(template_file)
-    include_root = os.path.join(parent_dir, relpath)
+    rel_path = os.path.dirname(template_file)
+    include_root = os.path.join(parent_dir, rel_path)
 
-    package = relpath.replace(os.path.sep, '.')
     classname = os.path.splitext(os.path.basename(template_file))[0]
 
     template_file = os.path.join(parent_dir, template_file)
-    parent_target = os.path.join(target_dir, relpath)
+    parent_target = os.path.join(target_dir, rel_path)
     target_file = os.path.join(parent_target, classname + '.jflex')
 
-    content = []
-
-    with codecs.open(template_file, encoding='utf-8') as template:
-        for l in template:
-            content.append(l.strip())
+    with open(template_file, 'r', encoding='utf-8') as stream:
+        content = [line.strip() for line in stream.readlines()]
 
     has_regular_patterns = False
     has_numeric_only_patterns = False
 
-    for i in range(0, len(content)):
-        l = content[i]
-
-        if l.startswith('//pyflex '):
-            l = l.split()[1:]
-            args = l[1:]
-            command = l[0]
+    for i, line in enumerate(content):
+        if line.startswith('//pyflex '):
+            line = line.split()[1:]
+            args = line[1:]
+            command = line[0]
 
             if command == 'class':
                 content[i] = _class(classname, super_class=(args[0] if len(args) > 0 else None))
@@ -170,22 +169,24 @@ def generate_jflex(parent_dir, template_file, target_dir):
                 raise Exception("Unknown command " + command)
 
     if has_regular_patterns:
-        content.append(u'[ !¡\\"#$%&\'*+,\\-./:;<=>?¿@\\[\\]\\^_`{|}~()]{ProtectedPatterns} '
+        content.append('[ !¡\\"#$%&\'*+,\\-./:;<=>?¿@\\[\\]\\^_`{|}~()]{ProtectedPatterns} '
                        '{ zzStartReadOffset = 1; return PROTECT; }')
     if has_numeric_only_patterns:
-        content.append(u'[ !¡\\"#$%&\'*+,\\-./:;<=>?¿@\\[\\]\\^_`{|}~()]{NumericProtectedPatters}" "[:digit:] '
+        content.append('[ !¡\\"#$%&\'*+,\\-./:;<=>?¿@\\[\\]\\^_`{|}~()]{NumericProtectedPatters}" "[:digit:] '
                        '{ zzStartReadOffset = 1; yypushback(2); return PROTECT; }')
 
     if not os.path.isdir(parent_target):
         os.makedirs(parent_target)
 
-    with open(target_file, 'wb') as output:
-        output.write(('\n'.join(content)).encode('utf-8'))
+    with open(target_file, 'w', encoding='utf-8') as output:
+        for line in content:
+            output.write(line)
+            output.write('\n')
 
 
 def main():
     if len(sys.argv) != 3:
-        print 'Usage: pyflex.py SOURCE_DIRECTORY TARGET_DIRECTORY'
+        print('Usage: pyflex.py SOURCE_DIRECTORY TARGET_DIRECTORY')
         exit(1)
 
     source_dir = sys.argv[1]
@@ -196,8 +197,8 @@ def main():
     for root, directories, filenames in os.walk(source_dir):
         for filename in filenames:
             if filename.endswith('.pyflex'):
-                relpath = root.replace(source_dir, '').lstrip(os.path.sep)
-                source_files.append(os.path.join(relpath, filename))
+                rel_path = root.replace(source_dir, '').lstrip(os.path.sep)
+                source_files.append(os.path.join(rel_path, filename))
 
     for f in source_files:
         generate_jflex(source_dir, f, target_dir)

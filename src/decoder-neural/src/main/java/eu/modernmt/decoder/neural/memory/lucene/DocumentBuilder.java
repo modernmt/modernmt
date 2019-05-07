@@ -33,21 +33,12 @@ public class DocumentBuilder {
         String translation = TokensOutputStream.serialize(unit.translation, false, true);
         String hash = HashGenerator.hash(unit.rawSentence, unit.rawTranslation);
 
-        return newInstance(unit.direction, unit.owner, unit.memory, sentence, translation, hash);
+        return newInstance(unit.direction, unit.memory, sentence, translation, hash);
     }
 
-    public static Document newInstance(LanguagePair direction, UUID owner, long memory, String sentence, String translation, String hash) {
+    public static Document newInstance(LanguagePair direction, long memory, String sentence, String translation, String hash) {
         Document document = new Document();
         document.add(new LongField(MEMORY_FIELD, memory, Field.Store.YES));
-
-        if (owner == null) {
-            document.add(new LongField(OWNER_MSB_FIELD, 0L, Field.Store.NO));
-            document.add(new LongField(OWNER_LSB_FIELD, 0L, Field.Store.NO));
-        } else {
-            document.add(new LongField(OWNER_MSB_FIELD, owner.getMostSignificantBits(), Field.Store.NO));
-            document.add(new LongField(OWNER_LSB_FIELD, owner.getLeastSignificantBits(), Field.Store.NO));
-        }
-
         document.add(new HashField(HASH_FIELD, hash, Field.Store.NO));
         document.add(new StringField(makeLanguageFieldName(direction.source), direction.source.toLanguageTag(), Field.Store.YES));
         document.add(new StringField(makeLanguageFieldName(direction.target), direction.target.toLanguageTag(), Field.Store.YES));
@@ -73,8 +64,6 @@ public class DocumentBuilder {
 
     private static final String CHANNELS_FIELD = "channels";
     private static final String MEMORY_FIELD = "memory";
-    private static final String OWNER_MSB_FIELD = "owner_msb";
-    private static final String OWNER_LSB_FIELD = "owner_lsb";
     private static final String HASH_FIELD = "hash";
     private static final String LANGUAGE_PREFIX_FIELD = "lang_";
     private static final String CONTENT_PREFIX_FIELD = "content_";
@@ -83,6 +72,23 @@ public class DocumentBuilder {
 
     public static long getMemory(Document self) {
         return Long.parseLong(self.get(MEMORY_FIELD));
+    }
+
+    public static String getSourceLanguage(String fieldName) {
+        if (!fieldName.startsWith(CONTENT_PREFIX_FIELD))
+            throw new IllegalArgumentException("Unexpected field name: " + fieldName);
+
+        int lastUnderscore = fieldName.lastIndexOf('_');
+        return fieldName.substring(CONTENT_PREFIX_FIELD.length(), lastUnderscore);
+    }
+
+    public static String getTargetLanguage(String fieldName) {
+        if (!fieldName.startsWith(CONTENT_PREFIX_FIELD))
+            throw new IllegalArgumentException("Unexpected field name: " + fieldName);
+
+        int lastUnderscore = fieldName.lastIndexOf('_');
+
+        return fieldName.substring(lastUnderscore + 1);
     }
 
     // Parsing
@@ -166,23 +172,6 @@ public class DocumentBuilder {
 
     public static Term makeMemoryTerm(long memory) {
         return makeLongTerm(memory, MEMORY_FIELD);
-    }
-
-    public static Query makePublicOwnerMatchingQuery() {
-        return makeOwnerMatchingQuery(null);
-    }
-
-    public static Query makeOwnerMatchingQuery(UUID owner) {
-        long msb = (owner == null) ? 0L : owner.getMostSignificantBits();
-        long lsb = (owner == null) ? 0L : owner.getLeastSignificantBits();
-
-        Term msbTerm = makeLongTerm(msb, OWNER_MSB_FIELD);
-        Term lsbTerm = makeLongTerm(lsb, OWNER_LSB_FIELD);
-
-        BooleanQuery query = new BooleanQuery();
-        query.add(new TermQuery(msbTerm), BooleanClause.Occur.MUST);
-        query.add(new TermQuery(lsbTerm), BooleanClause.Occur.MUST);
-        return query;
     }
 
     public static Term makeChannelsTerm() {

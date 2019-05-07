@@ -2,6 +2,7 @@ package eu.modernmt.backup;
 
 import eu.modernmt.backup.storage.CorporaBackupStorage;
 import eu.modernmt.cluster.kafka.KafkaDataManager;
+import eu.modernmt.config.AnalyzerConfig;
 import eu.modernmt.config.DataStreamConfig;
 import eu.modernmt.config.NodeConfig;
 import eu.modernmt.context.lucene.LuceneAnalyzer;
@@ -62,7 +63,7 @@ public class BackupEngine {
         logger.info("Starting backup engine...");
         long begin = System.currentTimeMillis();
 
-        contextAnalyzer = new LuceneAnalyzer(Paths.join(models, "context"));
+        contextAnalyzer = new LuceneAnalyzer(Paths.join(models, "context"), new AnalyzerConfig());
         memory = new LuceneTranslationMemory(Paths.join(models, "memory"), 1);
         storage = new CorporaBackupStorage(Paths.join(models, "storage"));
 

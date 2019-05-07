@@ -1,8 +1,0 @@
-Some of MMT's code is derived from great projects:
-
-- Moses (LGPL) - Mostly the decoding.
-- Irstlm (LGPLv2) - The starting point for the context adapted language model
-- Fastaligner (Apache2) - The starting point for the incremental aligner
-- Lucene (Apache2) - Reused tokenization and inverted index for the context analysis.
-
-- Many others to add

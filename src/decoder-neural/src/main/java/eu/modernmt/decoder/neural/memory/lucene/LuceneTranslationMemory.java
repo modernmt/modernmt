@@ -5,6 +5,8 @@ import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.decoder.neural.memory.TranslationMemory;
+import eu.modernmt.decoder.neural.memory.lucene.analysis.AnalyzerFactory;
+import eu.modernmt.decoder.neural.memory.lucene.analysis.DefaultAnalyzerFactory;
 import eu.modernmt.decoder.neural.memory.lucene.query.DefaultQueryBuilder;
 import eu.modernmt.decoder.neural.memory.lucene.query.QueryBuilder;
 import eu.modernmt.decoder.neural.memory.lucene.query.rescoring.F1BleuRescorer;
@@ -15,6 +17,8 @@ import eu.modernmt.model.Sentence;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -33,6 +37,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+import static org.apache.lucene.analysis.Analyzer.PER_FIELD_REUSE_STRATEGY;
+
 /**
  * Created by davide on 23/05/17.
  */
@@ -44,6 +50,9 @@ public class LuceneTranslationMemory implements TranslationMemory {
     private final Directory indexDirectory;
     private final QueryBuilder queryBuilder;
     private final Rescorer rescorer;
+    private final AnalyzerFactory analyzerFactory;
+    private final Analyzer shortQueryAnalyzer;
+    private final Analyzer longQueryAnalyzer;
     private final IndexWriter indexWriter;
 
     private DirectoryReader _indexReader;
@@ -70,24 +79,36 @@ public class LuceneTranslationMemory implements TranslationMemory {
         this(FSDirectory.open(forceMkdir(indexPath)), rescorer, minQuerySize);
     }
 
-    public LuceneTranslationMemory(File indexPath, QueryBuilder queryBuilder, Rescorer rescorer, int minQuerySize) throws IOException {
-        this(FSDirectory.open(forceMkdir(indexPath)), queryBuilder, rescorer, minQuerySize);
-    }
-
     public LuceneTranslationMemory(Directory directory, Rescorer rescorer, int minQuerySize) throws IOException {
-        this(directory, new DefaultQueryBuilder(), rescorer, minQuerySize);
+        this(directory, new DefaultQueryBuilder(), rescorer, new DefaultAnalyzerFactory(), minQuerySize);
     }
 
-    public LuceneTranslationMemory(Directory directory, QueryBuilder queryBuilder, Rescorer rescorer, int minQuerySize) throws IOException {
+    public LuceneTranslationMemory(File indexPath, QueryBuilder queryBuilder, Rescorer rescorer, AnalyzerFactory analyzerFactory, int minQuerySize) throws IOException {
+        this(FSDirectory.open(forceMkdir(indexPath)), queryBuilder, rescorer, analyzerFactory, minQuerySize);
+    }
+
+    public LuceneTranslationMemory(Directory directory, QueryBuilder queryBuilder, Rescorer rescorer, AnalyzerFactory analyzerFactory, int minQuerySize) throws IOException {
         this.indexDirectory = directory;
         this.queryBuilder = queryBuilder;
         this.rescorer = rescorer;
+        this.analyzerFactory = analyzerFactory;
+        this.shortQueryAnalyzer = analyzerFactory.createShortQueryAnalyzer();
+        this.longQueryAnalyzer = analyzerFactory.createLongQueryAnalyzer();
         this.minQuerySize = minQuerySize;
 
         // Index writer setup
-        IndexWriterConfig indexConfig = new IndexWriterConfig(Version.LUCENE_4_10_4, Analyzers.getTrainAnalyzer());
+        IndexWriterConfig indexConfig = new IndexWriterConfig(Version.LUCENE_4_10_4, new DelegatingAnalyzerWrapper(PER_FIELD_REUSE_STRATEGY) {
+            @Override
+            protected Analyzer getWrappedAnalyzer(String fieldName) {
+                if (DocumentBuilder.isHashField(fieldName))
+                    return analyzerFactory.createHashAnalyzer();
+                else
+                    return analyzerFactory.createContentAnalyzer();
+            }
+        });
+
         indexConfig.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-        indexConfig.setSimilarity(new CustomSimilarity());
+        indexConfig.setSimilarity(analyzerFactory.createSimilarity());
 
         this.indexWriter = new IndexWriter(this.indexDirectory, indexConfig);
 
@@ -123,7 +144,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
                 this._indexReader.incRef();
 
                 this._indexSearcher = new IndexSearcher(this._indexReader);
-                this._indexSearcher.setSimilarity(new CustomSimilarity());
+                this._indexSearcher.setSimilarity(analyzerFactory.createSimilarity());
             }
         }
 
@@ -161,21 +182,13 @@ public class LuceneTranslationMemory implements TranslationMemory {
     // TranslationMemory
 
     @Override
-    public ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, int limit) throws IOException {
-        return search(user, direction, source, null, this.rescorer, limit);
-    }
-
-    public ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, Rescorer rescorer, int limit) throws IOException {
-        return search(user, direction, source, null, rescorer, limit);
-    }
-
-    @Override
     public ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, ContextVector contextVector, int limit) throws IOException {
         return search(user, direction, source, contextVector, this.rescorer, limit);
     }
 
     public ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, ContextVector contextVector, Rescorer rescorer, int limit) throws IOException {
-        Query query = this.queryBuilder.bestMatchingSuggestion(user, direction, source, contextVector);
+        Analyzer analyzer = this.queryBuilder.isLongQuery(source.getWords().length) ? longQueryAnalyzer : shortQueryAnalyzer;
+        Query query = this.queryBuilder.bestMatchingSuggestion(analyzer, user, direction, source, contextVector);
 
         IndexSearcher searcher = getIndexSearcher();
 

@@ -107,7 +107,7 @@ public class WhitespacesNormalizer extends TextProcessor<SentenceBuilder, Senten
      * @return a boolean value expressing whether c is a whitespace or not
      */
     public static boolean isWhitespace(char c) {
-        return ((0x0009 <= c && c <= 0x000D) || c == 0x0020 || c == 0x00A0 || c == 0x1680 ||
-                (0x2000 <= c && c <= 0x200A) || c == 0x202F || c == 0x205F || c == 0x3000);
+        return ((0x0009 <= c && c <= 0x000D) || c == '\u0020' || c == '\u00A0' || c == '\u1680' ||
+                (0x2000 <= c && c <= 0x200A) || c == '\u2028' || c == '\u202F' || c == '\u205F' || c == '\u3000');
     }
 }

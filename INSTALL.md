@@ -1,118 +1,197 @@
-# HW Requirements
+# Hardware requirements
 
-### Storage
-At least 10 times the corpus size, min 10GB. If your unzipped training data is 10GB, make sure you have at least 100GB on drive.
+<table>
+  <tr>
+    <td valign="top"><b>STORAGE</b></td>
+    <td>At least 10 times the corpus size, min 10GB. For example, if your unzipped training data is 10GB, make sure you have at least 100GB on drive.</td>
+  </tr>
+  <tr>
+    <td valign="top"><b>PLATFORM</b></td>
+    <td>An Ubuntu 18.04 distribution, x86_64 platform. Thus it should be possible to install ModernMT on other Linux distributions (for experts).</td>
+  </tr>
+  <tr>
+    <td valign="top"><b>CPU</b></td>
+    <td>No minimum hardware specifications are required. Thus, we suggest a least a 8-cores CPU for training and decoding.</td>
+  </tr>
+  <tr>
+    <td valign="top"><b>GPU</b></td>
+    <td>At least one <a href="https://developer.nvidia.com/cuda-gpus">CUDA-capable GPU</a> with minimum 8GB of internal memory. Multiple GPUs are recommended in order to speedup both training and decoding.</td>
+  </tr>
+  <tr>
+    <td valign="top"><b>RAM</b></td>
+    <td>Minimum 16GB, highly depending on parallel data during training</td>
+  </tr>
+</table>
 
-### Platform
-A x86_64 platform is required.
+# Install ModernMT via Docker
 
-### CPU
-No minimum required. We suggest a least a 8-cores CPU for decoding.
+If you are familiar with Docker, this is usually the easiest option to use ModernMT. This section assumes you have already a running instance of Docker, if this is not the case please [follow these instructions](https://docs.docker.com/install/linux/docker-ce/ubuntu/) in order to properly install Docker.
 
-### GPU
-At least one [CUDA-capable GPU](https://developer.nvidia.com/cuda-gpus). Multiple GPUs can speedup both training and translation.
+### Install NVIDIA drivers
 
-We recommend at least 8GB GPU memory for training and at least 2GB GPU memory for runtime.
-
-### Memory
-*  Min 16GB
-
-# Pre-installation actions
-
-## CUDA/cuDNN libraries and software
-### CUDA library
-In order to run ModernMT Enterprise Edition, [CUDA 9.0 library](https://developer.nvidia.com/cuda-90-download-archive?target_os=Linux) are required.
-
+The first step is **NVIDIA drivers** installation:
 ```bash
-# IMPORTANT: Tensorflow **won't work** with CUDA > 9.0
-wget -O cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64.deb https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64-deb
-
-sudo dpkg -i cuda-repo-ubuntu1604-9-0-local_9.0.176-1_amd64.deb
-sudo apt-key add /var/cuda-repo-<version>/7fa2af80.pub
-sudo apt-get update
-sudo apt-get install cuda
-
-# Install Patch 1
-wget -O cuda-repo-ubuntu1604-9-0-local-cublas-performance-update_1.0-1_amd64.deb https://developer.nvidia.com/compute/cuda/9.0/Prod/patches/1/cuda-repo-ubuntu1604-9-0-local-cublas-performance-update_1.0-1_amd64-deb
-
-sudo dpkg -i cuda-repo-ubuntu1604-9-0-local-cublas-performance-update_1.0-1_amd64.deb
-sudo apt-get update
-sudo apt-get upgrade cuda
-
-# Install Patch 2
-wget -O cuda-repo-ubuntu1604-9-0-local-cublas-performance-update-2_1.0-1_amd64.deb https://developer.nvidia.com/compute/cuda/9.0/Prod/patches/2/cuda-repo-ubuntu1604-9-0-local-cublas-performance-update-2_1.0-1_amd64-deb
-
-sudo dpkg -i cuda-repo-ubuntu1604-9-0-local-cublas-performance-update-2_1.0-1_amd64.deb 
-sudo apt-get update
-sudo apt-get upgrade cuda
+sudo add-apt-repository -y ppa:graphics-drivers
+sudo apt update
+sudo apt install -y nvidia-driver-410
 ```
 
-### cuDNN library
+In order to finalize the installation you need to **reboot your machine**.
 
-Install cuDNN 7.1 library from: [NVIDIA cuDNN Download](https://developer.nvidia.com/rdp/cudnn-download)
+### Install NVIDIA Docker
+Next step is to install [nvidia-docker2](https://github.com/NVIDIA/nvidia-docker) package that allow docker images to directly access the underlying GPU hardware with the CUDA library:
+```bash
+# Add the package repositories
+curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | \
+  sudo apt-key add -
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | \
+  sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+sudo apt-get update
 
-Select option `Download cuDNN v7.1.4 (May 16, 2018), for CUDA 9.0` and version `cuDNN v7.1.4 Runtime Library for Ubuntu16.04 (Deb)`
-
+# Install nvidia-docker2 and reload the Docker daemon configuration
+sudo apt-get install -y nvidia-docker2
+sudo pkill -SIGHUP dockerd
 ```
-curl [...] --output libcudnn7_7.1.4.18-1+cuda9.0_amd64.deb
-sudo dpkg -i libcudnn7_7.1.4.18-1+cuda9.0_amd64.deb
+
+### Run latest ModernMT image
+Finally, you are able to run the latest ModernMT image with Docker:
+```bash
+sudo docker run --runtime=nvidia --rm -it --publish 8045:8045 modernmt/master bash
 ```
 
-## Max open files limit
-The current version of ModernMT does not limit the maximum number of open files for performance reasons. For this reason, if you plan to create an engine with a high number of different domains you could hit the OS limit and MMT will crash.
+Done! Go to [README.md](README.md) to create your first engine.
 
-In order to avoid this error, in Ubuntu 16.04 you have to set the option `nofile` in `/etc/security/limits.conf` to a high limit and restart the machine, for example:
+
+# Install ModernMT from binaries
+
+With every ModernMT release in Github we also include a binary version of the package that can be used directly without the need to compile the source code.
+
+### Install NVIDIA drivers and CUDA Toolkit
+
+First you need to install the **NVIDIA drivers**:
+```bash
+sudo add-apt-repository -y ppa:graphics-drivers
+sudo apt update
+sudo apt install -y nvidia-driver-410
+```
+
+In order to finalize the installation you need to **reboot your machine**.
+
+Then you need to install the **CUDA Toolkit 10**, on Ubuntu 18.04 follow these steps:
+```bash
+# Download .deb package locally
+wget -O cuda-repo-ubuntu1804-10-0-local-10.0.130-410.48_1.0-1_amd64.deb https://developer.nvidia.com/compute/cuda/10.0/Prod/local_installers/cuda-repo-ubuntu1804-10-0-local-10.0.130-410.48_1.0-1_amd64
+
+# Install cuda
+sudo dpkg -i cuda-repo-ubuntu1804-10-0-local-10.0.130-410.48_1.0-1_amd64.deb
+sudo apt-key add /var/cuda-repo-10-0-local-10.0.130-410.48/7fa2af80.pub
+sudo apt update
+sudo apt install -y cuda
+```
+
+Next install the **NVIDIA cuDNN library** from: [NVIDIA cuDNN Download](https://developer.nvidia.com/rdp/cudnn-download). Select the option *"Download cuDNN v7.5.1 (April 22, 2019), for CUDA 10.0"* and then *"cuDNN Runtime Library for Ubuntu18.04 (Deb)"*. Finally simply run this command on the downloaded package:
+```bash
+sudo dpkg -i libcudnn7_7.5.1.10-1+cuda10.0_amd64.deb
+```
+
+### Install Java 8 and Python 3
+
+ModernMT requires Java 8 and Python 3.6 (or higher). If not already installed on your system, you can run the following command:
+```bash
+sudo apt install -y openjdk-8-jdk python3 python3-pip
+```
+
+In order to check if the installation completed successfully you can run these two commands and check the output:
+```bash
+$ java -version
+openjdk version "1.8.0_191"
+[...]
+
+$  python3 --version
+Python 3.6.7
+```
+
+If your output is not the expected one, please go to the [Troubleshooting](#troubleshooting-and-support) section of this guide.
+
+### Download ModernMT
+
+Download the latest ModernMT binary file from [ModernMT releases page](https://github.com/modernmt/modernmt/releases) and extract the archive:
+```bash
+tar xvfz mmt-<version-number>-ubuntu.tar.gz
+rm mmt-*.tar.gz
+cd mmt
+```
+
+Finally install the python dependencies:
+```bash
+pip3 install -r requirements.txt
+```
+
+Done! Go to [README.md](README.md) to create your first engine.
+
+
+# Install ModernMT from source
+
+This option is most suitable for developers, contributors or enthusiasts willing to work with the bleeding-edge development code, before a stable release. Installing ModernMT from source in fact gives you the ability to keep your code continously up-to-date and modify the source code yourself.
+
+### Common installation steps
+
+Please, follow these installation steps from the previous option (binary installation):
+- [Install NVIDIA drivers and CUDA Toolkit](#install-nvidia-drivers-and-cuda-toolkit)
+- [Install Java 8 and Python 3](#install-java-8-and-python-3)
+
+### Install development libraries and tools
+
+Next install Git, Maven, CMake and Boost together with few more c++ libraries with the following command:
+```bash
+sudo apt install -y git maven cmake libboost-all-dev zlib1g-dev libbz2-dev
+```
+
+### Clone ModernMT repository from GitHub
+
+We are now ready to clone the ModernMT repository from Github:
+```bash
+git clone https://github.com/modernmt/modernmt.git modernmt && cd modernmt
+```
+
+Next, run the installation script:
+```bash
+python3 setup.py
+```
+
+Finally you can compile the cource code with maven:
+```bash
+pushd src
+mvn clean install
+popd
+```
+
+You have now a working instance of ModernMT. Go to [README.md](README.md) to create your first engine.
+
+
+# Troubleshooting and support
+
+### "Too many open files" errors when runnning ModernMT
+
+For performance reasons ModernMT does not limit the maximum number of open files. This could lead to errors reporting too many open files, or max open file limit reached.
+
+In order to avoid this error, set the option `nofile` in `/etc/security/limits.conf` to a high limit and restart the machine, for example:
 ```
 * soft nofile 1048576
 * hard nofile 1048576
 ```
 
-# Option 1 - Using Docker
+### Wrong version of Java
 
-**Important**: follow [pre-installation steps](#pre-installation-actions) before continuing with this installation.
-
-If you want to use the NVIDIA CUDA drivers with Docker (recommended for the neural adaptive engine), you need to install [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) tool:
-```
-wget -P /tmp https://github.com/NVIDIA/nvidia-docker/releases/download/v1.0.1/nvidia-docker_1.0.1-1_amd64.deb
-sudo dpkg -i /tmp/nvidia-docker*.deb && rm /tmp/nvidia-docker*.deb
-```
-Then you can pull the modernmt image:
-
-```
-nvidia-docker pull modernmt/master
-```
-
-To run your istance and publish the API on port 8045 of your host, execute
-
-```
-nvidia-docker run -it --publish 8045:8045 modernmt/master bash
-```
-
-Done! go to [README.md](README.md) to create your first engine.
-
-# Option 2 - Install Binaries on Your Server
-
-**Important**: follow [pre-installation steps](#pre-installation-actions) before continuing with this installation.
-
-This release was tested on a clean Ubuntu 16.04 server.
-
-## Libraries that MMT requires:
-
-### Java 8
-Install **Java 8** if not present
+First, check your Java version with the following command:
 ```bash
-sudo add-apt-repository ppa:openjdk-r/ppa && sudo apt-get update && sudo apt-get install openjdk-8-jdk
-```
-
-Check Java version with command:
-
-```
 java -version
 ```
 
-If the first line report a version of Java prior 1.8, you need to **update default Java version**. Run command:
-
-```
+If the first line report a version of Java different from 1.8, you need to **update default Java version**.
+In order to do so, just run the command:
+```bash
 sudo update-alternatives --config java
 ```
 
@@ -131,102 +210,7 @@ There are 2 choices for the alternative java (providing /usr/bin/java).
 Press enter to keep the current choice[*], or type selection number: 2
 ```
 
-### Python module `requests`
-You can install `requests` module with the following commands:
-```bash
-sudo apt-get install python-pip
-pip install -U requests
-```
+### Support
 
-### Tensorflow and Tensor2Tensor
-
-In order to install Tensorflow and Tensor2Tensor just type:
-
-```bash
-pip install -U requests
-pip install numpy==1.14.5
-pip install tensorflow-gpu==1.8.0
-pip install tensor2tensor==1.6.3
-
-pip install --upgrade oauth2client
-```
-
-## Install the MMT Binaries
-
-Download from here: https://github.com/ModernMT/MMT/releases and then untar the files:
-
-```
-tar xvfz mmt-<version-number>.tar.gz
-rm mmt-*.tar.gz
-cd mmt
-```
-
-Done! go to [README.md](README.md)
-
-# Option 3 - Installing from source
-
-**Important**: follow [pre-installation steps](#pre-installation-actions) before continuing with this installation.
-
-The following procedure describes how to build MMT from source in an Ubuntu 16.04 environment.
-
-## Installing third-party libraries
-
-Open a bash shell and type:
-```
-sudo add-apt-repository ppa:george-edison55/cmake-3.x
-sudo add-apt-repository ppa:openjdk-r/ppa
-sudo apt-get update
-
-sudo apt-get install python-pip
-pip install -U requests
-
-sudo apt-get install openjdk-8-jdk zlib1g-dev libbz2-dev libboost-all-dev cmake git maven
-```
-
-### Tensorflow and Tensor2Tensor
-
-In order to install Tensorflow and Tensor2Tensor just type:
-
-```bash
-pip install -U requests
-pip install numpy==1.14.5
-pip install tensorflow-gpu==1.8.0
-pip install tensor2tensor==1.6.3
-
-pip install --upgrade oauth2client
-```
-
-## Install MMT
-
-First, clone ModernMT repository:
-
-```
-git clone https://github.com/ModernMT/MMT.git ModernMT
-
-cd ModernMT
-```
-
-Download MMT dependencies:
-
-```
-cd vendor
-python download_dependencies.py
-cd ..
-```
-
-Check your Java version and if necessary update it and select the latest jdk, as described in the Option 2 paragraph.
-
-You can now build your MMT distribution:
-
-```
-cd src
-mvn clean install
-cd ..
-```
-
-You have now a working instance of MMT. Go to [README.md](README.md) to find how to test your installation.
-
-# Support
-
-You can report issues on [GitHub](https://github.com/ModernMT/MMT/issues).
-For customizations and enterprise support: info@modernmt.eu
+Our [GitHub issues page](https://github.com/ModernMT/MMT/issues) is the best option to search for solutions to your problems or open new issues regarding the code.
+For customizations and enterprise support, please contact us at info@modernmt.eu .

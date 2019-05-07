@@ -134,7 +134,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         if (text.hasWords()) {
             ScoreEntry[] suggestions = null;
 
-            if (contextVector != null) {
+            if (contextVector != null && !contextVector.isEmpty()) {
                 long begin = System.currentTimeMillis();
 
                 try {

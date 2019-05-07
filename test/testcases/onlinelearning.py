@@ -1,57 +1,22 @@
-# coding=utf-8
 import os
 import shutil
-import tarfile
-import unittest
+import time
 
-from commons import ModernMT, CompactCorpus
-
-RES_FOLDER = os.path.abspath(os.path.join(__file__, os.pardir, 'res', 'onlinelearning'))
+from cli.mmt.fileformats import CompactFileFormat
+from testcases import ModernMTTestCase, TEST_RESOURCES
 
 
-class _OnlineLearningTest(unittest.TestCase):
-    """
-    Content of engine.xconf:
+class __OnlineLearningTest(ModernMTTestCase):
+    mmt_engine_archive = os.path.join(TEST_RESOURCES, 'multilingual_echo_engine.tar.gz')
 
-    <engine type="neural">
-        <languages>
-            <pair source="en" target="fr" />
-            <pair source="fr" target="en" />
+    CORPUS_DE = CompactFileFormat('en', 'de', os.path.join(TEST_RESOURCES, 'onlinelearning', 'Memory.en__de.cfc'))
+    CORPUS_ES = CompactFileFormat('en', 'es', os.path.join(TEST_RESOURCES, 'onlinelearning', 'Memory.en__es.cfc'))
+    CORPUS_FR = CompactFileFormat('en', 'fr', os.path.join(TEST_RESOURCES, 'onlinelearning', 'Memory.en__fr.cfc'))
+    CORPUS_IT = CompactFileFormat('en', 'it', os.path.join(TEST_RESOURCES, 'onlinelearning', 'Memory.en__it.cfc'))
+    CORPUS_ZH = CompactFileFormat('en', 'zh', os.path.join(TEST_RESOURCES, 'onlinelearning', 'Memory.en__zh.cfc'))
 
-            <pair source="en" target="it" />
-
-            <pair source="en" target="es-ES" />
-            <pair source="en" target="es-MX" />
-
-            <pair source="en" target="zh-TW" />
-            <pair source="en" target="zh-CN" />
-            <pair source="zh" target="en" />
-
-            <rules>
-                <rule lang="zh" from="zh-HK" to="zh-TW" />
-                <rule lang="zh" from="*" to="zh-CN" />
-
-                <rule lang="es" from="es" to="es-ES" />
-                <rule lang="es" from="*" to="es-MX" />
-            </rules>
-        </languages>
-    </engine>
-    """
-    mmt = ModernMT('OnlineLearningTest')
-    _engine_tar = os.path.join(RES_FOLDER, 'engine.tar.gz')
-
-    def setUp(self):
-        self.mmt.delete_engine()
-
-        tar = tarfile.open(self._engine_tar, 'r:gz')
-        tar.extractall(os.path.abspath(os.path.join(self.mmt.engine_path, os.pardir)))
-        tar.close()
-
-        self.mmt.start()
-
-    def tearDown(self):
-        self.mmt.stop()
-        self.mmt.delete_engine()
+    ALL_CORPORA = [CORPUS_DE, CORPUS_ES, CORPUS_FR, CORPUS_IT, CORPUS_ZH]
+    ACCEPTED_CORPORA = [CORPUS_ES, CORPUS_FR, CORPUS_IT, CORPUS_ZH]
 
     # Assertion
 
@@ -69,281 +34,247 @@ class _OnlineLearningTest(unittest.TestCase):
         self.assertIn((sentence, translation), content)
 
 
-class OnlineLearningLanguageTest(_OnlineLearningTest):
+class OnlineLearningLanguageTest(__OnlineLearningTest):
+    def _get_context(self, tgt_lang):
+        context = self.mmt.api.get_context_s('en', tgt_lang, 'This is example')
+        return [e['memory']['id'] for e in context] if context is not None else None
+
+    def _translate(self, memories, tgt_lang):
+        context = [{'memory': int(m['id']), 'score': 1} for m in memories.values()]
+        result = self.mmt.api.translate('en', tgt_lang, 'This is example', context=context)
+        return result['translation']
+
     def test_import_with_all_language_combinations(self):
         memories = {}
 
-        for source, target in [('en', 'de'), ('en', 'fr'), ('en', 'it'), ('en', 'es'), ('en', 'zh')]:
-            corpus = CompactCorpus(os.path.join(RES_FOLDER, 'Memory.%s__%s.cpt' % (source, target)))
-            memory = self.mmt.import_corpus(compact=corpus.path)
+        for corpus in self.ALL_CORPORA:
+            memory = self.mmt.api.create_memory(corpus.name)
+            job = self.mmt.api.import_into_memory(memory['id'], compact=corpus.file_path)
+            self.mmt.wait_import_job(job)
 
-            memories['%s_%s' % (source, target)] = memory
+            memories[corpus.name] = memory
 
         self._verify_index_integrity(memories)
 
     def test_add_with_all_language_combinations(self):
         memories = {}
 
-        for source, target in [('en', 'de'), ('en', 'fr'), ('en', 'it'), ('en', 'es'), ('en', 'zh')]:
-            corpus = CompactCorpus(os.path.join(RES_FOLDER, 'Memory.%s__%s.cpt' % (source, target)))
-            memory = self.mmt.api.create_memory('Memory.%s__%s' % (source, target))
+        for corpus in self.ALL_CORPORA:
+            memory = self.mmt.api.create_memory(corpus.name)
 
             job = None
-            with corpus.reader() as reader:
-                for s, t, sentence, translation in reader:
-                    job = self.mmt.api.append_to_memory(s, t, memory['id'], sentence, translation)
+            with corpus.reader_with_languages() as reader:
+                for src_lang, tgt_lang, src_line, tgt_line in reader:
+                    job = self.mmt.api.append_to_memory(src_lang, tgt_lang, memory['id'], src_line, tgt_line)
 
             if job is not None:
-                self.mmt.wait_job(job)
+                self.mmt.wait_import_job(job)
 
-            memories['%s_%s' % (source, target)] = memory
+            memories[corpus.name] = memory
 
         self._verify_index_integrity(memories)
 
     def _verify_index_integrity(self, memories):
-        tm_content = self.mmt.memory.dump()
+        time.sleep(3)  # wait Context Analyzer indexing timer
 
-        self.assertEqual({2, 3, 4, 5}, self.mmt.context_analyzer.get_domains())
-        self.assertEqual({2, 3, 4, 5}, tm_content.get_domains())
+        # Verify Context Analyzer index
+        for corpus in self.ACCEPTED_CORPORA:
+            memory = memories[corpus.name]
+            context = self._get_context(corpus.tgt_lang)
 
-        # en__de
-        memory = memories['en_de']
-        ctx_source = self.mmt.context_analyzer.get_content(memory['id'], 'en', 'de')
-        ctx_target = self.mmt.context_analyzer.get_content(memory['id'], 'de', 'en')
-        mem_data = tm_content.get_content(memory['id'], 'de', 'en')
+            self.assertEqual(1, len(context))
+            self.assertIn(memory['id'], context)
 
-        self.assertEqual(0, len(ctx_source))
-        self.assertEqual(0, len(ctx_target))
-        self.assertEqual(0, len(mem_data))
+        # Verify Memory index
+        es_translation = self._translate(memories, 'es')
+        fr_translation = self._translate(memories, 'fr')
+        it_translation = self._translate(memories, 'it')
+        zh_translation = self._translate(memories, 'zh')
 
-        # en__fr
-        memory = memories['en_fr']
-        ctx_source = self.mmt.context_analyzer.get_content(memory['id'], 'en', 'fr')
-        ctx_target = self.mmt.context_analyzer.get_content(memory['id'], 'fr', 'en')
-        mem_data = tm_content.get_content(memory['id'], 'en', 'fr')
+        self.assertIn('Esto es ejemplo', es_translation)
+        self.assertIn('C\'est', fr_translation)
+        self.assertIn('Questo è un esempio', it_translation)
+        self.assertIn('这是', zh_translation)
 
-        self.assertEqual(8, len(ctx_source))
-        self.assertEqual(8, len(ctx_target))
-
-        for i in range(1, 9):
-            self.assertInContent(ctx_source, u'This is en__fr example ' + (u'O' * i))
-        for i in range(1, 9):
-            self.assertInContent(ctx_target, u'C\'est en__fr exemple ' + (u'O' * i))
-
-        self.assertEqual(8, len(mem_data))
-
-        for i in range(1, 9):
-            self.assertInParallelContent(mem_data,
-                                         u'This is en__fr example ' + (u'O' * i),
-                                         u'C\'est en__fr exemple ' + (u'O' * i))
-
-        # en__it
-        memory = memories['en_it']
-        ctx_source = self.mmt.context_analyzer.get_content(memory['id'], 'en', 'it')
-        ctx_target = self.mmt.context_analyzer.get_content(memory['id'], 'it', 'en')
-        mem_data = tm_content.get_content(memory['id'], 'en', 'it')
-
-        self.assertEqual(8, len(ctx_source))
-        self.assertEqual(8, len(ctx_target))
-
-        for i in range(1, 9):
-            self.assertInContent(ctx_source, u'This is en__it example ' + (u'O' * i))
-        for i in range(1, 9):
-            self.assertInContent(ctx_target, u'Questo è un esempio en__it ' + (u'O' * i))
-
-        self.assertEqual(8, len(mem_data))
-
-        for i in range(1, 9):
-            self.assertInParallelContent(mem_data,
-                                         u'This is en__it example ' + (u'O' * i),
-                                         u'Questo è un esempio en__it ' + (u'O' * i))
-
-        # en__es
-        memory = memories['en_es']
-        ctx_source = self.mmt.context_analyzer.get_content(memory['id'], 'en', 'es')
-        ctx_target = self.mmt.context_analyzer.get_content(memory['id'], 'es', 'en')
-        es_mem_data = tm_content.get_content(memory['id'], 'en', 'es-ES')
-        mx_mem_data = tm_content.get_content(memory['id'], 'en', 'es-MX')
-
-        self.assertEqual(10, len(ctx_source))
-        self.assertEqual(10, len(ctx_target))
-
-        for i in range(1, 11):
-            self.assertInContent(ctx_source, u'This is en__es example ' + (u'O' * i))
-        for i in range(1, 11):
-            self.assertInContent(ctx_target, u'Esto es ejemplo en__es ' + (u'O' * i))
-
-        self.assertEqual(4, len(es_mem_data))
-
-        for i in [1, 2, 6, 7]:
-            self.assertInParallelContent(es_mem_data,
-                                         u'This is en__es example ' + (u'O' * i),
-                                         u'Esto es ejemplo en__es ' + (u'O' * i))
-
-        self.assertEqual(6, len(mx_mem_data))
-
-        for i in [3, 4, 5, 8, 9, 10]:
-            self.assertInParallelContent(mx_mem_data,
-                                         u'This is en__es example ' + (u'O' * i),
-                                         u'Esto es ejemplo en__es ' + (u'O' * i))
-
-        # en__zh
-        memory = memories['en_zh']
-        ctx_source = self.mmt.context_analyzer.get_content(memory['id'], 'en', 'zh')
-        ctx_target = self.mmt.context_analyzer.get_content(memory['id'], 'zh', 'en')
-        cn_mem_data = tm_content.get_content(memory['id'], 'en', 'zh-CN')
-        tw_mem_data = tm_content.get_content(memory['id'], 'en', 'zh-TW')
-        mem_data = tm_content.get_content(memory['id'], 'en', 'zh')
-
-        self.assertEqual(12, len(ctx_source))
-        self.assertEqual(12, len(ctx_target))
-
-        for i in range(1, 13):
-            self.assertInContent(ctx_source, u'The en__zh example ' + (u'O' * i))
-        for i in range(1, 13):
-            self.assertInContent(ctx_target, u'这是en__zh例子' + (u'O' * i))
-
-        self.assertEqual(6, len(cn_mem_data))
-        self.assertEqual(6, len(tw_mem_data))
-        self.assertEqual(0, len(mem_data))
-
-        for i in [1, 2, 3, 7, 8, 9]:
-            self.assertInParallelContent(cn_mem_data,
-                                         u'The en__zh example ' + (u'O' * i),
-                                         u'这是en__zh例子' + (u'O' * i))
-        for i in [4, 5, 6, 10, 11, 12]:
-            self.assertInParallelContent(tw_mem_data,
-                                         u'The en__zh example ' + (u'O' * i),
-                                         u'这是en__zh例子' + (u'O' * i))
-
-
-class OnlineLearningChannelsTest(_OnlineLearningTest):
-    def setUp(self):
-        super(OnlineLearningChannelsTest, self).setUp()
-
-    def _prepare_partial(self, context=True, memory=True):
-        self.mmt.add_contributions('en', 'it', [
-            (u'This is en__it example O', u'Questo è un esempio en__it O'),
-            (u'This is en__it example OO', u'Questo è un esempio en__it OO'),
-            (u'This is en__it example OOO', u'Questo è un esempio en__it OOO'),
-            (u'This is en__it example OOOO', u'Questo è un esempio en__it OOOO')])
+        # Dump engine content
         self.mmt.stop()
 
-        os.rename(self.mmt.context_analyzer.path, self.mmt.context_analyzer.path + '.bak')
-        os.rename(self.mmt.memory.path, self.mmt.memory.path + '.bak')
+        context_analyzer = self.mmt.dump_context_analyzer()
+        translation_memory = self.mmt.dump_translation_memory()
 
-        self.mmt.start()
-        self.mmt.add_contributions('en', 'it', [
-            (u'This is en__it example OOOOO', u'Questo è un esempio en__it OOOOO'),
-            (u'This is en__it example OOOOOO', u'Questo è un esempio en__it OOOOOO'),
-            (u'This is en__it example OOOOOOO', u'Questo è un esempio en__it OOOOOOO'),
-            (u'This is en__it example OOOOOOOO', u'Questo è un esempio en__it OOOOOOOO')], memory=1)
+        # Verify Context Analyzer content
+        self.assertEqual(4, len(context_analyzer))
+
+        for corpus in self.ACCEPTED_CORPORA:
+            memory = memories[corpus.name]
+            memory_id = int(memory['id'])
+
+            self.assertIn(memory_id, context_analyzer)
+            content = context_analyzer[memory_id]
+
+            with corpus.reader_with_languages() as reader:
+                for src_lang, tgt_lang, src_line, tgt_line in reader:
+                    self.assertIn((src_lang, tgt_lang, src_line), content)
+                    self.assertIn((tgt_lang, src_lang, tgt_line), content)
+
+        # Verify Memory content
+        self.assertEqual(4, len(translation_memory))
+
+        for corpus in self.ACCEPTED_CORPORA:
+            memory = memories[corpus.name]
+            memory_id = int(memory['id'])
+
+            self.assertIn(memory_id, translation_memory)
+            content = translation_memory[memory_id]
+
+            with corpus.reader_with_languages() as reader:
+                for src_lang, tgt_lang, src_line, tgt_line in reader:
+                    self.assertIn((src_lang, tgt_lang, src_line, tgt_line), content)
+
+
+class OnlineLearningChannelsTest(__OnlineLearningTest):
+    CONTENT = [('This is en__it example %d' % i, u'Questo è un esempio en__it %d' % i) for i in range(1, 9)]
+
+    def _setup(self, context='full', memory='full'):
+        def load(entries):
+            job = None
+            for segment, translation in entries:
+                job = self.mmt.api.append_to_memory('en', 'it', 1, segment, translation)
+            self.mmt.wait_import_job(job)
+
+        def restore_model(lvl, path, path_bak):
+            if lvl == 'full':
+                shutil.rmtree(path_bak)
+            else:
+                shutil.rmtree(path)
+                if lvl == 'partial':
+                    os.rename(path_bak, path)
+
+        assert context in ['full', 'partial', 'empty']
+        assert memory in ['full', 'partial', 'empty']
+
+        context_path = os.path.join(self.mmt.engine.models_path, 'context')
+        context_path_bak = context_path + '.bak'
+        memory_path = os.path.join(self.mmt.engine.models_path, 'decoder', 'memory')
+        memory_path_bak = memory_path + '.bak'
+
+        self.mmt.api.create_memory('test')
+        load(self.CONTENT[:5])
         self.mmt.stop()
 
-        if context:
-            shutil.rmtree(self.mmt.context_analyzer.path)
-            os.rename(self.mmt.context_analyzer.path + '.bak', self.mmt.context_analyzer.path)
-
-        if memory:
-            shutil.rmtree(self.mmt.memory.path)
-            os.rename(self.mmt.memory.path + '.bak', self.mmt.memory.path)
+        os.rename(context_path, context_path_bak)
+        os.rename(memory_path, memory_path_bak)
 
         self.mmt.start()
+        load(self.CONTENT[5:])
+        self.mmt.stop()
+
+        restore_model(context, context_path, context_path_bak)
+        restore_model(memory, memory_path, memory_path_bak)
 
     def _verify_index_integrity(self):
-        ctx_source = self.mmt.context_analyzer.get_content(1, 'en', 'it')
-        ctx_target = self.mmt.context_analyzer.get_content(1, 'it', 'en')
-        mem_data = self.mmt.memory.dump().get_content(1, 'en', 'it')
+        # Dump engine content
+        self.mmt.stop()
 
-        self.assertEqual(8, len(ctx_source))
-        self.assertEqual(8, len(ctx_target))
+        context_analyzer = self.mmt.dump_context_analyzer()
+        translation_memory = self.mmt.dump_translation_memory()
 
-        for i in range(1, 9):
-            self.assertInContent(ctx_source, u'This is en__it example ' + (u'O' * i))
-        for i in range(1, 9):
-            self.assertInContent(ctx_target, u'Questo è un esempio en__it ' + (u'O' * i))
+        # Verify Context Analyzer content
+        self.assertEqual(1, len(context_analyzer))
+        self.assertIn(1, context_analyzer)
+        content = context_analyzer[1]
 
-        self.assertEqual(8, len(mem_data))
+        for src_line, tgt_line in self.CONTENT:
+            self.assertIn(('en', 'it', src_line), content)
+            self.assertIn(('it', 'en', tgt_line), content)
 
-        for i in range(1, 9):
-            self.assertInParallelContent(mem_data,
-                                         u'This is en__it example ' + (u'O' * i),
-                                         u'Questo è un esempio en__it ' + (u'O' * i))
+        # Verify Memory content
+        self.assertEqual(1, len(translation_memory))
+        self.assertIn(1, translation_memory)
+        content = translation_memory[1]
+
+        for src_line, tgt_line in self.CONTENT:
+            self.assertIn(('en', 'it', src_line, tgt_line), content)
 
     # Tests
 
     def test_single_contribution(self):
-        self.mmt.add_contributions('en', 'it', [(u'Hello world', u'Ciao mondo')])
+        self.mmt.api.create_memory('test')
+        job = self.mmt.api.append_to_memory('en', 'it', 1, 'Hello world', 'Ciao mondo')
+        self.mmt.wait_import_job(job)
 
-        ctx_source = self.mmt.context_analyzer.get_content(1, 'en', 'it')
-        ctx_target = self.mmt.context_analyzer.get_content(1, 'it', 'en')
-        mem_data = self.mmt.memory.dump().get_content(1, 'en', 'it')
-
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(0, 0))
-
-        self.assertEqual(1, len(ctx_source))
-        self.assertEqual(1, len(ctx_target))
-        self.assertEqual(1, len(mem_data))
-
-        self.assertInContent(ctx_source, u'Hello world')
-        self.assertInContent(ctx_target, u'Ciao mondo')
-        self.assertInParallelContent(mem_data, u'Hello world', u'Ciao mondo')
-
-    def test_upload_domain(self):
-        corpus = CompactCorpus(os.path.join(RES_FOLDER, 'Memory.en__it.cpt'))
-        self.mmt.import_corpus(compact=corpus.path)
-
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(7, 0))
-        self._verify_index_integrity()
-
-    def test_updating_from_scratch_all(self):
-        corpus = CompactCorpus(os.path.join(RES_FOLDER, 'Memory.en__it.cpt'))
-        self.mmt.import_corpus(compact=corpus.path)
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(7, 0))
+        self.assertEqual({0: 0, 1: 0}, self.mmt.get_channels())
 
         self.mmt.stop()
-        shutil.rmtree(self.mmt.memory.path)
-        shutil.rmtree(self.mmt.context_analyzer.path)
-        self.mmt.start()
 
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(7, 0))
+        context_analyzer = self.mmt.dump_context_analyzer()
+        translation_memory = self.mmt.dump_translation_memory()
+
+        # Verify Context Analyzer content
+        self.assertEqual(1, len(context_analyzer))
+        self.assertIn(1, context_analyzer)
+        self.assertIn(('en', 'it', 'Hello world'), context_analyzer[1])
+        self.assertIn(('it', 'en', 'Ciao mondo'), context_analyzer[1])
+
+        # Verify Memory content
+        self.assertEqual(1, len(translation_memory))
+        self.assertIn(1, translation_memory)
+        self.assertIn(('en', 'it', 'Hello world', 'Ciao mondo'), translation_memory[1])
+
+    def test_upload_memory(self):
+        self.mmt.api.create_memory('test')
+        job = self.mmt.api.import_into_memory(1, compact=self.CORPUS_IT.file_path)
+        self.mmt.wait_import_job(job)
+
+        self.assertEqual({0: 7, 1: 0}, self.mmt.get_channels())
+        self.mmt.stop()
+
+        context_analyzer = self.mmt.dump_context_analyzer()
+        translation_memory = self.mmt.dump_translation_memory()
+
+        self.assertIn(1, context_analyzer)
+        self.assertEqual(16, len(context_analyzer[1]))
+        self.assertIn(1, translation_memory)
+        self.assertEqual(8, len(translation_memory[1]))
+
+    def test_updating_from_scratch_all(self):
+        self._setup(context='empty', memory='empty')
+
+        self.mmt.start()
+        self.assertEqual({0: 0, 1: 7}, self.mmt.get_channels())
         self._verify_index_integrity()
 
     def test_updating_from_scratch_context(self):
-        corpus = CompactCorpus(os.path.join(RES_FOLDER, 'Memory.en__it.cpt'))
-        self.mmt.import_corpus(compact=corpus.path)
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(7, 0))
+        self._setup(context='empty', memory='full')
 
-        self.mmt.stop()
-        shutil.rmtree(self.mmt.context_analyzer.path)
         self.mmt.start()
-
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(7, 0))
+        self.assertEqual({0: 0, 1: 7}, self.mmt.get_channels())
         self._verify_index_integrity()
 
     def test_updating_from_scratch_memory(self):
-        corpus = CompactCorpus(os.path.join(RES_FOLDER, 'Memory.en__it.cpt'))
-        self.mmt.import_corpus(compact=corpus.path)
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(7, 0))
+        self._setup(context='full', memory='empty')
 
-        self.mmt.stop()
-        shutil.rmtree(self.mmt.memory.path)
         self.mmt.start()
-
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(7, 0))
+        self.assertEqual({0: 0, 1: 7}, self.mmt.get_channels())
         self._verify_index_integrity()
 
     def test_updating_partial_all(self):
-        self._prepare_partial()
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(0, 7))
+        self._setup(context='partial', memory='partial')
+
+        self.mmt.start()
+        self.assertEqual({0: 0, 1: 7}, self.mmt.get_channels())
         self._verify_index_integrity()
 
     def test_updating_partial_context(self):
-        self._prepare_partial(context=True, memory=False)
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(0, 7))
+        self._setup(context='partial', memory='full')
+
+        self.mmt.start()
+        self.assertEqual({0: 0, 1: 7}, self.mmt.get_channels())
         self._verify_index_integrity()
 
     def test_updating_partial_memory(self):
-        self._prepare_partial(context=False, memory=True)
-        self.assertEqual(self.mmt.get_channels(), ModernMT.Channels(0, 7))
+        self._setup(context='full', memory='partial')
+
+        self.mmt.start()
+        self.assertEqual({0: 0, 1: 7}, self.mmt.get_channels())
         self._verify_index_integrity()
