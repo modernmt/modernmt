@@ -2,7 +2,7 @@ import threading
 import time
 from multiprocessing.dummy import Pool
 from queue import Queue
-from random import random, randint
+import random
 
 import requests
 
@@ -251,7 +251,7 @@ class GoogleTranslate(TranslateEngine):
             'target': self._normalize_language(self.target_lang),
             'q': text,
             'key': self._key,
-            'userip': '.'.join(map(str, (randint(0, 200) for _ in range(4))))
+            'userip': '.'.join(map(str, (random.randint(0, 200) for _ in range(4))))
         }
 
         headers = {
