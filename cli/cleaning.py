@@ -20,7 +20,7 @@ def _filtered_corpus(stats, src_lang, tgt_lang, name, in_path, score_path):
         if os.path.getsize(src_file) > 0 or os.path.getsize(tgt_file) > 0:
             raise IOError('File not found: %s' % score_file)
         else:
-            raise StopIteration
+            return
 
     with open(src_file, 'r', encoding='utf-8') as src_file_obj, \
             open(tgt_file, 'r', encoding='utf-8') as tgt_file_obj, \
