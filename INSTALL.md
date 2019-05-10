@@ -144,7 +144,6 @@ In order to install Tensorflow and Tensor2Tensor just type:
 
 ```bash
 pip install -U requests
-pip install numpy==1.14.5
 pip install tensorflow-gpu==1.8.0
 pip install tensor2tensor==1.6.3
 
@@ -189,7 +188,6 @@ In order to install Tensorflow and Tensor2Tensor just type:
 
 ```bash
 pip install -U requests
-pip install numpy==1.14.5
 pip install tensorflow-gpu==1.8.0
 pip install tensor2tensor==1.6.3
 
