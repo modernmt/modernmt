@@ -10,7 +10,9 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class AbbreviationAnnotator implements BaseTokenizer.Annotator {
@@ -18,16 +20,20 @@ public class AbbreviationAnnotator implements BaseTokenizer.Annotator {
     private static final ConcurrentHashMap<String, AbbreviationAnnotator> instances = new ConcurrentHashMap<>(64);
 
     public static AbbreviationAnnotator getInstance(Language language) {
+        return getInstance(language, false);
+    }
+
+    public static AbbreviationAnnotator getInstance(Language language, boolean caseless) {
         return instances.computeIfAbsent(language.getLanguage(), lang -> {
             try {
-                return new AbbreviationAnnotator(lang + ".txt");
+                return new AbbreviationAnnotator(lang + ".txt", caseless);
             } catch (IOException e) {
                 throw new RuntimeIOException(e);
             }
         });
     }
 
-    private static HashSet<String> readResource(String resourceName) throws IOException {
+    private static HashMap<String, Boolean> readResource(String resourceName, boolean caseless) throws IOException {
         UnixLineReader reader = null;
 
         try {
@@ -37,7 +43,7 @@ public class AbbreviationAnnotator implements BaseTokenizer.Annotator {
 
             reader = new UnixLineReader(stream, UTF8Charset.get());
 
-            HashSet<String> words = new HashSet<>();
+            HashMap<String, Boolean> words = new HashMap<>();
             String line;
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
@@ -45,7 +51,25 @@ public class AbbreviationAnnotator implements BaseTokenizer.Annotator {
                 if (line.isEmpty() || line.charAt(0) == '#')
                     continue;
 
-                words.add(line);
+                Boolean value;
+
+                if (line.endsWith("#NUMERIC_ONLY#")) {
+                    line = line.replace("#NUMERIC_ONLY#", "").trim();
+                    value = Boolean.TRUE;
+                } else {
+                    value = Boolean.FALSE;
+                }
+
+                if (line.length() < 2 || line.charAt(line.length() - 1) != '.')
+                    throw new IOException("Invalid word in abbreviations file: " + line);
+
+                if (caseless && line.length() > 2)  // 1 char + full-stop
+                    line = line.toLowerCase();
+
+                if (words.containsKey(line))
+                    throw new IOException("Duplicate word in abbreviations file: " + line);
+
+                words.put(line, value);
             }
 
             if (words.isEmpty())
@@ -57,11 +81,15 @@ public class AbbreviationAnnotator implements BaseTokenizer.Annotator {
         }
     }
 
-    private char[] getAlphabet(HashSet<String> words) {
+    private static char[] getAlphabet(Set<String> words, boolean caseless) {
         HashSet<Character> set = new HashSet<>();
         for (String word : words) {
-            for (int i = 0; i < word.length(); i++)
+            if (caseless)
+                word = word.toLowerCase();
+
+            for (int i = 0; i < word.length(); i++) {
                 set.add(word.charAt(i));
+            }
         }
 
         int i = 0;
@@ -73,15 +101,20 @@ public class AbbreviationAnnotator implements BaseTokenizer.Annotator {
     }
 
     private static final char[] SEPARATORS = " !¡\\#$%&\"'*+,-./:;<=>?¿@[]^_`{|}~()".toCharArray();
-    private final HashSet<String> words;
+    private final HashMap<String, Boolean> words;
     private final char[] alphabet;
+    private final boolean caseless;
 
-    private AbbreviationAnnotator(String resourceName) throws IOException {
-        this.words = readResource(resourceName);
-        this.alphabet = getAlphabet(words);
+    private AbbreviationAnnotator(String resourceName, boolean caseless) throws IOException {
+        this.words = readResource(resourceName, caseless);
+        this.alphabet = getAlphabet(words.keySet(), caseless);
+        this.caseless = caseless;
     }
 
-    private static boolean contains(char[] chars, char c) {
+    private boolean contains(char[] chars, char c) {
+        if (this.caseless)
+            c = Character.toLowerCase(c);
+
         for (char o : chars) {
             if (o == c)
                 return true;
@@ -92,6 +125,9 @@ public class AbbreviationAnnotator implements BaseTokenizer.Annotator {
 
     private int getLongestMatch(String chars, int end) {
         int result = -1;
+        boolean digitFollows = end + 2 < chars.length()
+                && chars.charAt(end + 1) == ' '
+                && Character.isDigit(chars.charAt(end + 2));
 
         for (int i = end - 1; i >= 0; i--) {
             char c = chars.charAt(i);
@@ -99,7 +135,12 @@ public class AbbreviationAnnotator implements BaseTokenizer.Annotator {
 
             if (contains(SEPARATORS, c)) {
                 String word = chars.substring(i + 1, end + 1);
-                if (this.words.contains(word))
+
+                if (caseless && word.length() > 2)  // 1 char + full-stop
+                    word = word.toLowerCase();
+
+                Boolean numberOnly = this.words.get(word);
+                if (numberOnly != null && (!numberOnly || digitFollows))
                     result = i + 1;
             }
 

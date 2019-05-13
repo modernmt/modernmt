@@ -6,8 +6,6 @@ import eu.modernmt.processing.tokenizer.jflex.JFlexTokenAnnotator;
 
 //pyflex class JFlexTokenAnnotator
 
-//pyflex prefixes ../prefixes/it.txt caseless
-
 ItalianContractions = [:letter:]\'[:letter:]
 
 %%
