@@ -5,7 +5,6 @@ import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.tokenizer.BaseTokenizer;
 import eu.modernmt.processing.tokenizer.abbr.AbbreviationAnnotator;
 import eu.modernmt.processing.tokenizer.jflex.annotators.CommonTermsTokenAnnotator;
-import eu.modernmt.processing.tokenizer.jflex.annotators.FinnishTokenAnnotator;
 
 import java.io.Reader;
 
