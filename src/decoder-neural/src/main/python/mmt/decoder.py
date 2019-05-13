@@ -92,44 +92,33 @@ class ModelConfig(object):
 
 
 class MMTDecoder(object):
-    def __init__(self, checkpoints, device=None, beam_size=5, use_fp16=False, tuning_ops=None):
-        self._model = TransformerModel.build_model(checkpoints.args, checkpoints.task)
-        self._checkpoints = checkpoints
-        self._device = device
-
-        self._logger = logging.getLogger('Transformer')
-
-        self._nn_needs_reset = True
-        self._checkpoint = None
-
-        torch.manual_seed(checkpoints.args.seed)
+    @classmethod
+    def _create_model(cls, checkpoints, device, beam_size, use_fp16):
+        model = TransformerModel.build_model(checkpoints.args, checkpoints.task)
 
         # Custom make_generation_fast_
-        eval_fn, train_fn = self._model.eval, self._model.train
-        self._model.eval = lambda: None
+        eval_fn, train_fn = model.eval, model.train
+        model.eval = lambda: None
 
-        self._model.make_generation_fast_(
+        model.make_generation_fast_(
             beamable_mm_beam_size=None if beam_size == 0 else beam_size,
             need_attn=True,  # --print-alignment
         )
 
-        self._model.eval, self._model.train = eval_fn, train_fn
+        model.eval, model.train = eval_fn, train_fn
 
-        # Model init
         if device is not None:
             torch.cuda.set_device(device)
-            self._model = self._model.cuda(device)
+            model = model.cuda(device)
 
         if use_fp16:
-            self._model.half()
+            model.half()
 
-        # Translator and tuner init
-        self._max_positions = fairseq.utils.resolve_max_positions(
-            checkpoints.task.max_positions(),
-            self._model.max_positions(),
-        )
+        return model
 
-        self._translator = SequenceGenerator(
+    @classmethod
+    def _create_translator(cls, checkpoints, beam_size):
+        return SequenceGenerator(
             checkpoints.task.target_dictionary, beam_size=beam_size,
             max_len_a=0, max_len_b=1, min_len=1,
             stop_early=True, normalize_scores=True,
@@ -138,7 +127,27 @@ class MMTDecoder(object):
             diverse_beam_groups=1, diverse_beam_strength=0.5
         )
 
-        self._tuner = Tuner(checkpoints.args, checkpoints.task, self._model, tuning_ops=tuning_ops, device=device)
+    @classmethod
+    def _create_tuner(cls, checkpoints, model, tuning_ops, device):
+        return Tuner(checkpoints.args, checkpoints.task, model, tuning_ops=tuning_ops, device=device)
+
+    def __init__(self, checkpoints, device=None, beam_size=5, use_fp16=False, tuning_ops=None):
+        torch.manual_seed(checkpoints.args.seed)
+
+        self._checkpoints = checkpoints
+        self._device = device
+        self._model = self._create_model(checkpoints, device=device, beam_size=beam_size, use_fp16=use_fp16)
+        self._translator = self._create_translator(checkpoints, beam_size)
+        self._tuner = self._create_tuner(checkpoints, self._model, tuning_ops, device)
+        self._max_positions = fairseq.utils.resolve_max_positions(
+            checkpoints.task.max_positions(),
+            self._model.max_positions(),
+        )
+
+        self._logger = logging.getLogger('Transformer')
+
+        self._nn_needs_reset = True
+        self._checkpoint = None
 
     # - High level functions -------------------------------------------------------------------------------------------
 
