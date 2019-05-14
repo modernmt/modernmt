@@ -12,7 +12,7 @@ PossessiveCase = \'s" "
 %%
 
 /* Default Ignore */
-.                                                                                                       { /* ignore */ }
+.                                                                                                                       { /* ignore */ }
 
-{EnglishContractions}                                               { yypushback(1); return PROTECT_RIGHT; }
-{PossessiveCase}                                                    { yypushback(1); return PROTECT; }
+{EnglishContractions}                                                                                                   { return protect(2, 0); }
+{PossessiveCase}                                                                                                        { return protect(1, 1); }

@@ -66,8 +66,9 @@ public class AbbreviationAnnotator implements BaseTokenizer.Annotator {
                 if (caseless && line.length() > 2)  // 1 char + full-stop
                     line = line.toLowerCase();
 
-                if (words.containsKey(line))
-                    throw new IOException("Duplicate word in abbreviations file: " + line);
+                Boolean oldValue = words.get(line);
+                if (oldValue != null && oldValue != value)
+                    throw new IOException("Inconsistent word rule in abbreviations file: " + line);
 
                 words.put(line, value);
             }
@@ -100,14 +101,26 @@ public class AbbreviationAnnotator implements BaseTokenizer.Annotator {
         return alphabet;
     }
 
+    private int getMaxLength(Set<String> words) {
+        int len = 0;
+        for (String word : words) {
+            if (word.length() > len)
+                len = word.length();
+        }
+
+        return len;
+    }
+
     private static final char[] SEPARATORS = " !¡\\#$%&\"'*+,-./:;<=>?¿@[]^_`{|}~()".toCharArray();
     private final HashMap<String, Boolean> words;
     private final char[] alphabet;
     private final boolean caseless;
+    private final int maxLength;
 
     private AbbreviationAnnotator(String resourceName, boolean caseless) throws IOException {
         this.words = readResource(resourceName, caseless);
         this.alphabet = getAlphabet(words.keySet(), caseless);
+        this.maxLength = getMaxLength(words.keySet());
         this.caseless = caseless;
     }
 
@@ -129,7 +142,9 @@ public class AbbreviationAnnotator implements BaseTokenizer.Annotator {
                 && chars.charAt(end + 1) == ' '
                 && Character.isDigit(chars.charAt(end + 2));
 
-        for (int i = end - 1; i >= 0; i--) {
+        int left = Math.max(0, end - maxLength);
+
+        for (int i = end - 1; i >= left; i--) {
             char c = chars.charAt(i);
             boolean acceptable = contains(this.alphabet, c);
 

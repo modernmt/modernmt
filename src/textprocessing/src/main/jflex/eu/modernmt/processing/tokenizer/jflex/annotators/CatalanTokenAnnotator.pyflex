@@ -11,6 +11,6 @@ CatalanContractions = [:letter:]\'[:letter:]
 %%
 
 /* Default Ignore */
-.                                                                                                       { /* ignore */ }
+.                                                                                                                       { /* ignore */ }
 
-{CatalanContractions}                                                                 { yypushback(1); return PROTECT; }
+//{CatalanContractions}                                                                 { yypushback(1); return PROTECT; }

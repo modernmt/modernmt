@@ -56,52 +56,52 @@ Number     = ((\-|\+)?[0-9]+)?([\.,][0-9]+)*
 %%
 
 /* Default Ignore */
-.                                                                                                                        { /* ignore */ }
+.                                                                                                                       { /* ignore */ }
 
 /* Number */
-{Number}                                                                                                                 { return PROTECT; }
+{Number}                                                                                                                { return protect(1, 0); }
 /* Percentage */
-{Number}\%                                                                                                               { return PROTECT; }
+{Number}\%                                                                                                              { return protect(1, 0); }
 /* Temperature */
-{Number}(°F|°C|°K)                                                                                                       { return PROTECT; }
+{Number}(°F|°C|°K)                                                                                                      { return protect(1, 0); }
 
 /* Dates */
-[0-9]{1,4}(\/[0-9]{1,4}){0,2}                                                                                            { return PROTECT; }
+[0-9]{1,4}(\/[0-9]{1,4}){0,2}                                                                                           { return protect(1, 0); }
 
 /* URL */
-((https?|HTTPS?)\:\/\/)?({UrlPart}\.)+{UrlPart}\/?({UrlPart}\/?)*(\.{Letter}+)?(\?({UrlPart}(\={UrlPart})?\&?)*)?        { return PROTECT; }
+((https?|HTTPS?)\:\/\/)?({UrlPart}\.)+{UrlPart}\/?({UrlPart}\/?)*(\.{Letter}+)?(\?({UrlPart}(\={UrlPart})?\&?)*)?       { return protect(1, 0); }
 
 /* E-mail */
-([a-z0-9_\.-]+)@([\da-z\.-]+)\.([a-z\.]{2,6})                                                                            { return PROTECT; }
+([a-z0-9_\.-]+)@([\da-z\.-]+)\.([a-z\.]{2,6})                                                                           { return protect(1, 0); }
 
 /* Acronym */
-{Letter}\.({Letter}\.)+                                                                                                  { return PROTECT; }
+{Letter}\.({Letter}\.)+                                                                                                 { return protect(1, 0); }
 
 /* &-separated entities */
-{Letter}\&{Letter}                                                                                                       { return PROTECT; }
+{Letter}\&{Letter}                                                                                                      { return protect(1, 0); }
 
 /* Pseudo HTML Entities */
-\&#?[a-zA-Z0-9\-\_]+;                                                                                                    { return PROTECT; }
+\&#?[a-zA-Z0-9\-\_]+;                                                                                                   { return protect(1, 0); }
 
 /* File extension */
-\.{Letter}+                                                                                                              { return PROTECT; }
+\.{Letter}+                                                                                                             { return protect(1, 0); }
 
 /* Period in middle of a sentence */
-\.{_}[:lowercase:]                                                                                                       { yypushback(2); return PROTECT_ALL; }
+\.{_}[:lowercase:]                                                                                                      { return protect(0, 2); }
 
 /* Placeholders and separators */
-\_\_+                                                                                                                    { return WORD; }
-\.\.+                                                                                                                    { return WORD; }
-\|\|+                                                                                                                    { return WORD; }
+\_\_+                                                                                                                   { return word(0, 0); }
+\.\.+                                                                                                                   { return word(0, 0); }
+\|\|+                                                                                                                   { return word(0, 0); }
 
 /* Names with apostrophe, like "O'Malley" */
-{_}[A-Z]'[A-Z]{Letter}+                                                                                                  { return PROTECT; }
+{_}[A-Z]'[A-Z]{Letter}+                                                                                                 { return protect(1, 0); }
 
 /* Variable-like tokens such as ${dnt_1} */
-[\$\%]\{[a-zA-Z0-9_]+\}                                                                                                  { return PROTECT; }
+[\$\%]\{[a-zA-Z0-9_]+\}                                                                                                 { return protect(1, 0); }
 
 /**
  * String formatting variables (reference: https://developer.android.com/reference/java/util/Formatter)
  * %[argument_index$][flags][width][.precision]conversion
  */
-\%([0-9]+\$)?([\-#+0,\(])?([0-9]+)?(\.[0-9]+)?([bBhHsScCdoxXeEfgGaA\%n]|[t|T][BbhAaCYyjmdeRTrDFc])[^a-zA-Z]              { yypushback(1); return WORD; }
+\%([0-9]+\$)?([\-#+0,\(])?([0-9]+)?(\.[0-9]+)?([bBhHsScCdoxXeEfgGaA\%n]|[t|T][BbhAaCYyjmdeRTrDFc])[^a-zA-Z]             { return word(0, 1); }

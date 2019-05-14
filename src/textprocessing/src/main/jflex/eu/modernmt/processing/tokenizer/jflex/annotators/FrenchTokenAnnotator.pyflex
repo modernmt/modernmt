@@ -11,6 +11,6 @@ FrenchContractions = [:letter:]\'[:letter:]
 %%
 
 /* Default Ignore */
-.                                                                                                       { /* ignore */ }
+.                                                                                                                       { /* ignore */ }
 
-{FrenchContractions}                                               { yypushback(1); return PROTECT; }
+{FrenchContractions}                                                                                                    { return protect(1, 1); }

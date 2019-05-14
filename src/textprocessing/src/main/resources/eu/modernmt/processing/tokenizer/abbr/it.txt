@@ -178,4 +178,3 @@ No. #NUMERIC_ONLY#
 Nos.
 Art. #NUMERIC_ONLY#
 Nr.
-pp. #NUMERIC_ONLY#
