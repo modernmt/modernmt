@@ -1,10 +1,5 @@
 package eu.modernmt.processing.tokenizer.jflex;
 
-import eu.modernmt.io.TokensOutputStream;
-import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
-import eu.modernmt.model.Sentence;
-import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.tokenizer.BaseTokenizer;
 import eu.modernmt.processing.tokenizer.TokenizedString;
