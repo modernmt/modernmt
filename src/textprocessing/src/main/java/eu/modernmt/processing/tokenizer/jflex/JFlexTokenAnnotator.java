@@ -63,21 +63,6 @@ public abstract class JFlexTokenAnnotator implements BaseTokenizer.Annotator {
 
         if (lastIndex != -1)
             this.yypushback(end - lastIndex - 1);  // set cursor right after last protected char
-
-//        switch (tokenType) {
-//            case PROTECT:
-//                text.protect(begin + 1, end);
-//                break;
-//            case PROTECT_ALL:
-//                text.protect(begin, end);
-//                break;
-//            case PROTECT_RIGHT:
-//                text.protect(end);
-//                break;
-//            case WORD:
-//                text.setWord(begin, end);
-//                break;
-//        }
     }
 
     public abstract void yyreset(Reader reader);
@@ -91,20 +76,5 @@ public abstract class JFlexTokenAnnotator implements BaseTokenizer.Annotator {
     protected abstract int yychar();
 
     protected abstract void yypushback(int number);
-
-    public static void main(String[] args) throws Throwable {
-        String text;
-        text = "Nuova pubblicazione|||Altre pubblicazioni...|Da pubblicazione esistente...|Da pubblicazione esistente...||Guida in linea Microsoft Publisher";
-
-        Preprocessor preprocessor = new Preprocessor();
-        LanguagePair language = new LanguagePair(Language.ITALIAN, Language.ITALIAN);
-
-        try {
-            Sentence sentence = preprocessor.process(language, text);
-            System.out.println(TokensOutputStream.serialize(sentence, false, true));
-        } finally {
-            preprocessor.close();
-        }
-    }
 
 }

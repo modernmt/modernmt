@@ -15,9 +15,9 @@ WeakPronounsAfterVerb = ((\-(me|te|lo|la|ho|li|nos|vos|los|us|se|ne|hi|ME|TE|LO|
 .                                                                                                                       { /* ignore */ }
 
 /* Catalan "punt volant" */
-[Ll]"·"[Ll]                                                                                          { return PROTECT; }
+[Ll]"·"[Ll]                                                                                                             { return protect(1, 0); }
 
 
-[^[:letter:]]{WeakPronounsBeforeVerb}[:letter:]                     { zzStartReadOffset++; yypushback(1); return WORD; }
-[:letter:]{WeakPronounsAfterVerb}[^[:letter:]]                      { zzStartReadOffset++; yypushback(1); return WORD; }
-[^[:letter:]][dD]\'([:letter:]|[:digit:])                           { zzStartReadOffset++; yypushback(1); return WORD; }
+[^[:letter:]]{WeakPronounsBeforeVerb}[:letter:]                                                                         { return word(1, 1); }
+[:letter:]{WeakPronounsAfterVerb}[^[:letter:]]                                                                          { return word(1, 1); }
+[^[:letter:]][dD]\'([:letter:]|[:digit:])                                                                               { return word(1, 1); }
