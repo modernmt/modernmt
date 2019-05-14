@@ -18,21 +18,21 @@ import java.util.Map;
  */
 public class JFlexDetokenizer extends Detokenizer {
 
-    private static final Map<Language, Class<? extends JFlexSpaceAnnotator>> ANNOTATORS = new HashMap<>();
+    private static final Map<String, Class<? extends JFlexSpaceAnnotator>> ANNOTATORS = new HashMap<>();
 
     static {
-        ANNOTATORS.put(Language.CATALAN, CatalanSpaceAnnotator.class);
-        ANNOTATORS.put(Language.ENGLISH, EnglishSpaceAnnotator.class);
-        ANNOTATORS.put(Language.ITALIAN, ItalianSpaceAnnotator.class);
-        ANNOTATORS.put(Language.GERMAN, GermanSpaceAnnotator.class);
-        ANNOTATORS.put(Language.FRENCH, FrenchSpaceAnnotator.class);
-        ANNOTATORS.put(Language.THAI, ThaiSpaceAnnotator.class);
+        ANNOTATORS.put(Language.CATALAN.getLanguage(), CatalanSpaceAnnotator.class);
+        ANNOTATORS.put(Language.ENGLISH.getLanguage(), EnglishSpaceAnnotator.class);
+        ANNOTATORS.put(Language.ITALIAN.getLanguage(), ItalianSpaceAnnotator.class);
+        ANNOTATORS.put(Language.GERMAN.getLanguage(), GermanSpaceAnnotator.class);
+        ANNOTATORS.put(Language.FRENCH.getLanguage(), FrenchSpaceAnnotator.class);
+        ANNOTATORS.put(Language.THAI.getLanguage(), ThaiSpaceAnnotator.class);
     }
 
     private final JFlexSpaceAnnotator annotator;
 
     public static JFlexSpaceAnnotator newAnnotator(Language language) {
-        Class<? extends JFlexSpaceAnnotator> annotatorClass = ANNOTATORS.get(language);
+        Class<? extends JFlexSpaceAnnotator> annotatorClass = ANNOTATORS.get(language.getLanguage());
         if (annotatorClass == null) {
             return new StandardSpaceAnnotator((Reader) null);
         } else {
