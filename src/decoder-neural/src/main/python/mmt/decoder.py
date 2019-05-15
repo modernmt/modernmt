@@ -54,7 +54,7 @@ class Translation(object):
     @classmethod
     def concatenate(cls, source_lengths, translations, separator = " "):
         translation_lengths = [len(t.text.split()) for t in translations]
-        # TODO: check that len(source_lengths) == len(translations); if not ERROR
+        # TODO: if len(source_lengths) != len(translations) riase Error
         joint = translations[0]
         source_len_offset = 0
         translation_len_offset = 0
@@ -231,15 +231,13 @@ class MMTDecoder(object):
         # (3) Translate and compute word alignment
         begin = time.time()
         if forced_translation is not None:
-            results = self._force_decode(target_lang, text, forced_translation)
+            result = self._force_decode(target_lang, text, forced_translation)
         else:
-            # result = self._decode(source_lang, target_lang, [text])[0]
-
             # split the input texts into sentences according to strong punctuation
             split_texts, split_lengths = Translation.split(text)
             results = self._decode(source_lang, target_lang, split_texts)
-
             result = Translation.concatenate(split_lengths, results)
+
         decode_time = time.time() - begin
 
         self._logger.info('reset_time = %.3f, tune_time = %.3f, decode_time = %.3f'
