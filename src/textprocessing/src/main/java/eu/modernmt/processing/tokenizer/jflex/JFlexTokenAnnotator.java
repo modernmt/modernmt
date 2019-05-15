@@ -28,6 +28,10 @@ public abstract class JFlexTokenAnnotator implements BaseTokenizer.Annotator {
                 (rightOffset & 0xFF);
     }
 
+    protected static int goback(int value) {
+        return (value & 0xFF) << 24;
+    }
+
     @Override
     public final void annotate(TokenizedString text) throws ProcessingException {
         this.yyreset(text.getReader());
@@ -43,6 +47,7 @@ public abstract class JFlexTokenAnnotator implements BaseTokenizer.Annotator {
     }
 
     protected final void annotate(TokenizedString text, int tokenType) {
+        int goback = (tokenType >> 24) & 0xFF;
         boolean truncate = ((tokenType >> 16) & 0xFF) > 0;
         int leftOffset = (tokenType >> 8) & 0xFF;
         int rightOffset = tokenType & 0xFF;
@@ -57,7 +62,7 @@ public abstract class JFlexTokenAnnotator implements BaseTokenizer.Annotator {
             lastIndex = text.protect(begin + leftOffset, end - rightOffset);
 
         if (lastIndex != -1)
-            this.yypushback(end - lastIndex - 1);  // set cursor right after last protected char
+            this.yypushback(end - lastIndex - 1 + goback);  // set cursor right after last protected char
     }
 
     public abstract void yyreset(Reader reader);
