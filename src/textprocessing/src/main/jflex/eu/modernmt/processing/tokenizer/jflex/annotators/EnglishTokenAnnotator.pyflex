@@ -14,5 +14,5 @@ PossessiveCase = \'s" "
 /* Default Ignore */
 .                                                                                                                       { /* ignore */ }
 
-{EnglishContractions}                                                                                                   { return protect(2, 0); }
+{EnglishContractions}                                                                                                   { return protect(2, 0) + goback(1); }
 {PossessiveCase}                                                                                                        { return protect(1, 1); }
