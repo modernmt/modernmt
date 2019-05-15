@@ -21,6 +21,57 @@ class Translation(object):
         self.alignment = alignment
         self.score = score
 
+    @classmethod
+    def split(cls, text, separator = " "):
+        # greedy approach for splitting the text into sentences according to strong punctuation
+        split_texts = []
+        split_lengths = []
+        tokens = text.split(separator)
+        tokens_len = len(tokens)
+
+        if tokens_len == 0:
+            return [text]
+
+        split_points = [-1]
+        i = 0
+        while i < tokens_len - 1:
+            token = tokens[i]
+            next_token = tokens[i+1]
+            if token in MMTDecoder._stop_words and next_token not in MMTDecoder._stop_words and list(next_token)[0].isupper():
+                split_points.append(i)
+
+            i = i + 1
+        split_points.append(i)
+
+        i = 1
+        while i < len(split_points):
+            split_texts.append(separator.join(tokens[split_points[i-1] + 1:split_points[i] + 1]))
+            split_lengths.append(split_points[i] - split_points[i-1])
+            i = i + 1
+
+        return split_texts, split_lengths
+
+    @classmethod
+    def concatenate(cls, source_lengths, translations, separator = " "):
+        translation_lengths = [len(t.text.split()) for t in translations]
+        # TODO: check that len(source_lengths) == len(translations); if not ERROR
+        joint = translations[0]
+        source_len_offset = 0
+        translation_len_offset = 0
+        for i in range(1,len(translations)):
+            source_len_offset += source_lengths[i-1]
+            translation_len_offset += translation_lengths[i-1]
+            current = translations[i]
+            # concatenate strings with separator
+            joint.text = joint.text + separator + current.text
+            # sum the score
+            joint.score = joint.score + current.score
+            # concatenate alignment with index shifting
+            for al in current.alignment:
+                new_al = (al[0] + source_len_offset, al[1] + translation_len_offset)
+                joint.alignment.append(new_al)
+
+        return joint
 
 class Suggestion(object):
     def __init__(self, source_lang, target_lang, segment, translation, score):
@@ -92,6 +143,8 @@ class ModelConfig(object):
 
 
 class MMTDecoder(object):
+    _stop_words = {".", "?", "!"}
+
     @classmethod
     def _create_model(cls, checkpoints, device, beam_size, use_fp16):
         model = TransformerModel.build_model(checkpoints.args, checkpoints.task)
@@ -132,6 +185,7 @@ class MMTDecoder(object):
         return Tuner(checkpoints.args, checkpoints.task, model, tuning_ops=tuning_ops, device=device)
 
     def __init__(self, checkpoints, device=None, beam_size=5, use_fp16=False, tuning_ops=None):
+
         torch.manual_seed(checkpoints.args.seed)
 
         self._checkpoints = checkpoints
@@ -177,9 +231,15 @@ class MMTDecoder(object):
         # (3) Translate and compute word alignment
         begin = time.time()
         if forced_translation is not None:
-            result = self._force_decode(target_lang, text, forced_translation)
+            results = self._force_decode(target_lang, text, forced_translation)
         else:
-            result = self._decode(source_lang, target_lang, [text])[0]
+            # result = self._decode(source_lang, target_lang, [text])[0]
+
+            # split the input texts into sentences according to strong punctuation
+            split_texts, split_lengths = Translation.split(text)
+            results = self._decode(source_lang, target_lang, split_texts)
+
+            result = Translation.concatenate(split_lengths, results)
         decode_time = time.time() - begin
 
         self._logger.info('reset_time = %.3f, tune_time = %.3f, decode_time = %.3f'
