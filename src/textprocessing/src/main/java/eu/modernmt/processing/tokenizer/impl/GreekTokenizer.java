@@ -13,7 +13,7 @@ public class GreekTokenizer extends BaseTokenizer {
     public GreekTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(AbbreviationAnnotator.getInstance(sourceLanguage));
+        super.annotators.add(AbbreviationAnnotator.getInstance(Language.GREEK));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

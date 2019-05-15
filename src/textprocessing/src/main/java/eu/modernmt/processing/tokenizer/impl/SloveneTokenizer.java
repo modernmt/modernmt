@@ -13,7 +13,7 @@ public class SloveneTokenizer extends BaseTokenizer {
     public SloveneTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(AbbreviationAnnotator.getInstance(sourceLanguage));
+        super.annotators.add(AbbreviationAnnotator.getInstance(Language.SLOVENE));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

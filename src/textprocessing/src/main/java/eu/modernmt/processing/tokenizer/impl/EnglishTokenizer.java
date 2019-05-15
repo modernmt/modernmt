@@ -14,7 +14,7 @@ public class EnglishTokenizer extends BaseTokenizer {
     public EnglishTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(AbbreviationAnnotator.getInstance(sourceLanguage, true));
+        super.annotators.add(AbbreviationAnnotator.getInstance(Language.ENGLISH, true));
         super.annotators.add(new EnglishTokenAnnotator((Reader) null));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }

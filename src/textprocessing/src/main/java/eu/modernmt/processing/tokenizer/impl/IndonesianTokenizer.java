@@ -13,7 +13,7 @@ public class IndonesianTokenizer extends BaseTokenizer {
     public IndonesianTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(LuceneTokenAnnotator.forLanguage(sourceLanguage));
+        super.annotators.add(LuceneTokenAnnotator.forLanguage(Language.INDONESIAN));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

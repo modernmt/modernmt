@@ -13,7 +13,7 @@ public class IcelandicTokenizer extends BaseTokenizer {
     public IcelandicTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(AbbreviationAnnotator.getInstance(sourceLanguage));
+        super.annotators.add(AbbreviationAnnotator.getInstance(Language.ICELANDIC));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

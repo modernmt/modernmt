@@ -13,7 +13,7 @@ public class RomanianTokenizer extends BaseTokenizer {
     public RomanianTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(AbbreviationAnnotator.getInstance(sourceLanguage));
+        super.annotators.add(AbbreviationAnnotator.getInstance(Language.ROMANIAN));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

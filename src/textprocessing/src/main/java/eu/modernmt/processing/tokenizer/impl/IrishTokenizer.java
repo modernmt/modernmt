@@ -13,7 +13,7 @@ public class IrishTokenizer extends BaseTokenizer {
     public IrishTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(LuceneTokenAnnotator.forLanguage(sourceLanguage));
+        super.annotators.add(LuceneTokenAnnotator.forLanguage(Language.IRISH));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

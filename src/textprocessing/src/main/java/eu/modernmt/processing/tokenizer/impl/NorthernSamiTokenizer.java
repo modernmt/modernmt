@@ -13,7 +13,7 @@ public class NorthernSamiTokenizer extends BaseTokenizer {
     public NorthernSamiTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(OpenNLPTokenAnnotator.forLanguage(sourceLanguage));
+        super.annotators.add(OpenNLPTokenAnnotator.forLanguage(Language.NORTHERN_SAMI));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

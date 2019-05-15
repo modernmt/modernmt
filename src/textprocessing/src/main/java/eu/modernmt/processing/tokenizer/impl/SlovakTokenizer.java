@@ -13,7 +13,7 @@ public class SlovakTokenizer extends BaseTokenizer {
     public SlovakTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(AbbreviationAnnotator.getInstance(sourceLanguage));
+        super.annotators.add(AbbreviationAnnotator.getInstance(Language.SLOVAK));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

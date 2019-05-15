@@ -13,7 +13,7 @@ public class DanishTokenizer extends BaseTokenizer {
     public DanishTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(OpenNLPTokenAnnotator.forLanguage(sourceLanguage));
+        super.annotators.add(OpenNLPTokenAnnotator.forLanguage(Language.DANISH));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

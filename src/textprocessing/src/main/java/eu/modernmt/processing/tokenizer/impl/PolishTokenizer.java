@@ -13,7 +13,7 @@ public class PolishTokenizer extends BaseTokenizer {
     public PolishTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(AbbreviationAnnotator.getInstance(sourceLanguage));
+        super.annotators.add(AbbreviationAnnotator.getInstance(Language.POLISH));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

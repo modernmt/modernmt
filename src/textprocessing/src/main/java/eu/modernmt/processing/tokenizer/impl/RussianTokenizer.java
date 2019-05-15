@@ -13,7 +13,7 @@ public class RussianTokenizer extends BaseTokenizer {
     public RussianTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(AbbreviationAnnotator.getInstance(sourceLanguage));
+        super.annotators.add(AbbreviationAnnotator.getInstance(Language.RUSSIAN));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

@@ -14,7 +14,7 @@ public class ItalianTokenizer extends BaseTokenizer {
     public ItalianTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(AbbreviationAnnotator.getInstance(sourceLanguage, true));
+        super.annotators.add(AbbreviationAnnotator.getInstance(Language.ITALIAN, true));
         super.annotators.add(new ItalianTokenAnnotator((Reader) null));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }

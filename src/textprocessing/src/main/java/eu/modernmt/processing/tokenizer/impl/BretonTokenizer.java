@@ -13,7 +13,7 @@ public class BretonTokenizer extends BaseTokenizer {
     public BretonTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(LanguageToolTokenAnnotator.forLanguage(sourceLanguage));
+        super.annotators.add(LanguageToolTokenAnnotator.forLanguage(Language.BRETON));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

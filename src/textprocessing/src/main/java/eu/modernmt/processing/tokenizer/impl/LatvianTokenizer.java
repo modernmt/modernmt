@@ -13,7 +13,7 @@ public class LatvianTokenizer extends BaseTokenizer {
     public LatvianTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(AbbreviationAnnotator.getInstance(sourceLanguage));
+        super.annotators.add(AbbreviationAnnotator.getInstance(Language.LATVIAN));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

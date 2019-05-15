@@ -14,7 +14,7 @@ public class FrenchTokenizer extends BaseTokenizer {
     public FrenchTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(AbbreviationAnnotator.getInstance(sourceLanguage, true));
+        super.annotators.add(AbbreviationAnnotator.getInstance(Language.FRENCH, true));
         super.annotators.add(new FrenchTokenAnnotator((Reader) null));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }

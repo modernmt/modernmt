@@ -13,7 +13,7 @@ public class GermanTokenizer extends BaseTokenizer {
     public GermanTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(AbbreviationAnnotator.getInstance(sourceLanguage));
+        super.annotators.add(AbbreviationAnnotator.getInstance(Language.GERMAN));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

@@ -13,7 +13,7 @@ public class FinnishTokenizer extends BaseTokenizer {
     public FinnishTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(AbbreviationAnnotator.getInstance(sourceLanguage));
+        super.annotators.add(AbbreviationAnnotator.getInstance(Language.FINNISH));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

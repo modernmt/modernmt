@@ -203,7 +203,6 @@ e.g.
 # if followed by a number, a non-breaking prefix
 No. #NUMERIC_ONLY#
 Nos.
-Art. #NUMERIC_ONLY#
 Nr.
 p.
 pp.
