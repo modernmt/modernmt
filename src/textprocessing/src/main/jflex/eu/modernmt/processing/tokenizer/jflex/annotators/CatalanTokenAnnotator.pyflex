@@ -20,4 +20,4 @@ WeakPronounsAfterVerb = ((\-(me|te|lo|la|ho|li|nos|vos|los|us|se|ne|hi|ME|TE|LO|
 
 [^[:letter:]]{WeakPronounsBeforeVerb}[:letter:]                                                                         { return word(1, 1) + goback(1); }
 [:letter:]{WeakPronounsAfterVerb}[^[:letter:]]                                                                          { return word(1, 1) + goback(1); }
-[^[:letter:]][dD]\'([:letter:]|[:digit:])                                                                               { return word(1, 1) + goback(1); }
+[^[:letter:]][dDlL]\'[[:letter:][:digit:]]                                                                              { return word(1, 1) + goback(1); }
