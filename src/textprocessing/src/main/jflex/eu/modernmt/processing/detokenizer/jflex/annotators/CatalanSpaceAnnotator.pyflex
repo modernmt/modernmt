@@ -22,4 +22,4 @@ WeakPronounsAfterVerb = ((\-(me|te|lo|la|ho|li|nos|vos|los|us|se|ne|hi|ME|TE|LO|
 
 {_}{WeakPronounsBeforeVerb}{_}[:letter:]                                          { yypushback(1); return REMOVE_LAST; }
 [:letter:]{_}{WeakPronounsAfterVerb}{_}                                          { yypushback(1); return REMOVE_INNER; }
-{_}[dD]\'{_}([:letter:]|[:digit:])                                                { yypushback(1); return REMOVE_LAST; }
+{_}[dDlL]\'{_}([:letter:]|[:digit:])                                              { yypushback(1); return REMOVE_LAST; }
