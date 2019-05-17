@@ -56,7 +56,6 @@ def transformer_mmt_big(args):
     transformer_mmt_base(args)
 
 
-
 @register_model_architecture('transformer', 'transformer_mmt_base')
 def transformer_mmt_base(args):
     # it corresponds to fairseq "base_architecture", having the following main parameters (as of 16/05/2019):
