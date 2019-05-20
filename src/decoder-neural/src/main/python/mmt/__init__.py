@@ -4,7 +4,7 @@ import os
 from fairseq import options
 from fairseq.data import data_utils
 from fairseq.models import register_model_architecture
-from fairseq.models.transformer import transformer_vaswani_wmt_en_de_big, transformer_iwslt_de_en
+from fairseq.models.transformer import base_architecture
 from fairseq.tasks import register_task
 from fairseq.tasks.translation import TranslationTask
 
@@ -45,16 +45,31 @@ class MMTTranslationTask(TranslationTask):
 
 @register_model_architecture('transformer', 'transformer_mmt_big')
 def transformer_mmt_big(args):
-    transformer_vaswani_wmt_en_de_big(args)
+    # it corresponds to fairseq "transformer_vaswani_wmt_en_de_big"
+    args.encoder_embed_dim = getattr(args, 'encoder_embed_dim', 1024)
+    args.encoder_ffn_embed_dim = getattr(args, 'encoder_ffn_embed_dim', 4096)
+    args.encoder_attention_heads = getattr(args, 'encoder_attention_heads', 16)
+    args.decoder_embed_dim = getattr(args, 'decoder_embed_dim', 1024)
+    args.decoder_ffn_embed_dim = getattr(args, 'decoder_ffn_embed_dim', 4096)
+    args.decoder_attention_heads = getattr(args, 'decoder_attention_heads', 16)
+    args.dropout = getattr(args, 'dropout', 0.3)
+    transformer_mmt_base(args)
 
 
 @register_model_architecture('transformer', 'transformer_mmt_base')
 def transformer_mmt_base(args):
-    transformer_iwslt_de_en(args)
+    # it corresponds to fairseq "base_architecture", having the following main parameters (as of 16/05/2019):
+    # encoder_embed_dim = decoder_embed_dim = 512
+    # encoder_ffn_embed_dim = decoder_ffn_embed_dim = 2048
+    # encoder_attention_heads = decoder_attention_heads = 8
+    # encoder_layers = decoder_layers = 6
+    # dropout = 0.1
+    base_architecture(args)
 
 
 @register_model_architecture('transformer', 'transformer_mmt_tiny')
 def transformer_mmt_tiny(args):
+    # it is smaller than fairseq "transformer_iwslt_de_en": less layers (4 vs 6) and less attention_heads (2 vs 4)
     args.encoder_embed_dim = getattr(args, 'encoder_embed_dim', 512)
     args.encoder_ffn_embed_dim = getattr(args, 'encoder_ffn_embed_dim', 1024)
     args.encoder_attention_heads = getattr(args, 'encoder_attention_heads', 2)
@@ -63,7 +78,6 @@ def transformer_mmt_tiny(args):
     args.decoder_ffn_embed_dim = getattr(args, 'decoder_ffn_embed_dim', 1024)
     args.decoder_attention_heads = getattr(args, 'decoder_attention_heads', 2)
     args.decoder_layers = getattr(args, 'decoder_layers', 4)
-    args.dropout = getattr(args, 'dropout', 0.3)
     transformer_mmt_base(args)
 
 
