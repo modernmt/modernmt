@@ -17,27 +17,16 @@ from mmt.tuning import Tuner, TuningOptions
 
 
 class Translation(object):
+    # regular expression to remove leading and trailing spaces
     pattern_spaces = r"(^ +| +$)"
 
-    pattern_stops = {}
-    uppercase_required = {}
-
-    # pattern_stops['zh'] = r'( *[^。？！]*( [。？！])+|[^。？！]+$)'
-    pattern_stops['zh'] = r'(.*?( [。？！]+)+( +|$)|.+$)'
-    uppercase_required['zh'] = False
-
-    pattern_stops['ja'] = pattern_stops['zh']
-    uppercase_required['ja'] = uppercase_required['zh']
-
-    pattern_stops['ko'] = r'(.*?( [.?!]+)+( +|$)|.+$)'
-    uppercase_required['ko'] = False
-
-    pattern_stops['ar'] = r'((.*?)( [.؟!]+)+( +|$)|.+$)'
-    uppercase_required['ar'] = False
-
-    pattern_stops['_default_'] = r'(.*?( [\.\?\!]+)+( +|$)|.+$)'
-    uppercase_required['_default_'] = True
-
+    # regular expression to match splits
+    # spltting points are sequences of strong punctuation marks in several alphabets, optionally separated by apaces:
+    # Western: '\.\?\!'
+    # Chinese/japanese: '。？！'
+    # Korean: '.?!'
+    # Arabic: '.؟!'
+    pattern_stops = r'(.*?( [\.\?\!。？！.?!.؟!]+)+( +|$)|.+$)'
 
     def __init__(self, text, alignment=None, score=None):
         self.text = text
@@ -45,21 +34,12 @@ class Translation(object):
         self.score = score
 
     @classmethod
-    def split(cls, text, language = "_default_", separator = " "):
-
-        #normalize language, to remove optional region info
-        language = re.sub(r"\-[A-Z]+", "", language)
-        if not language == 'zh' and not language == 'ja' and not language == 'ko' and not language == 'ar':
-            language = '_default_'
-
+    def split(cls, text, separator = " "):
         # greedy approach for splitting the text into sentences according to strong punctuation
-
-        pattern_stops = Translation.pattern_stops[language]
-        uppercase_required = Translation.uppercase_required[language]
 
         # skip spaces trailing and leadins spaces
         text = re.sub(Translation.pattern_spaces, "", text)
-        matches = re.findall(pattern_stops, text)
+        matches = re.findall(Translation.pattern_stops, text)
 
         split_texts = []
         if matches is None:
@@ -67,51 +47,21 @@ class Translation(object):
         else:
 
             # manage first match
-            # skip spaces trailing and leadins spaces for current match
+            # skip spaces trailing and leading spaces for current match
             current_match = re.sub(Translation.pattern_spaces, "", matches[0][0])
             split_texts.append(current_match)
 
             # manage next matches
             for i in range(1, len(matches)):
-                # skip spaces trailing and leadins spaces for current match
+                # skip spaces trailing and leading spaces for current match
                 current_match = re.sub(Translation.pattern_spaces, "", matches[i][0])
 
-                if uppercase_required and not list(current_match)[0].isupper():  # append current match to the previous
+                if list(current_match)[0].islower():  # append current match to the previous
                     split_texts[-1] = split_texts[-1] + " " + current_match
                 else:
                     split_texts.append(current_match)
 
         split_lengths = [len(m.split()) for m in split_texts ]
-
-        return split_texts, split_lengths
-
-    @classmethod
-    def split_OLD(cls, text, separator = " "):
-        # greedy approach for splitting the text into sentences according to strong punctuation
-        split_texts = []
-        split_lengths = []
-        tokens = text.split(separator)
-        tokens_len = len(tokens)
-
-        if tokens_len == 0:
-            return [text]
-
-        split_points = [-1]
-        i = 0
-        while i < tokens_len - 1:
-            token = tokens[i]
-            next_token = tokens[i+1]
-            if token in MMTDecoder._stop_words and next_token not in MMTDecoder._stop_words and list(next_token)[0].isupper():
-                split_points.append(i)
-
-            i = i + 1
-        split_points.append(i)
-
-        i = 1
-        while i < len(split_points):
-            split_texts.append(separator.join(tokens[split_points[i-1] + 1:split_points[i] + 1]))
-            split_lengths.append(split_points[i] - split_points[i-1])
-            i = i + 1
 
         return split_texts, split_lengths
 
@@ -297,14 +247,11 @@ class MMTDecoder(object):
         if forced_translation is not None:
             result = self._force_decode(target_lang, text, forced_translation)
         else:
-            # split the input texts into sentences according to strong punctuation
-            split_texts, split_lengths = Translation.split(text, language=source_lang)
-            print("SPLIT: split_texts:{}\nsplit_lengths:{}".format(split_texts, split_lengths))
-
-            split_texts_OLD, split_lengths_OLD = Translation.split_OLD(text)
-            print("SPLIT_OLD: split_texts_OLD:{}\nsplit_lengths_OLD:{}".format(split_texts_OLD, split_lengths_OLD))
-
+            # split the input text into sentences according to strong punctuation
+            split_texts, split_lengths = Translation.split(text)
+            # translate each split
             results = self._decode(source_lang, target_lang, split_texts)
+            # concatenate Translations of all splits into one Translation
             result = Translation.concatenate(split_lengths, results)
 
         decode_time = time.time() - begin
