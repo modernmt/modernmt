@@ -10,92 +10,72 @@ import numpy as np
 import torch
 from fairseq.models.transformer import TransformerModel
 from fairseq.sequence_generator import SequenceGenerator
-
 from mmt import textencoder
 from mmt.alignment import make_alignment
 from mmt.tuning import Tuner, TuningOptions
 
+# Regular expression to match strong punctuation split points; splitting points are sequences of
+# strong punctuation marks in several alphabets, optionally separated by spaces.
+#
+# Western: '.?!'
+# Chinese/Japanese: '。？！'
+# Korean: '.?!'
+# Arabic: '.؟!'
+#
+_STOPS_RE = re.compile(r'( [\s\?\!\.。？！؟]+ )')
+
 
 class Translation(object):
-
-    # regular expression to match strong punctuation split points
-    # spltting points are sequences of strong punctuation marks in several alphabets, optionally separated by apaces:
-    # Western: '\.\?\!'
-    # Chinese/japanese: '。？！'
-    # Korean: '.?!'
-    # Arabic: '.؟!'
-    stops_re = re.compile(r'( [\s\.\?\!。？！.?!.؟!]+ )')
-
     def __init__(self, text, alignment=None, score=None):
         self.text = text
         self.alignment = alignment
         self.score = score
 
     @classmethod
-    def split(cls, text, separator = " "):
+    def split(cls, text):
         # greedy approach for splitting the text into sentences according to strong punctuation
+        substrings = _STOPS_RE.split(text.strip())
+        if len(substrings) % 2 == 1:
+            substrings.append('')
 
-        # skip spaces trailing and leadins spaces
-        text = text.strip()
+        # list of pairs: (string, separator)
+        string_pairs = [[substrings[i], substrings[i + 1]] for i in range(0, len(substrings), 2)]
 
-        matches = re.split(Translation.stops_re, text)
-        matchesN = len(matches)
+        text_splits = []
+        for e in string_pairs:
+            if len(text_splits) == 0:
+                text_splits.append(e)
+            else:
+                starting_char = e[0][0]
+                if starting_char.isalpha() and (starting_char.isupper() or not starting_char.islower()):
+                    text_splits.append(e)
+                else:
+                    text_splits[-1].extend(e)
 
-        split_texts = []
-        if matches is None:
-            split_texts.append(text)
-        else:
-            print("matchesN:{}".format(matchesN))
-            if matchesN > 0:
-                current_match = matches[0]
-
-                if matchesN > 1:  # append the punctuation if any
-                    current_match += matches[1]
-
-                split_texts.append(current_match.strip())
-
-            for i in range(2, matchesN, 2):
-                print("i:{} m:|{}|".format(i, matches[i]))
-                current_match = matches[i]
-                if i < matchesN - 1:  # append the punctuation if any
-                    current_match += matches[i + 1]
-
-                # skip spaces trailing and leadins spaces for current match
-                current_match = current_match.strip()
-
-                if current_match:  # TODO: this check is probably superfluous, because at this point the current match should not be empty
-                    c = current_match[0]
-
-                    if c.isalnum() and (c.isupper() or not c.islower()):  # TODO: keep this if numbers are accepted, otherwise use c.isalpha()
-                        split_texts.append(current_match)
-                    else:
-                        split_texts[-1] = split_texts[-1] + " " + current_match
-
-        split_lengths = [len(m.split()) for m in split_texts]
-
-        return split_texts, split_lengths
+        return [''.join(e).strip() for e in text_splits]
 
     @classmethod
-    def concatenate(cls, source_lengths, translations, separator = " "):
+    def concatenate(cls, sources, translations, separator=' '):
+        source_lengths = [len(s.split()) for s in sources]
         translation_lengths = [len(t.text.split()) for t in translations]
-        # TODO: if len(source_lengths) != len(translations) riase Error
-        joint = translations[0]
+
+        result = Translation(text=separator.join([t.text for t in translations]),
+                             alignment=translations[0].alignment,
+                             score=sum([t.score for t in translations]) / len(translations))
+
+        # concatenate alignment with index shifting
         source_len_offset = 0
         translation_len_offset = 0
-        for i in range(1,len(translations)):
-            source_len_offset += source_lengths[i-1]
-            translation_len_offset += translation_lengths[i-1]
-            current = translations[i]
-            # concatenate strings with separator
-            joint.text = joint.text + separator + current.text
-            # sum the score
-            joint.score = joint.score + current.score
-            # concatenate alignment with index shifting
-            for al in current.alignment:
-                new_al = (al[0] + source_len_offset, al[1] + translation_len_offset)
-                joint.alignment.append(new_al)
+        for i in range(1, len(translations)):
+            source_len_offset += source_lengths[i - 1]
+            translation_len_offset += translation_lengths[i - 1]
 
-        return joint
+            for al in translations[i].alignment:
+                new_al = (al[0] + source_len_offset, al[1] + translation_len_offset)
+                result.alignment.append(new_al)
+
+        return result
+
 
 class Suggestion(object):
     def __init__(self, source_lang, target_lang, segment, translation, score):
@@ -167,8 +147,6 @@ class ModelConfig(object):
 
 
 class MMTDecoder(object):
-    _stop_words = {".", "?", "!"}
-
     @classmethod
     def _create_model(cls, checkpoints, device, beam_size, use_fp16):
         model = TransformerModel.build_model(checkpoints.args, checkpoints.task)
@@ -209,7 +187,6 @@ class MMTDecoder(object):
         return Tuner(checkpoints.args, checkpoints.task, model, tuning_ops=tuning_ops, device=device)
 
     def __init__(self, checkpoints, device=None, beam_size=5, use_fp16=False, tuning_ops=None):
-
         torch.manual_seed(checkpoints.args.seed)
 
         self._checkpoints = checkpoints
@@ -258,11 +235,12 @@ class MMTDecoder(object):
             result = self._force_decode(target_lang, text, forced_translation)
         else:
             # split the input text into sentences according to strong punctuation
-            split_texts, split_lengths = Translation.split(text)
-            # translate each split
-            results = self._decode(source_lang, target_lang, split_texts)
+            text_splits = Translation.split(text)
+
+            translations = self._decode(source_lang, target_lang, text_splits)
+
             # concatenate Translations of all splits into one Translation
-            result = Translation.concatenate(split_lengths, results)
+            result = Translation.concatenate(text_splits, translations)
 
         decode_time = time.time() - begin
 
