@@ -13,7 +13,7 @@ public class MalayalamTokenizer extends BaseTokenizer {
     public MalayalamTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(LanguageToolTokenAnnotator.forLanguage(sourceLanguage));
+        super.annotators.add(LanguageToolTokenAnnotator.forLanguage(Language.MALAYALAM));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

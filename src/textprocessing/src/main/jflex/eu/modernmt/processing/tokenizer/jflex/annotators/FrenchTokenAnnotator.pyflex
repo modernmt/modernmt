@@ -6,13 +6,11 @@ import eu.modernmt.processing.tokenizer.jflex.JFlexTokenAnnotator;
 
 //pyflex class JFlexTokenAnnotator
 
-//pyflex prefixes ../prefixes/fr.txt caseless
-
 FrenchContractions = [:letter:]\'[:letter:]
 
 %%
 
 /* Default Ignore */
-.                                                                                                       { /* ignore */ }
+.                                                                                                                       { /* ignore */ }
 
-{FrenchContractions}                                               { yypushback(1); return PROTECT; }
+{FrenchContractions}                                                                                                    { return protect(1, 1); }

@@ -13,7 +13,7 @@ public class ArmenianTokenizer extends BaseTokenizer {
     public ArmenianTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(LuceneTokenAnnotator.forLanguage(sourceLanguage));
+        super.annotators.add(LuceneTokenAnnotator.forLanguage(Language.ARMENIAN));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

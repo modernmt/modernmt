@@ -13,7 +13,7 @@ public class TagalogTokenizer extends BaseTokenizer {
     public TagalogTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(LanguageToolTokenAnnotator.forLanguage(sourceLanguage));
+        super.annotators.add(LanguageToolTokenAnnotator.forLanguage(Language.TAGALOG));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

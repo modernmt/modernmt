@@ -88,23 +88,26 @@ public class TokenizedString {
         this.string = new String(chars, 0, length);
     }
 
-    public void setWord(int start, int end) {
-        for (int i = start + 1; i < end; i++) {
-            this.flags[i] |= PROTECTED_FLAG;
-        }
+    public int setWord(int start, int end) {
+        this.protect(start + 1, end);
 
         this.flags[start] = SPLIT_FLAG;
         this.flags[end] = SPLIT_FLAG;
+
+        return end - 1;
     }
 
-    public void protect(int start, int end) {
+    public int protect(int start, int end) {
+        int index = -1;
+
         for (int i = start; i < end; i++) {
+            byte flag = this.flags[i];
+            if (((flag & SPLIT_FLAG) > 0) && ((flag & PROTECTED_FLAG) == 0))
+                index = i;
             this.flags[i] |= PROTECTED_FLAG;
         }
-    }
 
-    public void protect(int index) {
-        this.protect(index, index + 1);
+        return index;
     }
 
     public Reader getReader() {

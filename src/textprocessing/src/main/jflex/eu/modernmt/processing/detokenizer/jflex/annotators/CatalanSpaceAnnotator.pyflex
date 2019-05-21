@@ -9,8 +9,8 @@ import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
 
 //pyflex include ../macros.pyx
 
-CaPrefix = (l" "?{apos}|L" "?{apos}|m" "?{apos}|M" "?{apos}|n" "?{apos}|N" "?{apos}|s" "?{apos}|S" "?{apos}|t" "?{apos}|T" "?{apos}|d" "?{apos}|D" "?{apos})
-CaPostfix = ({apos}" "?l|{apos}" "?L|{apos}" "?ls|{apos}" "?LS|{apos}" "?n|{apos}" "?N|{apos}" "?ns|{apos}" "?NS|{apos}" "?s|{apos}" "?S)
+WeakPronounsBeforeVerb = ([mtlsnMTLSN]\')
+WeakPronounsAfterVerb = ((\-(me|te|lo|la|ho|li|nos|vos|los|us|se|ne|hi|ME|TE|LO|LA|HO|LI|NOS|VOS|LOS|US|SE|NE|HI))|(\'(m|t|l|ns|ls|a|n|M|T|L|NS|LS|A|N)))
 
 %%
 
@@ -20,6 +20,6 @@ CaPostfix = ({apos}" "?l|{apos}" "?L|{apos}" "?ls|{apos}" "?LS|{apos}" "?n|{apos
 
 [0-9][\.\,\-]?{_}[\%]{_}                                                       { return REMOVE_FIRST; }
 
-{_}{CaPrefix}{_}?[:letter:]                                                    { return REMOVE_INNER; }
-[:letter:]{_}?{CaPostfix}{_}                                                   { return REMOVE_INNER; }
-[:letter:]{_}?[\-·]{_}?[:letter:]                                              { return REMOVE_INNER; }
+{_}{WeakPronounsBeforeVerb}{_}[:letter:]                                          { yypushback(1); return REMOVE_LAST; }
+[:letter:]{_}{WeakPronounsAfterVerb}{_}                                          { yypushback(1); return REMOVE_INNER; }
+{_}[dDlL]\'{_}([:letter:]|[:digit:])                                              { yypushback(1); return REMOVE_LAST; }

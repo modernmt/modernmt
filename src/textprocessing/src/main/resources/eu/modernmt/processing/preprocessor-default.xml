@@ -17,6 +17,8 @@
 
     <!-- Fix italian accents like "e'" or "perche'" -->
     <processor source="it">eu.modernmt.processing.normalizers.ItalianAccentMarkProcessor</processor>
+    <!-- Fix Catalan punt volat -->
+    <processor source="ca">eu.modernmt.processing.normalizers.CatalanPuntVolatNormalizer</processor>
 
     <!-- Tokenization -->
     <processor>eu.modernmt.processing.tokenizer.Tokenizer</processor>

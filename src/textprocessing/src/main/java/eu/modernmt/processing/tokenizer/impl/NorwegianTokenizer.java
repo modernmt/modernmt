@@ -13,7 +13,7 @@ public class NorwegianTokenizer extends BaseTokenizer {
     public NorwegianTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(LuceneTokenAnnotator.forLanguage(sourceLanguage));
+        super.annotators.add(LuceneTokenAnnotator.forLanguage(Language.NORWEGIAN));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

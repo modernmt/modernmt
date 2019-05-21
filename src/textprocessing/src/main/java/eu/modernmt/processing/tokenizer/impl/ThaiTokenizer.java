@@ -13,7 +13,7 @@ public class ThaiTokenizer extends BaseTokenizer {
     public ThaiTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(LuceneTokenAnnotator.forLanguage(sourceLanguage));
+        super.annotators.add(LuceneTokenAnnotator.forLanguage(Language.THAI));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }
