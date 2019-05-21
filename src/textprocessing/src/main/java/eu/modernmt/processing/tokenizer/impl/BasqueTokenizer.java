@@ -13,7 +13,7 @@ public class BasqueTokenizer extends BaseTokenizer {
     public BasqueTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(LuceneTokenAnnotator.forLanguage(sourceLanguage));
+        super.annotators.add(LuceneTokenAnnotator.forLanguage(Language.BASQUE));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

@@ -6,13 +6,18 @@ import eu.modernmt.processing.tokenizer.jflex.JFlexTokenAnnotator;
 
 //pyflex class JFlexTokenAnnotator
 
-//pyflex prefixes ../prefixes/ca.txt
-
-CatalanContractions = [:letter:]\'[:letter:]
+WeakPronounsBeforeVerb = ([mtlsnMTLSN]\')
+WeakPronounsAfterVerb = ((\-(me|te|lo|la|ho|li|nos|vos|los|us|se|ne|hi|ME|TE|LO|LA|HO|LI|NOS|VOS|LOS|US|SE|NE|HI))|(\'(m|t|l|ns|ls|a|n|M|T|L|NS|LS|A|N)))
 
 %%
 
 /* Default Ignore */
-.                                                                                                       { /* ignore */ }
+.                                                                                                                       { /* ignore */ }
 
-{CatalanContractions}                                                                 { yypushback(1); return PROTECT; }
+/* Catalan "punt volant" */
+[Ll]"·"[Ll]                                                                                                             { return protect(1, 0); }
+
+
+[^[:letter:]]{WeakPronounsBeforeVerb}[:letter:]                                                                         { return word(1, 1) + goback(1); }
+[:letter:]{WeakPronounsAfterVerb}[^[:letter:]]                                                                          { return word(1, 1) + goback(1); }
+[^[:letter:]][dDlL]\'[[:letter:][:digit:]]                                                                              { return word(1, 1) + goback(1); }

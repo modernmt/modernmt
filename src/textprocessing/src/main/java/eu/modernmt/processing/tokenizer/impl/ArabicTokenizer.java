@@ -13,7 +13,7 @@ public class ArabicTokenizer extends BaseTokenizer {
     public ArabicTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(CoreNLPTokenAnnotator.forLanguage(sourceLanguage));
+        super.annotators.add(CoreNLPTokenAnnotator.forLanguage(Language.ARABIC));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

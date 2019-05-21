@@ -13,7 +13,7 @@ public class FarsiTokenizer extends BaseTokenizer {
     public FarsiTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(LuceneTokenAnnotator.forLanguage(sourceLanguage));
+        super.annotators.add(LuceneTokenAnnotator.forLanguage(Language.PERSIAN));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

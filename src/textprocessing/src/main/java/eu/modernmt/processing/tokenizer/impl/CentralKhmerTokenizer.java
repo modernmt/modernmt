@@ -13,7 +13,7 @@ public class CentralKhmerTokenizer extends BaseTokenizer {
     public CentralKhmerTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(LanguageToolTokenAnnotator.forLanguage(sourceLanguage));
+        super.annotators.add(LanguageToolTokenAnnotator.forLanguage(Language.KHMER));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }

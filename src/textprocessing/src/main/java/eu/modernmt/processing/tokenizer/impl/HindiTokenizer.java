@@ -13,7 +13,7 @@ public class HindiTokenizer extends BaseTokenizer {
     public HindiTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        super.annotators.add(LuceneTokenAnnotator.forLanguage(sourceLanguage));
+        super.annotators.add(LuceneTokenAnnotator.forLanguage(Language.HINDI));
         super.annotators.add(new CommonTermsTokenAnnotator((Reader) null));
     }
 }
