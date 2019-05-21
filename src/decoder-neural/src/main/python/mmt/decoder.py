@@ -17,16 +17,14 @@ from mmt.tuning import Tuner, TuningOptions
 
 
 class Translation(object):
-    # regular expression to remove leading and trailing spaces
-    pattern_spaces = r"(^ +| +$)"
 
-    # regular expression to match splits
+    # regular expression to match strong punctuation split points
     # spltting points are sequences of strong punctuation marks in several alphabets, optionally separated by apaces:
     # Western: '\.\?\!'
     # Chinese/japanese: '。？！'
     # Korean: '.?!'
     # Arabic: '.؟!'
-    pattern_stops = r'(.*?( [\.\?\!。？！.?!.؟!]+)+( +|$)|.+$)'
+    stops_re = re.compile(r'( [\s\.\?\!。？！.?!.؟!]+ )')
 
     def __init__(self, text, alignment=None, score=None):
         self.text = text
@@ -38,30 +36,42 @@ class Translation(object):
         # greedy approach for splitting the text into sentences according to strong punctuation
 
         # skip spaces trailing and leadins spaces
-        text = re.sub(Translation.pattern_spaces, "", text)
-        matches = re.findall(Translation.pattern_stops, text)
+        text = text.strip()
+
+        matches = re.split(Translation.stops_re, text)
+        matchesN = len(matches)
 
         split_texts = []
         if matches is None:
             split_texts.append(text)
         else:
+            print("matchesN:{}".format(matchesN))
+            if matchesN > 0:
+                current_match = matches[0]
 
-            # manage first match
-            # skip spaces trailing and leading spaces for current match
-            current_match = re.sub(Translation.pattern_spaces, "", matches[0][0])
-            split_texts.append(current_match)
+                if matchesN > 1:  # append the punctuation if any
+                    current_match += matches[1]
 
-            # manage next matches
-            for i in range(1, len(matches)):
-                # skip spaces trailing and leading spaces for current match
-                current_match = re.sub(Translation.pattern_spaces, "", matches[i][0])
+                split_texts.append(current_match.strip())
 
-                if list(current_match)[0].islower():  # append current match to the previous
-                    split_texts[-1] = split_texts[-1] + " " + current_match
-                else:
-                    split_texts.append(current_match)
+            for i in range(2, matchesN, 2):
+                print("i:{} m:|{}|".format(i, matches[i]))
+                current_match = matches[i]
+                if i < matchesN - 1:  # append the punctuation if any
+                    current_match += matches[i + 1]
 
-        split_lengths = [len(m.split()) for m in split_texts ]
+                # skip spaces trailing and leadins spaces for current match
+                current_match = current_match.strip()
+
+                if current_match:  # TODO: this check is probably superfluous, because at this point the current match should not be empty
+                    c = current_match[0]
+
+                    if c.isalnum() and (c.isupper() or not c.islower()):  # TODO: keep this if numbers are accepted, otherwise use c.isalpha()
+                        split_texts.append(current_match)
+                    else:
+                        split_texts[-1] = split_texts[-1] + " " + current_match
+
+        split_lengths = [len(m.split()) for m in split_texts]
 
         return split_texts, split_lengths
 
