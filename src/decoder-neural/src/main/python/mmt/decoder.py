@@ -59,9 +59,11 @@ class Translation(object):
         source_lengths = [len(s.split()) for s in sources]
         translation_lengths = [len(t.text.split()) for t in translations]
 
+        log_scores = [math.log(t.score) for t in translations]
+        avg_score = math.exp(sum([s * w for s, w in zip(log_scores, translation_lengths)]) / sum(translation_lengths))
+
         result = Translation(text=separator.join([t.text for t in translations]),
-                             alignment=translations[0].alignment,
-                             score=sum([t.score for t in translations]) / len(translations))
+                             alignment=translations[0].alignment, score=avg_score)
 
         # concatenate alignment with index shifting
         source_len_offset = 0
