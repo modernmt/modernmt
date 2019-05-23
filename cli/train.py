@@ -129,7 +129,7 @@ class TrainActivity(StatefulActivity):
 
         process_timeout = None
         if self.args.train_steps is None:
-            process_timeout = 1 * 60  # 30 minutes
+            process_timeout = 30 * 60  # 30 minutes
 
         process = osutils.shell_exec(cmd, stderr=self.log_fobj, stdout=self.log_fobj, background=True, env=env)
 
