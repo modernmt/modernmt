@@ -1,5 +1,4 @@
 import argparse
-import glob
 import json
 import os
 import shutil
@@ -138,9 +137,6 @@ class EvaluateActivity(StatefulActivity):
 
     @activitystep('Preparing data for scoring')
     def prepare(self):
-        def _list(path, lang):
-            return sorted(glob.glob(os.path.join(path, '*.' + lang)))
-
         def _export_he_file(src, dest_folder):
             filename = os.path.basename(src)
             dest = os.path.join(dest_folder, filename)
@@ -154,15 +150,17 @@ class EvaluateActivity(StatefulActivity):
         self.state.source_file = os.path.join(self._wdir, 'source.' + self.args.src_lang)
         self.state.reference_file = os.path.join(self._wdir, 'reference.' + self.args.tgt_lang)
 
-        osutils.cat(_list(self.args.test_set, self.args.src_lang), self.state.source_file)
-        osutils.cat(_list(self.args.test_set, self.args.tgt_lang), self.state.reference_file)
+        osutils.cat([c.src_file for c in self.state.corpora], self.state.source_file)
+        osutils.cat([c.tgt_file for c in self.state.corpora], self.state.reference_file)
 
         for entry in self.state.entries:
             if entry.error is not None:
                 continue
 
+            out_files = [os.path.join(entry.translations_path, c.name + '.' + c.tgt_lang) for c in self.state.corpora]
             entry.file = os.path.join(self._wdir, entry.id + '.' + self.args.tgt_lang)
-            osutils.cat(_list(entry.translations_path, self.args.tgt_lang), entry.file)
+
+            osutils.cat(out_files, entry.file)
 
         if self.args.human_eval_path is not None:
             if not os.path.isdir(self.args.human_eval_path):
