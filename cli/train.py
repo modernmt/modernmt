@@ -7,7 +7,7 @@ import shutil
 
 import torch
 
-from cli import CLIArgsException, StatefulActivity, activitystep
+from cli import CLIArgsException, StatefulActivity, activitystep, argv_has
 from cli.mmt import MMT_FAIRSEQ_USER_DIR
 from cli.utils import osutils
 from cli.utils.osutils import ShellError
@@ -148,43 +148,48 @@ def parse_extra_argv(parser, extra_argv):
 
     cmd_extra_args = extra_argv[:]
 
-    if '-a' not in cmd_extra_args and '--arch' not in cmd_extra_args:
+    if not argv_has(cmd_extra_args, '-a', '--arch'):
         cmd_extra_args.extend(['--arch', 'transformer_mmt_base'])
-    if '--clip-norm' not in cmd_extra_args:
+    if not argv_has(cmd_extra_args, '--clip-norm'):
         cmd_extra_args.extend(['--clip-norm', '0.0'])
-    if '--label-smoothing' not in cmd_extra_args:
+    if not argv_has(cmd_extra_args, '--label-smoothing'):
         cmd_extra_args.extend(['--label-smoothing', '0.1'])
-    if '--attention-dropout' not in cmd_extra_args:
+    if not argv_has(cmd_extra_args, '--attention-dropout'):
         cmd_extra_args.extend(['--attention-dropout', '0.1'])
-    if '--dropout' not in cmd_extra_args:
+    if not argv_has(cmd_extra_args, '--dropout'):
         cmd_extra_args.extend(['--dropout', '0.3'])
-    if '--weight-decay' not in cmd_extra_args:
+    if not argv_has(cmd_extra_args, '--wd', '--weight-decay'):
         cmd_extra_args.extend(['--weight-decay', '0.0'])
-    if '--criterion' not in cmd_extra_args:
+    if not argv_has(cmd_extra_args, '--criterion'):
         cmd_extra_args.extend(['--criterion', 'label_smoothed_cross_entropy'])
-    if '--optimizer' not in cmd_extra_args:
+
+    if not argv_has(cmd_extra_args, '--optimizer'):
         cmd_extra_args.extend(['--optimizer', 'adam'])
-        if '--adam-betas' not in cmd_extra_args:
+        if not argv_has(cmd_extra_args, '--adam-betas'):
             cmd_extra_args.extend(['--adam-betas', '(0.9, 0.98)'])
-    if '--log-interval' not in cmd_extra_args:
+
+    if not argv_has(cmd_extra_args, '--log-interval'):
         cmd_extra_args.extend(['--log-interval', '100'])
-    if '--lr' not in cmd_extra_args:
+
+    if not argv_has(cmd_extra_args, '--lr', '--learning-rate'):
         cmd_extra_args.extend(['--lr', '0.0001'])
-    if '--lr-scheduler' not in cmd_extra_args:
+    if not argv_has(cmd_extra_args, '--lr-scheduler'):
         cmd_extra_args.extend(['--lr-scheduler', 'inverse_sqrt'])
-    if '--min-lr' not in cmd_extra_args:
+    if not argv_has(cmd_extra_args, '--min-lr'):
         cmd_extra_args.extend(['--min-lr', '1e-09'])
-    if '--warmup-init-lr' not in cmd_extra_args:
+    if not argv_has(cmd_extra_args, '--warmup-init-lr'):
         cmd_extra_args.extend(['--warmup-init-lr', '1e-07'])
-    if '--warmup-updates' not in cmd_extra_args:
+    if not argv_has(cmd_extra_args, '--warmup-updates'):
         cmd_extra_args.extend(['--warmup-updates', '4000'])
-    if '--max-tokens' not in cmd_extra_args:
+
+    if not argv_has(cmd_extra_args, '--max-tokens'):
         cmd_extra_args.extend(['--max-tokens', '1536'])
-    if '--save-interval-updates' not in cmd_extra_args:
+
+    if not argv_has(cmd_extra_args, '--save-interval-updates'):
         cmd_extra_args.extend(['--save-interval-updates', '2000'])
-    if '--keep-interval-updates' not in cmd_extra_args:
+    if not argv_has(cmd_extra_args, '--keep-interval-updates'):
         cmd_extra_args.extend(['--keep-interval-updates', '10'])
-    if '--keep-last-epochs' not in cmd_extra_args:
+    if not argv_has(cmd_extra_args, '--keep-last-epochs'):
         cmd_extra_args.extend(['--keep-last-epochs', '10'])
 
     return cmd_extra_args

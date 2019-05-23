@@ -9,6 +9,14 @@ import time
 from cli.utils import osutils
 
 
+def argv_has(argv, *args):
+    for argv_arg in argv:
+        for arg in args:
+            if arg == argv_arg or argv_arg.startswith(arg + '='):
+                return True
+    return False
+
+
 class CLIArgsException(Exception):
     def __init__(self, parser, error):
         self.parser = parser
