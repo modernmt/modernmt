@@ -88,7 +88,8 @@ class CreateActivity(StatefulActivity):
 
         args = Namespace(data_path=self.state.datagen_dir, output_path=self.state.nn_path, debug=self.args.debug,
                          num_checkpoints=self.args.num_checkpoints, resume=self.args.resume, init_model=init_model,
-                         gpus=self.args.gpus, tensorboard_port=self.args.tensorboard_port)
+                         gpus=self.args.gpus, tensorboard_port=self.args.tensorboard_port,
+                         train_steps=self.args.train_steps)
 
         activity = train.TrainActivity(args, self.extra_argv, wdir=self.wdir('_temp_train'),
                                        log_file=self.log_fobj, delete_on_exit=self.delete_on_exit)
@@ -185,6 +186,9 @@ def parse_args(argv=None):
                             help='the list of GPUs available for training (default is all available GPUs)')
     train_args.add_argument('--tensorboard-port', dest='tensorboard_port', type=int, default=None,
                             help='if specified, starts a tensorboard instance during training on the given port')
+    train_args.add_argument('--train-steps', dest='train_steps', type=int, default=None,
+                            help='by default the training stops when the validation loss reaches a plateau, with '
+                                 'this option instead, the training process stops after the specified amount of steps')
 
     args, extra_argv = parser.parse_known_args(argv)
 

@@ -17,6 +17,16 @@ def argv_has(argv, *args):
     return False
 
 
+def argv_valueof(argv, *args):
+    for arg in args:
+        for i in range(len(argv)):
+            if arg == argv[i]:
+                return argv[i + 1]
+            elif argv[i].startswith(arg + '='):
+                return argv[i][:len(arg) + 1]
+    return None
+
+
 class CLIArgsException(Exception):
     def __init__(self, parser, error):
         self.parser = parser

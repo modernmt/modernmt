@@ -4,10 +4,14 @@ import os
 import pickle
 import re
 import shutil
+import struct
+from subprocess import TimeoutExpired
 
 import torch
+from tensorboardX.proto import event_pb2
+from tensorboardX.record_writer import masked_crc32c
 
-from cli import CLIArgsException, StatefulActivity, activitystep, argv_has
+from cli import CLIArgsException, StatefulActivity, activitystep, argv_has, argv_valueof
 from cli.mmt import MMT_FAIRSEQ_USER_DIR
 from cli.utils import osutils
 from cli.utils.osutils import ShellError
@@ -27,12 +31,66 @@ def _last_n_checkpoints(path, n, regex):
     return [os.path.join(path, x[1]) for x in sorted(entries, reverse=True)[:n]]
 
 
+def _get_loss(event_file):
+    with open(event_file, 'rb') as stream:
+        while True:
+            header = stream.read(8)
+            if not header:
+                break
+
+            header_crc, = struct.unpack('I', stream.read(4))
+
+            assert masked_crc32c(header) == header_crc
+
+            str_len, = struct.unpack('Q', header)
+            event_str = stream.read(str_len)
+            body_crc, = struct.unpack('I', stream.read(4))
+
+            assert masked_crc32c(event_str) == body_crc
+
+            event = event_pb2.Event()
+            event.ParseFromString(event_str)
+
+            if len(event.summary.value) > 0:
+                value = event.summary.value[0]
+                if value.tag == 'loss':
+                    return event.step, value.simple_value
+
+    raise AssertionError('could not find "loss" value in event file: ' + event_file)
+
+
 class TrainActivity(StatefulActivity):
     def __init__(self, args, extra_argv=None, wdir=None, log_file=None, start_step=None, delete_on_exit=True):
         super().__init__(args, extra_argv, wdir, log_file, start_step, delete_on_exit)
 
         if args.resume:
             self.state.step_no = self._index_of_step('train_nn') - 1
+
+        self.state.warmup_updates = int(argv_valueof(extra_argv, '--warmup-updates'))
+
+    def _training_should_stop(self):
+        valid_folder = os.path.join(self.state.tensorboard_logdir, 'valid')
+        if not os.path.isdir(valid_folder):
+            return False
+
+        events = [os.path.join(valid_folder, e) for e in os.listdir(valid_folder) if e.startswith('events.out.')]
+        if len(events) < self.args.num_checkpoints:
+            return False
+
+        events.sort(key=lambda filename: int(os.path.basename(filename).split('.')[3]), reverse=True)
+
+        # if training is still in warmup, skip
+        step, _ = _get_loss(events[0])
+        if step < self.state.warmup_updates * 2:
+            return False
+
+        window = self.args.num_checkpoints
+        current_loss = sum([_get_loss(e)[1] for e in events[:window]]) / window
+        previous_loss = sum([_get_loss(e)[1] for e in events[1:window + 1]]) / window
+
+        self._logger.info('Stop criterion: current_loss = %f, previous_loss = %f' % (current_loss, previous_loss))
+
+        return previous_loss - current_loss < 0.0001
 
     @activitystep('Train neural network')
     def train_nn(self):
@@ -43,8 +101,15 @@ class TrainActivity(StatefulActivity):
             shutil.copy(self.args.init_model, last_ckpt_path)
 
         # Create command
+        tensorboard_logdir = self.state.tensorboard_logdir = self.wdir('tensorboard_logdir')
+
         cmd = ['fairseq-train', self.args.data_path, '--save-dir', self.state.nn_path, '--task', 'mmt_translation',
-               '--user-dir', MMT_FAIRSEQ_USER_DIR, '--share-all-embeddings', '--no-progress-bar']
+               '--user-dir', MMT_FAIRSEQ_USER_DIR, '--share-all-embeddings', '--no-progress-bar',
+               '--tensorboard-logdir', tensorboard_logdir]
+
+        if self.args.train_steps is not None:
+            cmd.extend(['--max-update', str(self.args.train_steps)])
+
         cmd += self.extra_argv
 
         # Create environment
@@ -57,26 +122,38 @@ class TrainActivity(StatefulActivity):
         tensorboard = None
 
         if self.args.tensorboard_port is not None:
-            tensorboard_logdir = self.state.tensorboard_logdir = self.wdir('tensorboard_logdir')
             tensorboard_log = open(os.path.join(self.state.tensorboard_logdir, 'server.log'), 'wb')
             tensorboard_cmd = ['tensorboard', '--logdir', tensorboard_logdir, '--port', str(self.args.tensorboard_port)]
             tensorboard = osutils.shell_exec(tensorboard_cmd,
                                              stderr=tensorboard_log, stdout=tensorboard_log, background=True)
 
-            cmd += ['--tensorboard-logdir', tensorboard_logdir]
+        process_timeout = None
+        if self.args.train_steps is None:
+            process_timeout = 1 * 60  # 30 minutes
 
         process = osutils.shell_exec(cmd, stderr=self.log_fobj, stdout=self.log_fobj, background=True, env=env)
 
-        try:
-            return_code = process.wait()
+        while True:
+            try:
+                return_code = process.wait(process_timeout)
 
-            if return_code != 0:
-                raise ShellError(' '.join(cmd), return_code)
-        except KeyboardInterrupt:
-            process.terminate()
-        finally:
-            if tensorboard is not None:
-                tensorboard.terminate()
+                if return_code != 0:
+                    raise ShellError(' '.join(cmd), return_code)
+
+                break
+            except KeyboardInterrupt:
+                process.terminate()
+                self._logger.info('Training manually interrupted by user')
+                break
+            except TimeoutExpired:
+                if self._training_should_stop():
+                    process.terminate()
+                    self._logger.info('Training interrupted by termination policy: '
+                                      'validation loss has reached its plateau')
+                    break
+            finally:
+                if tensorboard is not None:
+                    tensorboard.terminate()
 
     @activitystep('Averaging checkpoints')
     def avg_checkpoints(self):
@@ -141,9 +218,9 @@ class TrainActivity(StatefulActivity):
 
 
 def parse_extra_argv(parser, extra_argv):
-    for reserved_opt in ['--save-dir', '--user-dir', '--task', '--no-progress-bar', '--share-all-embeddings',
-                         '--tensorboard-logdir']:
-        if reserved_opt in extra_argv:
+    for reserved_opt in ['--save-dir', '--user-dir', '--task', '--no-progress-bar',
+                         '--share-all-embeddings', '--tensorboard-logdir', '--max-update']:
+        if argv_has(extra_argv, reserved_opt):
             raise CLIArgsException(parser, 'overriding option "%s" is not allowed' % reserved_opt)
 
     cmd_extra_args = extra_argv[:]
@@ -224,6 +301,9 @@ def parse_args(argv=None):
                         help='the list of GPUs available for training (default is all available GPUs)')
     parser.add_argument('--tensorboard-port', dest='tensorboard_port', type=int, default=None,
                         help='if specified, starts a tensorboard instance during training on the given port')
+    parser.add_argument('--train-steps', dest='train_steps', type=int, default=None,
+                        help='by default the training stops when the validation loss reaches a plateau, with '
+                             'this option instead, the training process stops after the specified amount of steps')
 
     args, extra_argv = parser.parse_known_args(argv)
     if args.debug and args.wdir is None:

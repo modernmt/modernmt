@@ -37,7 +37,7 @@ We will now demonstrate how easy it is to train your first engine with ModernMT.
 
 Creating an engine in ModernMT is this simple:
 ```bash
-$ ./mmt create en it examples/data/train/ --max-update 10000
+$ ./mmt create en it examples/data/train/ --train-steps 10000
 ```
 
 This command will start a fast training process that will last approximately 20 minutes; **not enough to achieve good translation performance**, but enough to demonstrate its functioning. Please consider that a real training will require much more time and parallel data.
