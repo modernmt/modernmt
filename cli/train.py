@@ -249,7 +249,7 @@ def parse_extra_argv(parser, extra_argv):
         cmd_extra_args.extend(['--log-interval', '100'])
 
     if not argv_has(cmd_extra_args, '--lr', '--learning-rate'):
-        cmd_extra_args.extend(['--lr', '0.0001'])
+        cmd_extra_args.extend(['--lr', '0.0005'])
     if not argv_has(cmd_extra_args, '--lr-scheduler'):
         cmd_extra_args.extend(['--lr-scheduler', 'inverse_sqrt'])
     if not argv_has(cmd_extra_args, '--min-lr'):
@@ -257,13 +257,13 @@ def parse_extra_argv(parser, extra_argv):
     if not argv_has(cmd_extra_args, '--warmup-init-lr'):
         cmd_extra_args.extend(['--warmup-init-lr', '1e-07'])
     if not argv_has(cmd_extra_args, '--warmup-updates'):
-        cmd_extra_args.extend(['--warmup-updates', '4000'])
+        cmd_extra_args.extend(['--warmup-updates', '8000'])
 
     if not argv_has(cmd_extra_args, '--max-tokens'):
-        cmd_extra_args.extend(['--max-tokens', '1536'])
+        cmd_extra_args.extend(['--max-tokens', '3072'])
 
     if not argv_has(cmd_extra_args, '--save-interval-updates'):
-        cmd_extra_args.extend(['--save-interval-updates', '2000'])
+        cmd_extra_args.extend(['--save-interval-updates', '1000'])
     if not argv_has(cmd_extra_args, '--keep-interval-updates'):
         cmd_extra_args.extend(['--keep-interval-updates', '10'])
     if not argv_has(cmd_extra_args, '--keep-last-epochs'):
