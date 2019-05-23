@@ -202,7 +202,9 @@ class EvaluateActivity(StatefulActivity):
         for score in self.state.scores:
             print(score.name + ':')
 
-            for i, entry in enumerate(sorted(self.state.entries, key=lambda x: x.scores[score.name], reverse=True)):
+            for i, entry in enumerate(sorted(self.state.entries,
+                                             key=lambda x: x.scores[score.name]
+                                             if isinstance(x.scores[score.name], float) else -1, reverse=True)):
                 if entry.error is None:
                     score_value = entry.scores[score.name]
 
