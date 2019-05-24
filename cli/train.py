@@ -260,10 +260,12 @@ def parse_extra_argv(parser, extra_argv):
     if not argv_has(cmd_extra_args, '--warmup-init-lr'):
         cmd_extra_args.extend(['--warmup-init-lr', '1e-07'])
     if not argv_has(cmd_extra_args, '--warmup-updates'):
-        cmd_extra_args.extend(['--warmup-updates', '8000'])
+        cmd_extra_args.extend(['--warmup-updates', '4000'])
 
     if not argv_has(cmd_extra_args, '--max-tokens'):
         cmd_extra_args.extend(['--max-tokens', '3072'])
+    if not argv_has(cmd_extra_args, '--update-freq'):
+        cmd_extra_args.extend(['--update-freq', '4'])
 
     if not argv_has(cmd_extra_args, '--save-interval-updates'):
         cmd_extra_args.extend(['--save-interval-updates', '1000'])
