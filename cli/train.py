@@ -122,10 +122,13 @@ class TrainActivity(StatefulActivity):
         tensorboard = None
 
         if self.args.tensorboard_port is not None:
+            tensorboard_env = os.environ.copy()
+            tensorboard_env['CUDA_VISIBLE_DEVICES'] = ''
+
             tensorboard_log = open(os.path.join(self.state.tensorboard_logdir, 'server.log'), 'wb')
             tensorboard_cmd = ['tensorboard', '--logdir', tensorboard_logdir, '--port', str(self.args.tensorboard_port)]
-            tensorboard = osutils.shell_exec(tensorboard_cmd,
-                                             stderr=tensorboard_log, stdout=tensorboard_log, background=True)
+            tensorboard = osutils.shell_exec(tensorboard_cmd, stderr=tensorboard_log, stdout=tensorboard_log,
+                                             env=tensorboard_env, background=True)
 
         process_timeout = None
         if self.args.train_steps is None:
