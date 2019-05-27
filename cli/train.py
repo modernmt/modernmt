@@ -67,6 +67,7 @@ class TrainActivity(StatefulActivity):
             self.state.step_no = self._index_of_step('train_nn') - 1
 
         self.state.warmup_updates = int(argv_valueof(extra_argv, '--warmup-updates'))
+        self.state.save_interval_updates = int(argv_valueof(extra_argv, '--save-interval-updates'))
 
     def _training_should_stop(self):
         valid_folder = os.path.join(self.state.tensorboard_logdir, 'valid')
@@ -82,6 +83,10 @@ class TrainActivity(StatefulActivity):
         # if training is still in warmup, skip
         step, _ = _get_loss(events[0])
         if step < self.state.warmup_updates * 2:
+            return False
+
+        # if event does not  correspond to a storable checkpoint, skip
+        if step % self.state.self.state.save_interval_updates != 0:
             return False
 
         window = self.args.num_checkpoints
