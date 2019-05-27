@@ -69,6 +69,17 @@ class TrainActivity(StatefulActivity):
         self.state.save_interval_updates = int(argv_valueof(extra_argv, '--save-interval-updates'))
 
     def _training_should_stop(self):
+        def _loss_iterator(_events, limit):
+            count = 0
+            for e in _events:
+                step, loss = _get_loss(e)
+                if step % self.state.save_interval_updates == 0:
+                    yield loss
+
+                    count += 1
+                    if count == limit:
+                        break
+
         valid_folder = os.path.join(self.state.tensorboard_logdir, 'valid')
         if not os.path.isdir(valid_folder):
             return False
@@ -76,17 +87,17 @@ class TrainActivity(StatefulActivity):
         events = [os.path.join(valid_folder, e) for e in os.listdir(valid_folder) if e.startswith('events.out.')]
         if len(events) < self.args.num_checkpoints:
             return False
-
         events.sort(key=lambda filename: int(os.path.basename(filename).split('.')[3]), reverse=True)
-        losses = [loss for step, loss in [_get_loss(e) for e in events] if step % self.state.save_interval_updates == 0]
+
         window = self.args.num_checkpoints
+        losses = [loss for loss in _loss_iterator(events, limit=window + 1)]
 
         # if not enough checkpoints to evaluate
         if len(losses) < window + 1:
             return False
 
-        current_loss = sum([_get_loss(e)[1] for e in events[:window]]) / window
-        previous_loss = sum([_get_loss(e)[1] for e in events[1:window + 1]]) / window
+        current_loss = sum([loss for loss in losses[:window]]) / window
+        previous_loss = sum([loss for loss in losses[1:window + 1]]) / window
 
         self._logger.info('Stop criterion: current_loss = %f, previous_loss = %f' % (current_loss, previous_loss))
 
@@ -132,7 +143,7 @@ class TrainActivity(StatefulActivity):
 
         process_timeout = None
         if self.args.train_steps is None:
-            process_timeout = 30 * 60  # 30 minutes
+            process_timeout = 5 * 60  # 5 minutes
 
         process = osutils.shell_exec(cmd, stderr=self.log_fobj, stdout=self.log_fobj, background=True, env=env)
 
