@@ -17,8 +17,8 @@ from cli.utils import osutils
 from cli.utils.osutils import ShellError
 
 
-def _last_n_checkpoints(path, n):
-    pt_regexp = re.compile(r'checkpoint_\d+_(\d+)\.pt')
+def _last_n_checkpoints(path, n, regex):
+    pt_regexp = re.compile(regex)
     files = os.listdir(path)
 
     entries = []
@@ -160,7 +160,10 @@ class TrainActivity(StatefulActivity):
 
     @activitystep('Averaging checkpoints')
     def avg_checkpoints(self):
-        checkpoints = _last_n_checkpoints(self.state.nn_path, self.args.num_checkpoints)
+        checkpoints = _last_n_checkpoints(self.state.nn_path, self.args.num_checkpoints, r'checkpoint_\d+_(\d+)\.pt')
+        if len(checkpoints) == 0:
+            # by epoch
+            checkpoints = _last_n_checkpoints(self.state.nn_path, self.args.num_checkpoints, r'checkpoint(\d+)\.pt')
 
         if len(checkpoints) == 0:
             raise ValueError('no checkpoints found in ' + self.state.nn_path)
@@ -269,7 +272,7 @@ def parse_extra_argv(parser, extra_argv):
     if not argv_has(cmd_extra_args, '--keep-interval-updates'):
         cmd_extra_args.extend(['--keep-interval-updates', '10'])
     if not argv_has(cmd_extra_args, '--no-epoch-checkpoints') and not argv_has(cmd_extra_args, '--keep-last-epochs'):
-        cmd_extra_args.append('--no-epoch-checkpoints')
+        cmd_extra_args.extend(['--keep-last-epochs', '10'])
 
     return cmd_extra_args
 
