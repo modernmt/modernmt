@@ -66,7 +66,6 @@ class TrainActivity(StatefulActivity):
         if args.resume:
             self.state.step_no = self._index_of_step('train_nn') - 1
 
-        self.state.warmup_updates = int(argv_valueof(extra_argv, '--warmup-updates'))
         self.state.save_interval_updates = int(argv_valueof(extra_argv, '--save-interval-updates'))
 
     def _training_should_stop(self):
@@ -79,17 +78,13 @@ class TrainActivity(StatefulActivity):
             return False
 
         events.sort(key=lambda filename: int(os.path.basename(filename).split('.')[3]), reverse=True)
-
-        # if training is still in warmup, skip
-        step, _ = _get_loss(events[0])
-        if step < self.state.warmup_updates * 2:
-            return False
-
-        # if event does not  correspond to a storable checkpoint, skip
-        if step % self.state.self.state.save_interval_updates != 0:
-            return False
-
+        losses = [loss for step, loss in [_get_loss(e) for e in events] if step % self.state.save_interval_updates == 0]
         window = self.args.num_checkpoints
+
+        # if not enough checkpoints to evaluate
+        if len(losses) < window + 1:
+            return False
+
         current_loss = sum([_get_loss(e)[1] for e in events[:window]]) / window
         previous_loss = sum([_get_loss(e)[1] for e in events[1:window + 1]]) / window
 
