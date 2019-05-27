@@ -17,18 +17,23 @@ from cli.utils import osutils
 from cli.utils.osutils import ShellError
 
 
-def _last_n_checkpoints(path, n, regex):
-    pt_regexp = re.compile(regex)
-    files = os.listdir(path)
+def _last_n_checkpoints(path, n, fallback_to_epoch=True):
+    def _list(regex):
+        files = os.listdir(path)
 
-    entries = []
-    for f in files:
-        m = pt_regexp.fullmatch(f)
-        if m is not None:
-            sort_key = int(m.group(1))
-            entries.append((sort_key, m.group(0)))
+        entries = []
+        for f in files:
+            m = regex.fullmatch(f)
+            if m is not None:
+                sort_key = int(m.group(1))
+                entries.append((sort_key, m.group(0)))
 
-    return [os.path.join(path, x[1]) for x in sorted(entries, reverse=True)[:n]]
+        return [os.path.join(path, x[1]) for x in sorted(entries, reverse=True)[:n]]
+
+    checkpoints = _list(re.compile(r'checkpoint_\d+_(\d+)\.pt'))
+    if len(checkpoints) == 0 and fallback_to_epoch:
+        checkpoints = _list(re.compile(r'checkpoint(\d+)\.pt'))
+    return checkpoints
 
 
 def _get_loss(event_file):
@@ -146,6 +151,7 @@ class TrainActivity(StatefulActivity):
             process_timeout = 5 * 60  # 5 minutes
 
         process = osutils.shell_exec(cmd, stderr=self.log_fobj, stdout=self.log_fobj, background=True, env=env)
+        last_checkpoint = None
 
         while True:
             try:
@@ -160,22 +166,23 @@ class TrainActivity(StatefulActivity):
                 self._logger.info('Training manually interrupted by user')
                 break
             except TimeoutExpired:
-                if self._training_should_stop():
+                checkpoints = _last_n_checkpoints(self.state.nn_path, 1)
+                checkpoint = checkpoints[0] if len(checkpoints) > 0 else None
+
+                if last_checkpoint != checkpoint and self._training_should_stop():
                     process.terminate()
                     self._logger.info('Training interrupted by termination policy: '
                                       'validation loss has reached its plateau')
                     break
+
+                last_checkpoint = checkpoint
             finally:
                 if tensorboard is not None:
                     tensorboard.terminate()
 
     @activitystep('Averaging checkpoints')
     def avg_checkpoints(self):
-        checkpoints = _last_n_checkpoints(self.state.nn_path, self.args.num_checkpoints, r'checkpoint_\d+_(\d+)\.pt')
-        if len(checkpoints) == 0:
-            # by epoch
-            checkpoints = _last_n_checkpoints(self.state.nn_path, self.args.num_checkpoints, r'checkpoint(\d+)\.pt')
-
+        checkpoints = _last_n_checkpoints(self.state.nn_path, self.args.num_checkpoints)
         if len(checkpoints) == 0:
             raise ValueError('no checkpoints found in ' + self.state.nn_path)
 
