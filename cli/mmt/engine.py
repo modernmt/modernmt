@@ -63,6 +63,8 @@ class Engine(object):
             self.languages = []
 
     def get_test_path(self, src_lang, tgt_lang):
+        if src_lang > tgt_lang:
+            src_lang, tgt_lang = tgt_lang, src_lang
         return os.path.join(self.test_data_path, '%s__%s' % (src_lang, tgt_lang))
 
     def exists(self):
