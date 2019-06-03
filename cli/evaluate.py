@@ -97,7 +97,10 @@ class EvaluateActivity(StatefulActivity):
     def __init__(self, mmt_node, args, extra_argv=None, wdir=None, log_file=None, start_step=None, delete_on_exit=True):
         super().__init__(args, extra_argv, wdir, log_file, start_step, delete_on_exit)
 
-        gt = GoogleTranslate(args.src_lang, args.tgt_lang, key=args.google_key)
+        gt = None
+        if args.google_key.lower() == "none":
+            gt = GoogleTranslate(args.src_lang, args.tgt_lang, key=args.google_key)
+
         mmt = ModernMTTranslate(mmt_node, args.src_lang, args.tgt_lang, priority='background',
                                 context_string=args.context, context_file=args.context_file,
                                 context_vector=args.context_vector)
@@ -105,7 +108,7 @@ class EvaluateActivity(StatefulActivity):
         self.state.scores = [MatecatScore(), BLEUScore()]
         self.state.corpora = ParallelFileFormat.list(args.src_lang, args.tgt_lang, args.test_set)
         self.state.test_set_lines = sum([osutils.lc(c.src_file) for c in self.state.corpora])
-        self.state.entries = [_EvaluationEntry(engine) for engine in [gt, mmt]]
+        self.state.entries = [_EvaluationEntry(engine) for engine in [gt, mmt] if engine is not None]
 
         for entry in self.state.entries:
             self._steps.insert(0, activitystep('Translating with %s' % entry.name)(self._translate(entry)))
@@ -243,7 +246,9 @@ def parse_args(argv=None):
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
     parser.add_argument('--gt-key', dest='google_key', metavar='GT_API_KEY', default=None,
-                        help='A custom Google Translate API Key to use during evaluation')
+                        help='A custom Google Translate API Key to use for evaluating GT performance. '
+                             'If not set, the a default quota-limited key is used.'
+                             'If set to "none", GT performance is not computed.')
     parser.add_argument('--human-eval', dest='human_eval_path', metavar='OUTPUT', default=None,
                         help='the output folder for the tab-spaced files needed to setup a Human Evaluation benchmark')
     parser.add_argument('-d', '--debug', action='store_true', dest='debug',
