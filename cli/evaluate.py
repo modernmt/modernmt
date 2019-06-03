@@ -247,7 +247,7 @@ def parse_args(argv=None):
                         default='default')
     parser.add_argument('--gt-key', dest='google_key', metavar='GT_API_KEY', default=None,
                         help='A custom Google Translate API Key to use for evaluating GT performance. '
-                             'If not set, the a default quota-limited key is used.'
+                             'If not set, a default quota-limited key is used.'
                              'If set to "none", GT performance is not computed.')
     parser.add_argument('--human-eval', dest='human_eval_path', metavar='OUTPUT', default=None,
                         help='the output folder for the tab-spaced files needed to setup a Human Evaluation benchmark')
