@@ -9,7 +9,7 @@ import requests
 
 from cli import StatefulActivity, ensure_engine_exists, ensure_node_running, ensure_node_has_api, activitystep, \
     CLIArgsException
-from cli.mmt import bleu
+from cli.mmt import bleu, charcut
 from cli.mmt.engine import Engine, EngineNode
 from cli.mmt.fileformats import ParallelFileFormat
 from cli.mmt.processing import XMLEncoder
@@ -25,6 +25,16 @@ class Score(object):
     def calculate(self, reference, translation):
         raise NotImplementedError
 
+
+class CharCutScore(Score):
+    @property
+    def name(self):
+        return 'CharCut Accuracy Score'
+
+    def calculate(self, reference, translation):
+        with open(reference, 'r', encoding='utf-8') as ref, open(translation, 'r', encoding='utf-8') as hyp:
+            error = charcut.corpus_charcut(ref, hyp, tokenize=True)
+            return 100 * (1.0 - float(error))
 
 class BLEUScore(Score):
     @property
@@ -98,7 +108,7 @@ class EvaluateActivity(StatefulActivity):
         super().__init__(args, extra_argv, wdir, log_file, start_step, delete_on_exit)
 
         gt = None
-        if args.google_key.lower() == "none":
+        if args.google_key is None or args.google_key.lower() != "none":
             gt = GoogleTranslate(args.src_lang, args.tgt_lang, key=args.google_key)
 
         mmt = ModernMTTranslate(mmt_node, args.src_lang, args.tgt_lang, priority='background',
@@ -106,6 +116,12 @@ class EvaluateActivity(StatefulActivity):
                                 context_vector=args.context_vector)
 
         self.state.scores = [MatecatScore(), BLEUScore()]
+        try:
+            import regex
+            self.state.scores.append(CharCutScore())
+        except ImportError:
+            pass
+
         self.state.corpora = ParallelFileFormat.list(args.src_lang, args.tgt_lang, args.test_set)
         self.state.test_set_lines = sum([osutils.lc(c.src_file) for c in self.state.corpora])
         self.state.entries = [_EvaluationEntry(engine) for engine in [gt, mmt] if engine is not None]
