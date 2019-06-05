@@ -153,32 +153,33 @@ class TrainActivity(StatefulActivity):
         process = osutils.shell_exec(cmd, stderr=self.log_fobj, stdout=self.log_fobj, background=True, env=env)
         last_checkpoint = None
 
-        while True:
-            try:
-                return_code = process.wait(process_timeout)
+        try:
+            while True:
+                try:
+                    return_code = process.wait(process_timeout)
 
-                if return_code != 0:
-                    raise ShellError(' '.join(cmd), return_code)
+                    if return_code != 0:
+                        raise ShellError(' '.join(cmd), return_code)
 
-                break
-            except KeyboardInterrupt:
-                process.terminate()
-                self._logger.info('Training manually interrupted by user')
-                break
-            except TimeoutExpired:
-                checkpoints = _last_n_checkpoints(self.state.nn_path, 1)
-                checkpoint = checkpoints[0] if len(checkpoints) > 0 else None
-
-                if last_checkpoint != checkpoint and self._training_should_stop():
-                    process.terminate()
-                    self._logger.info('Training interrupted by termination policy: '
-                                      'validation loss has reached its plateau')
                     break
+                except KeyboardInterrupt:
+                    process.terminate()
+                    self._logger.info('Training manually interrupted by user')
+                    break
+                except TimeoutExpired:
+                    checkpoints = _last_n_checkpoints(self.state.nn_path, 1)
+                    checkpoint = checkpoints[0] if len(checkpoints) > 0 else None
 
-                last_checkpoint = checkpoint
-            finally:
-                if tensorboard is not None:
-                    tensorboard.terminate()
+                    if last_checkpoint != checkpoint and self._training_should_stop():
+                        process.terminate()
+                        self._logger.info('Training interrupted by termination policy: '
+                                          'validation loss has reached its plateau')
+                        break
+
+                    last_checkpoint = checkpoint
+        finally:
+            if tensorboard is not None:
+                tensorboard.terminate()
 
     @activitystep('Averaging checkpoints')
     def avg_checkpoints(self):
