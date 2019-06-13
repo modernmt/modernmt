@@ -172,8 +172,9 @@ You can learn how on the Wiki page [Advanced Configurations](https://github.com/
 **ModernMT Enterprise Edition** is our cloud solution for professional translators and enterprises. It is proprietary, and it includes an improved adaptation algorithm, "crafted" with months of optimization and fine-tuning of the system. Moreover, our Enterprise Edition comes with top-quality baseline models trained on billions of high-quality training data.
 
 In a nutshell **ModernMT Enterprise Edition** offers:
-- A top-notch adaptation algorithm refined with our inner knowledge of the tool.
-- Pre-trained generic and custom models in 45 language pairs (and more to come!) on multiple billion words of premium data.
+- Higher quality. A top-notch adaptation algorithm refined with our inner knowledge of the tool.
+- Designed for intensive datacenter usage. 4x cheaper per MB of text translated.
+- Pre-trained generic and custom models in 60 language pairs on multiple billion words of premium data.
 - Support for cluster of servers for higher throughput, load balancing and high availability. 
 - Support for 71 files formats without format loss (Office, Adobe, Localization, etc).
 - Enterprise Customer Support via Video Conference Call, Phone and Email on business hours (CET) and optionally 24x7.
