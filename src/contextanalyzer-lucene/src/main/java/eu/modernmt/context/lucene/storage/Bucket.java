@@ -1,6 +1,6 @@
 package eu.modernmt.context.lucene.storage;
 
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.BoundedInputStream;
 
@@ -13,7 +13,7 @@ import java.util.zip.GZIPInputStream;
 public class Bucket {
 
     private final long id;
-    private final LanguagePair language;
+    private final LanguageDirection language;
     private final UUID owner;
 
     private final Lock fileLock;
@@ -26,7 +26,7 @@ public class Bucket {
 
     private BucketWriter writer = null;
 
-    Bucket(File folder, long id, LanguagePair language, UUID owner) {
+    Bucket(File folder, long id, LanguageDirection language, UUID owner) {
         this.id = id;
         this.language = language;
         this.owner = owner;
@@ -42,7 +42,7 @@ public class Bucket {
         this.virtualSize = 0;
     }
 
-    Bucket(File folder, long id, LanguagePair language, UUID owner, long plainTextFileSize, long compressedFileSize, long virtualSize) {
+    Bucket(File folder, long id, LanguageDirection language, UUID owner, long plainTextFileSize, long compressedFileSize, long virtualSize) {
         this(folder, id, language, owner);
 
         this.plainTextFileSize = plainTextFileSize;
@@ -54,7 +54,7 @@ public class Bucket {
         return id;
     }
 
-    public LanguagePair getLanguage() {
+    public LanguageDirection getLanguage() {
         return language;
     }
 

@@ -1,6 +1,6 @@
 package eu.modernmt.aligner;
 
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 
@@ -23,14 +23,14 @@ public interface Aligner extends Closeable {
 
     SymmetrizationStrategy getDefaultSymmetrizationStrategy();
 
-    Alignment getAlignment(LanguagePair direction, Sentence source, Sentence target) throws AlignerException;
+    Alignment getAlignment(LanguageDirection direction, Sentence source, Sentence target) throws AlignerException;
 
-    Alignment[] getAlignments(LanguagePair direction, List<? extends Sentence> sources, List<? extends Sentence> targets) throws AlignerException;
+    Alignment[] getAlignments(LanguageDirection direction, List<? extends Sentence> sources, List<? extends Sentence> targets) throws AlignerException;
 
-    Alignment getAlignment(LanguagePair direction, Sentence source, Sentence target, SymmetrizationStrategy strategy) throws AlignerException;
+    Alignment getAlignment(LanguageDirection direction, Sentence source, Sentence target, SymmetrizationStrategy strategy) throws AlignerException;
 
-    Alignment[] getAlignments(LanguagePair direction, List<? extends Sentence> sources, List<? extends Sentence> targets, SymmetrizationStrategy strategy) throws AlignerException;
+    Alignment[] getAlignments(LanguageDirection direction, List<? extends Sentence> sources, List<? extends Sentence> targets, SymmetrizationStrategy strategy) throws AlignerException;
 
-    boolean isSupported(LanguagePair direction);
+    boolean isSupported(LanguageDirection direction);
 
 }

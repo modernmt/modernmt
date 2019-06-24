@@ -1,6 +1,6 @@
 package eu.modernmt.model.corpus;
 
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -14,15 +14,15 @@ public interface MultilingualCorpus {
 
     String getName();
 
-    Set<LanguagePair> getLanguages();
+    Set<LanguageDirection> getLanguages();
 
-    int getLineCount(LanguagePair language);
+    int getLineCount(LanguageDirection language);
 
     MultilingualLineReader getContentReader() throws IOException;
 
     MultilingualLineWriter getContentWriter(boolean append) throws IOException;
 
-    Corpus getCorpus(LanguagePair language, boolean source);
+    Corpus getCorpus(LanguageDirection language, boolean source);
 
     interface MultilingualLineReader extends Closeable {
 
@@ -39,16 +39,16 @@ public interface MultilingualCorpus {
 
     class StringPair {
 
-        public LanguagePair language;
+        public LanguageDirection language;
         public String source;
         public String target;
         public Date timestamp;
 
-        public StringPair(LanguagePair language, String source, String target) {
+        public StringPair(LanguageDirection language, String source, String target) {
             this(language, source, target, null);
         }
 
-        public StringPair(LanguagePair language, String source, String target, Date timestamp) {
+        public StringPair(LanguageDirection language, String source, String target, Date timestamp) {
             this.language = language;
             this.source = source;
             this.target = target;

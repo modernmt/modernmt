@@ -1,7 +1,7 @@
 package eu.modernmt.cleaning.filters.draft;
 
 import eu.modernmt.cleaning.MultilingualCorpusFilter;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.util.Date;
@@ -12,7 +12,7 @@ import java.util.HashMap;
  */
 public class DraftFilter implements MultilingualCorpusFilter {
 
-    private final HashMap<LanguagePair, DraftFilterData> filters = new HashMap<>();
+    private final HashMap<LanguageDirection, DraftFilterData> filters = new HashMap<>();
     private boolean dataReady = false;
 
     @Override

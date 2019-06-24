@@ -1,6 +1,6 @@
 package eu.modernmt.processing.concurrent;
 
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.ProcessingPipeline;
 import eu.modernmt.processing.builder.PipelineBuilder;
@@ -13,14 +13,14 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 class PipelineQueue<P, R> {
 
-    private final ConcurrentHashMap<LanguagePair, ConcurrentLinkedQueue<ProcessingPipeline<P, R>>> pipelines = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<LanguageDirection, ConcurrentLinkedQueue<ProcessingPipeline<P, R>>> pipelines = new ConcurrentHashMap<>();
     private final PipelineBuilder<P, R> builder;
 
     PipelineQueue(PipelineBuilder<P, R> builder) {
         this.builder = builder;
     }
 
-    public ProcessingPipeline<P, R> get(LanguagePair language) throws ProcessingException {
+    public ProcessingPipeline<P, R> get(LanguageDirection language) throws ProcessingException {
         ProcessingPipeline<P, R> pipeline = pipelines
                 .computeIfAbsent(language, k -> new ConcurrentLinkedQueue<>())
                 .poll();
@@ -31,7 +31,7 @@ class PipelineQueue<P, R> {
         return pipeline;
     }
 
-    public void release(LanguagePair language, ProcessingPipeline<P, R> pipeline) {
+    public void release(LanguageDirection language, ProcessingPipeline<P, R> pipeline) {
         pipelines.computeIfAbsent(language, k -> new ConcurrentLinkedQueue<>())
                 .offer(pipeline);
     }

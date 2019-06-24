@@ -1,6 +1,6 @@
 package eu.modernmt.training;
 
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.MultilingualCorpusWrapper;
@@ -30,12 +30,12 @@ public class LazyWriterMultilingualCorpus implements MultilingualCorpusWrapper {
     }
 
     @Override
-    public Set<LanguagePair> getLanguages() {
+    public Set<LanguageDirection> getLanguages() {
         return corpus.getLanguages();
     }
 
     @Override
-    public int getLineCount(LanguagePair language) {
+    public int getLineCount(LanguageDirection language) {
         return corpus.getLineCount(language);
     }
 
@@ -72,7 +72,7 @@ public class LazyWriterMultilingualCorpus implements MultilingualCorpusWrapper {
     }
 
     @Override
-    public Corpus getCorpus(LanguagePair language, boolean source) {
+    public Corpus getCorpus(LanguageDirection language, boolean source) {
         return corpus.getCorpus(language, source);
     }
 }

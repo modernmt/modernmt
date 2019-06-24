@@ -20,13 +20,13 @@ public class LanguageIndexTest {
         return Language.fromString(s);
     }
 
-    private static LanguagePair lp(String s) {
+    private static LanguageDirection lp(String s) {
         String[] parts = s.split("\\s+");
-        return new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1]));
+        return new LanguageDirection(Language.fromString(parts[0]), Language.fromString(parts[1]));
     }
 
-    private static List<LanguagePair> list(String string) {
-        ArrayList<LanguagePair> result = new ArrayList<>();
+    private static List<LanguageDirection> list(String string) {
+        ArrayList<LanguageDirection> result = new ArrayList<>();
         for (String part : string.split(","))
             result.add(lp(part.trim()));
         return result;

@@ -2,7 +2,7 @@ package eu.modernmt.processing;
 
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Sentence;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -14,7 +14,7 @@ import static org.junit.Assert.assertEquals;
 
 public class PreprocessSpecialEntitiesTest {
 
-    private static final LanguagePair language = new LanguagePair(Language.ENGLISH, Language.ITALIAN);
+    private static final LanguageDirection language = new LanguageDirection(Language.ENGLISH, Language.ITALIAN);
     private static Preprocessor preprocessor = null;
 
     @BeforeClass

@@ -5,7 +5,7 @@ import eu.modernmt.io.LineReader;
 import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.io.UnixLineWriter;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.splitter.SentenceSplitter;
@@ -32,14 +32,14 @@ public class SentenceSplitMain {
             cliOptions.addOption(language);
         }
 
-        public final LanguagePair language;
+        public final LanguageDirection language;
 
         public Args(String[] args) throws ParseException {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
             Language lang = Language.fromString(cli.getOptionValue("l"));
-            language = new LanguagePair(lang, lang);
+            language = new LanguageDirection(lang, lang);
         }
 
     }

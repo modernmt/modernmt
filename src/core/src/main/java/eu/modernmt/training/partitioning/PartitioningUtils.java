@@ -1,11 +1,9 @@
 package eu.modernmt.training.partitioning;
 
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
-import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Created by davide on 22/08/16.
@@ -14,7 +12,7 @@ public class PartitioningUtils {
 
     private static final double MAX_CORPUS_PARTITION_RATIO = 0.01;
 
-    public static double getAdjustedWeight(LanguagePair language, MultilingualCorpus corpus, long extraPartitionsLines, long corporaLines) {
+    public static double getAdjustedWeight(LanguageDirection language, MultilingualCorpus corpus, long extraPartitionsLines, long corporaLines) {
         int corpusLines = corpus.getLineCount(language);
 
         double weight = ((double) corpusLines) / corporaLines;

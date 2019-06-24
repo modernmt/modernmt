@@ -1,7 +1,7 @@
 package eu.modernmt.decoder;
 
 import eu.modernmt.config.DecoderConfig;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -21,9 +21,9 @@ public abstract class Decoder implements Closeable {
 
     public abstract void setListener(DecoderListener listener);
 
-    public abstract Translation translate(UUID user, LanguagePair direction, Sentence text) throws DecoderException;
+    public abstract Translation translate(UUID user, LanguageDirection direction, Sentence text) throws DecoderException;
 
-    public abstract Translation translate(UUID user, LanguagePair direction, Sentence text, ContextVector contextVector) throws DecoderException;
+    public abstract Translation translate(UUID user, LanguageDirection direction, Sentence text, ContextVector contextVector) throws DecoderException;
 
     public abstract void test() throws DecoderException;
 

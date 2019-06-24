@@ -1,6 +1,6 @@
 package eu.modernmt.cluster;
 
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 
 import java.util.Collection;
 import java.util.Set;
@@ -33,9 +33,9 @@ public class ServerInfo {
 
     private final ClusterInfo cluster;
     private final BuildInfo build;
-    private final Set<LanguagePair> languages;
+    private final Set<LanguageDirection> languages;
 
-    public ServerInfo(ClusterInfo cluster, BuildInfo build, Set<LanguagePair> languages) {
+    public ServerInfo(ClusterInfo cluster, BuildInfo build, Set<LanguageDirection> languages) {
         this.cluster = cluster;
         this.build = build;
         this.languages = languages;

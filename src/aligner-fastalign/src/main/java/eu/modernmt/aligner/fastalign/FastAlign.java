@@ -3,7 +3,7 @@ package eu.modernmt.aligner.fastalign;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 import org.apache.commons.io.FilenameUtils;
@@ -31,7 +31,7 @@ public class FastAlign implements Aligner {
     private SymmetrizationStrategy strategy = SymmetrizationStrategy.GROW_DIAGONAL_FINAL_AND;
     private final HashMap<LanguageKey, Long> models;
 
-    private static Collection<LanguagePair> parseLanguagesFromFilename(File file) throws IOException {
+    private static Collection<LanguageDirection> parseLanguagesFromFilename(File file) throws IOException {
         String encoded = FilenameUtils.removeExtension(file.getName());
         String[] parts = encoded.split("__");
         if (parts.length != 2)
@@ -39,11 +39,11 @@ public class FastAlign implements Aligner {
 
         String[] sources = parts[0].split("_");
         String[] targets = parts[1].split("_");
-        HashSet<LanguagePair> languages = new HashSet<>();
+        HashSet<LanguageDirection> languages = new HashSet<>();
 
         for (String source : sources) {
             for (String target : targets) {
-                languages.add(new LanguagePair(Language.fromString(source), Language.fromString(target)));
+                languages.add(new LanguageDirection(Language.fromString(source), Language.fromString(target)));
             }
         }
 
@@ -102,7 +102,7 @@ public class FastAlign implements Aligner {
             File path = entry.getKey();
             Long nativeHandle = entry.getValue();
 
-            for (LanguagePair pair : parseLanguagesFromFilename(path)) {
+            for (LanguageDirection pair : parseLanguagesFromFilename(path)) {
                 if (pair.source.getRegion() != null || pair.target.getRegion() != null)
                     throw new IOException("Cannot specify region for model language tag in model: " + path);
 
@@ -114,7 +114,7 @@ public class FastAlign implements Aligner {
     private native long instantiate(String modelFile, int threads);
 
     @Override
-    public boolean isSupported(LanguagePair direction) {
+    public boolean isSupported(LanguageDirection direction) {
         LanguageKey key = LanguageKey.parse(direction);
         return models.containsKey(key) || models.containsKey(key.reversed());
     }
@@ -130,12 +130,12 @@ public class FastAlign implements Aligner {
     }
 
     @Override
-    public Alignment getAlignment(LanguagePair language, Sentence source, Sentence target) throws AlignerException {
+    public Alignment getAlignment(LanguageDirection language, Sentence source, Sentence target) throws AlignerException {
         return getAlignment(language, source, target, strategy);
     }
 
     @Override
-    public Alignment getAlignment(LanguagePair language, Sentence source, Sentence target, SymmetrizationStrategy strategy) throws AlignerException {
+    public Alignment getAlignment(LanguageDirection language, Sentence source, Sentence target, SymmetrizationStrategy strategy) throws AlignerException {
         boolean reversed = false;
 
         LanguageKey key = LanguageKey.parse(language);
@@ -154,12 +154,12 @@ public class FastAlign implements Aligner {
     private native float align(long nativeHandle, boolean reversed, String[] source, String[] target, int strategy, int[][] result);
 
     @Override
-    public Alignment[] getAlignments(LanguagePair language, List<? extends Sentence> sources, List<? extends Sentence> targets) throws AlignerException {
+    public Alignment[] getAlignments(LanguageDirection language, List<? extends Sentence> sources, List<? extends Sentence> targets) throws AlignerException {
         return getAlignments(language, sources, targets, strategy);
     }
 
     @Override
-    public Alignment[] getAlignments(LanguagePair language, List<? extends Sentence> sources, List<? extends Sentence> targets, SymmetrizationStrategy strategy) throws AlignerException {
+    public Alignment[] getAlignments(LanguageDirection language, List<? extends Sentence> sources, List<? extends Sentence> targets, SymmetrizationStrategy strategy) throws AlignerException {
         boolean reversed = false;
 
         LanguageKey key = LanguageKey.parse(language);
@@ -215,7 +215,7 @@ public class FastAlign implements Aligner {
 
     private static final class LanguageKey {
 
-        public static LanguageKey parse(LanguagePair pair) {
+        public static LanguageKey parse(LanguageDirection pair) {
             return new LanguageKey(pair.source.getLanguage(), pair.target.getLanguage());
         }
 

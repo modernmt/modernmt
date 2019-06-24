@@ -15,7 +15,7 @@ import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.decoder.neural.memory.TranslationMemory;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.io.TokensOutputStream;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
@@ -50,7 +50,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
     private final boolean echoServer;
     private final int suggestionsLimit;
     private final TranslationMemory memory;
-    private final Set<LanguagePair> directions;
+    private final Set<LanguageDirection> directions;
     private final DecoderQueue decoderQueue;
 
     private volatile long lastSuccessfulTranslation = 0L;
@@ -108,22 +108,22 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
     }
 
     @Override
-    public Translation translate(UUID user, LanguagePair direction, Sentence text) throws DecoderException {
+    public Translation translate(UUID user, LanguageDirection direction, Sentence text) throws DecoderException {
         return translate(user, direction, text, null, 0);
     }
 
     @Override
-    public Translation translate(UUID user, LanguagePair direction, Sentence text, int nbestListSize) throws DecoderException {
+    public Translation translate(UUID user, LanguageDirection direction, Sentence text, int nbestListSize) throws DecoderException {
         return translate(user, direction, text, null, nbestListSize);
     }
 
     @Override
-    public Translation translate(UUID user, LanguagePair direction, Sentence text, ContextVector contextVector) throws DecoderException {
+    public Translation translate(UUID user, LanguageDirection direction, Sentence text, ContextVector contextVector) throws DecoderException {
         return translate(user, direction, text, contextVector, 0);
     }
 
     @Override
-    public Translation translate(UUID user, LanguagePair direction, Sentence text, ContextVector contextVector, int nbestListSize) throws DecoderException {
+    public Translation translate(UUID user, LanguageDirection direction, Sentence text, ContextVector contextVector, int nbestListSize) throws DecoderException {
         if (!this.directions.contains(direction))
             throw new UnsupportedLanguageException(direction);
 

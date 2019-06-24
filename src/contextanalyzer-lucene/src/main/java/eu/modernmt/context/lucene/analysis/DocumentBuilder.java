@@ -1,6 +1,6 @@
 package eu.modernmt.context.lucene.analysis;
 
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.Corpus;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -25,15 +25,15 @@ public class DocumentBuilder {
 
     // Factory methods
 
-    public static Document newInstance(LanguagePair direction, Corpus corpus) throws IOException {
+    public static Document newInstance(LanguageDirection direction, Corpus corpus) throws IOException {
         return newInstance(null, 0L, direction, corpus);
     }
 
-    public static Document newInstance(UUID owner, long memory, LanguagePair direction, Corpus corpus) throws IOException {
+    public static Document newInstance(UUID owner, long memory, LanguageDirection direction, Corpus corpus) throws IOException {
         return newInstance(owner, memory, direction, corpus.getRawContentReader());
     }
 
-    public static Document newInstance(UUID owner, long memory, LanguagePair direction, Reader contentReader) {
+    public static Document newInstance(UUID owner, long memory, LanguageDirection direction, Reader contentReader) {
         Document document = new Document();
         document.add(new StringField(DOC_ID_FIELD, makeId(memory, direction), Field.Store.NO));
         document.add(new LongField(MEMORY_FIELD, memory, Field.Store.YES));
@@ -111,13 +111,13 @@ public class DocumentBuilder {
 
     // Value builders
 
-    public static String makeId(long memory, LanguagePair direction) {
+    public static String makeId(long memory, LanguageDirection direction) {
         return Long.toString(memory) + '_' + direction.source.getLanguage() + '_' + direction.target.getLanguage();
     }
 
     // Fields builders
 
-    public static String makeContentFieldName(LanguagePair direction) {
+    public static String makeContentFieldName(LanguageDirection direction) {
         return CONTENT_PREFIX_FIELD + direction.source.getLanguage() + '_' + direction.target.getLanguage();
     }
 

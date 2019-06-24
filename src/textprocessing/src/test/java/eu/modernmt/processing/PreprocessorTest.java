@@ -1,7 +1,7 @@
 package eu.modernmt.processing;
 
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Tag;
 import eu.modernmt.model.Word;
@@ -14,7 +14,7 @@ import static org.junit.Assert.*;
 
 public class PreprocessorTest {
 
-    private static final LanguagePair language = new LanguagePair(Language.ENGLISH, Language.ITALIAN);
+    private static final LanguageDirection language = new LanguageDirection(Language.ENGLISH, Language.ITALIAN);
 
     private static Sentence process(String text) throws ProcessingException {
         Preprocessor preprocessor = null;

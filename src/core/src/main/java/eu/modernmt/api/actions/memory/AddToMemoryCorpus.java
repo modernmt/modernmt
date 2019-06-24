@@ -4,7 +4,7 @@ import eu.modernmt.data.DataManagerException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.io.FileProxy;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
@@ -49,7 +49,7 @@ public class AddToMemoryCorpus extends ObjectAction<ImportJob> {
 
     public static class Params extends Parameters {
 
-        private final LanguagePair direction;
+        private final LanguageDirection direction;
         private final long memory;
         private final String source;
         private final String target;
@@ -79,7 +79,7 @@ public class AddToMemoryCorpus extends ObjectAction<ImportJob> {
                     case PARALLEL:
                         Language sourceLanguage = getLanguage("source");
                         Language targetLanguage = getLanguage("target");
-                        LanguagePair language = new LanguagePair(sourceLanguage, targetLanguage);
+                        LanguageDirection language = new LanguageDirection(sourceLanguage, targetLanguage);
 
                         corpus = new ParallelFileCorpus(language, getFileProxy("source", gzipped), getFileProxy("target", gzipped));
                         break;
@@ -96,7 +96,7 @@ public class AddToMemoryCorpus extends ObjectAction<ImportJob> {
 
                 Language sourceLanguage = getLanguage("source");
                 Language targetLanguage = getLanguage("target");
-                direction = new LanguagePair(sourceLanguage, targetLanguage);
+                direction = new LanguageDirection(sourceLanguage, targetLanguage);
 
                 corpus = null;
             }

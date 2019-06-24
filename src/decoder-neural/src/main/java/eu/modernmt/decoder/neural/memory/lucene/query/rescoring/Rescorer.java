@@ -1,7 +1,7 @@
 package eu.modernmt.decoder.neural.memory.lucene.query.rescoring;
 
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 
@@ -10,6 +10,6 @@ import eu.modernmt.model.Sentence;
  */
 public interface Rescorer {
 
-    ScoreEntry[] rescore(LanguagePair direction, Sentence input, ScoreEntry[] entries, ContextVector context);
+    ScoreEntry[] rescore(LanguageDirection direction, Sentence input, ScoreEntry[] entries, ContextVector context);
 
 }

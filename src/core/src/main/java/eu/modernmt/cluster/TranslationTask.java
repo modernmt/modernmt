@@ -1,7 +1,7 @@
 package eu.modernmt.cluster;
 
 import eu.modernmt.cluster.services.Prioritizable;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Translation;
 
 import java.io.Serializable;
@@ -14,6 +14,6 @@ import java.util.concurrent.Callable;
  */
 public interface TranslationTask extends Callable<Translation>, Serializable, Prioritizable {
 
-    LanguagePair getLanguage();
+    LanguageDirection getLanguage();
 
 }

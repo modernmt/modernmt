@@ -1,9 +1,8 @@
 package eu.modernmt.decoder.neural.memory.lucene.query;
 
 import eu.modernmt.decoder.neural.memory.lucene.DocumentBuilder;
-import eu.modernmt.decoder.neural.memory.lucene.analysis.AnalyzerFactory;
 import eu.modernmt.io.TokensOutputStream;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import org.apache.lucene.analysis.Analyzer;
@@ -45,7 +44,7 @@ public class DefaultQueryBuilder implements QueryBuilder {
     }
 
     @Override
-    public Query bestMatchingSuggestion(Analyzer analyzer, UUID user, LanguagePair direction, Sentence sentence, ContextVector context) {
+    public Query bestMatchingSuggestion(Analyzer analyzer, UUID user, LanguageDirection direction, Sentence sentence, ContextVector context) {
         int length = sentence.getWords().length;
         int minMatches = length > SHORT_QUERY_SIZE ? Math.max(1, (int) (length * .5)) : length;
 
@@ -67,7 +66,7 @@ public class DefaultQueryBuilder implements QueryBuilder {
         return new TermsFilter(terms);
     }
 
-    protected static BooleanQuery makeTermsQuery(LanguagePair direction, Sentence sentence, Analyzer analyzer) {
+    protected static BooleanQuery makeTermsQuery(LanguageDirection direction, Sentence sentence, Analyzer analyzer) {
         BooleanQuery termsQuery = new BooleanQuery();
         loadTerms(DocumentBuilder.makeContentFieldName(direction), sentence, analyzer, termsQuery);
         return termsQuery;

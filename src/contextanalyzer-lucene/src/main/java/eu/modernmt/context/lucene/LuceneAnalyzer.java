@@ -10,7 +10,7 @@ import eu.modernmt.context.lucene.storage.CorporaStorage;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.io.UTF8Charset;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.impl.StringCorpus;
@@ -62,17 +62,17 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
     }
 
     @Override
-    public ContextVector getContextVector(UUID user, LanguagePair direction, String query, int limit) throws ContextAnalyzerException {
+    public ContextVector getContextVector(UUID user, LanguageDirection direction, String query, int limit) throws ContextAnalyzerException {
         return getContextVector(user, direction, new StringCorpus(null, direction.source, query), limit);
     }
 
     @Override
-    public ContextVector getContextVector(UUID user, LanguagePair direction, File source, int limit) throws ContextAnalyzerException {
+    public ContextVector getContextVector(UUID user, LanguageDirection direction, File source, int limit) throws ContextAnalyzerException {
         return getContextVector(user, direction, new FileCorpus(source, null, direction.source), limit);
     }
 
     @Override
-    public ContextVector getContextVector(UUID user, LanguagePair direction, Corpus query, int limit) throws ContextAnalyzerException {
+    public ContextVector getContextVector(UUID user, LanguageDirection direction, Corpus query, int limit) throws ContextAnalyzerException {
         try {
             return this.index.getContextVector(user, direction, query, limit);
         } catch (IOException e) {

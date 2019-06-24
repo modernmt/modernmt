@@ -2,7 +2,7 @@ package eu.modernmt.context.lucene.analysis;
 
 import eu.modernmt.context.lucene.analysis.rescoring.CosineSimilarityRescorer;
 import eu.modernmt.context.lucene.analysis.rescoring.Rescorer;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.corpus.Corpus;
 import org.apache.commons.io.FileUtils;
@@ -129,11 +129,11 @@ public class ContextAnalyzerIndex implements Closeable {
         this.indexWriter.commit();
     }
 
-    public ContextVector getContextVector(UUID user, LanguagePair direction, Corpus queryDocument, int limit) throws IOException {
+    public ContextVector getContextVector(UUID user, LanguageDirection direction, Corpus queryDocument, int limit) throws IOException {
         return this.getContextVector(user, direction, queryDocument, limit, this.rescorer);
     }
 
-    public ContextVector getContextVector(UUID user, LanguagePair direction, Corpus queryDocument, int limit, Rescorer rescorer) throws IOException {
+    public ContextVector getContextVector(UUID user, LanguageDirection direction, Corpus queryDocument, int limit, Rescorer rescorer) throws IOException {
         String contentFieldName = DocumentBuilder.makeContentFieldName(direction);
 
         IndexSearcher searcher = this.getIndexSearcher();

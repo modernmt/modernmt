@@ -1,6 +1,6 @@
 package eu.modernmt.context;
 
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.corpus.Corpus;
 
@@ -13,10 +13,10 @@ import java.util.UUID;
  */
 public interface ContextAnalyzer extends Closeable {
 
-    ContextVector getContextVector(UUID user, LanguagePair direction, String query, int limit) throws ContextAnalyzerException;
+    ContextVector getContextVector(UUID user, LanguageDirection direction, String query, int limit) throws ContextAnalyzerException;
 
-    ContextVector getContextVector(UUID user, LanguagePair direction, File source, int limit) throws ContextAnalyzerException;
+    ContextVector getContextVector(UUID user, LanguageDirection direction, File source, int limit) throws ContextAnalyzerException;
 
-    ContextVector getContextVector(UUID user, LanguagePair direction, Corpus query, int limit) throws ContextAnalyzerException;
+    ContextVector getContextVector(UUID user, LanguageDirection direction, Corpus query, int limit) throws ContextAnalyzerException;
 
 }

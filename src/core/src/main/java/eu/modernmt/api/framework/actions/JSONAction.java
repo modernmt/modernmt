@@ -29,7 +29,7 @@ public abstract class JSONAction implements Action {
             resp.badRequest(e);
         } catch (UnsupportedLanguageException e) {
             if (logger.isDebugEnabled())
-                logger.debug("Language direction '" + e.getLanguagePair() + "' is not supported " + this, e);
+                logger.debug("Language direction '" + e.getLanguageDirection() + "' is not supported " + this, e);
             resp.badRequest(e);
         } catch (AuthenticationException e) {
             if (logger.isDebugEnabled())

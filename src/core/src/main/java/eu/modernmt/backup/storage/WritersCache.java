@@ -2,7 +2,7 @@ package eu.modernmt.backup.storage;
 
 import eu.modernmt.io.Paths;
 import eu.modernmt.io.RuntimeIOException;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
 import org.apache.commons.io.FileUtils;
@@ -45,7 +45,7 @@ class WritersCache implements Closeable {
         return Paths.join(root, Long.toString(memory % 1000), Long.toString(memory));
     }
 
-    public MultilingualCorpus.MultilingualLineWriter getWriter(long memory, LanguagePair direction) {
+    public MultilingualCorpus.MultilingualLineWriter getWriter(long memory, LanguageDirection direction) {
         String source = direction.source.getLanguage();
         String target = direction.target.getLanguage();
 

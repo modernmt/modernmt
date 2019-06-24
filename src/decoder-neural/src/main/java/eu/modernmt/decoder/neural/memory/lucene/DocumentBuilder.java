@@ -4,14 +4,10 @@ import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.NumericUtils;
@@ -19,7 +15,6 @@ import org.apache.lucene.util.NumericUtils;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Created by davide on 23/05/17.
@@ -36,7 +31,7 @@ public class DocumentBuilder {
         return newInstance(unit.direction, unit.memory, sentence, translation, hash);
     }
 
-    public static Document newInstance(LanguagePair direction, long memory, String sentence, String translation, String hash) {
+    public static Document newInstance(LanguageDirection direction, long memory, String sentence, String translation, String hash) {
         Document document = new Document();
         document.add(new LongField(MEMORY_FIELD, memory, Field.Store.YES));
         document.add(new HashField(HASH_FIELD, hash, Field.Store.NO));
@@ -116,12 +111,12 @@ public class DocumentBuilder {
             throw new IllegalArgumentException("Invalid document: missing language info.");
 
         if (source.compareTo(target) < 0)
-            return asEntry(self, new LanguagePair(source, target));
+            return asEntry(self, new LanguageDirection(source, target));
         else
-            return asEntry(self, new LanguagePair(target, source));
+            return asEntry(self, new LanguageDirection(target, source));
     }
 
-    public static ScoreEntry asEntry(Document self, LanguagePair direction) {
+    public static ScoreEntry asEntry(Document self, LanguageDirection direction) {
         long memory = Long.parseLong(self.get(MEMORY_FIELD));
         String[] sentence = self.get(makeContentFieldName(direction)).split(" ");
         String[] translation = self.get(makeContentFieldName(direction.reversed())).split(" ");
@@ -144,7 +139,7 @@ public class DocumentBuilder {
         }
 
         if (differ)
-            direction = new LanguagePair(source, target);
+            direction = new LanguageDirection(source, target);
 
         return new ScoreEntry(memory, direction, sentence, translation);
     }
@@ -192,7 +187,7 @@ public class DocumentBuilder {
         return LANGUAGE_PREFIX_FIELD + language.getLanguage();
     }
 
-    public static String makeContentFieldName(LanguagePair direction) {
+    public static String makeContentFieldName(LanguageDirection direction) {
         return CONTENT_PREFIX_FIELD + direction.source.getLanguage() + '_' + direction.target.getLanguage();
     }
 

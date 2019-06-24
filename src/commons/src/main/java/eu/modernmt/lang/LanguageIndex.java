@@ -7,11 +7,11 @@ public class LanguageIndex {
 
     public static class Builder {
 
-        private final Set<LanguagePair> languages = new HashSet<>();
+        private final Set<LanguageDirection> languages = new HashSet<>();
         private final Map<LanguageKey, List<LanguageEntry>> index = new HashMap<>();
         private final Map<String, List<LanguageRule>> rules = new HashMap<>();
 
-        public Builder add(LanguagePair pair) {
+        public Builder add(LanguageDirection pair) {
             LanguageKey key = LanguageKey.fromLanguage(pair);
             LanguageEntry entry = LanguageEntry.fromLanguage(pair);
 
@@ -40,19 +40,19 @@ public class LanguageIndex {
 
     }
 
-    private final Set<LanguagePair> languages;
+    private final Set<LanguageDirection> languages;
     private final Map<LanguageKey, List<LanguageEntry>> index;
     private final Map<String, List<LanguageRule>> rules;
     private final Set<Language> rulesSkipList;
-    private final ConcurrentHashMap<LanguagePair, LanguagePair> mappingCache;
+    private final ConcurrentHashMap<LanguageDirection, LanguageDirection> mappingCache;
 
-    private LanguageIndex(Set<LanguagePair> languages, Map<LanguageKey, List<LanguageEntry>> index, Map<String, List<LanguageRule>> rules) {
+    private LanguageIndex(Set<LanguageDirection> languages, Map<LanguageKey, List<LanguageEntry>> index, Map<String, List<LanguageRule>> rules) {
         this.languages = Collections.unmodifiableSet(languages);
         this.index = index;
         this.rules = rules;
 
         this.rulesSkipList = new HashSet<>();
-        for (LanguagePair pair : languages) {
+        for (LanguageDirection pair : languages) {
             if (pair.source.getRegion() != null)
                 this.rulesSkipList.add(pair.source);
             if (pair.target.getRegion() != null)
@@ -62,7 +62,7 @@ public class LanguageIndex {
         this.mappingCache = new ConcurrentHashMap<>();
     }
 
-    public Set<LanguagePair> getLanguages() {
+    public Set<LanguageDirection> getLanguages() {
         return languages;
     }
 
@@ -70,7 +70,7 @@ public class LanguageIndex {
         return languages.size();
     }
 
-    public LanguagePair asSingleLanguagePair() {
+    public LanguageDirection asSingleLanguagePair() {
         return languages.size() == 1 ? languages.iterator().next() : null;
     }
 
@@ -82,19 +82,19 @@ public class LanguageIndex {
      * @param pair the pair to search for
      * @return the supported language pair that matches the input pair
      */
-    public LanguagePair map(LanguagePair pair) {
+    public LanguageDirection map(LanguageDirection pair) {
         return mappingCache.computeIfAbsent(pair, this::search);
     }
 
-    public LanguagePair mapIgnoringDirection(LanguagePair pair) {
-        LanguagePair cached = mappingCache.get(pair);
+    public LanguageDirection mapIgnoringDirection(LanguageDirection pair) {
+        LanguageDirection cached = mappingCache.get(pair);
         if (cached != null)
             return cached;
         cached = mappingCache.get(pair.reversed());
         if (cached != null)
             return cached.reversed();
 
-        LanguagePair mapped = map(pair);
+        LanguageDirection mapped = map(pair);
 
         if (mapped == null) {
             mapped = map(pair.reversed());
@@ -105,7 +105,7 @@ public class LanguageIndex {
         return mapped;
     }
 
-    private LanguagePair search(LanguagePair language) {
+    private LanguageDirection search(LanguageDirection language) {
         language = transform(language);
 
         LanguageKey key = LanguageKey.fromLanguage(language);
@@ -122,7 +122,7 @@ public class LanguageIndex {
         return null;
     }
 
-    private LanguagePair transform(LanguagePair language) {
+    private LanguageDirection transform(LanguageDirection language) {
         Language source = transform(language.source);
         Language target = transform(language.target);
 
@@ -134,7 +134,7 @@ public class LanguageIndex {
         if (target == null)
             target = language.target;
 
-        return new LanguagePair(source, target);
+        return new LanguageDirection(source, target);
     }
 
     private Language transform(Language language) {
@@ -163,7 +163,7 @@ public class LanguageIndex {
         private final String source;
         private final String target;
 
-        private static LanguageKey fromLanguage(LanguagePair language) {
+        private static LanguageKey fromLanguage(LanguageDirection language) {
             return new LanguageKey(language.source.getLanguage(), language.target.getLanguage());
         }
 
@@ -198,25 +198,25 @@ public class LanguageIndex {
 
     private static final class LanguageEntry {
 
-        private static LanguageEntry fromLanguage(LanguagePair pair) {
+        private static LanguageEntry fromLanguage(LanguageDirection pair) {
             return new LanguageEntry(pair, Matcher.forLanguage(pair.source), Matcher.forLanguage(pair.target));
         }
 
-        private final LanguagePair pair;
+        private final LanguageDirection pair;
         private final Matcher source;
         private final Matcher target;
 
-        private LanguageEntry(LanguagePair pair, Matcher source, Matcher target) {
+        private LanguageEntry(LanguageDirection pair, Matcher source, Matcher target) {
             this.pair = pair;
             this.source = source;
             this.target = target;
         }
 
-        public boolean match(LanguagePair pair) {
+        public boolean match(LanguageDirection pair) {
             return this.target.match(pair.target) && this.source.match(pair.source);
         }
 
-        private LanguagePair getLanguagePair() {
+        private LanguageDirection getLanguagePair() {
             return pair;
         }
 

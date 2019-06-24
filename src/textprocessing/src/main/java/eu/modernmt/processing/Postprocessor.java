@@ -1,6 +1,6 @@
 package eu.modernmt.processing;
 
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.builder.XMLPipelineBuilder;
 import eu.modernmt.processing.concurrent.PipelineExecutor;
@@ -33,15 +33,15 @@ public class Postprocessor implements Closeable {
         this.executor = new PipelineExecutor<>(builder, threads);
     }
 
-    public void process(LanguagePair language, Translation[] batch) throws ProcessingException {
+    public void process(LanguageDirection language, Translation[] batch) throws ProcessingException {
         this.executor.processBatch(language, batch, new Void[batch.length]);
     }
 
-    public void process(LanguagePair language, List<Translation> batch) throws ProcessingException {
+    public void process(LanguageDirection language, List<Translation> batch) throws ProcessingException {
         this.executor.processBatch(language, batch.toArray(new Translation[0]), new Void[batch.size()]);
     }
 
-    public void process(LanguagePair language, Translation text) throws ProcessingException {
+    public void process(LanguageDirection language, Translation text) throws ProcessingException {
         this.executor.process(language, text);
     }
 

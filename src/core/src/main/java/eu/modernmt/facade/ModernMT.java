@@ -11,7 +11,7 @@ import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.facade.exceptions.TestFailedException;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.persistence.Database;
 import eu.modernmt.persistence.PersistenceException;
 import org.apache.logging.log4j.LogManager;
@@ -63,7 +63,7 @@ public class ModernMT {
             // Engine is not yet loaded
         }
 
-        Set<LanguagePair> languages = engine == null ? Collections.emptySet() : engine.getAvailableLanguagePairs();
+        Set<LanguageDirection> languages = engine == null ? Collections.emptySet() : engine.getAvailableLanguagePairs();
         Collection<NodeInfo> nodes = localhostOnly ? Collections.singleton(node.getLocalNode()) : node.getClusterNodes();
         String buildVersion = Pom.getProperty("mmt.version");
         long buildNumber = Long.parseLong(Pom.getProperty("mmt.build.number"));

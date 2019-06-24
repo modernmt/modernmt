@@ -1,11 +1,10 @@
 package eu.modernmt.api.actions.translation;
 
 import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.data.DataManager;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.io.FileProxy;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.api.actions.util.ContextUtils;
@@ -113,7 +112,7 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
             Language[] targetLanguages = getLanguageArray("targets", null);
 
             if (sourceLanguage == null && targetLanguages == null) {
-                LanguagePair engineDirection = ModernMT.getNode().getEngine().getLanguageIndex().asSingleLanguagePair();
+                LanguageDirection engineDirection = ModernMT.getNode().getEngine().getLanguageIndex().asSingleLanguagePair();
 
                 if (engineDirection != null) {
                     this.source = engineDirection.source;

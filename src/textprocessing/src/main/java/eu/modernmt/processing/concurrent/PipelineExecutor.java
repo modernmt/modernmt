@@ -1,6 +1,6 @@
 package eu.modernmt.processing.concurrent;
 
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.ProcessingPipeline;
 import eu.modernmt.processing.builder.PipelineBuilder;
@@ -22,7 +22,7 @@ public class PipelineExecutor<P, R> {
         this.threads = threads;
     }
 
-    public R process(LanguagePair language, P input) throws ProcessingException {
+    public R process(LanguageDirection language, P input) throws ProcessingException {
         ProcessingPipeline<P, R> pipeline = pipelines.get(language);
 
         try {
@@ -32,7 +32,7 @@ public class PipelineExecutor<P, R> {
         }
     }
 
-    public R[] processBatch(LanguagePair language, P[] batch, R[] output) throws ProcessingException {
+    public R[] processBatch(LanguageDirection language, P[] batch, R[] output) throws ProcessingException {
         Future<?>[] locks = new Future<?>[threads];
 
         if (batch.length < threads) {
@@ -88,13 +88,13 @@ public class PipelineExecutor<P, R> {
 
     public class FragmentTask implements Callable<Void> {
 
-        private final LanguagePair language;
+        private final LanguageDirection language;
         private final P[] batch;
         private final Object[] output;
         private final int offset;
         private final int length;
 
-        public FragmentTask(LanguagePair language, P[] batch, R[] output, int offset, int length) {
+        public FragmentTask(LanguageDirection language, P[] batch, R[] output, int offset, int length) {
             this.language = language;
             this.batch = batch;
             this.output = output;

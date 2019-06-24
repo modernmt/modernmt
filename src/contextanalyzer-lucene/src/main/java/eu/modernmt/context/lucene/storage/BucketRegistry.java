@@ -2,7 +2,7 @@ package eu.modernmt.context.lucene.storage;
 
 import eu.modernmt.io.RuntimeIOException;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 
 import java.io.Closeable;
 import java.io.File;
@@ -80,7 +80,7 @@ public class BucketRegistry implements Closeable {
         }
     }
 
-    public synchronized Bucket get(long id, LanguagePair language, UUID owner) throws IOException {
+    public synchronized Bucket get(long id, LanguageDirection language, UUID owner) throws IOException {
         CacheKey key = new CacheKey(id, language, this.maskLanguageRegion);
 
         try {
@@ -97,7 +97,7 @@ public class BucketRegistry implements Closeable {
         }
     }
 
-    private synchronized Bucket retrieve(long id, LanguagePair language) throws IOException {
+    private synchronized Bucket retrieve(long id, LanguageDirection language) throws IOException {
         PreparedStatement statement = null;
         ResultSet result = null;
 
@@ -210,7 +210,7 @@ public class BucketRegistry implements Closeable {
         final long plainSize = result.getLong(7);
         final long gzSize = result.getLong(8);
 
-        CacheKey key = new CacheKey(id, new LanguagePair(source, target), this.maskLanguageRegion);
+        CacheKey key = new CacheKey(id, new LanguageDirection(source, target), this.maskLanguageRegion);
         Bucket bucket = cache.computeIfAbsent(key,
                 arg -> new Bucket(getBucketFolder(root, arg.id), arg.id, arg.language, owner, plainSize, gzSize, size));
 
@@ -387,9 +387,9 @@ public class BucketRegistry implements Closeable {
     private static class CacheKey {
 
         public long id;
-        public LanguagePair language;
+        public LanguageDirection language;
 
-        public CacheKey(long id, LanguagePair language, boolean maskLanguageRegion) {
+        public CacheKey(long id, LanguageDirection language, boolean maskLanguageRegion) {
             if (maskLanguageRegion) {
                 Language owSource = null;
                 Language owTarget = null;
@@ -405,7 +405,7 @@ public class BucketRegistry implements Closeable {
                     if (owTarget == null)
                         owTarget = language.target;
 
-                    language = new LanguagePair(owSource, owTarget);
+                    language = new LanguageDirection(owSource, owTarget);
                 }
             }
 

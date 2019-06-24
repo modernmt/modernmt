@@ -3,7 +3,7 @@ package eu.modernmt.model.corpus;
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -16,9 +16,9 @@ import java.util.Set;
  */
 public abstract class BaseMultilingualCorpus implements MultilingualCorpus {
 
-    private Map<LanguagePair, Integer> _counts = null;
+    private Map<LanguageDirection, Integer> _counts = null;
 
-    private Map<LanguagePair, Integer> getCounts() {
+    private Map<LanguageDirection, Integer> getCounts() {
         if (_counts == null) {
             synchronized (this) {
                 if (_counts == null)
@@ -34,27 +34,27 @@ public abstract class BaseMultilingualCorpus implements MultilingualCorpus {
     }
 
     @Override
-    public Set<LanguagePair> getLanguages() {
+    public Set<LanguageDirection> getLanguages() {
         return getCounts().keySet();
     }
 
     @Override
-    public int getLineCount(LanguagePair language) {
+    public int getLineCount(LanguageDirection language) {
         Integer count = getCounts().get(language);
         return count == null ? 0 : count;
     }
 
     @Override
-    public Corpus getCorpus(LanguagePair language, boolean source) {
+    public Corpus getCorpus(LanguageDirection language, boolean source) {
         return new CorpusView(language, source);
     }
 
     protected final class CorpusView implements Corpus {
 
-        private final LanguagePair direction;
+        private final LanguageDirection direction;
         private final boolean source;
 
-        public CorpusView(LanguagePair direction, boolean source) {
+        public CorpusView(LanguageDirection direction, boolean source) {
             this.direction = direction;
             this.source = source;
         }

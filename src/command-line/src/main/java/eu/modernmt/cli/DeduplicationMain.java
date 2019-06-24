@@ -3,7 +3,7 @@ package eu.modernmt.cli;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.cli.*;
@@ -33,7 +33,7 @@ public class DeduplicationMain {
             cliOptions.addOption(outputPath);
         }
 
-        public final LanguagePair language;
+        public final LanguageDirection language;
         public final int lengthThreshold;
         public final File[] inputRoots;
         public final File outputRoot;
@@ -44,7 +44,7 @@ public class DeduplicationMain {
 
             Language sourceLanguage = Language.fromString(cli.getOptionValue('s'));
             Language targetLanguage = Language.fromString(cli.getOptionValue('t'));
-            language = new LanguagePair(sourceLanguage, targetLanguage);
+            language = new LanguageDirection(sourceLanguage, targetLanguage);
             lengthThreshold = cli.hasOption("l") ? Integer.parseInt(cli.getOptionValue("l")) : 0;
 
             String[] roots = cli.getOptionValues("input");

@@ -1,6 +1,6 @@
 package eu.modernmt.data;
 
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 
@@ -15,7 +15,7 @@ public class TranslationUnit extends DataMessage {
     public final long memory;
     public final UUID owner;
 
-    public final LanguagePair direction;
+    public final LanguageDirection direction;
     public final String rawSentence;
     public final String rawTranslation;
     public final String rawPreviousSentence;
@@ -26,7 +26,7 @@ public class TranslationUnit extends DataMessage {
     public final Sentence translation;
     public final Alignment alignment;
 
-    public TranslationUnit(short channel, long channelPosition, UUID owner, LanguagePair direction, long memory,
+    public TranslationUnit(short channel, long channelPosition, UUID owner, LanguageDirection direction, long memory,
                            String rawSentence, String rawTranslation, String rawPreviousSentence, String rawPreviousTranslation,
                            Date timestamp, Sentence sentence, Sentence translation, Alignment alignment) {
         super(channel, channelPosition);

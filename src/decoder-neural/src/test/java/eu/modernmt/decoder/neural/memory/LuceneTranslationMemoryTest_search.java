@@ -1,7 +1,7 @@
 package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ContextVector;
 import org.junit.After;
 import org.junit.Before;
@@ -47,7 +47,7 @@ public class LuceneTranslationMemoryTest_search {
         this.memory = null;
     }
 
-    private static boolean contains(ScoreEntry[] entries, long memory, LanguagePair direction, String sentence, String translation) {
+    private static boolean contains(ScoreEntry[] entries, long memory, LanguageDirection direction, String sentence, String translation) {
         ScoreEntry target = new ScoreEntry(memory, direction, sentence.split(" "), translation.split(" "));
 
         for (ScoreEntry entry : entries) {

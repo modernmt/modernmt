@@ -6,7 +6,7 @@ import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.decoder.neural.ModelConfig;
 import eu.modernmt.decoder.neural.execution.DecoderQueue;
 import eu.modernmt.decoder.neural.execution.PythonDecoder;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class DecoderQueueImpl implements DecoderQueue {
 
     public static DecoderQueueImpl newGPUInstance(ModelConfig config, PythonDecoder.Builder builder, int[] gpus) throws DecoderException {
-        Map<LanguagePair, File> checkpoints = config.getAvailableModels();
+        Map<LanguageDirection, File> checkpoints = config.getAvailableModels();
 
         Handler[] handlers = new Handler[gpus.length];
         for (int i = 0; i < gpus.length; i++)
@@ -34,7 +34,7 @@ public class DecoderQueueImpl implements DecoderQueue {
     }
 
     public static DecoderQueueImpl newCPUInstance(ModelConfig config, PythonDecoder.Builder builder, int cpus) throws DecoderException {
-        Map<LanguagePair, File> checkpoints = config.getAvailableModels();
+        Map<LanguageDirection, File> checkpoints = config.getAvailableModels();
 
         Handler[] handlers = new Handler[cpus];
         for (int i = 0; i < cpus; i++)
@@ -45,7 +45,7 @@ public class DecoderQueueImpl implements DecoderQueue {
 
     protected final Logger logger = LogManager.getLogger(getClass());
 
-    private final Map<LanguagePair, File> checkpoints;
+    private final Map<LanguageDirection, File> checkpoints;
     private final BlockingQueue<Handler> queue;
     private final ExecutorService initExecutor;
     private final int maxAvailability;
@@ -54,7 +54,7 @@ public class DecoderQueueImpl implements DecoderQueue {
     private boolean active = true;
     private DecoderListener listener;
 
-    protected DecoderQueueImpl(Map<LanguagePair, File> checkpoints, Handler[] handlers) throws DecoderException {
+    protected DecoderQueueImpl(Map<LanguageDirection, File> checkpoints, Handler[] handlers) throws DecoderException {
         this.checkpoints = checkpoints;
         this.queue = new ArrayBlockingQueue<>(handlers.length);
         this.maxAvailability = handlers.length;
@@ -86,12 +86,12 @@ public class DecoderQueueImpl implements DecoderQueue {
     }
 
     @Override
-    public final PythonDecoder take(LanguagePair language) throws DecoderUnavailableException {
+    public final PythonDecoder take(LanguageDirection language) throws DecoderUnavailableException {
         return this.poll(language, 0L, null);
     }
 
     @Override
-    public final PythonDecoder poll(LanguagePair language, long timeout, TimeUnit unit) throws DecoderUnavailableException {
+    public final PythonDecoder poll(LanguageDirection language, long timeout, TimeUnit unit) throws DecoderUnavailableException {
         if (!this.active || this.aliveProcesses.get() == 0)
             throw new DecoderUnavailableException("No alive NMT processes available");
 
@@ -116,7 +116,7 @@ public class DecoderQueueImpl implements DecoderQueue {
         }
     }
 
-    private PythonDecoder tryGetByLanguagePair(LanguagePair language) {
+    private PythonDecoder tryGetByLanguagePair(LanguageDirection language) {
         File checkpoint = checkpoints.get(language);
 
         Iterator<Handler> iterator = this.queue.iterator();

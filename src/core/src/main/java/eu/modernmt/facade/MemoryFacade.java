@@ -7,7 +7,7 @@ import eu.modernmt.cluster.NodeInfo;
 import eu.modernmt.data.DataManager;
 import eu.modernmt.data.DataManagerException;
 import eu.modernmt.data.EmptyCorpusException;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -115,7 +115,7 @@ public class MemoryFacade {
         return true;
     }
 
-    public ImportJob add(LanguagePair direction, long memoryId, String source, String target) throws DataManagerException, PersistenceException {
+    public ImportJob add(LanguageDirection direction, long memoryId, String source, String target) throws DataManagerException, PersistenceException {
         // Normalizing
         MultilingualCorpus.StringPair pair = new MultilingualCorpus.StringPair(direction, source, target);
         contributionFilter.normalize(pair);
@@ -155,7 +155,7 @@ public class MemoryFacade {
         }
     }
 
-    public ImportJob replace(LanguagePair direction, long memoryId, String sentence, String translation,
+    public ImportJob replace(LanguageDirection direction, long memoryId, String sentence, String translation,
                              String previousSentence, String previousTranslation)
             throws DataManagerException, PersistenceException {
         // Normalizing

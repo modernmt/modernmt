@@ -2,7 +2,7 @@ package eu.modernmt.facade;
 
 import eu.modernmt.cleaning.CorporaCleaning;
 import eu.modernmt.io.IOCorporaUtils;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -129,11 +129,11 @@ public class TrainingFacade {
 
     // - Pre-process ---------------------------------------------------------------------------------------------------
 
-    public void preprocess(LanguagePair language, List<MultilingualCorpus> corpora, File destFolder) throws ProcessingException, IOException {
+    public void preprocess(LanguageDirection language, List<MultilingualCorpus> corpora, File destFolder) throws ProcessingException, IOException {
         preprocess(language, corpora, destFolder, new TrainingOptions());
     }
 
-    public void preprocess(LanguagePair language, List<MultilingualCorpus> corpora, File destFolder, TrainingOptions options) throws ProcessingException, IOException {
+    public void preprocess(LanguageDirection language, List<MultilingualCorpus> corpora, File destFolder, TrainingOptions options) throws ProcessingException, IOException {
         CorporaPartition mainPartition = new CorporaPartition(destFolder);
         PreprocessingPipeline pipeline = new PreprocessingPipeline(language, mainPartition);
 

@@ -4,8 +4,8 @@ import eu.modernmt.aligner.Aligner;
 import eu.modernmt.config.DataStreamConfig;
 import eu.modernmt.data.*;
 import eu.modernmt.engine.Engine;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.LanguageIndex;
-import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -321,12 +321,12 @@ public class KafkaDataManager implements DataManager {
     }
 
     @Override
-    public ImportJob upload(LanguagePair direction, Memory memory, String sentence, String translation, Date timestamp, short channel) throws DataManagerException {
+    public ImportJob upload(LanguageDirection direction, Memory memory, String sentence, String translation, Date timestamp, short channel) throws DataManagerException {
         return upload(direction, memory, sentence, translation, timestamp, getDataChannel(channel));
     }
 
     @Override
-    public ImportJob upload(LanguagePair direction, Memory memory, String sentence, String translation, Date timestamp, DataChannel channel) throws DataManagerException {
+    public ImportJob upload(LanguageDirection direction, Memory memory, String sentence, String translation, Date timestamp, DataChannel channel) throws DataManagerException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
         long offset = sendElement(KafkaPacket.createAddition(direction, memory.getOwner(), memory.getId(), sentence, translation, timestamp), true, channel);
@@ -334,12 +334,12 @@ public class KafkaDataManager implements DataManager {
     }
 
     @Override
-    public ImportJob replace(LanguagePair direction, Memory memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, short channel) throws DataManagerException {
+    public ImportJob replace(LanguageDirection direction, Memory memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, short channel) throws DataManagerException {
         return replace(direction, memory, sentence, translation, previousSentence, previousTranslation, timestamp, getDataChannel(channel));
     }
 
     @Override
-    public ImportJob replace(LanguagePair direction, Memory memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, DataChannel channel) throws DataManagerException {
+    public ImportJob replace(LanguageDirection direction, Memory memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, DataChannel channel) throws DataManagerException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 

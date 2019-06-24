@@ -23,7 +23,7 @@ import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.hw.NetworkUtils;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Translation;
 import eu.modernmt.persistence.Database;
@@ -281,7 +281,7 @@ public class ClusterNode {
         try {
             this.engine.getDecoder().setListener(new DecoderListener() {
                 @Override
-                public void onTranslationDirectionsChanged(Set<LanguagePair> directions) {
+                public void onTranslationDirectionsChanged(Set<LanguageDirection> directions) {
                     updateDecoderTranslationDirections(directions);
                 }
 
@@ -429,7 +429,7 @@ public class ClusterNode {
         NodeInfo.updateChannelsPositionsInMember(localMember, positions);
     }
 
-    private void updateDecoderTranslationDirections(Set<LanguagePair> directions) {
+    private void updateDecoderTranslationDirections(Set<LanguageDirection> directions) {
         Member localMember = hazelcast.getCluster().getLocalMember();
         NodeInfo.updateTranslationDirections(localMember, directions);
     }
@@ -460,7 +460,7 @@ public class ClusterNode {
     }
 
     public Future<Translation> submit(TranslationTask task) throws DecoderUnavailableException {
-        LanguagePair language = task.getLanguage();
+        LanguageDirection language = task.getLanguage();
 
         Set<Member> members = hazelcast.getCluster().getMembers();
         ArrayList<Member> candidates = new ArrayList<>();

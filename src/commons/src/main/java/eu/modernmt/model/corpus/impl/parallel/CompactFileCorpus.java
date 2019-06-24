@@ -5,7 +5,7 @@ import eu.modernmt.io.FileProxy;
 import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.io.UnixLineWriter;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.BaseMultilingualCorpus;
 import org.apache.commons.io.FilenameUtils;
 
@@ -61,7 +61,7 @@ public class CompactFileCorpus extends BaseMultilingualCorpus {
     private static class CompactLineReader implements MultilingualLineReader {
 
         private final UnixLineReader reader;
-        private final HashMap<String, LanguagePair> cachedLanguagePairs = new HashMap<>();
+        private final HashMap<String, LanguageDirection> cachedLanguagePairs = new HashMap<>();
 
         private CompactLineReader(FileProxy file) throws IOException {
             this.reader = new UnixLineReader(file.getInputStream(), UTF8Charset.get());
@@ -98,9 +98,9 @@ public class CompactFileCorpus extends BaseMultilingualCorpus {
                 throw new IOException("Invalid metadata found: " + metadata, e);
             }
 
-            LanguagePair language = cachedLanguagePairs.computeIfAbsent(parts[1], key -> {
+            LanguageDirection language = cachedLanguagePairs.computeIfAbsent(parts[1], key -> {
                 String[] langs = key.split(" ");
-                return new LanguagePair(Language.fromString(langs[0]), Language.fromString(langs[1]));
+                return new LanguageDirection(Language.fromString(langs[0]), Language.fromString(langs[1]));
             });
 
             return new StringPair(language, source, target, timestamp);

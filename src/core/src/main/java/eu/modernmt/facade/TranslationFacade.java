@@ -13,7 +13,7 @@ import eu.modernmt.engine.Engine;
 import eu.modernmt.facade.exceptions.TimeoutException;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageIndex;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
@@ -55,19 +55,19 @@ public class TranslationFacade {
     //  Translation
     // =============================
 
-    public Translation get(UUID user, LanguagePair direction, String sentence, Priority priority, long timeout) throws ProcessingException, DecoderException {
+    public Translation get(UUID user, LanguageDirection direction, String sentence, Priority priority, long timeout) throws ProcessingException, DecoderException {
         return get(user, direction, sentence, null, 0, priority, timeout);
     }
 
-    public Translation get(UUID user, LanguagePair direction, String sentence, ContextVector translationContext, Priority priority, long timeout) throws ProcessingException, DecoderException {
+    public Translation get(UUID user, LanguageDirection direction, String sentence, ContextVector translationContext, Priority priority, long timeout) throws ProcessingException, DecoderException {
         return get(user, direction, sentence, translationContext, 0, priority, timeout);
     }
 
-    public Translation get(UUID user, LanguagePair direction, String sentence, int nbest, Priority priority, long timeout) throws ProcessingException, DecoderException {
+    public Translation get(UUID user, LanguageDirection direction, String sentence, int nbest, Priority priority, long timeout) throws ProcessingException, DecoderException {
         return get(user, direction, sentence, null, nbest, priority, timeout);
     }
 
-    public Translation get(UUID user, LanguagePair direction, String sentence, ContextVector translationContext, int nbest, Priority priority, long timeout) throws ProcessingException, DecoderException {
+    public Translation get(UUID user, LanguageDirection direction, String sentence, ContextVector translationContext, int nbest, Priority priority, long timeout) throws ProcessingException, DecoderException {
         direction = mapLanguagePair(direction);
         if (nbest > 0)
             ensureDecoderSupportsNBest();
@@ -89,7 +89,7 @@ public class TranslationFacade {
         }
     }
 
-    private Translation insecureGet(UUID user, LanguagePair direction, String sentence, ContextVector translationContext, int nbest, Priority priority, long expirationTimestamp) throws ProcessingException, DecoderException {
+    private Translation insecureGet(UUID user, LanguageDirection direction, String sentence, ContextVector translationContext, int nbest, Priority priority, long expirationTimestamp) throws ProcessingException, DecoderException {
         if (expirationTimestamp > 0 && expirationTimestamp < System.currentTimeMillis())
             throw new TimeoutException();
 
@@ -119,17 +119,17 @@ public class TranslationFacade {
     //  Context Vector
     // =============================
 
-    public ContextVector getContextVector(UUID user, LanguagePair direction, File context, int limit) throws ContextAnalyzerException {
+    public ContextVector getContextVector(UUID user, LanguageDirection direction, File context, int limit) throws ContextAnalyzerException {
         direction = mapLanguagePair(direction);
         return getContextVector(user, direction, new FileCorpus(context, null, direction.source), limit);
     }
 
-    public ContextVector getContextVector(UUID user, LanguagePair direction, String context, int limit) throws ContextAnalyzerException {
+    public ContextVector getContextVector(UUID user, LanguageDirection direction, String context, int limit) throws ContextAnalyzerException {
         direction = mapLanguagePair(direction);
         return getContextVector(user, direction, new StringCorpus(null, direction.source, context), limit);
     }
 
-    private ContextVector getContextVector(UUID user, LanguagePair direction, Corpus context, int limit) throws ContextAnalyzerException {
+    private ContextVector getContextVector(UUID user, LanguageDirection direction, Corpus context, int limit) throws ContextAnalyzerException {
         Engine engine = ModernMT.getNode().getEngine();
         ContextAnalyzer analyzer = engine.getContextAnalyzer();
 
@@ -151,7 +151,7 @@ public class TranslationFacade {
         HashMap<Language, ContextVector> result = new HashMap<>(targets.length);
         for (Language target : targets) {
             try {
-                LanguagePair direction = mapLanguagePair(new LanguagePair(source, target));
+                LanguageDirection direction = mapLanguagePair(new LanguageDirection(source, target));
                 ContextVector contextVector = analyzer.getContextVector(user, direction, context, limit);
                 result.put(target, contextVector);
             } catch (UnsupportedLanguageException e) {
@@ -172,10 +172,10 @@ public class TranslationFacade {
             throw new UnsupportedOperationException("Decoder '" + decoder.getClass().getSimpleName() + "' does not support N-best.");
     }
 
-    private LanguagePair mapLanguagePair(LanguagePair pair) {
+    private LanguageDirection mapLanguagePair(LanguageDirection pair) {
         LanguageIndex index = ModernMT.getNode().getEngine().getLanguageIndex();
 
-        LanguagePair mapped = index.map(pair);
+        LanguageDirection mapped = index.map(pair);
         if (mapped == null)
             throw new UnsupportedLanguageException(pair);
 
@@ -189,7 +189,7 @@ public class TranslationFacade {
     private static class TranslationTaskImpl implements TranslationTask {
 
         public final UUID user;
-        public final LanguagePair direction;
+        public final LanguageDirection direction;
         public final String text;
         public final ContextVector context;
         public final int nbest;
@@ -198,7 +198,7 @@ public class TranslationFacade {
         private final long creationTimestamp;
         private final long expirationTimestamp;
 
-        public TranslationTaskImpl(UUID user, LanguagePair direction, String text, ContextVector context, int nbest, Priority priority, long expirationTimestamp) {
+        public TranslationTaskImpl(UUID user, LanguageDirection direction, String text, ContextVector context, int nbest, Priority priority, long expirationTimestamp) {
             this.user = user;
             this.direction = direction;
             this.text = text;
@@ -307,7 +307,7 @@ public class TranslationFacade {
         }
 
         @Override
-        public LanguagePair getLanguage() {
+        public LanguageDirection getLanguage() {
             return direction;
         }
 

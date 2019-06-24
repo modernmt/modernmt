@@ -1,6 +1,6 @@
 package eu.modernmt.io;
 
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.io.IOUtils;
@@ -18,35 +18,35 @@ public class IOCorporaUtils {
 
     // Line count ------------------------------------------------------------------------------------------------------
 
-    public static Map<LanguagePair, Long> countLines(Collection<MultilingualCorpus> corpora) throws IOException {
+    public static Map<LanguageDirection, Long> countLines(Collection<MultilingualCorpus> corpora) throws IOException {
         return countLines(corpora, Runtime.getRuntime().availableProcessors());
     }
 
-    public static Map<LanguagePair, Long> countLines(Collection<MultilingualCorpus> corpora, int threads) throws IOException {
+    public static Map<LanguageDirection, Long> countLines(Collection<MultilingualCorpus> corpora, int threads) throws IOException {
         ExecutorService executor = null;
 
         try {
             executor = threads > 1 ? Executors.newFixedThreadPool(threads) : Executors.newSingleThreadExecutor();
 
-            ArrayList<Future<HashMap<LanguagePair, Long>>> futures = new ArrayList<>(corpora.size());
+            ArrayList<Future<HashMap<LanguageDirection, Long>>> futures = new ArrayList<>(corpora.size());
 
             for (MultilingualCorpus corpus : corpora) {
                 futures.add(executor.submit(() -> {
-                    Set<LanguagePair> languages = corpus.getLanguages();
-                    HashMap<LanguagePair, Long> counts = new HashMap<>(languages.size());
+                    Set<LanguageDirection> languages = corpus.getLanguages();
+                    HashMap<LanguageDirection, Long> counts = new HashMap<>(languages.size());
 
-                    for (LanguagePair language : languages)
+                    for (LanguageDirection language : languages)
                         counts.put(language, (long) corpus.getLineCount(language));
 
                     return counts;
                 }));
             }
 
-            HashMap<LanguagePair, Long> result = new HashMap<>();
+            HashMap<LanguageDirection, Long> result = new HashMap<>();
 
-            for (Future<HashMap<LanguagePair, Long>> future : futures) {
+            for (Future<HashMap<LanguageDirection, Long>> future : futures) {
                 try {
-                    for (Map.Entry<LanguagePair, Long> count : future.get().entrySet()) {
+                    for (Map.Entry<LanguageDirection, Long> count : future.get().entrySet()) {
                         Long old = result.get(count.getKey());
                         result.put(count.getKey(), (old == null ? 0L : old) + count.getValue());
                     }
@@ -80,35 +80,35 @@ public class IOCorporaUtils {
 
     }
 
-    public static Map<LanguagePair, Long> wordCount(MultilingualCorpus corpus) throws IOException {
-        Map<LanguagePair, Counter> counts = doWordCount(corpus);
+    public static Map<LanguageDirection, Long> wordCount(MultilingualCorpus corpus) throws IOException {
+        Map<LanguageDirection, Counter> counts = doWordCount(corpus);
         return getCounts(counts);
     }
 
-    public static Map<LanguagePair, Long> wordCount(Collection<? extends MultilingualCorpus> corpora) throws IOException {
+    public static Map<LanguageDirection, Long> wordCount(Collection<? extends MultilingualCorpus> corpora) throws IOException {
         return wordCount(corpora, Runtime.getRuntime().availableProcessors());
     }
 
-    public static Map<LanguagePair, Long> wordCount(Collection<? extends MultilingualCorpus> corpora, int threads) throws IOException {
+    public static Map<LanguageDirection, Long> wordCount(Collection<? extends MultilingualCorpus> corpora, int threads) throws IOException {
         threads = Math.min(threads, MAX_IO_THREADS);
 
         ExecutorService executor = threads > 1 ? Executors.newFixedThreadPool(threads) : Executors.newSingleThreadExecutor();
-        ExecutorCompletionService<Map<LanguagePair, Counter>> results = new ExecutorCompletionService<>(executor);
+        ExecutorCompletionService<Map<LanguageDirection, Counter>> results = new ExecutorCompletionService<>(executor);
 
         for (MultilingualCorpus corpus : corpora)
             results.submit(() -> doWordCount(corpus));
 
-        Map<LanguagePair, Counter> accumulator = null;
+        Map<LanguageDirection, Counter> accumulator = null;
 
         try {
             for (int i = 0; i < corpora.size(); i++) {
                 try {
-                    Map<LanguagePair, Counter> result = results.take().get();
+                    Map<LanguageDirection, Counter> result = results.take().get();
 
                     if (accumulator == null) {
                         accumulator = result;
                     } else {
-                        for (Map.Entry<LanguagePair, Counter> e : result.entrySet())
+                        for (Map.Entry<LanguageDirection, Counter> e : result.entrySet())
                             accumulator.computeIfAbsent(e.getKey(), key -> new Counter()).value += e.getValue().value;
                     }
                 } catch (ExecutionException e) {
@@ -124,8 +124,8 @@ public class IOCorporaUtils {
         return getCounts(accumulator);
     }
 
-    private static Map<LanguagePair, Counter> doWordCount(MultilingualCorpus corpus) throws IOException {
-        HashMap<LanguagePair, Counter> counts = new HashMap<>();
+    private static Map<LanguageDirection, Counter> doWordCount(MultilingualCorpus corpus) throws IOException {
+        HashMap<LanguageDirection, Counter> counts = new HashMap<>();
 
         MultilingualCorpus.MultilingualLineReader reader = null;
 
@@ -144,9 +144,9 @@ public class IOCorporaUtils {
         }
     }
 
-    private static Map<LanguagePair, Long> getCounts(Map<LanguagePair, Counter> counts) {
-        HashMap<LanguagePair, Long> result = new HashMap<>(counts.size());
-        for (Map.Entry<LanguagePair, Counter> entry : counts.entrySet())
+    private static Map<LanguageDirection, Long> getCounts(Map<LanguageDirection, Counter> counts) {
+        HashMap<LanguageDirection, Long> result = new HashMap<>(counts.size());
+        for (Map.Entry<LanguageDirection, Counter> entry : counts.entrySet())
             result.put(entry.getKey(), entry.getValue().value);
         return result;
     }

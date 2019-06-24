@@ -4,7 +4,7 @@ import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 
@@ -28,7 +28,7 @@ public class KafkaPacket {
     private final byte type;
     private final UUID owner;
     private final long memory;
-    private final LanguagePair direction;
+    private final LanguageDirection direction;
     private final String sentence;
     private final String translation;
     private final String previousSentence;
@@ -39,11 +39,11 @@ public class KafkaPacket {
         return new KafkaPacket(TYPE_DELETION, null, memory, null, null, null, null, null, null);
     }
 
-    public static KafkaPacket createAddition(LanguagePair direction, UUID owner, long memory, String sentence, String translation, Date timestamp) {
+    public static KafkaPacket createAddition(LanguageDirection direction, UUID owner, long memory, String sentence, String translation, Date timestamp) {
         return new KafkaPacket(TYPE_ADDITION, owner, memory, direction, sentence, translation, null, null, timestamp);
     }
 
-    public static KafkaPacket createOverwrite(LanguagePair direction, UUID owner, long memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp) {
+    public static KafkaPacket createOverwrite(LanguageDirection direction, UUID owner, long memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp) {
         return new KafkaPacket(TYPE_OVERWRITE, owner, memory, direction, sentence, translation, previousSentence, previousTranslation, timestamp);
     }
 
@@ -59,7 +59,7 @@ public class KafkaPacket {
         long memory = buffer.getLong();
 
         UUID owner = null;
-        LanguagePair direction = null;
+        LanguageDirection direction = null;
         String sentence = null;
         String translation = null;
         String previousSentence = null;
@@ -80,7 +80,7 @@ public class KafkaPacket {
 
                 Language source = Language.fromString(deserializeString(buffer, charset));
                 Language target = Language.fromString(deserializeString(buffer, charset));
-                direction = new LanguagePair(source, target);
+                direction = new LanguageDirection(source, target);
 
                 sentence = deserializeString(buffer, charset);
                 translation = deserializeString(buffer, charset);
@@ -101,7 +101,7 @@ public class KafkaPacket {
         return new KafkaPacket(type, owner, memory, direction, sentence, translation, previousSentence, previousTranslation, timestamp);
     }
 
-    public KafkaPacket(byte type, UUID owner, long memory, LanguagePair direction,
+    public KafkaPacket(byte type, UUID owner, long memory, LanguageDirection direction,
                        String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp) {
         this.type = type;
         this.owner = owner;
@@ -127,7 +127,7 @@ public class KafkaPacket {
         return memory;
     }
 
-    public LanguagePair getDirection() {
+    public LanguageDirection getDirection() {
         return direction;
     }
 

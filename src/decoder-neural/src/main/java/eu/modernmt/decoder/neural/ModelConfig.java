@@ -1,7 +1,7 @@
 package eu.modernmt.decoder.neural;
 
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
@@ -49,8 +49,8 @@ public class ModelConfig {
         }
     }
 
-    public Map<LanguagePair, File> getAvailableModels() {
-        HashMap<LanguagePair, File> result = new HashMap<>();
+    public Map<LanguageDirection, File> getAvailableModels() {
+        HashMap<LanguageDirection, File> result = new HashMap<>();
 
         SubnodeConfiguration models;
 
@@ -65,7 +65,7 @@ public class ModelConfig {
         while (keyIterator.hasNext()) {
             String key = keyIterator.next();
             String[] parts = key.split("__");
-            LanguagePair language = new LanguagePair(Language.fromString(parts[0]), Language.fromString(parts[1]));
+            LanguageDirection language = new LanguageDirection(Language.fromString(parts[0]), Language.fromString(parts[1]));
             File model = new File(basePath, models.getString(key));
 
             result.put(language, model);

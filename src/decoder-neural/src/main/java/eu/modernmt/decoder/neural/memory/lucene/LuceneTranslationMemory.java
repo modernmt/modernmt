@@ -11,7 +11,7 @@ import eu.modernmt.decoder.neural.memory.lucene.query.DefaultQueryBuilder;
 import eu.modernmt.decoder.neural.memory.lucene.query.QueryBuilder;
 import eu.modernmt.decoder.neural.memory.lucene.query.rescoring.F1BleuRescorer;
 import eu.modernmt.decoder.neural.memory.lucene.query.rescoring.Rescorer;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import org.apache.commons.io.FileUtils;
@@ -182,11 +182,11 @@ public class LuceneTranslationMemory implements TranslationMemory {
     // TranslationMemory
 
     @Override
-    public ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, ContextVector contextVector, int limit) throws IOException {
+    public ScoreEntry[] search(UUID user, LanguageDirection direction, Sentence source, ContextVector contextVector, int limit) throws IOException {
         return search(user, direction, source, contextVector, this.rescorer, limit);
     }
 
-    public ScoreEntry[] search(UUID user, LanguagePair direction, Sentence source, ContextVector contextVector, Rescorer rescorer, int limit) throws IOException {
+    public ScoreEntry[] search(UUID user, LanguageDirection direction, Sentence source, ContextVector contextVector, Rescorer rescorer, int limit) throws IOException {
         Analyzer analyzer = this.queryBuilder.isLongQuery(source.getWords().length) ? longQueryAnalyzer : shortQueryAnalyzer;
         Query query = this.queryBuilder.bestMatchingSuggestion(analyzer, user, direction, source, contextVector);
 

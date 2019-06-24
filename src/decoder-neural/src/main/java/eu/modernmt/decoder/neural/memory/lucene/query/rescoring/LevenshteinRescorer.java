@@ -2,7 +2,7 @@ package eu.modernmt.decoder.neural.memory.lucene.query.rescoring;
 
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import org.apache.commons.lang3.ArrayUtils;
@@ -16,7 +16,7 @@ import java.util.HashMap;
 public class LevenshteinRescorer implements Rescorer {
 
     @Override
-    public ScoreEntry[] rescore(LanguagePair direction, Sentence input, ScoreEntry[] entries, ContextVector context) {
+    public ScoreEntry[] rescore(LanguageDirection direction, Sentence input, ScoreEntry[] entries, ContextVector context) {
         String[] words = TokensOutputStream.tokens(input, false, true);
 
         for (ScoreEntry entry : entries)

@@ -10,7 +10,7 @@ import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.io.UTF8Charset;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.io.FileUtils;
@@ -36,7 +36,7 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
             super(path);
         }
 
-        public Bucket getBucket(long id, LanguagePair language) throws IOException {
+        public Bucket getBucket(long id, LanguageDirection language) throws IOException {
             Bucket bucket = super.buckets.get(id, language, null);
             if (bucket != null && bucket.getSize() == 0)
                 bucket = null;
@@ -76,7 +76,7 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
         return getStorage().size();
     }
 
-    public Entry getEntry(long memory, LanguagePair direction) throws IOException {
+    public Entry getEntry(long memory, LanguageDirection direction) throws IOException {
         ContextAnalyzerIndex index = getIndex();
         TCorporaStorage storage = getStorage();
 
@@ -131,11 +131,11 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
     public static final class Entry {
 
         public final long memory;
-        public final LanguagePair language;
+        public final LanguageDirection language;
         public final Set<String> terms;
         public final String content;
 
-        public Entry(long memory, LanguagePair language, Set<String> terms, String content) {
+        public Entry(long memory, LanguageDirection language, Set<String> terms, String content) {
             this.memory = memory;
             this.language = language;
             this.terms = Collections.unmodifiableSet(new HashSet<>(terms));

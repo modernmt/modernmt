@@ -5,7 +5,7 @@ import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.cli.utils.FileFormat;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -142,7 +142,7 @@ public class CleaningPipelineMain {
 
             ModernMT.training.cleanMonolingual(corpora, args.outputRoot, options);
         } else {
-            LanguagePair language = new LanguagePair(args.source, args.target);
+            LanguageDirection language = new LanguageDirection(args.source, args.target);
             List<MultilingualCorpus> corpora = Corpora.list(language, args.inputRoots);
             if (corpora.isEmpty())
                 throw new ParseException("Input path does not contains valid bilingual data");

@@ -2,7 +2,7 @@ package eu.modernmt.model.corpus.impl.parallel;
 
 import eu.modernmt.io.*;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.corpus.BaseMultilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;
@@ -20,33 +20,33 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
     private final FileProxy source;
     private final FileProxy target;
     private final String name;
-    private final LanguagePair language;
+    private final LanguageDirection language;
 
-    public ParallelFileCorpus(File directory, String name, LanguagePair language) {
+    public ParallelFileCorpus(File directory, String name, LanguageDirection language) {
         this(name, language, new File(directory, name + "." + language.source.toLanguageTag()),
                 new File(directory, name + "." + language.target.toLanguageTag()));
     }
 
-    public ParallelFileCorpus(LanguagePair language, File source, File target) {
+    public ParallelFileCorpus(LanguageDirection language, File source, File target) {
         this(FilenameUtils.removeExtension(source.getName()), language, source, target);
     }
 
-    public ParallelFileCorpus(LanguagePair language, FileProxy source, FileProxy target) {
+    public ParallelFileCorpus(LanguageDirection language, FileProxy source, FileProxy target) {
         this(FilenameUtils.removeExtension(source.getFilename()), language, source, target);
     }
 
-    public ParallelFileCorpus(String name, LanguagePair language, File source, File target) {
+    public ParallelFileCorpus(String name, LanguageDirection language, File source, File target) {
         this(name, language, FileProxy.wrap(source), FileProxy.wrap(target));
     }
 
-    public ParallelFileCorpus(String name, LanguagePair language, FileProxy source, FileProxy target) {
+    public ParallelFileCorpus(String name, LanguageDirection language, FileProxy source, FileProxy target) {
         this.name = name;
         this.language = language;
         this.source = source;
         this.target = target;
     }
 
-    public LanguagePair getLanguage() {
+    public LanguageDirection getLanguage() {
         return language;
     }
 
@@ -59,7 +59,7 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
     }
 
     @Override
-    public Corpus getCorpus(LanguagePair language, boolean source) {
+    public Corpus getCorpus(LanguageDirection language, boolean source) {
         if (this.language.equals(language))
             return new FileCorpus(source ? this.source : this.target, name, source ? language.source : language.target);
         else
@@ -107,12 +107,12 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
 
     private static class ParallelFileLineReader implements MultilingualLineReader {
 
-        private final LanguagePair language;
+        private final LanguageDirection language;
         private final UnixLineReader sourceReader;
         private final UnixLineReader targetReader;
         private int index;
 
-        private ParallelFileLineReader(LanguagePair language, FileProxy source, FileProxy target) throws IOException {
+        private ParallelFileLineReader(LanguageDirection language, FileProxy source, FileProxy target) throws IOException {
             this.language = language;
 
             boolean success = false;
@@ -154,11 +154,11 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
 
     private static class ParallelFileLineWriter implements MultilingualLineWriter {
 
-        private final LanguagePair language;
+        private final LanguageDirection language;
         private final LineWriter sourceWriter;
         private final LineWriter targetWriter;
 
-        private ParallelFileLineWriter(boolean append, LanguagePair language, FileProxy source, FileProxy target) throws IOException {
+        private ParallelFileLineWriter(boolean append, LanguageDirection language, FileProxy source, FileProxy target) throws IOException {
             this.language = language;
 
             boolean success = false;
@@ -187,7 +187,7 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
             }
         }
 
-        private static boolean match(LanguagePair test, LanguagePair ref) {
+        private static boolean match(LanguageDirection test, LanguageDirection ref) {
             return match(test.source, ref.source) && match(test.target, ref.target);
         }
 

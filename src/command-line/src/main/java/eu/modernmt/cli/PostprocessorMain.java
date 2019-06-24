@@ -2,7 +2,7 @@ package eu.modernmt.cli;
 
 import eu.modernmt.io.*;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -41,7 +41,7 @@ public class PostprocessorMain {
 
         }
 
-        public final LanguagePair language;
+        public final LanguageDirection language;
         public final File source;
         public final File alignment;
 
@@ -51,7 +51,7 @@ public class PostprocessorMain {
 
             Language _source = Language.fromString(cli.getOptionValue('s'));
             Language _target = cli.hasOption('t') ? Language.fromString(cli.getOptionValue('t')) : null;
-            language = new LanguagePair(_source, _target);
+            language = new LanguageDirection(_source, _target);
 
             source = cli.hasOption("source") ? new File(cli.getOptionValue("source")) : null;
             alignment = cli.hasOption("alignment") ? new File(cli.getOptionValue("alignment")) : null;
@@ -89,13 +89,13 @@ public class PostprocessorMain {
 
     private static class TranslationProvider implements Closeable {
 
-        private final LanguagePair language;
+        private final LanguageDirection language;
         private final Preprocessor preprocessor;
         private final LineReader alignments;
         private final LineReader sources;
         private final LineReader stdin;
 
-        public TranslationProvider(LanguagePair language, File source, File alignment) throws IOException {
+        public TranslationProvider(LanguageDirection language, File source, File alignment) throws IOException {
             this.language = language;
 
             if (source != null && alignment != null) {

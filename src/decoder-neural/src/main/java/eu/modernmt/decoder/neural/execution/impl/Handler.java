@@ -4,7 +4,7 @@ import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.decoder.neural.execution.PythonDecoder;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import org.apache.commons.io.IOUtils;
@@ -16,14 +16,14 @@ import java.util.Map;
 class Handler implements PythonDecoder {
 
     private final PythonDecoder.Builder builder;
-    private final Map<LanguagePair, File> checkpoints;
+    private final Map<LanguageDirection, File> checkpoints;
     private final int gpu;
 
     private PythonDecoder delegate = null;
     private File checkpoint = null;
     private boolean inUse;
 
-    public Handler(Builder builder, Map<LanguagePair, File> checkpoints, int gpu) {
+    public Handler(Builder builder, Map<LanguageDirection, File> checkpoints, int gpu) {
         this.builder = builder;
         this.checkpoints = checkpoints;
         this.gpu = gpu;
@@ -70,7 +70,7 @@ class Handler implements PythonDecoder {
     }
 
     @Override
-    public synchronized Translation translate(LanguagePair direction, Sentence sentence, int nBest) throws DecoderException {
+    public synchronized Translation translate(LanguageDirection direction, Sentence sentence, int nBest) throws DecoderException {
         if (delegate == null)
             throw new DecoderUnavailableException("Decoder process is dead");
 
@@ -79,7 +79,7 @@ class Handler implements PythonDecoder {
     }
 
     @Override
-    public synchronized Translation translate(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException {
+    public synchronized Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException {
         if (delegate == null)
             throw new DecoderUnavailableException("Decoder process is dead");
 
@@ -88,7 +88,7 @@ class Handler implements PythonDecoder {
     }
 
     @Override
-    public synchronized Translation translate(LanguagePair direction, Sentence sentence, String[] translation) throws DecoderException {
+    public synchronized Translation translate(LanguageDirection direction, Sentence sentence, String[] translation) throws DecoderException {
         if (delegate == null)
             throw new DecoderUnavailableException("Decoder process is dead");
 

@@ -11,7 +11,7 @@ import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.facade.TranslationFacade;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.processing.ProcessingException;
@@ -57,7 +57,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
     public static class Params extends Parameters {
 
         public final UUID user;
-        public final LanguagePair direction;
+        public final LanguageDirection direction;
         public final String query;
         public final ContextVector context;
         public final String contextString;
@@ -77,7 +77,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
                 throw new ParameterParsingException("q", query.substring(0, 10) + "...",
                         "max query length of " + MAX_QUERY_LENGTH + " exceeded");
 
-            LanguagePair engineDirection = ModernMT.getNode().getEngine().getLanguageIndex().asSingleLanguagePair();
+            LanguageDirection engineDirection = ModernMT.getNode().getEngine().getLanguageIndex().asSingleLanguagePair();
             direction = engineDirection != null ?
                     getLanguagePair("source", "target", engineDirection) :
                     getLanguagePair("source", "target");

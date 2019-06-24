@@ -3,7 +3,7 @@ package eu.modernmt.api.actions.memory;
 import eu.modernmt.data.DataManagerException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.api.framework.HttpMethod;
@@ -33,7 +33,7 @@ public class UpdateMemoryContribution extends ObjectAction<ImportJob> {
 
     public static class Params extends Parameters {
 
-        private final LanguagePair direction;
+        private final LanguageDirection direction;
         private final long memory;
         private final String sentence;
         private final String translation;
@@ -52,7 +52,7 @@ public class UpdateMemoryContribution extends ObjectAction<ImportJob> {
 
             Language sourceLanguage = getLanguage("source");
             Language targetLanguage = getLanguage("target");
-            direction = new LanguagePair(sourceLanguage, targetLanguage);
+            direction = new LanguageDirection(sourceLanguage, targetLanguage);
         }
     }
 

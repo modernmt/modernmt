@@ -4,7 +4,7 @@ import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.cli.utils.FileFormat;
 import eu.modernmt.io.IOCorporaUtils;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -14,7 +14,6 @@ import org.apache.commons.cli.*;
 import org.apache.logging.log4j.Level;
 
 import java.io.File;
-import java.util.List;
 
 /**
  * Created by davide on 04/07/16.
@@ -42,7 +41,7 @@ public class ConvertMain {
             cliOptions.addOption(outputFormat);
         }
 
-        public final LanguagePair language;
+        public final LanguageDirection language;
         public final File input;
         public final File output;
         public final FileFormat inputFormat;
@@ -54,7 +53,7 @@ public class ConvertMain {
 
             Language source = Language.fromString(cli.getOptionValue("s"));
             Language target = Language.fromString(cli.getOptionValue("t"));
-            language = new LanguagePair(source, target);
+            language = new LanguageDirection(source, target);
 
             input = new File(cli.getOptionValue("input"));
             inputFormat = cli.hasOption("input-format") ? FileFormat.fromName(cli.getOptionValue("input-format")) : null;

@@ -2,7 +2,7 @@ package eu.modernmt.model.corpus;
 
 import eu.modernmt.io.FileProxy;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
@@ -51,7 +51,7 @@ public class Corpora {
         if (corpus instanceof TMXCorpus) {
             return new TMXCorpus(new File(folder, name + ".tmx"));
         } else if (corpus instanceof ParallelFileCorpus) {
-            LanguagePair language = ((ParallelFileCorpus) corpus).getLanguage();
+            LanguageDirection language = ((ParallelFileCorpus) corpus).getLanguage();
             return new ParallelFileCorpus(folder, name, language);
         } else if (corpus instanceof CompactFileCorpus) {
             return new CompactFileCorpus(new File(folder, name + ".cfc"));
@@ -105,8 +105,8 @@ public class Corpora {
         }
     }
 
-    public static Map<LanguagePair, Integer> countLines(MultilingualCorpus corpus) throws IOException {
-        Map<LanguagePair, Counter> counts = new HashMap<>();
+    public static Map<LanguageDirection, Integer> countLines(MultilingualCorpus corpus) throws IOException {
+        Map<LanguageDirection, Counter> counts = new HashMap<>();
 
         MultilingualCorpus.MultilingualLineReader reader = null;
 
@@ -121,8 +121,8 @@ public class Corpora {
             IOUtils.closeQuietly(reader);
         }
 
-        Map<LanguagePair, Integer> result = new HashMap<>(counts.size());
-        for (Map.Entry<LanguagePair, Counter> entry : counts.entrySet())
+        Map<LanguageDirection, Integer> result = new HashMap<>(counts.size());
+        for (Map.Entry<LanguageDirection, Counter> entry : counts.entrySet())
             result.put(entry.getKey(), entry.getValue().count);
 
         return result;
@@ -148,7 +148,7 @@ public class Corpora {
         return corpora;
     }
 
-    public static List<MultilingualCorpus> list(LanguagePair language, File... roots) {
+    public static List<MultilingualCorpus> list(LanguageDirection language, File... roots) {
         ArrayList<MultilingualCorpus> output = new ArrayList<>();
 
         for (File directory : roots) {

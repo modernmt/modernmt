@@ -4,7 +4,7 @@ import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.facade.TrainingFacade;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.cli.*;
@@ -41,7 +41,7 @@ public class TrainingPipelineMain {
             cliOptions.addOption(partitionSize);
         }
 
-        public final LanguagePair language;
+        public final LanguageDirection language;
         public final File[] inputRoots;
         public final File outputRoot;
         public final File devRoot;
@@ -54,7 +54,7 @@ public class TrainingPipelineMain {
 
             Language sourceLanguage = Language.fromString(cli.getOptionValue('s'));
             Language targetLanguage = Language.fromString(cli.getOptionValue('t'));
-            language = new LanguagePair(sourceLanguage, targetLanguage);
+            language = new LanguageDirection(sourceLanguage, targetLanguage);
 
             String[] roots = cli.getOptionValues("input");
             inputRoots = new File[roots.length];

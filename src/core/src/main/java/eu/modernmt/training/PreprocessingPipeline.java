@@ -1,7 +1,7 @@
 package eu.modernmt.training;
 
 import eu.modernmt.io.IOCorporaUtils;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
@@ -21,15 +21,15 @@ public class PreprocessingPipeline {
 
     private final int threads;
     private final CorporaPartition mainPartition;
-    private final LanguagePair language;
+    private final LanguageDirection language;
 
     private ArrayList<CorporaPartition> extraPartitions = new ArrayList<>();
 
-    public PreprocessingPipeline(LanguagePair language, CorporaPartition mainPartition) {
+    public PreprocessingPipeline(LanguageDirection language, CorporaPartition mainPartition) {
         this(language, mainPartition, Runtime.getRuntime().availableProcessors() * 2);
     }
 
-    public PreprocessingPipeline(LanguagePair language, CorporaPartition mainPartition, int threads) {
+    public PreprocessingPipeline(LanguageDirection language, CorporaPartition mainPartition, int threads) {
         this.threads = threads;
         this.mainPartition = mainPartition;
         this.language = language;
@@ -49,11 +49,11 @@ public class PreprocessingPipeline {
         Preprocessor preprocessor = new Preprocessor(threads);
 
         try {
-            Map<LanguagePair, Long> bilingualCorporaLinesMap = IOCorporaUtils.countLines(maskedMultilingualCorpora, threads);
+            Map<LanguageDirection, Long> bilingualCorporaLinesMap = IOCorporaUtils.countLines(maskedMultilingualCorpora, threads);
             long extraPartitionsLines = PartitioningUtils.countTotalPartitionsLines(extraPartitions);
 
             for (MultilingualCorpus corpus : maskedMultilingualCorpora) {
-                for (LanguagePair language : corpus.getLanguages()) {
+                for (LanguageDirection language : corpus.getLanguages()) {
                     long bilingualCorporaLines = bilingualCorporaLinesMap.get(language);
                     double weight = PartitioningUtils.getAdjustedWeight(language, corpus, extraPartitionsLines, bilingualCorporaLines);
                     int lineCount = corpus.getLineCount(language);

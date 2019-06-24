@@ -7,7 +7,7 @@ import eu.modernmt.decoder.neural.execution.PythonDecoder;
 import eu.modernmt.decoder.neural.execution.PythonProcess;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -141,17 +141,17 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
     }
 
     @Override
-    public Translation translate(LanguagePair direction, Sentence sentence, int nBest) throws DecoderException {
+    public Translation translate(LanguageDirection direction, Sentence sentence, int nBest) throws DecoderException {
         return this.translate(sentence, serialize(direction, sentence, null, null));
     }
 
     @Override
-    public Translation translate(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException {
+    public Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException {
         return this.translate(sentence, serialize(direction, sentence, suggestions, null));
     }
 
     @Override
-    public Translation translate(LanguagePair direction, Sentence sentence, String[] translation) throws DecoderException {
+    public Translation translate(LanguageDirection direction, Sentence sentence, String[] translation) throws DecoderException {
         return this.translate(sentence, serialize(direction, sentence, null, translation));
     }
 
@@ -182,7 +182,7 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
         }
     }
 
-    private String serialize(LanguagePair direction, Sentence sentence, ScoreEntry[] suggestions, String[] forcedTranslation) {
+    private String serialize(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, String[] forcedTranslation) {
         String text = TokensOutputStream.serialize(sentence, false, true);
 
         JsonObject json = new JsonObject();

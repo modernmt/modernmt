@@ -3,7 +3,7 @@ package eu.modernmt.decoder.neural.memory;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
 import eu.modernmt.model.corpus.Corpus;
@@ -32,17 +32,17 @@ public class TestData {
     public static final Language PT = new Language("pt");
     public static final Language PT_BR = new Language("pt", "BR");
 
-    public static final LanguagePair FR__ES = new LanguagePair(TestData.FR, TestData.ES);
-    public static final LanguagePair FR__EN = new LanguagePair(TestData.FR, TestData.EN);
-    public static final LanguagePair EN__IT = new LanguagePair(TestData.EN, TestData.IT);
-    public static final LanguagePair EN__FR = new LanguagePair(TestData.EN, TestData.FR);
-    public static final LanguagePair IT__EN = new LanguagePair(TestData.IT, TestData.EN);
-    public static final LanguagePair EN_US__IT = new LanguagePair(TestData.EN_US, TestData.IT);
-    public static final LanguagePair IT__EN_US = new LanguagePair(TestData.IT, TestData.EN_US);
-    public static final LanguagePair EN_US__IT_CH = new LanguagePair(TestData.EN_US, TestData.IT_CH);
-    public static final LanguagePair IT_CH__EN_US = new LanguagePair(TestData.IT_CH, TestData.EN_US);
-    public static final LanguagePair EN_US__FR_CA = new LanguagePair(TestData.EN_US, TestData.FR_CA);
-    public static final LanguagePair FR_CA__EN_US = new LanguagePair(TestData.FR_CA, TestData.EN_US);
+    public static final LanguageDirection FR__ES = new LanguageDirection(TestData.FR, TestData.ES);
+    public static final LanguageDirection FR__EN = new LanguageDirection(TestData.FR, TestData.EN);
+    public static final LanguageDirection EN__IT = new LanguageDirection(TestData.EN, TestData.IT);
+    public static final LanguageDirection EN__FR = new LanguageDirection(TestData.EN, TestData.FR);
+    public static final LanguageDirection IT__EN = new LanguageDirection(TestData.IT, TestData.EN);
+    public static final LanguageDirection EN_US__IT = new LanguageDirection(TestData.EN_US, TestData.IT);
+    public static final LanguageDirection IT__EN_US = new LanguageDirection(TestData.IT, TestData.EN_US);
+    public static final LanguageDirection EN_US__IT_CH = new LanguageDirection(TestData.EN_US, TestData.IT_CH);
+    public static final LanguageDirection IT_CH__EN_US = new LanguageDirection(TestData.IT_CH, TestData.EN_US);
+    public static final LanguageDirection EN_US__FR_CA = new LanguageDirection(TestData.EN_US, TestData.FR_CA);
+    public static final LanguageDirection FR_CA__EN_US = new LanguageDirection(TestData.FR_CA, TestData.EN_US);
 
     private static final HashMap<String, String> EXAMPLE_SENTENCES = new HashMap<>();
 
@@ -68,15 +68,15 @@ public class TestData {
 
     // Translation units
 
-    public static List<TranslationUnit> tuList(LanguagePair language, int size) {
+    public static List<TranslationUnit> tuList(LanguageDirection language, int size) {
         return tuList(1L, language, size);
     }
 
-    public static List<TranslationUnit> tuList(long memory, LanguagePair language, int size) {
+    public static List<TranslationUnit> tuList(long memory, LanguageDirection language, int size) {
         return tuList(0, 0L, memory, language, size);
     }
 
-    public static List<TranslationUnit> tuList(int channel, long channelPosition, long memory, LanguagePair language, int size) {
+    public static List<TranslationUnit> tuList(int channel, long channelPosition, long memory, LanguageDirection language, int size) {
         ArrayList<TranslationUnit> units = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             String source = EXAMPLE_SENTENCES.get(language.source.getLanguage());
@@ -92,42 +92,42 @@ public class TestData {
         return units;
     }
 
-    public static TranslationUnit tu(LanguagePair language, Date timestamp) {
+    public static TranslationUnit tu(LanguageDirection language, Date timestamp) {
         return tu(1L, language, timestamp);
     }
 
-    public static TranslationUnit tu(long memory, LanguagePair language, Date timestamp) {
+    public static TranslationUnit tu(long memory, LanguageDirection language, Date timestamp) {
         return tu(0, 0L, memory, language, timestamp);
     }
 
-    public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguagePair language, Date timestamp) {
+    public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguageDirection language, Date timestamp) {
         return tu(channel, channelPosition, memory, language,
                 EXAMPLE_SENTENCES.get(language.source.getLanguage()),
                 EXAMPLE_SENTENCES.get(language.target.getLanguage()),
                 timestamp);
     }
 
-    public static TranslationUnit tu(LanguagePair language, String source, String target, Date timestamp) {
+    public static TranslationUnit tu(LanguageDirection language, String source, String target, Date timestamp) {
         return tu(1L, language, source, target, timestamp);
     }
 
-    public static TranslationUnit tu(long memory, LanguagePair language, String source, String target, Date timestamp) {
+    public static TranslationUnit tu(long memory, LanguageDirection language, String source, String target, Date timestamp) {
         return tu(0, 0, memory, language, source, target, timestamp);
     }
 
-    public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguagePair language, String source, String target, Date timestamp) {
+    public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguageDirection language, String source, String target, Date timestamp) {
         return tu(channel, channelPosition, memory, language, source, target, null, null, timestamp);
     }
 
-    public static TranslationUnit tu(int channel, long channelPosition, UUID owner, long memory, LanguagePair language, String source, String target, Date timestamp) {
+    public static TranslationUnit tu(int channel, long channelPosition, UUID owner, long memory, LanguageDirection language, String source, String target, Date timestamp) {
         return tu(channel, channelPosition, owner, memory, language, source, target, null, null, timestamp);
     }
 
-    public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguagePair language, String source, String target, String previousSource, String previousTarget, Date timestamp) {
+    public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguageDirection language, String source, String target, String previousSource, String previousTarget, Date timestamp) {
         return tu(channel, channelPosition, null, memory, language, source, target, previousSource, previousTarget, timestamp);
     }
 
-    public static TranslationUnit tu(int channel, long channelPosition, UUID owner, long memory, LanguagePair language, String source, String target, String previousSource, String previousTarget, Date timestamp) {
+    public static TranslationUnit tu(int channel, long channelPosition, UUID owner, long memory, LanguageDirection language, String source, String target, String previousSource, String previousTarget, Date timestamp) {
         return new TranslationUnit((short) channel, channelPosition, owner, language, memory,
                 source, target, previousSource, previousTarget, timestamp,
                 sentence(source), sentence(target), null);
@@ -136,7 +136,7 @@ public class TestData {
     // Corpus
 
     public static MultilingualCorpus corpus(String name, List<TranslationUnit> units) {
-        final HashMap<LanguagePair, ArrayList<TranslationUnit>> lang2units = new HashMap<>();
+        final HashMap<LanguageDirection, ArrayList<TranslationUnit>> lang2units = new HashMap<>();
         for (TranslationUnit unit : units)
             lang2units.computeIfAbsent(unit.direction, key -> new ArrayList<>()).add(unit);
 
@@ -147,12 +147,12 @@ public class TestData {
             }
 
             @Override
-            public Set<LanguagePair> getLanguages() {
+            public Set<LanguageDirection> getLanguages() {
                 return lang2units.keySet();
             }
 
             @Override
-            public int getLineCount(LanguagePair language) {
+            public int getLineCount(LanguageDirection language) {
                 return lang2units.get(language).size();
             }
 
@@ -186,7 +186,7 @@ public class TestData {
             }
 
             @Override
-            public Corpus getCorpus(LanguagePair language, boolean source) {
+            public Corpus getCorpus(LanguageDirection language, boolean source) {
                 throw new UnsupportedOperationException();
             }
         };

@@ -1,7 +1,6 @@
 package eu.modernmt.decoder.neural.memory.lucene;
 
 import eu.modernmt.io.UTF8Charset;
-import eu.modernmt.lang.LanguagePair;
 
 /**
  * Created by davide on 30/09/17.

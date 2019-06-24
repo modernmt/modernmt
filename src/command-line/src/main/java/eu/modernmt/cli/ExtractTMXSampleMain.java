@@ -1,7 +1,7 @@
 package eu.modernmt.cli;
 
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
@@ -37,7 +37,7 @@ public class ExtractTMXSampleMain {
             cliOptions.addOption(minLength);
         }
 
-        public final LanguagePair language;
+        public final LanguageDirection language;
         public final File input;
         public final File outputFolder;
         public final int samples;
@@ -49,7 +49,7 @@ public class ExtractTMXSampleMain {
 
             Language source = Language.fromString(cli.getOptionValue("s"));
             Language target = Language.fromString(cli.getOptionValue("t"));
-            language = new LanguagePair(source, target);
+            language = new LanguageDirection(source, target);
             input = new File(cli.getOptionValue("i"));
             outputFolder = new File(cli.getOptionValue("o"));
             samples = cli.hasOption("n") ? Integer.parseInt(cli.getOptionValue("n")) : 1000;

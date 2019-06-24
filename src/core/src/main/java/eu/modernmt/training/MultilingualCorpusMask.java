@@ -1,7 +1,7 @@
 package eu.modernmt.training;
 
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.corpus.BaseMultilingualCorpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -15,9 +15,9 @@ import java.io.IOException;
 public class MultilingualCorpusMask extends BaseMultilingualCorpus implements MultilingualCorpusWrapper {
 
     private final MultilingualCorpus corpus;
-    private final LanguagePair language;
+    private final LanguageDirection language;
 
-    public MultilingualCorpusMask(LanguagePair language, MultilingualCorpus corpus) {
+    public MultilingualCorpusMask(LanguageDirection language, MultilingualCorpus corpus) {
         this.corpus = corpus;
         this.language = language;
     }
@@ -98,7 +98,7 @@ public class MultilingualCorpusMask extends BaseMultilingualCorpus implements Mu
         return corpus;
     }
 
-    private boolean match(LanguagePair pair) {
+    private boolean match(LanguageDirection pair) {
         return match(pair.source, this.language.source) && match(pair.target, this.language.target);
     }
 

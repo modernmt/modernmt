@@ -15,8 +15,8 @@ import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.neural.NeuralDecoder;
 import eu.modernmt.io.FileConst;
 import eu.modernmt.io.Paths;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.LanguageIndex;
-import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import org.apache.commons.io.FileUtils;
@@ -178,7 +178,7 @@ public class Engine implements Closeable, DataListenerProvider {
         return this.languageIndex;
     }
 
-    public Set<LanguagePair> getAvailableLanguagePairs() {
+    public Set<LanguageDirection> getAvailableLanguagePairs() {
         return this.languageIndex.getLanguages();
     }
 

@@ -3,7 +3,7 @@ package eu.modernmt.cleaning.filters;
 import eu.modernmt.cleaning.MultilingualCorpusFilter;
 import eu.modernmt.cleaning.filters.util.Sequence;
 import eu.modernmt.io.WordCounter;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.util.HashMap;
@@ -17,7 +17,7 @@ public class SentenceLengthFilter implements MultilingualCorpusFilter {
     public static final int DEFAULT_MAX_LINE_LENGTH = 1024;
 
     private final int maxLength;
-    private HashMap<LanguagePair, Sequence> lengthRatios = new HashMap<>();
+    private HashMap<LanguageDirection, Sequence> lengthRatios = new HashMap<>();
 
     public SentenceLengthFilter() {
         this(DEFAULT_MAX_LINE_LENGTH);

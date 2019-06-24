@@ -5,20 +5,20 @@ import java.io.Serializable;
 /**
  * Created by davide on 27/07/17.
  */
-public final class LanguagePair implements Serializable {
+public final class LanguageDirection implements Serializable {
 
     public final Language source;
     public final Language target;
-    private transient LanguagePair reversed = null;
+    private transient LanguageDirection reversed = null;
 
-    public LanguagePair(Language source, Language target) {
+    public LanguageDirection(Language source, Language target) {
         this.source = source;
         this.target = target;
     }
 
-    public LanguagePair reversed() {
+    public LanguageDirection reversed() {
         if (reversed == null) {
-            LanguagePair reversed = new LanguagePair(target, source);
+            LanguageDirection reversed = new LanguageDirection(target, source);
             reversed.reversed = this;
 
             this.reversed = reversed;
@@ -27,12 +27,12 @@ public final class LanguagePair implements Serializable {
         return reversed;
     }
 
-    public boolean equalsIgnoreDirection(LanguagePair o) {
+    public boolean equalsIgnoreDirection(LanguageDirection o) {
         if (o == null) return false;
         return (source.equals(o.source) && target.equals(o.target)) || (source.equals(o.target) && target.equals(o.source));
     }
 
-    public boolean equalsIgnoreCountry(LanguagePair o) {
+    public boolean equalsIgnoreCountry(LanguageDirection o) {
         if (o == null) return false;
         return source.getLanguage().equals(o.source.getLanguage()) && target.getLanguage().equals(o.target.getLanguage());
     }
@@ -42,7 +42,7 @@ public final class LanguagePair implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        LanguagePair that = (LanguagePair) o;
+        LanguageDirection that = (LanguageDirection) o;
 
         if (!source.equals(that.source)) return false;
         return target.equals(that.target);

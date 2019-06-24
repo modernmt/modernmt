@@ -2,7 +2,7 @@ package eu.modernmt.cluster;
 
 import com.hazelcast.core.Member;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 
 import java.util.*;
 
@@ -18,20 +18,20 @@ public class NodeInfo {
     public final String uuid;
     public final ClusterNode.Status status;
     public final Map<Short, Long> channels;
-    public final Set<LanguagePair> languages;
+    public final Set<LanguageDirection> languages;
     public final String address;
 
     static NodeInfo fromMember(Member member) {
         String uuid = member.getUuid();
         ClusterNode.Status status = deserializeStatus(member.getStringAttribute(STATUS_ATTRIBUTE));
         Map<Short, Long> positions = deserializeChannels(member.getStringAttribute(DATA_CHANNELS_ATTRIBUTE));
-        Set<LanguagePair> languages = deserializeLanguages(member.getStringAttribute(TRANSLATION_DIRECTIONS_ATTRIBUTE));
+        Set<LanguageDirection> languages = deserializeLanguages(member.getStringAttribute(TRANSLATION_DIRECTIONS_ATTRIBUTE));
         String address = member.getAddress().getHost();
 
         return new NodeInfo(uuid, status, positions, languages, address);
     }
 
-    private NodeInfo(String uuid, ClusterNode.Status status, Map<Short, Long> channels, Set<LanguagePair> languages, String address) {
+    private NodeInfo(String uuid, ClusterNode.Status status, Map<Short, Long> channels, Set<LanguageDirection> languages, String address) {
         this.uuid = uuid;
         this.status = status;
         this.channels = channels;
@@ -52,7 +52,7 @@ public class NodeInfo {
         return false;
     }
 
-    static boolean hasTranslationDirection(Member member, LanguagePair direction) {
+    static boolean hasTranslationDirection(Member member, LanguageDirection direction) {
         String encoded = member.getStringAttribute(TRANSLATION_DIRECTIONS_ATTRIBUTE);
         if (encoded == null || encoded.isEmpty())
             return false;
@@ -65,7 +65,7 @@ public class NodeInfo {
         member.setStringAttribute(STATUS_ATTRIBUTE, status.name());
     }
 
-    static void updateTranslationDirections(Member member, Set<LanguagePair> directions) {
+    static void updateTranslationDirections(Member member, Set<LanguageDirection> directions) {
         member.setStringAttribute(TRANSLATION_DIRECTIONS_ATTRIBUTE, serialize(directions));
     }
 
@@ -79,13 +79,13 @@ public class NodeInfo {
 
     // Serializers
 
-    private static String serialize(Set<LanguagePair> directions) {
+    private static String serialize(Set<LanguageDirection> directions) {
         if (directions == null || directions.isEmpty())
             return "";
 
         StringBuilder builder = new StringBuilder();
 
-        for (LanguagePair direction : directions) {
+        for (LanguageDirection direction : directions) {
             builder.append('[');
             builder.append(direction.source.toLanguageTag());
             builder.append(':');
@@ -126,13 +126,13 @@ public class NodeInfo {
         }
     }
 
-    private static Set<LanguagePair> deserializeLanguages(String encoded) {
+    private static Set<LanguageDirection> deserializeLanguages(String encoded) {
         if (encoded == null || encoded.isEmpty())
             return Collections.emptySet();
 
         String[] elements = encoded.split(",");
 
-        HashSet<LanguagePair> result = new HashSet<>(elements.length);
+        HashSet<LanguageDirection> result = new HashSet<>(elements.length);
         for (String element : elements) {
             String[] tags = element.split(":");
 
@@ -142,7 +142,7 @@ public class NodeInfo {
             Language source = Language.fromString(sourceTag);
             Language target = Language.fromString(targetTag);
 
-            result.add(new LanguagePair(source, target));
+            result.add(new LanguageDirection(source, target));
         }
 
         return result;

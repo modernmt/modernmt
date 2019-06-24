@@ -1,7 +1,6 @@
 package eu.modernmt.decoder.neural.memory;
 
-import eu.modernmt.lang.LanguagePair;
-import org.apache.commons.lang3.StringUtils;
+import eu.modernmt.lang.LanguageDirection;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -12,14 +11,14 @@ import java.util.Objects;
 public class ScoreEntry implements Comparable<ScoreEntry> {
 
     public final long memory;
-    public final LanguagePair language;
+    public final LanguageDirection language;
     public final String[] sentence;
     public final String[] translation;
 
     public float auxiliaryScore = 0.f;
     public float score = 0.f;
 
-    public ScoreEntry(long memory, LanguagePair language, String[] sentence, String[] translation) {
+    public ScoreEntry(long memory, LanguageDirection language, String[] sentence, String[] translation) {
         this.memory = memory;
         this.language = language;
         this.sentence = sentence;

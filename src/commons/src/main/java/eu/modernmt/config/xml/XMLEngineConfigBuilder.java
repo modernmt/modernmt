@@ -3,7 +3,7 @@ package eu.modernmt.config.xml;
 import eu.modernmt.config.*;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageIndex;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import org.w3c.dom.Element;
 
 /**
@@ -29,7 +29,7 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
                 Language target = getLanguageAttribute("target-language");
 
                 LanguageIndex languageIndex = new LanguageIndex.Builder()
-                        .add(new LanguagePair(source, target))
+                        .add(new LanguageDirection(source, target))
                         .build();
 
                 config.setLanguageIndex(languageIndex);
@@ -72,7 +72,7 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
             if (builder == null)
                 builder = new LanguageIndex.Builder();
 
-            builder.add(new LanguagePair(source, target));
+            builder.add(new LanguageDirection(source, target));
         }
 
         if (builder != null) {

@@ -5,7 +5,7 @@ package eu.modernmt.lang;
  */
 public class UnsupportedLanguageException extends RuntimeException {
 
-    private final LanguagePair languagePair;
+    private final LanguageDirection languageDirection;
 
     private static String toString(Language language) {
         return language == null ? "[null]" : language.toLanguageTag();
@@ -23,16 +23,16 @@ public class UnsupportedLanguageException extends RuntimeException {
     }
 
     public UnsupportedLanguageException(Language source, Language target) {
-        this(new LanguagePair(source, target));
+        this(new LanguageDirection(source, target));
     }
 
-    public UnsupportedLanguageException(LanguagePair direction) {
+    public UnsupportedLanguageException(LanguageDirection direction) {
         super(makeMessage(direction.source, direction.target));
-        this.languagePair = direction;
+        this.languageDirection = direction;
     }
 
-    public LanguagePair getLanguagePair() {
-        return languagePair;
+    public LanguageDirection getLanguageDirection() {
+        return languageDirection;
     }
 
 }

@@ -5,8 +5,8 @@ import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.LanguageIndex;
-import eu.modernmt.lang.LanguagePair;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Preprocessor;
@@ -31,7 +31,7 @@ class KafkaDataBatch implements DataBatch {
     private final KafkaDataManager manager;
 
     private final Stack<DataPartition> cachedPartitions = new Stack<>();
-    private final HashMap<LanguagePair, DataPartition> cachedDataSet = new HashMap<>();
+    private final HashMap<LanguageDirection, DataPartition> cachedDataSet = new HashMap<>();
 
     public KafkaDataBatch(LanguageIndex languageIndex, Preprocessor preprocessor, Aligner aligner, KafkaDataManager manager) {
         this.languageIndex = languageIndex;
@@ -46,7 +46,7 @@ class KafkaDataBatch implements DataBatch {
         currentPositions.clear();
     }
 
-    private DataPartition getDataPartition(LanguagePair direction, int expectedSize) {
+    private DataPartition getDataPartition(LanguageDirection direction, int expectedSize) {
         if (cachedPartitions.isEmpty())
             return new DataPartition().reset(direction, expectedSize);
         else
@@ -80,7 +80,7 @@ class KafkaDataBatch implements DataBatch {
             if (packetType == KafkaPacket.TYPE_DELETION) {
                 deletions.add(packet.asDeletion());
             } else {
-                LanguagePair direction = languageIndex.mapIgnoringDirection(packet.getDirection());
+                LanguageDirection direction = languageIndex.mapIgnoringDirection(packet.getDirection());
                 if (direction != null) {
                     DataPartition partition = cachedDataSet.computeIfAbsent(direction, key -> getDataPartition(key, size));
                     partition.add(packet);
@@ -120,12 +120,12 @@ class KafkaDataBatch implements DataBatch {
 
     private class DataPartition {
 
-        private LanguagePair direction;
+        private LanguageDirection direction;
         public final ArrayList<KafkaPacket> packets = new ArrayList<>();
         public final ArrayList<String> sources = new ArrayList<>();
         public final ArrayList<String> targets = new ArrayList<>();
 
-        public DataPartition reset(LanguagePair direction, int size) {
+        public DataPartition reset(LanguageDirection direction, int size) {
             this.clear();
             this.direction = direction;
 

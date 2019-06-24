@@ -7,7 +7,7 @@ import eu.modernmt.api.model.ContextVectorResult;
 import eu.modernmt.api.model.TranslationResponse;
 import eu.modernmt.api.serializers.*;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.ImportJob;
 import org.eclipse.jetty.server.Handler;
@@ -29,7 +29,7 @@ public class ApiServer {
         JSONSerializer.registerCustomSerializer(Alignment.class, new AlignmentSerializer());
         JSONSerializer.registerCustomSerializer(ContextVectorResult.class, new ContextVectorResultSerializer());
         JSONSerializer.registerCustomSerializer(Language.class, new LanguageSerializer());
-        JSONSerializer.registerCustomSerializer(LanguagePair.class, new LanguagePairSerializer());
+        JSONSerializer.registerCustomSerializer(LanguageDirection.class, new LanguagePairSerializer());
         JSONSerializer.registerCustomSerializer(ImportJob.class, new ImportJobSerializer());
     }
 

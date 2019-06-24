@@ -1,6 +1,6 @@
 package eu.modernmt.model.corpus.impl.tmx;
 
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.xml.XMLUtils;
 
@@ -98,7 +98,7 @@ class TMXPairReader {
                         if (lang.equals(sourceLanguage)) {
                             sourceText = text;
                         } else {
-                            LanguagePair language = languageCache.get(sourceLanguage, lang);
+                            LanguageDirection language = languageCache.get(sourceLanguage, lang);
                             resultCache.add(new MultilingualCorpus.StringPair(language, null, text, timestamp));
                         }
                     }

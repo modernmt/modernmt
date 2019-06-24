@@ -2,7 +2,7 @@ package eu.modernmt.cli;
 
 import eu.modernmt.io.*;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
@@ -38,7 +38,7 @@ public class PreprocessorMain {
             cliOptions.addOption(keepSpaces);
         }
 
-        public final LanguagePair language;
+        public final LanguageDirection language;
         public final boolean printTags;
         public final boolean printPlaceholders;
         public final boolean keepSpaces;
@@ -50,7 +50,7 @@ public class PreprocessorMain {
 
             Language source = Language.fromString(cli.getOptionValue("s"));
             Language target = Language.fromString(cli.getOptionValue("t"));
-            language = new LanguagePair(source, target);
+            language = new LanguageDirection(source, target);
             printTags = !cli.hasOption("no-tags");
             printPlaceholders = cli.hasOption("print-placeholders");
             keepSpaces = cli.hasOption("original-spacing");
@@ -85,7 +85,7 @@ public class PreprocessorMain {
         }
     }
 
-    private static void interactivePreprocess(Preprocessor preprocessor, LanguagePair language, LineReader input, Outputter output) throws IOException, ProcessingException {
+    private static void interactivePreprocess(Preprocessor preprocessor, LanguageDirection language, LineReader input, Outputter output) throws IOException, ProcessingException {
         String line;
         while ((line = input.readLine()) != null) {
             Sentence sentence = preprocessor.process(language, line);
@@ -93,7 +93,7 @@ public class PreprocessorMain {
         }
     }
 
-    private static void batchPreprocess(Preprocessor preprocessor, LanguagePair language, LineReader input, Outputter output) throws IOException, ProcessingException {
+    private static void batchPreprocess(Preprocessor preprocessor, LanguageDirection language, LineReader input, Outputter output) throws IOException, ProcessingException {
         BufferedLineReader bufferedReader = new BufferedLineReader(input);
 
         String[] batch;

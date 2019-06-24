@@ -4,10 +4,6 @@ import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
-import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;

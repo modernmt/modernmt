@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.api.framework.routing.RouteTemplate;
 
 import java.util.UUID;
@@ -241,15 +241,15 @@ public class Parameters {
     /**
      * Get the language pair from the request parameter using the passed source and target language parameter names.
      * <p>
-     * If neither the source language parameter nor the target language parameter are passed, return a default LanguagePair.
+     * If neither the source language parameter nor the target language parameter are passed, return a default LanguageDirection.
      *
      * @param sourceName the name of the source language field to parse
      * @param targetName the name of the target language field to parse
-     * @param def        the default LanguagePair to return if neither sourceName nor targetName can be parsed from the request
-     * @return language pair build from the values of parameters sourceName and targetName, if they are passed, or the default LanguagePair otherwise.
+     * @param def        the default LanguageDirection to return if neither sourceName nor targetName can be parsed from the request
+     * @return language pair build from the values of parameters sourceName and targetName, if they are passed, or the default LanguageDirection otherwise.
      * @throws ParameterParsingException
      */
-    public LanguagePair getLanguagePair(String sourceName, String targetName, LanguagePair def) throws ParameterParsingException {
+    public LanguageDirection getLanguagePair(String sourceName, String targetName, LanguageDirection def) throws ParameterParsingException {
         Language sourceLanguage = getLanguage(sourceName, null);
         Language targetLanguage = getLanguage(targetName, null);
 
@@ -260,7 +260,7 @@ public class Parameters {
         } else if (targetLanguage == null) {
             throw new ParameterParsingException(targetName);
         } else {
-            return new LanguagePair(sourceLanguage, targetLanguage);
+            return new LanguageDirection(sourceLanguage, targetLanguage);
         }
     }
 
@@ -272,8 +272,8 @@ public class Parameters {
      * @return language pair build from the values of parameters sourceName and targetName
      * @throws ParameterParsingException if the parameter with name sourceName and/or the parameter with name targetName can not be found in the request
      */
-    public LanguagePair getLanguagePair(String sourceName, String targetName) throws ParameterParsingException {
-        return new LanguagePair(getLanguage(sourceName), getLanguage(targetName));
+    public LanguageDirection getLanguagePair(String sourceName, String targetName) throws ParameterParsingException {
+        return new LanguageDirection(getLanguage(sourceName), getLanguage(targetName));
     }
 
 

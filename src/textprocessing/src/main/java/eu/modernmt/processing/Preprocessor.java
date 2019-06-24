@@ -1,6 +1,6 @@
 package eu.modernmt.processing;
 
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.builder.XMLPipelineBuilder;
 import eu.modernmt.processing.concurrent.PipelineExecutor;
@@ -36,16 +36,16 @@ public class Preprocessor implements Closeable {
         this.threads = threads;
     }
 
-    public Sentence[] process(LanguagePair language, String[] batch) throws ProcessingException {
+    public Sentence[] process(LanguageDirection language, String[] batch) throws ProcessingException {
         return this.executor.processBatch(language, batch, new Sentence[batch.length]);
     }
 
-    public List<Sentence> process(LanguagePair language, List<String> batch) throws ProcessingException {
+    public List<Sentence> process(LanguageDirection language, List<String> batch) throws ProcessingException {
         Sentence[] result = this.executor.processBatch(language, batch.toArray(new String[0]), new Sentence[batch.size()]);
         return Arrays.asList(result);
     }
 
-    public Sentence process(LanguagePair language, String text) throws ProcessingException {
+    public Sentence process(LanguageDirection language, String text) throws ProcessingException {
         return this.executor.process(language, text);
     }
 

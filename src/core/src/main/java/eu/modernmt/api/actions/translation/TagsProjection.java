@@ -3,7 +3,7 @@ package eu.modernmt.api.actions.translation;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.facade.ModernMT;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.ProcessingException;
@@ -56,7 +56,7 @@ public class TagsProjection extends ObjectAction<ProjectedTranslation> {
 
     public static class Params extends Parameters {
 
-        public final LanguagePair direction;
+        public final LanguageDirection direction;
         public final String sentence;
         public final String translation;
         public final Aligner.SymmetrizationStrategy symmetrizationStrategy;
@@ -65,7 +65,7 @@ public class TagsProjection extends ObjectAction<ProjectedTranslation> {
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
 
-            LanguagePair engineDirection = ModernMT.getNode().getEngine().getLanguageIndex().asSingleLanguagePair();
+            LanguageDirection engineDirection = ModernMT.getNode().getEngine().getLanguageIndex().asSingleLanguagePair();
             this.direction = engineDirection != null ?
                     getLanguagePair("source", "target", engineDirection) :
                     getLanguagePair("source", "target");

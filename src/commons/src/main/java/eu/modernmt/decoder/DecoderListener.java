@@ -1,6 +1,6 @@
 package eu.modernmt.decoder;
 
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 
 import java.util.Set;
 
@@ -9,7 +9,7 @@ import java.util.Set;
  */
 public interface DecoderListener {
 
-    void onTranslationDirectionsChanged(Set<LanguagePair> directions);
+    void onTranslationDirectionsChanged(Set<LanguageDirection> directions);
 
     void onDecoderAvailabilityChanged(int currentAvailability, int maxAvailability);
 

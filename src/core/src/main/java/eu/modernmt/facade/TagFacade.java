@@ -4,7 +4,7 @@ import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.engine.Engine;
-import eu.modernmt.lang.LanguagePair;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
@@ -20,11 +20,11 @@ public class TagFacade {
 
     private static final XMLTagProjector tagProjector = new XMLTagProjector();
 
-    public Translation project(LanguagePair direction, String sentence, String translation) throws AlignerException, ProcessingException {
+    public Translation project(LanguageDirection direction, String sentence, String translation) throws AlignerException, ProcessingException {
         return project(direction, sentence, translation, null);
     }
 
-    public Translation project(LanguagePair direction, String sentenceString, String translationString,
+    public Translation project(LanguageDirection direction, String sentenceString, String translationString,
                                Aligner.SymmetrizationStrategy strategy) throws AlignerException, ProcessingException {
         ClusterNode node = ModernMT.getNode();
         Engine engine = node.getEngine();
