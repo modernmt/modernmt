@@ -40,14 +40,22 @@ public class LanguageIndexTest {
                 .add(lp("fr en"))
                 .add(lp("en es-ES"))
                 .add(lp("en es-MX"))
+                .add(lp("en sr-Latn"))
+                .add(lp("en sr-Cyrl"))
                 .add(lp("en zh-CN"))
                 .add(lp("en zh-TW"))
                 .add(lp("zh en"))
 
-                .addRule("es", l("es-ES"))
-                .addRule("es-*", l("es-MX"))
-                .addRule("zh-*-HK", l("zh-TW"))
-                .addRule("zh-*", l("zh-CN"))
+                .add(lp("en ru-AA"))
+                .add(lp("en ru-BB"))
+                .add(lp("es ru"))
+
+                .addRule(l("es"), l("es-MX"))
+                .addRule(l("sr"), l("sr-Latn"))
+                .addRule(l("zh-SG"), l("zh-CN"))
+                .addRule(l("zh-HK"), l("zh-TW"))
+                .addRule(l("zh-MO"), l("zh-TW"))
+                .addRule(l("zh"), l("zh-CN"))
 
                 .build();
     }
@@ -58,6 +66,7 @@ public class LanguageIndexTest {
         assertEquals(lp("en it"), index.map(lp("en it-IT")));
         assertEquals(lp("en it"), index.map(lp("en-US it")));
         assertEquals(lp("en it"), index.map(lp("en-US it-IT")));
+        assertEquals(lp("en it"), index.map(lp("en-US it-IT-x-Custom")));
 
         assertNull(index.map(lp("it en")));
         assertNull(index.map(lp("it-IT en")));
@@ -80,11 +89,12 @@ public class LanguageIndexTest {
 
     @Test
     public void ruledLanguageMonodirectional() {
-        assertEquals(lp("en es-ES"), index.map(lp("en es")));
+        assertEquals(lp("en es-MX"), index.map(lp("en es")));
         assertEquals(lp("en es-ES"), index.map(lp("en es-ES")));
         assertEquals(lp("en es-MX"), index.map(lp("en es-MX")));
         assertEquals(lp("en es-MX"), index.map(lp("en es-CO")));
         assertEquals(lp("en es-MX"), index.map(lp("en-US es-CO")));
+        assertEquals(lp("en es-MX"), index.map(lp("en-US-x-Custom es-CO-x-Custom")));
 
         assertNull(index.map(lp("es en")));
         assertNull(index.map(lp("es-ES en")));
@@ -97,6 +107,7 @@ public class LanguageIndexTest {
     public void ruledLanguageBidirectional() {
         assertEquals(lp("en zh-CN"), index.map(lp("en zh")));
         assertEquals(lp("en zh-CN"), index.map(lp("en zh-CN")));
+        assertEquals(lp("en zh-CN"), index.map(lp("en zh-Hans-CN")));
         assertEquals(lp("en zh-CN"), index.map(lp("en zh-XX")));
         assertEquals(lp("en zh-TW"), index.map(lp("en zh-TW")));
         assertEquals(lp("en zh-TW"), index.map(lp("en zh-HK")));
@@ -108,6 +119,28 @@ public class LanguageIndexTest {
         assertEquals(lp("zh en"), index.map(lp("zh-TW en")));
         assertEquals(lp("zh en"), index.map(lp("zh-HK en")));
         assertEquals(lp("zh en"), index.map(lp("zh-HK en-US")));
+        assertEquals(lp("zh en"), index.map(lp("zh-Hans-HK en-Latn-US")));
     }
 
+    @Test
+    public void ruledLanguageWithScript() {
+        assertEquals(lp("en sr-Latn"), index.map(lp("en sr")));
+        assertEquals(lp("en sr-Latn"), index.map(lp("en sr-RS")));
+
+        assertEquals(lp("en sr-Latn"), index.map(lp("en sr-Latn")));
+        assertEquals(lp("en sr-Latn"), index.map(lp("en sr-Latn-RS")));
+        assertEquals(lp("en sr-Cyrl"), index.map(lp("en sr-Cyrl")));
+        assertEquals(lp("en sr-Cyrl"), index.map(lp("en sr-Cyrl-RS")));
+        assertEquals(lp("en sr-Cyrl"), index.map(lp("en sr-Cyrl-RS-x-Custom")));
+    }
+
+    @Test
+    public void inconsistentLanguageDialectSupport() {
+        // If a target language is supported in a language pair,
+        // the same target language could be not supported in all language pairs.
+        assertEquals(lp("en ru-AA"), index.map(lp("en ru-AA")));
+        assertEquals(lp("en ru-BB"), index.map(lp("en ru-BB")));
+        assertEquals(lp("es ru"), index.map(lp("es ru-AA")));
+        assertEquals(lp("es ru"), index.map(lp("es ru-BB")));
+    }
 }

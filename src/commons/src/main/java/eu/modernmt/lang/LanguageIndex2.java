@@ -17,9 +17,9 @@ public class LanguageIndex2 {
             return this;
         }
 
-        public Builder addRule(String pattern, Language2 output) throws IllegalArgumentException {
-            LanguageRule rule = LanguageRule.make(pattern, output);
-            rules.computeIfAbsent(rule.getLanguage(), k -> new ArrayList<>()).add(rule);
+        public Builder addRule(Language2 pattern, Language2 output) throws IllegalArgumentException {
+            rules.computeIfAbsent(pattern.getLanguage(), k -> new ArrayList<>())
+                    .add(new LanguageRule(pattern, output));
 
             return this;
         }
@@ -91,16 +91,27 @@ public class LanguageIndex2 {
     }
 
     private LanguageDirection search(LanguageDirection language) {
-        language = transform(language);
-
         SimpleLanguageDirection key = SimpleLanguageDirection.fromLanguageDirection(language);
         List<LanguageDirection> entries = index.get(key);
 
-        if (entries != null) {
-            for (LanguageDirection entry : entries) {
-                if (entry.isEqualOrMoreGenericThan(language))
-                    return entry;
-            }
+        if (entries == null)
+            return null;
+
+        // First try if there is a matching pair without rules transformation
+        for (LanguageDirection entry : entries) {
+            if (entry.isEqualOrMoreGenericThan(language))
+                return entry;
+        }
+
+        // If not found, try applying transformation
+        language = transform(language);
+
+        if (language == null)  // no transformation applied
+            return null;
+
+        for (LanguageDirection entry : entries) {
+            if (entry.isEqualOrMoreGenericThan(language))
+                return entry;
         }
 
         return null;
@@ -111,7 +122,7 @@ public class LanguageIndex2 {
         Language2 target = transform(language.target);
 
         if (source == null && target == null)
-            return language;
+            return null;
 
         if (source == null)
             source = language.source;
@@ -132,7 +143,7 @@ public class LanguageIndex2 {
         }
 
         // Default behaviour is to transform language in its simplest version, with 'language' code only
-        // (returning null makes the caller re-use the existing object without re-creating a new one)
+        // (returning null signals the caller that the object has been returned untouched)
         return language.getLanguage().equals(language.toLanguageTag()) ? null : new Language2(language.getLanguage());
     }
 

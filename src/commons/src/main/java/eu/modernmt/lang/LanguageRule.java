@@ -2,24 +2,20 @@ package eu.modernmt.lang;
 
 class LanguageRule {
 
-    public static LanguageRule make(String pattern, Language2 output) throws IllegalArgumentException {
-        return new LanguageRule(LanguageMatcher.parse(pattern), output);
-    }
-
-    private final LanguageMatcher matcher;
+    private final Language2 pattern;
     private final Language2 outputLanguage;
 
-    private LanguageRule(LanguageMatcher matcher, Language2 outputLanguage) {
-        this.matcher = matcher;
+    public LanguageRule(Language2 pattern, Language2 outputLanguage) {
+        this.pattern = pattern;
         this.outputLanguage = outputLanguage;
     }
 
     public String getLanguage() {
-        return matcher.getLanguage();
+        return pattern.getLanguage();
     }
 
     public boolean match(Language2 language) {
-        return matcher.match(language);
+        return pattern.isEqualOrMoreGenericThan(language);
     }
 
     public Language2 getOutputLanguage() {

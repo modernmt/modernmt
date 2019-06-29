@@ -87,7 +87,7 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
             return;
 
         for (Element rule : rules) {
-            String pattern = getStringAttribute(rule, "match");
+            Language2 pattern = getLanguageAttribute(rule, "match");
             if (pattern == null)
                 throw new ConfigException("Missing 'match' attribute");
 
