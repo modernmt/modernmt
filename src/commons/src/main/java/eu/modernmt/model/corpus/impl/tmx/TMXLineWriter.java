@@ -1,7 +1,7 @@
 package eu.modernmt.model.corpus.impl.tmx;
 
 import eu.modernmt.io.FileProxy;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.xml.XMLUtils;
 import org.apache.commons.io.IOUtils;
@@ -69,7 +69,7 @@ class TMXLineWriter implements MultilingualCorpus.MultilingualLineWriter {
         }
     }
 
-    private void writeTuv(Language lang, String segment) throws XMLStreamException {
+    private void writeTuv(Language2 lang, String segment) throws XMLStreamException {
         writer.writeStartElement("tuv");
         writer.writeAttribute("xml", TMXCorpus.XML_NAMESPACE, "lang", lang.toLanguageTag());
         writer.writeStartElement("seg");
@@ -100,7 +100,7 @@ class TMXLineWriter implements MultilingualCorpus.MultilingualLineWriter {
         }
     }
 
-    private void writeHeader(Language sourceLanguage) throws XMLStreamException {
+    private void writeHeader(Language2 sourceLanguage) throws XMLStreamException {
         writer.writeStartDocument("UTF-8", "1.0");
         writer.writeStartElement("tmx");
         writer.writeAttribute("version", "1.4");

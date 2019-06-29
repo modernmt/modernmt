@@ -7,11 +7,11 @@ import java.io.Serializable;
  */
 public final class LanguageDirection implements Serializable {
 
-    public final Language source;
-    public final Language target;
+    public final Language2 source;
+    public final Language2 target;
     private transient LanguageDirection reversed = null;
 
-    public LanguageDirection(Language source, Language target) {
+    public LanguageDirection(Language2 source, Language2 target) {
         this.source = source;
         this.target = target;
     }
@@ -27,14 +27,8 @@ public final class LanguageDirection implements Serializable {
         return reversed;
     }
 
-    public boolean equalsIgnoreDirection(LanguageDirection o) {
-        if (o == null) return false;
-        return (source.equals(o.source) && target.equals(o.target)) || (source.equals(o.target) && target.equals(o.source));
-    }
-
-    public boolean equalsIgnoreCountry(LanguageDirection o) {
-        if (o == null) return false;
-        return source.getLanguage().equals(o.source.getLanguage()) && target.getLanguage().equals(o.target.getLanguage());
+    public boolean isEqualOrMoreGenericThan(LanguageDirection other) {
+        return source.isEqualOrMoreGenericThan(other.source) && target.isEqualOrMoreGenericThan(other.target);
     }
 
     @Override

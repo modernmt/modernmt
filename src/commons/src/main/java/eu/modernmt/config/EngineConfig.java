@@ -1,6 +1,6 @@
 package eu.modernmt.config;
 
-import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguageIndex2;
 
 /**
  * Created by davide on 04/01/17.
@@ -8,7 +8,7 @@ import eu.modernmt.lang.LanguageIndex;
 public class EngineConfig {
 
     private String name = "default";
-    private LanguageIndex languageIndex = null;
+    private LanguageIndex2 languageIndex = null;
     private DecoderConfig decoderConfig = new DecoderConfig();
     private AlignerConfig alignerConfig = new AlignerConfig();
     private AnalyzerConfig analyzerConfig = new AnalyzerConfig();
@@ -22,11 +22,11 @@ public class EngineConfig {
         return this;
     }
 
-    public LanguageIndex getLanguageIndex() {
+    public LanguageIndex2 getLanguageIndex() {
         return languageIndex;
     }
 
-    public void setLanguageIndex(LanguageIndex languageIndex) {
+    public void setLanguageIndex(LanguageIndex2 languageIndex) {
         this.languageIndex = languageIndex;
     }
 

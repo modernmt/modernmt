@@ -14,15 +14,15 @@ import static org.junit.Assert.assertNull;
  */
 public class LanguageIndexTest {
 
-    private LanguageIndex index;
+    private LanguageIndex2 index;
 
-    private static Language l(String s) {
-        return Language.fromString(s);
+    private static Language2 l(String s) {
+        return Language2.fromString(s);
     }
 
     private static LanguageDirection lp(String s) {
         String[] parts = s.split("\\s+");
-        return new LanguageDirection(Language.fromString(parts[0]), Language.fromString(parts[1]));
+        return new LanguageDirection(Language2.fromString(parts[0]), Language2.fromString(parts[1]));
     }
 
     private static List<LanguageDirection> list(String string) {
@@ -34,7 +34,7 @@ public class LanguageIndexTest {
 
     @Before
     public void setup() {
-        index = new LanguageIndex.Builder()
+        index = new LanguageIndex2.Builder()
                 .add(lp("en it"))
                 .add(lp("en fr"))
                 .add(lp("fr en"))
@@ -44,10 +44,10 @@ public class LanguageIndexTest {
                 .add(lp("en zh-TW"))
                 .add(lp("zh en"))
 
-                .addRule(l("es"), l("es"), l("es-ES"))
-                .addWildcardRule(l("es"), l("es-MX"))
-                .addRule(l("zh"), l("zh-HK"), l("zh-TW"))
-                .addWildcardRule(l("zh"), l("zh-CN"))
+                .addRule("es", l("es-ES"))
+                .addRule("es-*", l("es-MX"))
+                .addRule("zh-*-HK", l("zh-TW"))
+                .addRule("zh-*", l("zh-CN"))
 
                 .build();
     }

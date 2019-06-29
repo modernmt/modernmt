@@ -1,7 +1,5 @@
 package eu.modernmt.io;
 
-import eu.modernmt.lang.Language;
-
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,10 +15,9 @@ public class WordCounter {
      * Count the amount of words in a corpus line
      *
      * @param line     the corpus line to count the lines of which
-     * @param language the language of the corpus line
      * @return the words count
      */
-    public static int count(String line, Language language) {
+    public static int count(String line) {
         int wordCount = 0;
 
         Matcher delimitersMatcher = DELIMITERS_REGEX.matcher(line);

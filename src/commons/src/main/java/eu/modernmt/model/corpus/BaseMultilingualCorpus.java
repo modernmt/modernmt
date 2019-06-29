@@ -2,7 +2,7 @@ package eu.modernmt.model.corpus;
 
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.LanguageDirection;
 
 import java.io.IOException;
@@ -65,7 +65,7 @@ public abstract class BaseMultilingualCorpus implements MultilingualCorpus {
         }
 
         @Override
-        public Language getLanguage() {
+        public Language2 getLanguage() {
             return source ? direction.source : direction.target;
         }
 
@@ -97,12 +97,12 @@ public abstract class BaseMultilingualCorpus implements MultilingualCorpus {
         }
 
         @Override
-        public LineWriter getContentWriter(boolean append) throws IOException {
+        public LineWriter getContentWriter(boolean append) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Reader getRawContentReader() throws IOException, UnsupportedOperationException {
+        public Reader getRawContentReader() throws UnsupportedOperationException {
             throw new UnsupportedOperationException();
         }
     }

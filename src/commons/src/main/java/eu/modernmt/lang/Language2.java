@@ -1,8 +1,12 @@
 package eu.modernmt.lang;
 
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
+/**
+ * A IETF BCP 47 compliant language tag
+ */
 public final class Language2 implements Serializable {
 
     private static final Pattern IS_ALPHA = Pattern.compile("[A-Za-z]+");
@@ -75,21 +79,21 @@ public final class Language2 implements Serializable {
         return IS_DIGIT.matcher(string).matches();
     }
 
-    private static String parseLanguage(String string) {
+    static String parseLanguage(String string) {
         if ((string.length() == 2 || string.length() == 3) && isAlpha(string))
             return string.toLowerCase();
         else
             return null;
     }
 
-    private static String parseScript(String string) {
+    static String parseScript(String string) {
         if (string.length() == 4 && isAlpha(string))
             return toTitleCase(string);
         else
             return null;
     }
 
-    private static String parseRegion(String string) {
+    static String parseRegion(String string) {
         if (string.length() == 2 && isAlpha(string))
             return string.toUpperCase();
         else if (string.length() == 3 && isDigit(string))
@@ -150,6 +154,10 @@ public final class Language2 implements Serializable {
     private final String script;
     private final String region;
     private final String tag;
+
+    public Language2(String language) {
+        this(language, null, null, language);
+    }
 
     private Language2(String language, String script, String region, String tag) {
         this.language = language;
@@ -214,18 +222,17 @@ public final class Language2 implements Serializable {
         return true;
     }
 
-    public boolean isEqualOrMoreSpecificThan(Language2 other) {
-        return other.isEqualOrMoreGenericThan(this);
-    }
-
     @Override
     public boolean equals(Object o) {
-        throw new UnsupportedOperationException();
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Language2 language2 = (Language2) o;
+        return tag.equals(language2.tag);
     }
 
     @Override
     public int hashCode() {
-        throw new UnsupportedOperationException();
+        return Objects.hash(tag);
     }
 
 }

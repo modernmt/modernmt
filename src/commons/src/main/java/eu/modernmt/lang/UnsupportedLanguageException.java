@@ -7,22 +7,22 @@ public class UnsupportedLanguageException extends RuntimeException {
 
     private final LanguageDirection languageDirection;
 
-    private static String toString(Language language) {
+    private static String toString(Language2 language) {
         return language == null ? "[null]" : language.toLanguageTag();
     }
 
-    private static String makeMessage(Language source, Language target) {
+    private static String makeMessage(Language2 source, Language2 target) {
         if (source != null && target != null)
-            return "Language pair not supported: " + toString(source) + " > " + toString(target);
+            return "Language2 pair not supported: " + toString(source) + " > " + toString(target);
         else
-            return "Language not supported: " + toString(source == null ? target : source);
+            return "Language2 not supported: " + toString(source == null ? target : source);
     }
 
-    public UnsupportedLanguageException(Language language) {
+    public UnsupportedLanguageException(Language2 language) {
         this(language, null);
     }
 
-    public UnsupportedLanguageException(Language source, Language target) {
+    public UnsupportedLanguageException(Language2 source, Language2 target) {
         this(new LanguageDirection(source, target));
     }
 

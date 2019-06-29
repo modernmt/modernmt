@@ -1,7 +1,7 @@
 package eu.modernmt.model.corpus.impl.parallel;
 
 import eu.modernmt.io.*;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.model.corpus.Corpus;
 
 import java.io.File;
@@ -16,18 +16,18 @@ public class FileCorpus implements Corpus {
 
     private FileProxy file;
     private String name;
-    private Language language;
+    private Language2 language;
 
     private static String getNameFromFilename(String filename) {
         int lastDot = filename.lastIndexOf('.');
         return lastDot < 0 ? filename : filename.substring(0, lastDot);
     }
 
-    private static Language getLangFromFilename(String filename) {
+    private static Language2 getLangFromFilename(String filename) {
         int lastDot = filename.lastIndexOf('.');
         if (lastDot < 0)
             throw new IllegalArgumentException(filename);
-        return Language.fromString(filename.substring(lastDot + 1));
+        return Language2.fromString(filename.substring(lastDot + 1));
     }
 
     public FileCorpus(File file) {
@@ -38,7 +38,7 @@ public class FileCorpus implements Corpus {
         this(FileProxy.wrap(file), name, null);
     }
 
-    public FileCorpus(File file, String name, Language language) {
+    public FileCorpus(File file, String name, Language2 language) {
         this(FileProxy.wrap(file), name, language);
     }
 
@@ -50,7 +50,7 @@ public class FileCorpus implements Corpus {
         this(file, name, null);
     }
 
-    public FileCorpus(FileProxy file, String name, Language language) {
+    public FileCorpus(FileProxy file, String name, Language2 language) {
         this.file = file;
         this.name = (name == null ? getNameFromFilename(file.getFilename()) : name);
         this.language = (language == null ? getLangFromFilename(file.getFilename()) : language);
@@ -66,7 +66,7 @@ public class FileCorpus implements Corpus {
     }
 
     @Override
-    public Language getLanguage() {
+    public Language2 getLanguage() {
         return language;
     }
 

@@ -2,7 +2,7 @@ package eu.modernmt.model.corpus;
 
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -14,7 +14,7 @@ public interface Corpus {
 
     String getName();
 
-    Language getLanguage();
+    Language2 getLanguage();
 
     LineReader getContentReader() throws IOException;
 

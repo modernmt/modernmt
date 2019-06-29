@@ -1,7 +1,7 @@
 package eu.modernmt.model.corpus;
 
 import eu.modernmt.io.FileProxy;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
@@ -65,7 +65,7 @@ public class Corpora {
     }
 
     public static Corpus rename(Corpus corpus, File folder, String name) {
-        Language language = corpus.getLanguage();
+        Language2 language = corpus.getLanguage();
         File file = new File(folder, name + '.' + language.toLanguageTag());
         return new FileCorpus(file, name, language);
     }
@@ -132,7 +132,7 @@ public class Corpora {
         public int count = 0;
     }
 
-    public static List<Corpus> list(Language language, File... roots) throws IOException {
+    public static List<Corpus> list(Language2 language, File... roots) throws IOException {
         String tag = language.toLanguageTag();
 
         ArrayList<Corpus> corpora = new ArrayList<>();
@@ -148,8 +148,10 @@ public class Corpora {
         return corpora;
     }
 
-    public static List<MultilingualCorpus> list(LanguageDirection language, File... roots) {
+    public static List<MultilingualCorpus> list(LanguageDirection language, File... roots) throws IOException {
         ArrayList<MultilingualCorpus> output = new ArrayList<>();
+
+        HashMap<File, ParallelFileCorpusBuilder> builders = new HashMap<>();
 
         for (File directory : roots) {
             for (File file : FileUtils.listFiles(directory, TrueFileFilter.TRUE, FalseFileFilter.FALSE)) {
@@ -170,33 +172,54 @@ public class Corpora {
                 } else if (CFC_EXTENSION.equalsIgnoreCase(extension)) {
                     output.add(new CompactFileCorpus(filename, file));
                 } else {
-                    if (matchLang(language.source, extension)) {
-                        File pair;
+                    File key = new File(directory, filename);
+                    ParallelFileCorpusBuilder builder = builders.computeIfAbsent(key, ParallelFileCorpusBuilder::new);
+                    Language2 extLanguage = Language2.fromString(extension);
 
-                        if (language.target.getRegion() == null) {
-                            pair = new File(directory, filename + '.' + language.target.getLanguage());
-                            if (!pair.isFile())
-                                pair = new File(directory, filename + '.' + language.target.toLanguageTag());
-                        } else {
-                            pair = new File(directory, filename + '.' + language.target.toLanguageTag());
-                        }
-
-                        if (pair.isFile())
-                            output.add(new ParallelFileCorpus(filename, language, file, pair));
-                    }
+                    if (language.source.isEqualOrMoreGenericThan(extLanguage))
+                        builder.setSourceFile(file);
+                    else if (language.target.isEqualOrMoreGenericThan(extLanguage))
+                        builder.setTargetFile(file);
                 }
             }
+        }
+
+        for (ParallelFileCorpusBuilder builder : builders.values()) {
+            ParallelFileCorpus corpus = builder.getParallelFileCorpus(language);
+            if (corpus != null)
+                output.add(corpus);
         }
 
         return output;
     }
 
-    private static boolean matchLang(Language language, String extension) {
-        Language ext = Language.fromString(extension);
-        if (language.getRegion() == null)
-            return language.getLanguage().equals(ext.getLanguage());
-        else
-            return language.equals(ext);
+    private static class ParallelFileCorpusBuilder {
+
+        public final String name;
+        private File sourceFile = null;
+        private File targetFile = null;
+
+        public ParallelFileCorpusBuilder(File base) {
+            this.name = base.getName();
+        }
+
+        public void setSourceFile(File sourceFile) throws IOException {
+            if (this.sourceFile != null)
+                throw new IOException("Duplicated entry file: " + sourceFile);
+            this.sourceFile = sourceFile;
+        }
+
+        public void setTargetFile(File targetFile) throws IOException {
+            if (this.targetFile != null)
+                throw new IOException("Duplicated entry file: " + targetFile);
+            this.targetFile = targetFile;
+        }
+
+        public ParallelFileCorpus getParallelFileCorpus(LanguageDirection language) {
+            if (sourceFile == null || targetFile == null)
+                return null;
+            return new ParallelFileCorpus(name, language, sourceFile, targetFile);
+        }
     }
 
 }

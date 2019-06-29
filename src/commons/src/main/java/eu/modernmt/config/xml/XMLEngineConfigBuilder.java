@@ -1,9 +1,9 @@
 package eu.modernmt.config.xml;
 
 import eu.modernmt.config.*;
-import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.LanguageDirection;
+import eu.modernmt.lang.LanguageIndex2;
 import org.w3c.dom.Element;
 
 /**
@@ -25,10 +25,10 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
     public EngineConfig build(EngineConfig config) throws ConfigException {
         if (hasAttribute("source-language") || hasAttribute("target-language")) {
             if (hasAttribute("source-language") && hasAttribute("target-language")) {
-                Language source = getLanguageAttribute("source-language");
-                Language target = getLanguageAttribute("target-language");
+                Language2 source = getLanguageAttribute("source-language");
+                Language2 target = getLanguageAttribute("target-language");
 
-                LanguageIndex languageIndex = new LanguageIndex.Builder()
+                LanguageIndex2 languageIndex = new LanguageIndex2.Builder()
                         .add(new LanguageDirection(source, target))
                         .build();
 
@@ -55,22 +55,22 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
         if (pairs == null)
             return;
 
-        LanguageIndex.Builder builder = null;
+        LanguageIndex2.Builder builder = null;
 
         for (Element pair : pairs) {
             if (pair == null)
                 continue;
 
-            Language source = getLanguageAttribute(pair, "source");
+            Language2 source = getLanguageAttribute(pair, "source");
             if (source == null)
                 throw new ConfigException("Missing 'source' attribute");
 
-            Language target = getLanguageAttribute(pair, "target");
+            Language2 target = getLanguageAttribute(pair, "target");
             if (target == null)
                 throw new ConfigException("Missing 'target' attribute");
 
             if (builder == null)
-                builder = new LanguageIndex.Builder();
+                builder = new LanguageIndex2.Builder();
 
             builder.add(new LanguageDirection(source, target));
         }
@@ -81,30 +81,25 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
         }
     }
 
-    private static void parseLanguageRules(Element element, LanguageIndex.Builder builder) throws ConfigException {
+    private static void parseLanguageRules(Element element, LanguageIndex2.Builder builder) throws ConfigException {
         Element[] rules = getChildren(element, "rule");
         if (rules == null)
             return;
 
         for (Element rule : rules) {
-            Language lang = getLanguageAttribute(rule, "lang");
-            if (lang == null)
-                throw new ConfigException("Missing 'lang' attribute");
+            String pattern = getStringAttribute(rule, "match");
+            if (pattern == null)
+                throw new ConfigException("Missing 'match' attribute");
 
-            String _from = getStringAttribute(rule, "from");
-            if (_from == null)
-                throw new ConfigException("Missing 'from' attribute");
-            _from = _from.trim();
-            Language from = "*".equals(_from) ? null : Language.fromString(_from);
+            Language2 value = getLanguageAttribute(rule, "value");
+            if (value == null)
+                throw new ConfigException("Missing 'value' attribute");
 
-            Language to = getLanguageAttribute(rule, "to");
-            if (to == null)
-                throw new ConfigException("Missing 'to' attribute");
-
-            if (from == null)
-                builder.addWildcardRule(lang, to);
-            else
-                builder.addRule(lang, from, to);
+            try {
+                builder.addRule(pattern, value);
+            } catch (IllegalArgumentException e) {
+                throw new ConfigException("Invalid 'match' attribute: " + pattern, e);
+            }
         }
     }
 

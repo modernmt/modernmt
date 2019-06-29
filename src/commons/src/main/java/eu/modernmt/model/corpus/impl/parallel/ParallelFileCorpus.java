@@ -1,7 +1,6 @@
 package eu.modernmt.model.corpus.impl.parallel;
 
 import eu.modernmt.io.*;
-import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.corpus.BaseMultilingualCorpus;
@@ -176,24 +175,15 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
 
         @Override
         public void write(StringPair pair) throws IOException {
-            if (match(pair.language, language)) {
+            if (language.isEqualOrMoreGenericThan(pair.language)) {
                 sourceWriter.writeLine(pair.source);
                 targetWriter.writeLine(pair.target);
-            } else if (match(pair.language, language.reversed())) {
+            } else if (language.isEqualOrMoreGenericThan(language.reversed())) {
                 sourceWriter.writeLine(pair.target);
                 targetWriter.writeLine(pair.source);
             } else {
-                throw new IOException("Unrecognized language: " + pair.language);
+                throw new IOException("Unsupported language: " + pair.language);
             }
-        }
-
-        private static boolean match(LanguageDirection test, LanguageDirection ref) {
-            return match(test.source, ref.source) && match(test.target, ref.target);
-        }
-
-        private static boolean match(Language test, Language ref) {
-            return test.getLanguage().equals(ref.getLanguage()) &&
-                    (ref.getRegion() == null || ref.getRegion().equals(test.getRegion()));
         }
 
         @Override

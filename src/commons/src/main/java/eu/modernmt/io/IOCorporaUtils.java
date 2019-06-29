@@ -135,7 +135,7 @@ public class IOCorporaUtils {
             MultilingualCorpus.StringPair pair;
             while ((pair = reader.read()) != null) {
                 Counter counter = counts.computeIfAbsent(pair.language, key -> new Counter());
-                counter.value += WordCounter.count(pair.source, pair.language.source);
+                counter.value += WordCounter.count(pair.source);
             }
 
             return counts;
