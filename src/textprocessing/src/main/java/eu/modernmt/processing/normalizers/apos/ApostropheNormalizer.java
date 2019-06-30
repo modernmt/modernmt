@@ -1,8 +1,8 @@
 package eu.modernmt.processing.normalizers.apos;
 
-import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.io.RuntimeIOException;
-import eu.modernmt.lang.Language;
+import eu.modernmt.io.UTF8Charset;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
@@ -20,7 +20,7 @@ public class ApostropheNormalizer extends TextProcessor<String, String> {
 
     private static final ConcurrentHashMap<String, Pattern> cache = new ConcurrentHashMap<>();
 
-    private static Pattern load(final Language language) {
+    private static Pattern load(final Language2 language) {
         return cache.computeIfAbsent(language.getLanguage(), (key) -> {
             InputStream stream = null;
 
@@ -63,7 +63,7 @@ public class ApostropheNormalizer extends TextProcessor<String, String> {
 
     private final Pattern regex;
 
-    public ApostropheNormalizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
+    public ApostropheNormalizer(Language2 sourceLanguage, Language2 targetLanguage) {
         super(sourceLanguage, targetLanguage);
         this.regex = load(sourceLanguage);
     }

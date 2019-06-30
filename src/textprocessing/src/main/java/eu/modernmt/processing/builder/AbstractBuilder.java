@@ -1,6 +1,6 @@
 package eu.modernmt.processing.builder;
 
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 
@@ -9,9 +9,9 @@ import eu.modernmt.processing.TextProcessor;
  */
 abstract class AbstractBuilder {
 
-    public abstract <P, R> TextProcessor<P, R> create(Language sourceLanguage, Language targetLanguage) throws ProcessingException;
+    public abstract <P, R> TextProcessor<P, R> create(Language2 sourceLanguage, Language2 targetLanguage) throws ProcessingException;
 
-    public boolean accept(Language sourceLanguage, Language targetLanguage) {
+    public boolean accept(Language2 sourceLanguage, Language2 targetLanguage) {
         return true;
     }
 

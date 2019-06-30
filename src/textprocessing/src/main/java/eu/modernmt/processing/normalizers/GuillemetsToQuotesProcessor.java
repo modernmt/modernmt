@@ -1,7 +1,5 @@
 package eu.modernmt.processing.normalizers;
 
-import eu.modernmt.lang.Language;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
 import eu.modernmt.processing.ProcessingException;
@@ -13,10 +11,6 @@ import java.util.Map;
  * Created by davide on 09/06/16.
  */
 public class GuillemetsToQuotesProcessor extends TextProcessor<Translation, Translation> {
-
-    public GuillemetsToQuotesProcessor(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
-        super(sourceLanguage, targetLanguage);
-    }
 
     @Override
     public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {

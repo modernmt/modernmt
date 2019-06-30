@@ -44,7 +44,7 @@ public class SentenceLengthFilter implements MultilingualCorpusFilter {
                 if (sourceLength <= maxLength && targetLength <= maxLength && sourceLength > 0 && targetLength > 0) {
                     Sequence ratioSequence = lengthRatios.computeIfAbsent(pair.language, k -> new Sequence());
 
-                    ratioSequence.add(((double) WordCounter.count(pair.source, pair.language.source)) / WordCounter.count(pair.target, pair.language.target));
+                    ratioSequence.add(((double) WordCounter.count(pair.source)) / WordCounter.count(pair.target));
                 }
             }
 
@@ -69,8 +69,8 @@ public class SentenceLengthFilter implements MultilingualCorpusFilter {
         if (seq.length() < MIN_CORPUS_LINES)
             return true;
 
-        int sourceWordCount = WordCounter.count(pair.source, pair.language.source);
-        int targetWordCount = WordCounter.count(pair.target, pair.language.target);
+        int sourceWordCount = WordCounter.count(pair.source);
+        int targetWordCount = WordCounter.count(pair.target);
 
         if (sourceWordCount < 6 && targetWordCount < 6)
             return true;

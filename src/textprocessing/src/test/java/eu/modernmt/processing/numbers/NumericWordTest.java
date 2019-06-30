@@ -16,7 +16,7 @@ public class NumericWordTest {
 
     public NumericWordTest() {
         try {
-            postprocessor = new NumericWordPostprocessor(null, null);
+            postprocessor = new NumericWordPostprocessor();
         } catch (UnsupportedLanguageException e) {
             throw new Error(e);
         }

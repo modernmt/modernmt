@@ -3,7 +3,7 @@ package eu.modernmt.processing.tokenizer.abbr;
 import eu.modernmt.io.RuntimeIOException;
 import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.io.UnixLineReader;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.processing.tokenizer.BaseTokenizer;
 import eu.modernmt.processing.tokenizer.TokenizedString;
 import org.apache.commons.io.IOUtils;
@@ -19,11 +19,11 @@ public class AbbreviationAnnotator implements BaseTokenizer.Annotator {
 
     private static final ConcurrentHashMap<String, AbbreviationAnnotator> instances = new ConcurrentHashMap<>(64);
 
-    public static AbbreviationAnnotator getInstance(Language language) {
+    public static AbbreviationAnnotator getInstance(Language2 language) {
         return getInstance(language, false);
     }
 
-    public static AbbreviationAnnotator getInstance(Language language, boolean caseless) {
+    public static AbbreviationAnnotator getInstance(Language2 language, boolean caseless) {
         return instances.computeIfAbsent(language.getLanguage(), lang -> {
             try {
                 return new AbbreviationAnnotator(lang + ".txt", caseless);

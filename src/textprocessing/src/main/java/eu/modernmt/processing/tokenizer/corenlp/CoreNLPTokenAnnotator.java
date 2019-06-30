@@ -6,10 +6,10 @@ import edu.stanford.nlp.international.spanish.process.SpanishTokenizer;
 import edu.stanford.nlp.ling.HasOffset;
 import edu.stanford.nlp.process.PTBTokenizer;
 import edu.stanford.nlp.process.TokenizerFactory;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.UnsupportedLanguageException;
-import eu.modernmt.processing.tokenizer.TokenizedString;
 import eu.modernmt.processing.tokenizer.BaseTokenizer;
+import eu.modernmt.processing.tokenizer.TokenizedString;
 
 import java.io.Reader;
 import java.io.StringReader;
@@ -18,24 +18,24 @@ import java.util.Map;
 
 public class CoreNLPTokenAnnotator implements BaseTokenizer.Annotator {
 
-    private static final Map<Language, TokenizerFactory<?>> FACTORIES = new HashMap<>();
+    private static final Map<Language2, TokenizerFactory<?>> FACTORIES = new HashMap<>();
 
     static {
-        FACTORIES.put(Language.ENGLISH, PTBTokenizer.factory());
-        FACTORIES.put(Language.ARABIC, ArabicTokenizer.factory());
-        FACTORIES.put(Language.FRENCH, FrenchTokenizer.factory());
-        FACTORIES.put(Language.SPANISH, SpanishTokenizer.factory());
+        FACTORIES.put(Language2.ENGLISH, PTBTokenizer.factory());
+        FACTORIES.put(Language2.ARABIC, ArabicTokenizer.factory());
+        FACTORIES.put(Language2.FRENCH, FrenchTokenizer.factory());
+        FACTORIES.put(Language2.SPANISH, SpanishTokenizer.factory());
     }
 
     private final TokenizerFactory<?> factory;
 
-    public static CoreNLPTokenAnnotator forLanguage(Language language) throws UnsupportedLanguageException {
+    public static CoreNLPTokenAnnotator forLanguage(Language2 language) throws UnsupportedLanguageException {
         TokenizerFactory<?> factory = FACTORIES.get(language);
         if (factory == null)
             throw new UnsupportedLanguageException(language);
 
         /*sets special options if source language is English*/
-        if (Language.ENGLISH.getLanguage().equals(language.getLanguage()))
+        if (Language2.ENGLISH.getLanguage().equals(language.getLanguage()))
             factory.setOptions("ptb3Escaping=false,asciiQuotes=true,normalizeSpace=false");
 
         return new CoreNLPTokenAnnotator(factory);

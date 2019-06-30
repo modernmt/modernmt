@@ -1,7 +1,6 @@
 package eu.modernmt.processing.detokenizer.jflex;
 
-import eu.modernmt.lang.Language;
-import eu.modernmt.lang.UnsupportedLanguageException;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.processing.detokenizer.jflex.annotators.CJKJoinerAnnotator;
 
 import java.io.Reader;
@@ -11,12 +10,12 @@ import java.io.Reader;
  */
 public class CJKJoinerDetokenizer extends JFlexDetokenizer {
 
-    public CJKJoinerDetokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
+    public CJKJoinerDetokenizer(Language2 sourceLanguage, Language2 targetLanguage) {
         super(sourceLanguage, targetLanguage);
     }
 
     @Override
-    protected JFlexSpaceAnnotator getAnnotator(Language language) {
+    protected JFlexSpaceAnnotator getAnnotator(Language2 language) {
         return new CJKJoinerAnnotator((Reader) null);
     }
 

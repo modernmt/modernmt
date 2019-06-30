@@ -1,7 +1,5 @@
 package eu.modernmt.processing.recaser;
 
-import eu.modernmt.lang.Language;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.SentenceBuilder;
@@ -9,16 +7,13 @@ import eu.modernmt.processing.string.SentenceBuilder;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 /**
  * Created by davide on 03/03/16.
  */
 public class UpperCasePreprocessor extends TextProcessor<SentenceBuilder, SentenceBuilder> {
 
     public static final String ANNOTATION = UpperCasePreprocessor.class.getCanonicalName();
-
-    public UpperCasePreprocessor(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
-        super(sourceLanguage, targetLanguage);
-    }
 
     @Override
     public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) throws ProcessingException {
@@ -77,10 +72,10 @@ public class UpperCasePreprocessor extends TextProcessor<SentenceBuilder, Senten
         // Now create matcher object.
         Matcher m = r.matcher(new String(chars));
         while (m.find()) {
-            int start=m.start()+2;
-            chars[start]   = 'D';
-            chars[start+1] = 'N';
-            chars[start+2] = 'T';
+            int start = m.start() + 2;
+            chars[start] = 'D';
+            chars[start + 1] = 'N';
+            chars[start + 2] = 'T';
         }
     }
 

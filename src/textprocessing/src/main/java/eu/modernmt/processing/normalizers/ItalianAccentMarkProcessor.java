@@ -1,6 +1,6 @@
 package eu.modernmt.processing.normalizers;
 
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
@@ -22,10 +22,10 @@ public class ItalianAccentMarkProcessor extends TextProcessor<SentenceBuilder, S
                     "bench|ch|checch|cosicch|dopodich|finch|fintantoch|fuorch|giacch|granch|macch|nonch|perch|poich" +
                     "|pressocch|pressoch|semprech|sennonch|senonch|sicch|n|\\w+tr)(e'|è)", Pattern.CASE_INSENSITIVE);
 
-    public ItalianAccentMarkProcessor(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
+    public ItalianAccentMarkProcessor(Language2 sourceLanguage, Language2 targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        if (!Language.ITALIAN.getLanguage().equals(sourceLanguage.getLanguage()))
+        if (!Language2.ITALIAN.getLanguage().equals(sourceLanguage.getLanguage()))
             throw new UnsupportedLanguageException(sourceLanguage, targetLanguage);
     }
 
@@ -61,8 +61,8 @@ public class ItalianAccentMarkProcessor extends TextProcessor<SentenceBuilder, S
         int pendingApostrophesCount = 0;
         for (int i = 0; i < array.length; i++) {
             if (array[i] == '\'') {
-                boolean leftWhitespace = (i == 0 || ! Character.isLetter(array[i - 1]));
-                boolean rightWhitespace = (i == array.length - 1 || ! Character.isLetter(array[i + 1]));
+                boolean leftWhitespace = (i == 0 || !Character.isLetter(array[i - 1]));
+                boolean rightWhitespace = (i == array.length - 1 || !Character.isLetter(array[i + 1]));
                 if (leftWhitespace) {
                     if (rightWhitespace) {
                         if (pendingApostrophesCount > 0)

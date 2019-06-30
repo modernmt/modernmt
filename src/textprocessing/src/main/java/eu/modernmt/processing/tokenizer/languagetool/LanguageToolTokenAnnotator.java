@@ -1,6 +1,6 @@
 package eu.modernmt.processing.tokenizer.languagetool;
 
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.tokenizer.BaseTokenizer;
@@ -18,15 +18,15 @@ import java.util.Map;
 
 public class LanguageToolTokenAnnotator implements BaseTokenizer.Annotator {
 
-    private static final Map<Language, Class<? extends org.languagetool.tokenizers.Tokenizer>> TOKENIZERS = new HashMap<>();
+    private static final Map<Language2, Class<? extends org.languagetool.tokenizers.Tokenizer>> TOKENIZERS = new HashMap<>();
 
     static {
-        TOKENIZERS.put(Language.BRETON, BretonWordTokenizer.class);
-        TOKENIZERS.put(Language.ESPERANTO, EsperantoWordTokenizer.class);
-        TOKENIZERS.put(Language.GALICIAN, GalicianWordTokenizer.class);
-        TOKENIZERS.put(Language.KHMER, KhmerWordTokenizer.class);
-        TOKENIZERS.put(Language.MALAYALAM, MalayalamWordTokenizer.class);
-        TOKENIZERS.put(Language.TAGALOG, TagalogWordTokenizer.class);
+        TOKENIZERS.put(Language2.BRETON, BretonWordTokenizer.class);
+        TOKENIZERS.put(Language2.ESPERANTO, EsperantoWordTokenizer.class);
+        TOKENIZERS.put(Language2.GALICIAN, GalicianWordTokenizer.class);
+        TOKENIZERS.put(Language2.KHMER, KhmerWordTokenizer.class);
+        TOKENIZERS.put(Language2.MALAYALAM, MalayalamWordTokenizer.class);
+        TOKENIZERS.put(Language2.TAGALOG, TagalogWordTokenizer.class);
 
         /* Excluded tokenizers */
 //        TOKENIZERS.put(Language.CATALAN, CatalanWordTokenizer.class);
@@ -42,7 +42,7 @@ public class LanguageToolTokenAnnotator implements BaseTokenizer.Annotator {
 
     private final org.languagetool.tokenizers.Tokenizer tokenizer;
 
-    public static LanguageToolTokenAnnotator forLanguage(Language language) throws UnsupportedLanguageException {
+    public static LanguageToolTokenAnnotator forLanguage(Language2 language) throws UnsupportedLanguageException {
         Class<? extends org.languagetool.tokenizers.Tokenizer> tokenizerClass = TOKENIZERS.get(language);
         if (tokenizerClass == null)
             throw new UnsupportedLanguageException(language);

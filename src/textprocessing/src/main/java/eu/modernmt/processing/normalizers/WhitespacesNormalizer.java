@@ -1,7 +1,5 @@
 package eu.modernmt.processing.normalizers;
 
-import eu.modernmt.lang.Language;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.SentenceBuilder;
@@ -19,17 +17,6 @@ import java.util.Map;
  * and to actively request the specific processing they need.
  */
 public class WhitespacesNormalizer extends TextProcessor<SentenceBuilder, SentenceBuilder> {
-    /**
-     * This constructor builds a WhitespacesNormalizer
-     * based on the initial language and the destination language of the translation process.
-     *
-     * @param sourceLanguage the language of the input String
-     * @param targetLanguage the language the input String must be translated to
-     * @throws UnsupportedLanguageException the requested language is not supported by this software
-     */
-    public WhitespacesNormalizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
-        super(sourceLanguage, targetLanguage);
-    }
 
     /**
      * Method that, given a SentenceBuilder with the string to process,

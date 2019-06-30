@@ -1,6 +1,6 @@
 package eu.modernmt.processing.normalizers;
 
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
@@ -45,7 +45,7 @@ public class ChineseCharacterConverter extends TextProcessor<Translation, Transl
 
     private final Map<Integer, Integer> chars;
 
-    public ChineseCharacterConverter(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
+    public ChineseCharacterConverter(Language2 sourceLanguage, Language2 targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
         String language = targetLanguage.getLanguage();

@@ -1,6 +1,6 @@
 package eu.modernmt.processing.normalizers;
 
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
@@ -14,10 +14,10 @@ public class CatalanPuntVolatNormalizer extends TextProcessor<SentenceBuilder, S
 
     private static final Pattern REGEX = Pattern.compile("[Ll]\\s*[·•]\\s*[Ll]|[Ŀŀ]\\s*[Ll]");
 
-    public CatalanPuntVolatNormalizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
+    public CatalanPuntVolatNormalizer(Language2 sourceLanguage, Language2 targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
 
-        if (!Language.CATALAN.getLanguage().equals(sourceLanguage.getLanguage()))
+        if (!Language2.CATALAN.getLanguage().equals(sourceLanguage.getLanguage()))
             throw new UnsupportedLanguageException(targetLanguage);
     }
 

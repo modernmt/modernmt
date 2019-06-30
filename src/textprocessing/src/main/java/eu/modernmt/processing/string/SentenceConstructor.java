@@ -1,7 +1,5 @@
 package eu.modernmt.processing.string;
 
-import eu.modernmt.lang.Language;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 
@@ -28,19 +26,6 @@ import java.util.Map;
 public class SentenceConstructor extends TextProcessor<String, SentenceBuilder> {
 
     private final SentenceBuilder builder = new SentenceBuilder();
-
-    /**
-     * This constructor initializes a SentenceConstructor,
-     * that doesn't need to remember any information
-     * about the source or target language.
-     *
-     * @param sourceLanguage the language of the input String
-     * @param targetLanguage the language the input String must be translated to
-     * @throws UnsupportedLanguageException the requested language is not supported by this software
-     */
-    public SentenceConstructor(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
-        super(sourceLanguage, targetLanguage);
-    }
 
     /**
      * This method asks the SentenceBuilder to generate a Sentence object,

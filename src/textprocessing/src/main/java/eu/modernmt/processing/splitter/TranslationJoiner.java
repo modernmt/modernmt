@@ -66,9 +66,9 @@ public class TranslationJoiner {
             System.arraycopy(piece, 0, this.words, index, piece.length);
 
             //force the right space between the existing words and the appended words; no space if there are not exsting words
-            if (index != 0){
-                this.words[index-1].setRightSpace(" ");
-                this.words[index-1].setRightSpaceRequired(true);
+            if (index != 0) {
+                this.words[index - 1].setRightSpace(" ");
+                this.words[index - 1].setRightSpaceRequired(true);
             }
 
             index += piece.length;

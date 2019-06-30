@@ -1,6 +1,6 @@
 package eu.modernmt.processing.splitter;
 
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
 
@@ -18,15 +18,11 @@ import java.util.Map;
 public abstract class SentenceSplitter {
 
     private static final SentenceSplitter DEFAULT_IMPL = new DefaultSentenceSplitter();
-    private static final Map<Language, SentenceSplitter> IMPLEMENTATIONS = new HashMap<>();
+    private static final Map<String, SentenceSplitter> IMPLEMENTATIONS = new HashMap<>();
     private static final int MIN_SENTENCE_SIZE = 2000;
 
-    static {
-        IMPLEMENTATIONS.put(Language.ENGLISH, DEFAULT_IMPL);
-    }
-
-    public static SentenceSplitter forLanguage(Language locale) {
-        return IMPLEMENTATIONS.getOrDefault(locale, DEFAULT_IMPL);
+    public static SentenceSplitter forLanguage(Language2 language) {
+        return IMPLEMENTATIONS.getOrDefault(language.getLanguage(), DEFAULT_IMPL);
     }
 
     /**

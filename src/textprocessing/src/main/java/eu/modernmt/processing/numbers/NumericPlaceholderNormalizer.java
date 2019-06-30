@@ -1,7 +1,5 @@
 package eu.modernmt.processing.numbers;
 
-import eu.modernmt.lang.Language;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.SentenceBuilder;
@@ -26,19 +24,6 @@ public class NumericPlaceholderNormalizer extends TextProcessor<SentenceBuilder,
 
     /*the numeric pattern we use is any sequence of chars among 0 and 9*/
     private static final Pattern NUMERIC_PATTERN = Pattern.compile("[0-9]+");
-
-    /**
-     * This constructor initializes a NumericPlaceholderNormalizer,
-     * (that doesn't need to remember any information
-     * about the source or target language)
-     *
-     * @param sourceLanguage the language of the input String
-     * @param targetLanguage the language the input String must be translated to
-     * @throws UnsupportedLanguageException the requested language is not supported by this software
-     */
-    public NumericPlaceholderNormalizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
-        super(sourceLanguage, targetLanguage);
-    }
 
     /**
      * This method uses a Matcher to find all number words

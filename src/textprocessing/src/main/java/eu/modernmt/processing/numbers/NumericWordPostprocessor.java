@@ -1,7 +1,5 @@
 package eu.modernmt.processing.numbers;
 
-import eu.modernmt.lang.Language;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
@@ -15,10 +13,6 @@ import java.util.*;
  * Created by davide on 08/04/16.
  */
 public class NumericWordPostprocessor extends TextProcessor<Translation, Translation> {
-
-    public NumericWordPostprocessor(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
-        super(sourceLanguage, targetLanguage);
-    }
 
     @Override
     public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {

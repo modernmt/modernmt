@@ -1,9 +1,7 @@
 package eu.modernmt.cleaning.filters;
 
 import eu.modernmt.cleaning.CorpusFilter;
-import eu.modernmt.lang.Language;
-
-import java.util.regex.Pattern;
+import eu.modernmt.lang.Language2;
 
 /**
  * Created by davide on 14/03/16.
@@ -11,7 +9,7 @@ import java.util.regex.Pattern;
 public class BrokenUTF8Filter implements CorpusFilter {
 
     @Override
-    public Initializer getInitializer(Language language) {
+    public Initializer getInitializer(Language2 language) {
         return null;
     }
 

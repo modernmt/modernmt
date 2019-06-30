@@ -1,7 +1,7 @@
 package eu.modernmt.cleaning.filters;
 
 import eu.modernmt.cleaning.CorpusFilter;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 
 import java.util.regex.Pattern;
 
@@ -13,7 +13,7 @@ public class NumericTextFilter implements CorpusFilter {
     private static final Pattern REGEX = Pattern.compile("[0-9\\s]+");
 
     @Override
-    public Initializer getInitializer(Language language) {
+    public Initializer getInitializer(Language2 language) {
         return null;
     }
 

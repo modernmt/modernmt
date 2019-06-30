@@ -1,6 +1,6 @@
 package eu.modernmt.processing.builder;
 
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 
 import java.util.HashSet;
 
@@ -32,7 +32,7 @@ class FilteredProcessorBuilder extends ProcessorBuilder {
             return new OrFilter(definition.split("\\s+"));
     }
 
-    public boolean accept(Language sourceLanguage, Language targetLanguage) {
+    public boolean accept(Language2 sourceLanguage, Language2 targetLanguage) {
         if (this.sourceFilter != null && !this.sourceFilter.accept(sourceLanguage))
             return false;
         if (this.targetFilter != null && !this.targetFilter.accept(targetLanguage))
@@ -42,7 +42,7 @@ class FilteredProcessorBuilder extends ProcessorBuilder {
 
     private interface Filter {
 
-        boolean accept(Language language);
+        boolean accept(Language2 language);
 
     }
 
@@ -54,16 +54,16 @@ class FilteredProcessorBuilder extends ProcessorBuilder {
             this.languages = new HashSet<>(languages.length);
 
             for (String lang : languages) {
-                Language parsed = Language.fromString(lang);
-                if (parsed.getRegion() != null)
-                    throw new IllegalArgumentException("Region not supported for language: " + lang);
+                Language2 parsed = Language2.fromString(lang);
+                if (!parsed.getLanguage().equals(parsed.toLanguageTag()))
+                    throw new IllegalArgumentException("Text processing framework only supports language-only tags, but found complex language: " + lang);
 
                 this.languages.add(parsed.getLanguage());
             }
         }
 
         @Override
-        public boolean accept(Language language) {
+        public boolean accept(Language2 language) {
             return language != null && languages.contains(language.getLanguage());
         }
     }
@@ -75,7 +75,7 @@ class FilteredProcessorBuilder extends ProcessorBuilder {
         }
 
         @Override
-        public boolean accept(Language language) {
+        public boolean accept(Language2 language) {
             return !super.accept(language);
         }
     }

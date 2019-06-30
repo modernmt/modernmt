@@ -1,7 +1,7 @@
 package eu.modernmt.cleaning.filters;
 
 import eu.modernmt.cleaning.CorpusFilter;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 
 import java.util.regex.Pattern;
 
@@ -17,7 +17,7 @@ public class EmptyLinesFilter implements CorpusFilter {
     }
 
     @Override
-    public Initializer getInitializer(Language language) {
+    public Initializer getInitializer(Language2 language) {
         return null;
     }
 

@@ -1,11 +1,10 @@
 package eu.modernmt.processing.tokenizer.lucene;
 
-
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
-import eu.modernmt.processing.tokenizer.TokenizedString;
 import eu.modernmt.processing.tokenizer.BaseTokenizer;
+import eu.modernmt.processing.tokenizer.TokenizedString;
 import eu.modernmt.processing.tokenizer.lucene.analyzers.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -17,47 +16,47 @@ import java.util.Map;
 
 public class LuceneTokenAnnotator implements BaseTokenizer.Annotator {
 
-    private static final Map<Language, Class<? extends Analyzer>> ANALYZERS = new HashMap<>();
+    private static final Map<Language2, Class<? extends Analyzer>> ANALYZERS = new HashMap<>();
 
     static {
-        ANALYZERS.put(Language.ARABIC, ArabicAnalyzer.class);
-        ANALYZERS.put(Language.GERMAN, GermanAnalyzer.class);
-        ANALYZERS.put(Language.PERSIAN, PersianAnalyzer.class);
-        ANALYZERS.put(Language.HINDI, HindiAnalyzer.class);
-        ANALYZERS.put(Language.THAI, ThaiAnalyzer.class);
-        ANALYZERS.put(Language.HEBREW, HebrewAnalyzer.class);
+        ANALYZERS.put(Language2.ARABIC, ArabicAnalyzer.class);
+        ANALYZERS.put(Language2.GERMAN, GermanAnalyzer.class);
+        ANALYZERS.put(Language2.PERSIAN, PersianAnalyzer.class);
+        ANALYZERS.put(Language2.HINDI, HindiAnalyzer.class);
+        ANALYZERS.put(Language2.THAI, ThaiAnalyzer.class);
+        ANALYZERS.put(Language2.HEBREW, HebrewAnalyzer.class);
 
         // Standard analyzer
-        ANALYZERS.put(Language.BULGARIAN, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.BRAZILIAN, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.CATALAN, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.CZECH, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.DANISH, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.GREEK, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.ENGLISH, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.SPANISH, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.BASQUE, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.FINNISH, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.FRENCH, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.IRISH, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.GALICIAN, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.HUNGARIAN, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.ARMENIAN, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.INDONESIAN, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.ITALIAN, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.LATVIAN, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.DUTCH, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.NORWEGIAN, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.PORTUGUESE, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.ROMANIAN, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.RUSSIAN, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.SWEDISH, LiteStandardAnalyzer.class);
-        ANALYZERS.put(Language.TURKISH, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.BULGARIAN, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.BRAZILIAN, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.CATALAN, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.CZECH, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.DANISH, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.GREEK, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.ENGLISH, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.SPANISH, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.BASQUE, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.FINNISH, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.FRENCH, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.IRISH, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.GALICIAN, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.HUNGARIAN, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.ARMENIAN, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.INDONESIAN, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.ITALIAN, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.LATVIAN, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.DUTCH, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.NORWEGIAN, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.PORTUGUESE, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.ROMANIAN, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.RUSSIAN, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.SWEDISH, LiteStandardAnalyzer.class);
+        ANALYZERS.put(Language2.TURKISH, LiteStandardAnalyzer.class);
     }
 
     private final Analyzer analyzer;
 
-    public static LuceneTokenAnnotator forLanguage(Language language) throws UnsupportedLanguageException {
+    public static LuceneTokenAnnotator forLanguage(Language2 language) throws UnsupportedLanguageException {
         Class<? extends Analyzer> analyzerClass = ANALYZERS.get(language);
         if (analyzerClass == null)
             throw new UnsupportedLanguageException(language);

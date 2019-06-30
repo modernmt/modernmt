@@ -1,7 +1,5 @@
 package eu.modernmt.processing;
 
-import eu.modernmt.lang.Language;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
 
@@ -11,11 +9,6 @@ import java.util.Map;
  * Created by andrea on 06/03/17.
  */
 public class WordTextGuessingProcessor extends TextProcessor<Translation, Translation> {
-
-
-    public WordTextGuessingProcessor(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
-        super(sourceLanguage, targetLanguage);
-    }
 
     @Override
     public Translation call(Translation translation, Map<String, Object> metadata) {

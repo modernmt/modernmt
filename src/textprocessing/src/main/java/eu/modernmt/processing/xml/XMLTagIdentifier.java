@@ -1,9 +1,6 @@
 package eu.modernmt.processing.xml;
 
-import eu.modernmt.lang.Language;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Tag;
-import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.SentenceBuilder;
 
@@ -20,19 +17,6 @@ import java.util.regex.Matcher;
 public class XMLTagIdentifier extends TextProcessor<SentenceBuilder, SentenceBuilder> {
 
     /**
-     * This constructor initializes an XMLTagIdentifier,
-     * that doesn't need to remember any information
-     * about the source or target language.
-     *
-     * @param sourceLanguage the language of the input String
-     * @param targetLanguage the language the input String must be translated to
-     * @throws UnsupportedLanguageException the requested language is not supported by this software
-     */
-    public XMLTagIdentifier(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
-        super(sourceLanguage, targetLanguage);
-    }
-
-    /**
      * This method uses a Matcher to find all XML tags
      * in the current String of the input SentenceBuilder.
      * For each tag found, it requests the SentenceBuilder editor
@@ -44,11 +28,9 @@ public class XMLTagIdentifier extends TextProcessor<SentenceBuilder, SentenceBui
      *                 (not used in this specific operation)
      * @return the SentenceBuilder received as a parameter;
      * its internal state has been updated by the execution of the call() method
-     * @throws ProcessingException
      */
     @Override
-    public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) throws
-            ProcessingException {
+    public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) {
 
         /*find all substrings matching XML tags in the SentenceBuilder current String*/
         Matcher m = Tag.TagRegex.matcher(builder.toString());

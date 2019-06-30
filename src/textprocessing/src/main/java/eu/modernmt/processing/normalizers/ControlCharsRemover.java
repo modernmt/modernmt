@@ -1,20 +1,13 @@
 package eu.modernmt.processing.normalizers;
 
-import eu.modernmt.lang.Language;
-import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.TextProcessor;
 
 import java.util.Map;
-import java.util.function.IntConsumer;
 
 /**
  * Created by davide on 12/05/16.
  */
 public class ControlCharsRemover extends TextProcessor<String, String> {
-
-    public ControlCharsRemover(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
-        super(sourceLanguage, targetLanguage);
-    }
 
     public static String strip(String string) {
         StringBuilder filtered = new StringBuilder(string.length());

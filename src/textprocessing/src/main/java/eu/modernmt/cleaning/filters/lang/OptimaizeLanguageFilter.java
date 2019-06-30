@@ -6,7 +6,7 @@ import com.optimaize.langdetect.ngram.NgramExtractors;
 import com.optimaize.langdetect.profiles.LanguageProfileReader;
 import eu.modernmt.cleaning.CorpusFilter;
 import eu.modernmt.io.RuntimeIOException;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -48,7 +48,7 @@ public class OptimaizeLanguageFilter implements CorpusFilter {
 
     private Blacklist blacklist = null;
 
-    private static boolean isSupported(Language language) {
+    private static boolean isSupported(Language2 language) {
         return SUPPORTED_LANGUAGES.contains(language.getLanguage());
     }
 
@@ -64,7 +64,7 @@ public class OptimaizeLanguageFilter implements CorpusFilter {
     }
 
     @Override
-    public Initializer getInitializer(Language _language) {
+    public Initializer getInitializer(Language2 _language) {
         boolean isLanguageSupported = isSupported(_language);
         String language = normalizeLanguage(_language.getLanguage());
 
