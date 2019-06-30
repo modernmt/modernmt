@@ -1,7 +1,6 @@
 package eu.modernmt.context.lucene.analysis;
 
 import eu.modernmt.context.lucene.analysis.lang.LanguageAnalyzer;
-import eu.modernmt.lang.Language;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenCountAnalyzer;

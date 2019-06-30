@@ -1,7 +1,7 @@
 package eu.modernmt.context.lucene.storage;
 
 import eu.modernmt.io.RuntimeIOException;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.LanguageDirection;
 
 import java.io.Closeable;
@@ -203,8 +203,8 @@ public class BucketRegistry implements Closeable {
 
     private Bucket parseBucket(ResultSet result) throws SQLException {
         long id = result.getLong(1);
-        final Language source = Language.fromString(result.getString(2));
-        final Language target = Language.fromString(result.getString(3));
+        final Language2 source = Language2.fromString(result.getString(2));
+        final Language2 target = Language2.fromString(result.getString(3));
         final UUID owner = getUUID(result, 4, 5);
         final long size = result.getLong(6);
         final long plainSize = result.getLong(7);
@@ -391,13 +391,13 @@ public class BucketRegistry implements Closeable {
 
         public CacheKey(long id, LanguageDirection language, boolean maskLanguageRegion) {
             if (maskLanguageRegion) {
-                Language owSource = null;
-                Language owTarget = null;
+                Language2 owSource = null;
+                Language2 owTarget = null;
 
                 if (language.source.getRegion() != null)
-                    owSource = new Language(language.source.getLanguage());
+                    owSource = new Language2(language.source.getLanguage());
                 if (language.target.getRegion() != null)
-                    owTarget = new Language(language.target.getLanguage());
+                    owTarget = new Language2(language.target.getLanguage());
 
                 if (owSource != null || owTarget != null) {
                     if (owSource == null)
