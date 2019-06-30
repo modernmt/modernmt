@@ -3,7 +3,7 @@ package eu.modernmt.decoder.neural.memory.lucene;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.LanguageDirection;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexableField;
@@ -89,14 +89,14 @@ public class DocumentBuilder {
     // Parsing
 
     public static ScoreEntry asEntry(Document self) {
-        Language source = null;
-        Language target = null;
+        Language2 source = null;
+        Language2 target = null;
 
         for (IndexableField field : self.getFields()) {
             String name = field.name();
 
             if (name.startsWith(LANGUAGE_PREFIX_FIELD)) {
-                Language l = Language.fromString(name.substring(LANGUAGE_PREFIX_FIELD.length()));
+                Language2 l = Language2.fromString(name.substring(LANGUAGE_PREFIX_FIELD.length()));
 
                 if (source == null) {
                     source = l;
@@ -110,7 +110,7 @@ public class DocumentBuilder {
         if (source == null || target == null)
             throw new IllegalArgumentException("Invalid document: missing language info.");
 
-        if (source.compareTo(target) < 0)
+        if (source.toLanguageTag().compareTo(target.toLanguageTag()) < 0)
             return asEntry(self, new LanguageDirection(source, target));
         else
             return asEntry(self, new LanguageDirection(target, source));
@@ -125,16 +125,16 @@ public class DocumentBuilder {
         String _target = self.get(makeLanguageFieldName(direction.target));
 
         boolean differ = false;
-        Language source = direction.source;
-        Language target = direction.target;
+        Language2 source = direction.source;
+        Language2 target = direction.target;
 
         if (!_source.equals(direction.source.toLanguageTag())) {
-            source = Language.fromString(_source);
+            source = Language2.fromString(_source);
             differ = true;
         }
 
         if (!_target.equals(direction.target.toLanguageTag())) {
-            target = Language.fromString(_target);
+            target = Language2.fromString(_target);
             differ = true;
         }
 
@@ -173,7 +173,7 @@ public class DocumentBuilder {
         return makeMemoryTerm(0L);
     }
 
-    public static Term makeLanguageTerm(Language language) {
+    public static Term makeLanguageTerm(Language2 language) {
         return new Term(makeLanguageFieldName(language), language.toLanguageTag());
     }
 
@@ -183,7 +183,7 @@ public class DocumentBuilder {
         return HASH_FIELD.equals(field);
     }
 
-    public static String makeLanguageFieldName(Language language) {
+    public static String makeLanguageFieldName(Language2 language) {
         return LANGUAGE_PREFIX_FIELD + language.getLanguage();
     }
 

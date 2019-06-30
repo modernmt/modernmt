@@ -2,7 +2,7 @@ package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
@@ -17,28 +17,19 @@ import java.util.*;
  */
 public class TestData {
 
-    public static final Language EN = new Language("en");
-    public static final Language EN_US = new Language("en", "US");
-    public static final Language ES = new Language("es");
-    public static final Language ES_AR = new Language("es", "AR");
-    public static final Language FR = new Language("fr");
-    public static final Language FR_CA = new Language("fr", "CA");
-    public static final Language IT = new Language("it");
-    public static final Language IT_CH = new Language("it", "CH");
-    public static final Language NL = new Language("nl");
-    public static final Language NL_BE = new Language("nl", "BE");
-    public static final Language DE = new Language("de");
-    public static final Language DE_LU = new Language("de", "LU");
-    public static final Language PT = new Language("pt");
-    public static final Language PT_BR = new Language("pt", "BR");
+    public static final Language2 EN = Language2.fromString("en");
+    public static final Language2 EN_US = Language2.fromString("en-US");
+    public static final Language2 ES = Language2.fromString("es");
+    public static final Language2 FR = Language2.fromString("fr");
+    public static final Language2 FR_CA = Language2.fromString("fr-CA");
+    public static final Language2 IT = Language2.fromString("it");
+    public static final Language2 IT_CH = Language2.fromString("it-CH");
 
     public static final LanguageDirection FR__ES = new LanguageDirection(TestData.FR, TestData.ES);
     public static final LanguageDirection FR__EN = new LanguageDirection(TestData.FR, TestData.EN);
     public static final LanguageDirection EN__IT = new LanguageDirection(TestData.EN, TestData.IT);
     public static final LanguageDirection EN__FR = new LanguageDirection(TestData.EN, TestData.FR);
     public static final LanguageDirection IT__EN = new LanguageDirection(TestData.IT, TestData.EN);
-    public static final LanguageDirection EN_US__IT = new LanguageDirection(TestData.EN_US, TestData.IT);
-    public static final LanguageDirection IT__EN_US = new LanguageDirection(TestData.IT, TestData.EN_US);
     public static final LanguageDirection EN_US__IT_CH = new LanguageDirection(TestData.EN_US, TestData.IT_CH);
     public static final LanguageDirection IT_CH__EN_US = new LanguageDirection(TestData.IT_CH, TestData.EN_US);
     public static final LanguageDirection EN_US__FR_CA = new LanguageDirection(TestData.EN_US, TestData.FR_CA);

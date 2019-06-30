@@ -1,6 +1,6 @@
 package eu.modernmt.decoder.neural;
 
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.LanguageDirection;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
@@ -65,7 +65,7 @@ public class ModelConfig {
         while (keyIterator.hasNext()) {
             String key = keyIterator.next();
             String[] parts = key.split("__");
-            LanguageDirection language = new LanguageDirection(Language.fromString(parts[0]), Language.fromString(parts[1]));
+            LanguageDirection language = new LanguageDirection(Language2.fromString(parts[0]), Language2.fromString(parts[1]));
             File model = new File(basePath, models.getString(key));
 
             result.put(language, model);
