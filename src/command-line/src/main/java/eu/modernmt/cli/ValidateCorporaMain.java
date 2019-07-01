@@ -1,7 +1,7 @@
 package eu.modernmt.cli;
 
 import eu.modernmt.cli.log4j.Log4jConfiguration;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -43,8 +43,8 @@ public class ValidateCorporaMain {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
-            Language sourceLanguage = Language.fromString(cli.getOptionValue('s'));
-            Language targetLanguage = Language.fromString(cli.getOptionValue('t'));
+            Language2 sourceLanguage = Language2.fromString(cli.getOptionValue('s'));
+            Language2 targetLanguage = Language2.fromString(cli.getOptionValue('t'));
             language = new LanguageDirection(sourceLanguage, targetLanguage);
             inputRoot = new File(cli.getOptionValue("input"));
         }

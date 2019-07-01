@@ -3,13 +3,13 @@ package eu.modernmt.cli;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.cli.utils.FileFormat;
 import eu.modernmt.io.IOCorporaUtils;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.corpus.MaskedMultilingualCorpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.training.BatchCopyProcess;
-import eu.modernmt.training.MultilingualCorpusMask;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.Level;
 
@@ -51,8 +51,8 @@ public class ConvertMain {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
-            Language source = Language.fromString(cli.getOptionValue("s"));
-            Language target = Language.fromString(cli.getOptionValue("t"));
+            Language2 source = Language2.fromString(cli.getOptionValue("s"));
+            Language2 target = Language2.fromString(cli.getOptionValue("t"));
             language = new LanguageDirection(source, target);
 
             input = new File(cli.getOptionValue("input"));
@@ -67,7 +67,7 @@ public class ConvertMain {
         Args args = new Args(_args);
 
         if (args.input.isFile()) {
-            MultilingualCorpus input = new MultilingualCorpusMask(args.language, args.inputFormat.parse(args.language, args.input));
+            MultilingualCorpus input = new MaskedMultilingualCorpus(args.language, args.inputFormat.parse(args.language, args.input));
             MultilingualCorpus output = args.outputFormat.rename(args.language, input, args.output);
 
             IOCorporaUtils.copy(input, output);
@@ -85,7 +85,7 @@ public class ConvertMain {
             });
 
             for (MultilingualCorpus corpus : Corpora.list(args.language, args.input))
-                copy.add(new MultilingualCorpusMask(args.language, corpus));
+                copy.add(new MaskedMultilingualCorpus(args.language, corpus));
 
             copy.setIoThreads(Math.min(Runtime.getRuntime().availableProcessors(), 32));
             copy.run();

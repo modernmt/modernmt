@@ -1,10 +1,10 @@
 package eu.modernmt.cli;
 
-import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.io.LineReader;
+import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.io.UnixLineWriter;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Preprocessor;
@@ -38,7 +38,7 @@ public class SentenceSplitMain {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
-            Language lang = Language.fromString(cli.getOptionValue("l"));
+            Language2 lang = Language2.fromString(cli.getOptionValue("l"));
             language = new LanguageDirection(lang, lang);
         }
 
@@ -91,7 +91,7 @@ public class SentenceSplitMain {
         private final UnixLineWriter writer;
         private final SynchronousQueue<Sentence[]> job = new SynchronousQueue<>();
 
-        public SentenceOutputter(Language language) {
+        public SentenceOutputter(Language2 language) {
             this.writer = new UnixLineWriter(System.out, UTF8Charset.get());
             this.splitter = SentenceSplitter.forLanguage(language);
         }

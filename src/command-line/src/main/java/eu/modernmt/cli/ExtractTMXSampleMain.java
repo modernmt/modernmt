@@ -1,11 +1,11 @@
 package eu.modernmt.cli;
 
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.LanguageDirection;
+import eu.modernmt.model.corpus.MaskedMultilingualCorpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
-import eu.modernmt.training.MultilingualCorpusMask;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -47,8 +47,8 @@ public class ExtractTMXSampleMain {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
-            Language source = Language.fromString(cli.getOptionValue("s"));
-            Language target = Language.fromString(cli.getOptionValue("t"));
+            Language2 source = Language2.fromString(cli.getOptionValue("s"));
+            Language2 target = Language2.fromString(cli.getOptionValue("t"));
             language = new LanguageDirection(source, target);
             input = new File(cli.getOptionValue("i"));
             outputFolder = new File(cli.getOptionValue("o"));
@@ -162,7 +162,7 @@ public class ExtractTMXSampleMain {
         if (!testFolder.isDirectory())
             FileUtils.forceMkdir(testFolder);
 
-        MultilingualCorpus origin = new MultilingualCorpusMask(args.language, new TMXCorpus(args.input));
+        MultilingualCorpus origin = new MaskedMultilingualCorpus(args.language, new TMXCorpus(args.input));
         ParallelFileCorpus test = new ParallelFileCorpus(testFolder, origin.getName(), args.language);
         TMXCorpus train = new TMXCorpus(new File(args.outputFolder, origin.getName() + ".tmx"));
 
