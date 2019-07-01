@@ -11,9 +11,9 @@ import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.DecoderWithNBest;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.facade.exceptions.TimeoutException;
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
-import eu.modernmt.lang.LanguageIndex2;
+import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
@@ -136,20 +136,20 @@ public class TranslationFacade {
         return analyzer.getContextVector(user, direction, context, limit);
     }
 
-    public Map<Language2, ContextVector> getContextVectors(UUID user, File context, int limit, Language2 source, Language2... targets) throws ContextAnalyzerException {
+    public Map<Language, ContextVector> getContextVectors(UUID user, File context, int limit, Language source, Language... targets) throws ContextAnalyzerException {
         return getContextVectors(user, new FileCorpus(context, null, source), limit, source, targets);
     }
 
-    public Map<Language2, ContextVector> getContextVectors(UUID user, String context, int limit, Language2 source, Language2... targets) throws ContextAnalyzerException {
+    public Map<Language, ContextVector> getContextVectors(UUID user, String context, int limit, Language source, Language... targets) throws ContextAnalyzerException {
         return getContextVectors(user, new StringCorpus(null, source, context), limit, source, targets);
     }
 
-    private Map<Language2, ContextVector> getContextVectors(UUID user, Corpus context, int limit, Language2 source, Language2... targets) throws ContextAnalyzerException {
+    private Map<Language, ContextVector> getContextVectors(UUID user, Corpus context, int limit, Language source, Language... targets) throws ContextAnalyzerException {
         Engine engine = ModernMT.getNode().getEngine();
         ContextAnalyzer analyzer = engine.getContextAnalyzer();
 
-        HashMap<Language2, ContextVector> result = new HashMap<>(targets.length);
-        for (Language2 target : targets) {
+        HashMap<Language, ContextVector> result = new HashMap<>(targets.length);
+        for (Language target : targets) {
             try {
                 LanguageDirection direction = mapLanguagePair(new LanguageDirection(source, target));
                 ContextVector contextVector = analyzer.getContextVector(user, direction, context, limit);
@@ -173,7 +173,7 @@ public class TranslationFacade {
     }
 
     private LanguageDirection mapLanguagePair(LanguageDirection pair) {
-        LanguageIndex2 index = ModernMT.getNode().getEngine().getLanguageIndex();
+        LanguageIndex index = ModernMT.getNode().getEngine().getLanguageIndex();
 
         LanguageDirection mapped = index.map(pair);
         if (mapped == null)

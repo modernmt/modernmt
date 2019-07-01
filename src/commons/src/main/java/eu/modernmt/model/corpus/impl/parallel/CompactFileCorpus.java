@@ -4,7 +4,7 @@ import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.io.FileProxy;
 import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.io.UnixLineWriter;
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.BaseMultilingualCorpus;
 import org.apache.commons.io.FilenameUtils;
@@ -100,7 +100,7 @@ public class CompactFileCorpus extends BaseMultilingualCorpus {
 
             LanguageDirection language = cachedLanguagePairs.computeIfAbsent(parts[1], key -> {
                 String[] langs = key.split(" ");
-                return new LanguageDirection(Language2.fromString(langs[0]), Language2.fromString(langs[1]));
+                return new LanguageDirection(Language.fromString(langs[0]), Language.fromString(langs[1]));
             });
 
             return new StringPair(language, source, target, timestamp);

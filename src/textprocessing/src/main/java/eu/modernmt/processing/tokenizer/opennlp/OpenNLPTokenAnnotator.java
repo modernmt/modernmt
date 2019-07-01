@@ -1,6 +1,6 @@
 package eu.modernmt.processing.tokenizer.opennlp;
 
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.TextProcessingModels;
 import eu.modernmt.processing.tokenizer.BaseTokenizer;
@@ -19,7 +19,7 @@ public class OpenNLPTokenAnnotator implements BaseTokenizer.Annotator {
 
     private final TokenizerME tokenizer;
 
-    public static OpenNLPTokenAnnotator forLanguage(Language2 language) throws UnsupportedLanguageException {
+    public static OpenNLPTokenAnnotator forLanguage(Language language) throws UnsupportedLanguageException {
         File opennlp = new File(TextProcessingModels.getPath(), "opennlp");
         File modelFile = new File(opennlp, language.getLanguage() + "-token.bin");
 

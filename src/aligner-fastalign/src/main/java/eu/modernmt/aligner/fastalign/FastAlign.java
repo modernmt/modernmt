@@ -2,7 +2,7 @@ package eu.modernmt.aligner.fastalign;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
@@ -43,7 +43,7 @@ public class FastAlign implements Aligner {
 
         for (String source : sources) {
             for (String target : targets) {
-                languages.add(new LanguageDirection(Language2.fromString(source), Language2.fromString(target)));
+                languages.add(new LanguageDirection(Language.fromString(source), Language.fromString(target)));
             }
         }
 

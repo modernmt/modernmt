@@ -4,7 +4,7 @@ import eu.modernmt.cleaning.detect.ChineseDetector;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
@@ -53,7 +53,7 @@ public class ChineseDetectMain {
 
         Args args = new Args(_args);
 
-        List<Corpus> corpora = Corpora.list(Language2.CHINESE, args.inputRoot);
+        List<Corpus> corpora = Corpora.list(Language.CHINESE, args.inputRoot);
 
         if (corpora.isEmpty())
             throw new ParseException("Input path does not contains valid chinese corpora");
@@ -65,7 +65,7 @@ public class ChineseDetectMain {
             List<Future<Void>> results = new ArrayList<>(corpora.size());
             for (Corpus corpus : corpora) {
                 File outputFile = new File(args.outputPath, corpus.getName() + ".labels");
-                FileCorpus output = new FileCorpus(outputFile, corpus.getName(), Language2.CHINESE);
+                FileCorpus output = new FileCorpus(outputFile, corpus.getName(), Language.CHINESE);
 
                 results.add(executor.submit(new DetectTask(detector, corpus, output)));
             }
@@ -101,7 +101,7 @@ public class ChineseDetectMain {
 
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    Language2 language = detector.detect(line);
+                    Language language = detector.detect(line);
                     writer.writeLine(language.toLanguageTag());
                 }
             } finally {

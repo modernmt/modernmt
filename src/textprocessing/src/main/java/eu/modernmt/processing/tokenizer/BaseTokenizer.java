@@ -1,6 +1,6 @@
 package eu.modernmt.processing.tokenizer;
 
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
@@ -17,7 +17,7 @@ public class BaseTokenizer extends TextProcessor<SentenceBuilder, SentenceBuilde
     public BaseTokenizer() {
     }
 
-    public BaseTokenizer(Language2 sourceLanguage, Language2 targetLanguage) throws UnsupportedLanguageException {
+    public BaseTokenizer(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         super(sourceLanguage, targetLanguage);
     }
 

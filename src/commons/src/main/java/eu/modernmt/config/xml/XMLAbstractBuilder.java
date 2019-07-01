@@ -1,6 +1,6 @@
 package eu.modernmt.config.xml;
 
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -137,12 +137,12 @@ abstract class XMLAbstractBuilder {
         return getLongAttribute(element, attr);
     }
 
-    protected static Language2 getLanguageAttribute(Element element, String attr) {
+    protected static Language getLanguageAttribute(Element element, String attr) {
         String value = getAttribute(element, attr);
-        return value == null ? null : Language2.fromString(value);
+        return value == null ? null : Language.fromString(value);
     }
 
-    protected Language2 getLanguageAttribute(String attr) {
+    protected Language getLanguageAttribute(String attr) {
         return getLanguageAttribute(element, attr);
     }
 

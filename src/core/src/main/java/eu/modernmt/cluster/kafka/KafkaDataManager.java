@@ -5,7 +5,7 @@ import eu.modernmt.config.DataStreamConfig;
 import eu.modernmt.data.*;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.lang.LanguageDirection;
-import eu.modernmt.lang.LanguageIndex2;
+import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -68,7 +68,7 @@ public class KafkaDataManager implements DataManager {
         this(engine.getLanguageIndex(), engine.getPreprocessor(), getAligner(engine), uuid, config);
     }
 
-    public KafkaDataManager(LanguageIndex2 languages, Preprocessor preprocessor, Aligner aligner, String uuid, DataStreamConfig config) {
+    public KafkaDataManager(LanguageIndex languages, Preprocessor preprocessor, Aligner aligner, String uuid, DataStreamConfig config) {
         this.uuid = uuid;
 
         this.host = config.getHost();

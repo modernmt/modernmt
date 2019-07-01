@@ -5,7 +5,7 @@ import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataManager;
 import eu.modernmt.data.DataManagerException;
-import eu.modernmt.lang.LanguageIndex2;
+import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
 import org.apache.commons.io.IOUtils;
@@ -38,7 +38,7 @@ class DataPollingThread extends Thread {
 
     private final ExecutorService executor = Executors.newCachedThreadPool();
 
-    public DataPollingThread(LanguageIndex2 languages, Preprocessor preprocessor, Aligner aligner, KafkaDataManager manager) {
+    public DataPollingThread(LanguageIndex languages, Preprocessor preprocessor, Aligner aligner, KafkaDataManager manager) {
         super("DataPollingThread");
         this.manager = manager;
         this.batch = new KafkaDataBatch(languages, preprocessor, aligner, manager);

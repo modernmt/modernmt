@@ -1,7 +1,7 @@
 package eu.modernmt.cleaning.filters;
 
 import eu.modernmt.cleaning.CorpusFilter;
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,7 +15,7 @@ public class PunctuationFilter implements CorpusFilter {
     private static final Pattern LETTER_REGEX = Pattern.compile("[\\p{Digit}\\p{L}]");
 
     @Override
-    public Initializer getInitializer(Language2 language) {
+    public Initializer getInitializer(Language language) {
         return null;
     }
 

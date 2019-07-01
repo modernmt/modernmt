@@ -1,6 +1,6 @@
 package eu.modernmt.processing.splitter;
 
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
 
@@ -21,7 +21,7 @@ public abstract class SentenceSplitter {
     private static final Map<String, SentenceSplitter> IMPLEMENTATIONS = new HashMap<>();
     private static final int MIN_SENTENCE_SIZE = 2000;
 
-    public static SentenceSplitter forLanguage(Language2 language) {
+    public static SentenceSplitter forLanguage(Language language) {
         return IMPLEMENTATIONS.getOrDefault(language.getLanguage(), DEFAULT_IMPL);
     }
 

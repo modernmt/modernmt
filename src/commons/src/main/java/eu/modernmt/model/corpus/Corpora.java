@@ -1,7 +1,7 @@
 package eu.modernmt.model.corpus;
 
 import eu.modernmt.io.FileProxy;
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
@@ -65,7 +65,7 @@ public class Corpora {
     }
 
     public static Corpus rename(Corpus corpus, File folder, String name) {
-        Language2 language = corpus.getLanguage();
+        Language language = corpus.getLanguage();
         File file = new File(folder, name + '.' + language.toLanguageTag());
         return new FileCorpus(file, name, language);
     }
@@ -132,7 +132,7 @@ public class Corpora {
         public int count = 0;
     }
 
-    public static List<Corpus> list(Language2 language, File... roots) throws IOException {
+    public static List<Corpus> list(Language language, File... roots) throws IOException {
         String tag = language.toLanguageTag();
 
         ArrayList<Corpus> corpora = new ArrayList<>();
@@ -174,7 +174,7 @@ public class Corpora {
                 } else {
                     File key = new File(directory, filename);
                     ParallelFileCorpusBuilder builder = builders.computeIfAbsent(key, ParallelFileCorpusBuilder::new);
-                    Language2 extLanguage = Language2.fromString(extension);
+                    Language extLanguage = Language.fromString(extension);
 
                     if (language.source.isEqualOrMoreGenericThan(extLanguage))
                         builder.setSourceFile(file);

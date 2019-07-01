@@ -7,61 +7,61 @@ import java.util.regex.Pattern;
 /**
  * A IETF BCP 47 compliant language tag
  */
-public final class Language2 implements Serializable {
+public final class Language implements Serializable {
 
     private static final Pattern IS_ALPHA = Pattern.compile("[A-Za-z]+");
     private static final Pattern IS_ALPHANUM = Pattern.compile("[A-Za-z0-9]+");
     private static final Pattern IS_DIGIT = Pattern.compile("[0-9]+");
 
     // sorted by ISO 639-1 codes
-    public static final Language2 ARABIC = Language2.fromString("ar");
-    public static final Language2 BULGARIAN = Language2.fromString("bg");
-    public static final Language2 BRETON = Language2.fromString("br");
-    public static final Language2 CATALAN = Language2.fromString("ca");
-    public static final Language2 CZECH = Language2.fromString("cs");
-    public static final Language2 DANISH = Language2.fromString("da");
-    public static final Language2 GERMAN = Language2.fromString("de");
-    public static final Language2 GREEK = Language2.fromString("el");
-    public static final Language2 ENGLISH = Language2.fromString("en");
-    public static final Language2 ESPERANTO = Language2.fromString("eo");
-    public static final Language2 SPANISH = Language2.fromString("es");
-    public static final Language2 BASQUE = Language2.fromString("eu");
-    public static final Language2 PERSIAN = Language2.fromString("fa");
-    public static final Language2 FINNISH = Language2.fromString("fi");
-    public static final Language2 FRENCH = Language2.fromString("fr");
-    public static final Language2 IRISH = Language2.fromString("ga");
-    public static final Language2 GALICIAN = Language2.fromString("gl");
-    public static final Language2 HEBREW = Language2.fromString("he");
-    public static final Language2 HINDI = Language2.fromString("hi");
-    public static final Language2 HUNGARIAN = Language2.fromString("hu");
-    public static final Language2 ARMENIAN = Language2.fromString("hy");
-    public static final Language2 INDONESIAN = Language2.fromString("id");
-    public static final Language2 ICELANDIC = Language2.fromString("is");
-    public static final Language2 ITALIAN = Language2.fromString("it");
-    public static final Language2 JAPANESE = Language2.fromString("ja");
-    public static final Language2 KHMER = Language2.fromString("km");
-    public static final Language2 KOREAN = Language2.fromString("ko");
-    public static final Language2 LATVIAN = Language2.fromString("lv");
-    public static final Language2 MALAYALAM = Language2.fromString("ml");
-    public static final Language2 DUTCH = Language2.fromString("nl");
-    public static final Language2 NORWEGIAN = Language2.fromString("no");
-    public static final Language2 POLISH = Language2.fromString("pl");
-    public static final Language2 BRAZILIAN = Language2.fromString("pt-BR");
-    public static final Language2 PORTUGUESE = Language2.fromString("pt");
-    public static final Language2 ROMANIAN = Language2.fromString("ro");
-    public static final Language2 RUSSIAN = Language2.fromString("ru");
-    public static final Language2 NORTHERN_SAMI = Language2.fromString("se");
-    public static final Language2 SLOVAK = Language2.fromString("sk");
-    public static final Language2 SLOVENE = Language2.fromString("sl");
-    public static final Language2 SWEDISH = Language2.fromString("sv");
-    public static final Language2 TAMIL = Language2.fromString("ta");
-    public static final Language2 THAI = Language2.fromString("th");
-    public static final Language2 TAGALOG = Language2.fromString("tl");
-    public static final Language2 TURKISH = Language2.fromString("tr");
-    public static final Language2 UKRAINIAN = Language2.fromString("uk");
-    public static final Language2 CHINESE = Language2.fromString("zh");
-    public static final Language2 CHINESE_SIMPLIFIED = Language2.fromString("zh-CN");
-    public static final Language2 CHINESE_TRADITIONAL = Language2.fromString("zh-TW");
+    public static final Language ARABIC = Language.fromString("ar");
+    public static final Language BULGARIAN = Language.fromString("bg");
+    public static final Language BRETON = Language.fromString("br");
+    public static final Language CATALAN = Language.fromString("ca");
+    public static final Language CZECH = Language.fromString("cs");
+    public static final Language DANISH = Language.fromString("da");
+    public static final Language GERMAN = Language.fromString("de");
+    public static final Language GREEK = Language.fromString("el");
+    public static final Language ENGLISH = Language.fromString("en");
+    public static final Language ESPERANTO = Language.fromString("eo");
+    public static final Language SPANISH = Language.fromString("es");
+    public static final Language BASQUE = Language.fromString("eu");
+    public static final Language PERSIAN = Language.fromString("fa");
+    public static final Language FINNISH = Language.fromString("fi");
+    public static final Language FRENCH = Language.fromString("fr");
+    public static final Language IRISH = Language.fromString("ga");
+    public static final Language GALICIAN = Language.fromString("gl");
+    public static final Language HEBREW = Language.fromString("he");
+    public static final Language HINDI = Language.fromString("hi");
+    public static final Language HUNGARIAN = Language.fromString("hu");
+    public static final Language ARMENIAN = Language.fromString("hy");
+    public static final Language INDONESIAN = Language.fromString("id");
+    public static final Language ICELANDIC = Language.fromString("is");
+    public static final Language ITALIAN = Language.fromString("it");
+    public static final Language JAPANESE = Language.fromString("ja");
+    public static final Language KHMER = Language.fromString("km");
+    public static final Language KOREAN = Language.fromString("ko");
+    public static final Language LATVIAN = Language.fromString("lv");
+    public static final Language MALAYALAM = Language.fromString("ml");
+    public static final Language DUTCH = Language.fromString("nl");
+    public static final Language NORWEGIAN = Language.fromString("no");
+    public static final Language POLISH = Language.fromString("pl");
+    public static final Language BRAZILIAN = Language.fromString("pt-BR");
+    public static final Language PORTUGUESE = Language.fromString("pt");
+    public static final Language ROMANIAN = Language.fromString("ro");
+    public static final Language RUSSIAN = Language.fromString("ru");
+    public static final Language NORTHERN_SAMI = Language.fromString("se");
+    public static final Language SLOVAK = Language.fromString("sk");
+    public static final Language SLOVENE = Language.fromString("sl");
+    public static final Language SWEDISH = Language.fromString("sv");
+    public static final Language TAMIL = Language.fromString("ta");
+    public static final Language THAI = Language.fromString("th");
+    public static final Language TAGALOG = Language.fromString("tl");
+    public static final Language TURKISH = Language.fromString("tr");
+    public static final Language UKRAINIAN = Language.fromString("uk");
+    public static final Language CHINESE = Language.fromString("zh");
+    public static final Language CHINESE_SIMPLIFIED = Language.fromString("zh-CN");
+    public static final Language CHINESE_TRADITIONAL = Language.fromString("zh-TW");
 
     private static String toTitleCase(String string) {
         return Character.toUpperCase(string.charAt(0)) + string.substring(1).toLowerCase();
@@ -102,7 +102,7 @@ public final class Language2 implements Serializable {
             return null;
     }
 
-    public static Language2 fromString(String string) {
+    public static Language fromString(String string) {
         if (string == null)
             throw new NullPointerException();
         if (string.isEmpty())
@@ -147,7 +147,7 @@ public final class Language2 implements Serializable {
         if (language == null)
             throw new IllegalArgumentException(string);
 
-        return new Language2(language, script, region, tag.toString());
+        return new Language(language, script, region, tag.toString());
     }
 
     private final String language;
@@ -155,11 +155,11 @@ public final class Language2 implements Serializable {
     private final String region;
     private final String tag;
 
-    public Language2(String language) {
+    public Language(String language) {
         this(language, null, null, language);
     }
 
-    private Language2(String language, String script, String region, String tag) {
+    private Language(String language, String script, String region, String tag) {
         this.language = language;
         this.region = region;
         this.script = script;
@@ -212,7 +212,7 @@ public final class Language2 implements Serializable {
         return tag;
     }
 
-    public boolean isEqualOrMoreGenericThan(Language2 other) {
+    public boolean isEqualOrMoreGenericThan(Language other) {
         if (!language.equals(other.language))
             return false;
         if (script != null && !script.equals(other.script))
@@ -226,8 +226,8 @@ public final class Language2 implements Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Language2 language2 = (Language2) o;
-        return tag.equals(language2.tag);
+        Language language = (Language) o;
+        return tag.equals(language.tag);
     }
 
     @Override

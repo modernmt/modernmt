@@ -1,8 +1,7 @@
 package eu.modernmt.model.corpus.impl.tmx;
 
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
 
@@ -53,7 +52,7 @@ class LanguageCache {
 
         LanguageDirection language = cache.get(probe);
         if (language == null) {
-            language = new LanguageDirection(Language2.fromString(source), Language2.fromString(target));
+            language = new LanguageDirection(Language.fromString(source), Language.fromString(target));
             cache.put(new SKey(source, target), language);
         }
 

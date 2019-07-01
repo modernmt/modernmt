@@ -3,7 +3,7 @@ package eu.modernmt.lang;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class LanguageIndex2 {
+public class LanguageIndex {
 
     public static class Builder {
 
@@ -17,15 +17,15 @@ public class LanguageIndex2 {
             return this;
         }
 
-        public Builder addRule(Language2 pattern, Language2 output) throws IllegalArgumentException {
+        public Builder addRule(Language pattern, Language output) throws IllegalArgumentException {
             rules.computeIfAbsent(pattern.getLanguage(), k -> new ArrayList<>())
                     .add(new LanguageRule(pattern, output));
 
             return this;
         }
 
-        public LanguageIndex2 build() {
-            return new LanguageIndex2(index, rules);
+        public LanguageIndex build() {
+            return new LanguageIndex(index, rules);
         }
 
     }
@@ -36,7 +36,7 @@ public class LanguageIndex2 {
     private final Set<LanguageDirection> languages;
     private final ConcurrentHashMap<LanguageDirection, LanguageDirection> mappingCache;
 
-    private LanguageIndex2(Map<SimpleLanguageDirection, List<LanguageDirection>> index, Map<String, List<LanguageRule>> rules) {
+    private LanguageIndex(Map<SimpleLanguageDirection, List<LanguageDirection>> index, Map<String, List<LanguageRule>> rules) {
         HashSet<LanguageDirection> languages = new HashSet<>();
         for (List<LanguageDirection> entries : index.values())
             languages.addAll(entries);
@@ -118,8 +118,8 @@ public class LanguageIndex2 {
     }
 
     private LanguageDirection transform(LanguageDirection language) {
-        Language2 source = transform(language.source);
-        Language2 target = transform(language.target);
+        Language source = transform(language.source);
+        Language target = transform(language.target);
 
         if (source == null && target == null)
             return null;
@@ -132,7 +132,7 @@ public class LanguageIndex2 {
         return new LanguageDirection(source, target);
     }
 
-    private Language2 transform(Language2 language) {
+    private Language transform(Language language) {
         List<LanguageRule> rules = this.rules.get(language.getLanguage());
 
         if (rules != null) {
@@ -144,7 +144,7 @@ public class LanguageIndex2 {
 
         // Default behaviour is to transform language in its simplest version, with 'language' code only
         // (returning null signals the caller that the object has been returned untouched)
-        return language.getLanguage().equals(language.toLanguageTag()) ? null : new Language2(language.getLanguage());
+        return language.getLanguage().equals(language.toLanguageTag()) ? null : new Language(language.getLanguage());
     }
 
     @Override

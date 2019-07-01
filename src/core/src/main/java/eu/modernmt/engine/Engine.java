@@ -16,7 +16,7 @@ import eu.modernmt.decoder.neural.NeuralDecoder;
 import eu.modernmt.io.FileConst;
 import eu.modernmt.io.Paths;
 import eu.modernmt.lang.LanguageDirection;
-import eu.modernmt.lang.LanguageIndex2;
+import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import org.apache.commons.io.FileUtils;
@@ -46,7 +46,7 @@ public class Engine implements Closeable, DataListenerProvider {
 
     private final Logger logger = LogManager.getLogger(Engine.class);
     private final String name;
-    private final LanguageIndex2 languageIndex;
+    private final LanguageIndex languageIndex;
 
     private final Aligner aligner;
     private final Preprocessor preprocessor;
@@ -56,7 +56,7 @@ public class Engine implements Closeable, DataListenerProvider {
 
     public static Engine load(EngineConfig config) throws BootstrapException {
         String name = config.getName();
-        LanguageIndex2 languageIndex = config.getLanguageIndex();
+        LanguageIndex languageIndex = config.getLanguageIndex();
 
         File models = Paths.join(FileConst.getEngineRoot(name), "models");
 
@@ -130,7 +130,7 @@ public class Engine implements Closeable, DataListenerProvider {
         return new Engine(name, languageIndex, aligner, preprocessor, postprocessor, contextAnalyzer, decoder);
     }
 
-    protected Engine(String name, LanguageIndex2 languageIndex,
+    protected Engine(String name, LanguageIndex languageIndex,
                      Aligner aligner, Preprocessor preprocessor, Postprocessor postprocessor, ContextAnalyzer contextAnalyzer, Decoder decoder) {
         this.name = name;
         this.languageIndex = languageIndex;
@@ -174,7 +174,7 @@ public class Engine implements Closeable, DataListenerProvider {
         return postprocessor;
     }
 
-    public LanguageIndex2 getLanguageIndex() {
+    public LanguageIndex getLanguageIndex() {
         return this.languageIndex;
     }
 

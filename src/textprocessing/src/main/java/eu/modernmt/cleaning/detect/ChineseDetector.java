@@ -4,7 +4,7 @@ package eu.modernmt.cleaning.detect;
  */
 
 
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedReader;
@@ -83,7 +83,7 @@ public class ChineseDetector {
      * @param string input string to convert
      * @return language
      */
-    public Language2 detect(String string) {
+    public Language detect(String string) {
         int simplifiedCount = 0, traditionalCount = 0;
         PrimitiveIterator.OfInt stream = string.codePoints().iterator();
 
@@ -98,11 +98,11 @@ public class ChineseDetector {
         }
 
         if (simplifiedCount == traditionalCount)
-            return Language2.CHINESE;
+            return Language.CHINESE;
         else if (simplifiedCount > traditionalCount)
-            return Language2.CHINESE_SIMPLIFIED;
+            return Language.CHINESE_SIMPLIFIED;
         else // (traditionalCount > simplifiedCount)
-            return Language2.CHINESE_TRADITIONAL;
+            return Language.CHINESE_TRADITIONAL;
     }
 
 }

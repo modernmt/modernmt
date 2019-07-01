@@ -4,7 +4,7 @@ import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
 import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.io.UnixLineWriter;
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.model.corpus.Corpus;
 
 import java.io.IOException;
@@ -18,10 +18,10 @@ import java.io.StringWriter;
 public class StringCorpus implements Corpus {
 
     private final String name;
-    private final Language2 language;
+    private final Language language;
     private String content;
 
-    public StringCorpus(String name, Language2 language, String content) {
+    public StringCorpus(String name, Language language, String content) {
         this.name = name;
         this.language = language;
         this.content = content;
@@ -33,7 +33,7 @@ public class StringCorpus implements Corpus {
     }
 
     @Override
-    public Language2 getLanguage() {
+    public Language getLanguage() {
         return language;
     }
 

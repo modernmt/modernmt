@@ -1,6 +1,6 @@
 package eu.modernmt.processing.builder;
 
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 
 import java.util.HashSet;
 
@@ -32,7 +32,7 @@ class FilteredProcessorBuilder extends ProcessorBuilder {
             return new OrFilter(definition.split("\\s+"));
     }
 
-    public boolean accept(Language2 sourceLanguage, Language2 targetLanguage) {
+    public boolean accept(Language sourceLanguage, Language targetLanguage) {
         if (this.sourceFilter != null && !this.sourceFilter.accept(sourceLanguage))
             return false;
         if (this.targetFilter != null && !this.targetFilter.accept(targetLanguage))
@@ -42,7 +42,7 @@ class FilteredProcessorBuilder extends ProcessorBuilder {
 
     private interface Filter {
 
-        boolean accept(Language2 language);
+        boolean accept(Language language);
 
     }
 
@@ -54,7 +54,7 @@ class FilteredProcessorBuilder extends ProcessorBuilder {
             this.languages = new HashSet<>(languages.length);
 
             for (String lang : languages) {
-                Language2 parsed = Language2.fromString(lang);
+                Language parsed = Language.fromString(lang);
                 if (!parsed.getLanguage().equals(parsed.toLanguageTag()))
                     throw new IllegalArgumentException("Text processing framework only supports language-only tags, but found complex language: " + lang);
 
@@ -63,7 +63,7 @@ class FilteredProcessorBuilder extends ProcessorBuilder {
         }
 
         @Override
-        public boolean accept(Language2 language) {
+        public boolean accept(Language language) {
             return language != null && languages.contains(language.getLanguage());
         }
     }
@@ -75,7 +75,7 @@ class FilteredProcessorBuilder extends ProcessorBuilder {
         }
 
         @Override
-        public boolean accept(Language2 language) {
+        public boolean accept(Language language) {
             return !super.accept(language);
         }
     }

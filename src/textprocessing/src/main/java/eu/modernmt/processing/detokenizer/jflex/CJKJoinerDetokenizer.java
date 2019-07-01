@@ -1,6 +1,6 @@
 package eu.modernmt.processing.detokenizer.jflex;
 
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.processing.detokenizer.jflex.annotators.CJKJoinerAnnotator;
 
 import java.io.Reader;
@@ -10,12 +10,12 @@ import java.io.Reader;
  */
 public class CJKJoinerDetokenizer extends JFlexDetokenizer {
 
-    public CJKJoinerDetokenizer(Language2 sourceLanguage, Language2 targetLanguage) {
+    public CJKJoinerDetokenizer(Language sourceLanguage, Language targetLanguage) {
         super(sourceLanguage, targetLanguage);
     }
 
     @Override
-    protected JFlexSpaceAnnotator getAnnotator(Language2 language) {
+    protected JFlexSpaceAnnotator getAnnotator(Language language) {
         return new CJKJoinerAnnotator((Reader) null);
     }
 

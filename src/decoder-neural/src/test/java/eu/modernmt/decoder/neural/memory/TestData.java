@@ -2,7 +2,7 @@ package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
@@ -17,13 +17,13 @@ import java.util.*;
  */
 public class TestData {
 
-    public static final Language2 EN = Language2.fromString("en");
-    public static final Language2 EN_US = Language2.fromString("en-US");
-    public static final Language2 ES = Language2.fromString("es");
-    public static final Language2 FR = Language2.fromString("fr");
-    public static final Language2 FR_CA = Language2.fromString("fr-CA");
-    public static final Language2 IT = Language2.fromString("it");
-    public static final Language2 IT_CH = Language2.fromString("it-CH");
+    public static final Language EN = Language.fromString("en");
+    public static final Language EN_US = Language.fromString("en-US");
+    public static final Language ES = Language.fromString("es");
+    public static final Language FR = Language.fromString("fr");
+    public static final Language FR_CA = Language.fromString("fr-CA");
+    public static final Language IT = Language.fromString("it");
+    public static final Language IT_CH = Language.fromString("it-CH");
 
     public static final LanguageDirection FR__ES = new LanguageDirection(TestData.FR, TestData.ES);
     public static final LanguageDirection FR__EN = new LanguageDirection(TestData.FR, TestData.EN);

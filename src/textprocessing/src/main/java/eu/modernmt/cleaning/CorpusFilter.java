@@ -1,6 +1,6 @@
 package eu.modernmt.cleaning;
 
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 
 public interface CorpusFilter {
 
@@ -13,7 +13,7 @@ public interface CorpusFilter {
         void onEnd();
     }
 
-    Initializer getInitializer(Language2 language);
+    Initializer getInitializer(Language language);
 
     boolean accept(String line, int index);
 

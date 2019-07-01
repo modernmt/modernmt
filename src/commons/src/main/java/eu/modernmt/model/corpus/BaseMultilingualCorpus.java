@@ -2,7 +2,7 @@ package eu.modernmt.model.corpus;
 
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 
 import java.io.IOException;
@@ -65,7 +65,7 @@ public abstract class BaseMultilingualCorpus implements MultilingualCorpus {
         }
 
         @Override
-        public Language2 getLanguage() {
+        public Language getLanguage() {
             return source ? direction.source : direction.target;
         }
 

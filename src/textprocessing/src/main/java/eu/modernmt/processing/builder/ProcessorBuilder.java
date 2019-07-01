@@ -1,6 +1,6 @@
 package eu.modernmt.processing.builder;
 
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 
@@ -17,7 +17,7 @@ class ProcessorBuilder extends AbstractBuilder {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <P, R> TextProcessor<P, R> create(Language2 sourceLanguage, Language2 targetLanguage) throws ProcessingException {
+    public <P, R> TextProcessor<P, R> create(Language sourceLanguage, Language targetLanguage) throws ProcessingException {
         Class<? extends TextProcessor<P, R>> cls;
         try {
             cls = (Class<? extends TextProcessor<P, R>>) Class.forName(className);

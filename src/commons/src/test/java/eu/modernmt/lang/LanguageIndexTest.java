@@ -14,15 +14,15 @@ import static org.junit.Assert.assertNull;
  */
 public class LanguageIndexTest {
 
-    private LanguageIndex2 index;
+    private LanguageIndex index;
 
-    private static Language2 l(String s) {
-        return Language2.fromString(s);
+    private static Language l(String s) {
+        return Language.fromString(s);
     }
 
     private static LanguageDirection lp(String s) {
         String[] parts = s.split("\\s+");
-        return new LanguageDirection(Language2.fromString(parts[0]), Language2.fromString(parts[1]));
+        return new LanguageDirection(Language.fromString(parts[0]), Language.fromString(parts[1]));
     }
 
     private static List<LanguageDirection> list(String string) {
@@ -34,7 +34,7 @@ public class LanguageIndexTest {
 
     @Before
     public void setup() {
-        index = new LanguageIndex2.Builder()
+        index = new LanguageIndex.Builder()
                 .add(lp("en it"))
                 .add(lp("en fr"))
                 .add(lp("fr en"))

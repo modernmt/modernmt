@@ -1,6 +1,6 @@
 package eu.modernmt.processing.builder;
 
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.ProcessingPipeline;
 import eu.modernmt.processing.TextProcessor;
@@ -23,7 +23,7 @@ public abstract class PipelineBuilder<P, R> {
     }
 
     @SuppressWarnings("unchecked")
-    public final ProcessingPipeline<P, R> newPipeline(Language2 source, Language2 target) throws ProcessingException {
+    public final ProcessingPipeline<P, R> newPipeline(Language source, Language target) throws ProcessingException {
         ArrayList<TextProcessor> processors = new ArrayList<>(builders.size());
 
         for (AbstractBuilder builder : builders) {

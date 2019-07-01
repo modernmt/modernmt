@@ -1,7 +1,7 @@
 package eu.modernmt.cleaning.filters;
 
 import eu.modernmt.cleaning.CorpusFilter;
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -18,7 +18,7 @@ public class RareNgramFilter implements CorpusFilter {
     private HashSet<String> words = null;
 
     @Override
-    public Initializer getInitializer(Language2 language) {
+    public Initializer getInitializer(Language language) {
         return new Initializer() {
 
             private final HashMap<String, Counter> map = new HashMap<>();

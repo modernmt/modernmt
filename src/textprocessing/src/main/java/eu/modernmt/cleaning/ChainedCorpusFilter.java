@@ -1,6 +1,6 @@
 package eu.modernmt.cleaning;
 
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 
 import java.util.ArrayList;
 
@@ -45,7 +45,7 @@ public class ChainedCorpusFilter implements CorpusFilter, CorpusNormalizer {
     // - CorpusFilter --------------------------------------------------------------------------------------------------
 
     @Override
-    public Initializer getInitializer(Language2 language) {
+    public Initializer getInitializer(Language language) {
         final ArrayList<CorpusFilter.Initializer> initializers = new ArrayList<>(filters.length);
 
         for (CorpusFilter filter : filters) {

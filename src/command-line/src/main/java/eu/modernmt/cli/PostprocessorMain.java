@@ -1,7 +1,7 @@
 package eu.modernmt.cli;
 
 import eu.modernmt.io.*;
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
@@ -49,8 +49,8 @@ public class PostprocessorMain {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
-            Language2 _source = Language2.fromString(cli.getOptionValue('s'));
-            Language2 _target = cli.hasOption('t') ? Language2.fromString(cli.getOptionValue('t')) : null;
+            Language _source = Language.fromString(cli.getOptionValue('s'));
+            Language _target = cli.hasOption('t') ? Language.fromString(cli.getOptionValue('t')) : null;
             language = new LanguageDirection(_source, _target);
 
             source = cli.hasOption("source") ? new File(cli.getOptionValue("source")) : null;

@@ -7,11 +7,11 @@ import java.io.Serializable;
  */
 public final class LanguageDirection implements Serializable {
 
-    public final Language2 source;
-    public final Language2 target;
+    public final Language source;
+    public final Language target;
     private transient LanguageDirection reversed = null;
 
-    public LanguageDirection(Language2 source, Language2 target) {
+    public LanguageDirection(Language source, Language target) {
         this.source = source;
         this.target = target;
     }

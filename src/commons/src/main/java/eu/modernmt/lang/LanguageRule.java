@@ -2,10 +2,10 @@ package eu.modernmt.lang;
 
 class LanguageRule {
 
-    private final Language2 pattern;
-    private final Language2 outputLanguage;
+    private final Language pattern;
+    private final Language outputLanguage;
 
-    public LanguageRule(Language2 pattern, Language2 outputLanguage) {
+    public LanguageRule(Language pattern, Language outputLanguage) {
         this.pattern = pattern;
         this.outputLanguage = outputLanguage;
     }
@@ -14,11 +14,11 @@ class LanguageRule {
         return pattern.getLanguage();
     }
 
-    public boolean match(Language2 language) {
+    public boolean match(Language language) {
         return pattern.isEqualOrMoreGenericThan(language);
     }
 
-    public Language2 getOutputLanguage() {
+    public Language getOutputLanguage() {
         return outputLanguage;
     }
 

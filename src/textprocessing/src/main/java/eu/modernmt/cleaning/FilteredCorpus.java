@@ -2,7 +2,7 @@ package eu.modernmt.cleaning;
 
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.CorpusWrapper;
 import org.apache.commons.io.IOUtils;
@@ -28,7 +28,7 @@ public class FilteredCorpus implements CorpusWrapper {
     }
 
     @Override
-    public Language2 getLanguage() {
+    public Language getLanguage() {
         return corpus.getLanguage();
     }
 

@@ -1,7 +1,7 @@
 package eu.modernmt.cleaning;
 
 
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
 import java.util.HashMap;
@@ -16,7 +16,7 @@ public class MultilingualCorpusFilterAdapter implements MultilingualCorpusFilter
 
     private final Factory factory;
     private final boolean hasInitializer;
-    private final HashMap<Language2, CorpusFilter> filters = new HashMap<>();
+    private final HashMap<Language, CorpusFilter> filters = new HashMap<>();
 
     public MultilingualCorpusFilterAdapter(Class<? extends CorpusFilter> clazz) {
         this(() -> {
@@ -30,7 +30,7 @@ public class MultilingualCorpusFilterAdapter implements MultilingualCorpusFilter
 
     public MultilingualCorpusFilterAdapter(Factory factory) {
         this.factory = factory;
-        this.hasInitializer = (factory.create().getInitializer(Language2.ENGLISH) != null);
+        this.hasInitializer = (factory.create().getInitializer(Language.ENGLISH) != null);
     }
 
     @Override
@@ -38,7 +38,7 @@ public class MultilingualCorpusFilterAdapter implements MultilingualCorpusFilter
         if (!hasInitializer)
             return null;
 
-        HashMap<Language2, CorpusFilter.Initializer> initializers = new HashMap<>();
+        HashMap<Language, CorpusFilter.Initializer> initializers = new HashMap<>();
 
         return new Initializer() {
             @Override
@@ -54,7 +54,7 @@ public class MultilingualCorpusFilterAdapter implements MultilingualCorpusFilter
                         .onLine(pair.target, index);
             }
 
-            private CorpusFilter.Initializer createInitializer(Language2 language) {
+            private CorpusFilter.Initializer createInitializer(Language language) {
                 CorpusFilter filter = filters.computeIfAbsent(language, (l) -> factory.create());
                 CorpusFilter.Initializer initializer = filter.getInitializer(language);
                 initializer.onBegin();

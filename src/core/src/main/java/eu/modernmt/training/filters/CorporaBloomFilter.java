@@ -6,7 +6,7 @@ import com.google.common.hash.PrimitiveSink;
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
 import eu.modernmt.io.UTF8Charset;
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.model.corpus.BaseMultilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -87,7 +87,7 @@ public class CorporaBloomFilter {
             }
 
             @Override
-            public Language2 getLanguage() {
+            public Language getLanguage() {
                 return corpus.getLanguage();
             }
 

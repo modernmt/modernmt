@@ -3,7 +3,7 @@ package eu.modernmt.cli;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.cli.utils.FileFormat;
 import eu.modernmt.io.IOCorporaUtils;
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
@@ -51,8 +51,8 @@ public class ConvertMain {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
-            Language2 source = Language2.fromString(cli.getOptionValue("s"));
-            Language2 target = Language2.fromString(cli.getOptionValue("t"));
+            Language source = Language.fromString(cli.getOptionValue("s"));
+            Language target = Language.fromString(cli.getOptionValue("t"));
             language = new LanguageDirection(source, target);
 
             input = new File(cli.getOptionValue("input"));

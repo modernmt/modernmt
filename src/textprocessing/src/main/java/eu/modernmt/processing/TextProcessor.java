@@ -1,6 +1,6 @@
 package eu.modernmt.processing;
 
-import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.UnsupportedLanguageException;
 
 import java.lang.reflect.Constructor;
@@ -12,11 +12,11 @@ import java.util.Map;
  */
 public abstract class TextProcessor<P, R> {
 
-    public static <T extends TextProcessor> T newInstance(Class<T> cls, Language2 sourceLanguage, Language2 targetLanguage) throws ProcessingException {
+    public static <T extends TextProcessor> T newInstance(Class<T> cls, Language sourceLanguage, Language targetLanguage) throws ProcessingException {
         boolean defaultConstructor = false;
         Constructor<? extends T> constructor;
         try {
-            constructor = cls.getConstructor(Language2.class, Language2.class);
+            constructor = cls.getConstructor(Language.class, Language.class);
         } catch (NoSuchMethodException e1) {
             try {
                 constructor = cls.getConstructor();
@@ -48,7 +48,7 @@ public abstract class TextProcessor<P, R> {
         // Language independent TextProcessor
     }
 
-    public TextProcessor(Language2 sourceLanguage, Language2 targetLanguage) throws UnsupportedLanguageException {
+    public TextProcessor(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
         // TextProcessor depends upon source and/or target language
     }
 
