@@ -136,7 +136,7 @@ class CheckpointRegistry(object):
                 model_state['decoder.embed_tokens.weight'] = \
                     resize_embeddings(model_state['decoder.embed_tokens.weight'], embeddings_size)
 
-            args.data = [checkpoint_path]
+            args.data = checkpoint_path
             return args, model_state, decode_stats
 
         def _mk_checkpoint(self, task, model_state, decode_stats, multilingual_target):

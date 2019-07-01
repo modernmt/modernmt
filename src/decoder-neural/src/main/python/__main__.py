@@ -27,14 +27,20 @@ def main(argv=None):
 
     # Main loop
     # ------------------------------------------------------------------------------------------------------------------
-    config = ModelConfig.load(args.model)
+    try:
+        config = ModelConfig.load(args.model)
 
-    builder = CheckpointRegistry.Builder()
-    for name, checkpoint_path in config.checkpoints:
-        builder.register(name, checkpoint_path)
-    checkpoints = builder.build(args.gpu)
+        builder = CheckpointRegistry.Builder()
+        for name, checkpoint_path in config.checkpoints:
+            builder.register(name, checkpoint_path)
+        checkpoints = builder.build(args.gpu)
 
-    decoder = MMTDecoder(checkpoints, device=args.gpu, tuning_ops=config.tuning)
+        decoder = MMTDecoder(checkpoints, device=args.gpu, tuning_ops=config.tuning)
+    except Exception as e:
+        stdout.write('ERROR: %s\n' % str(e))
+        stdout.flush()
+        raise
+
     utils.serve_forever(sys.stdin, stdout, decoder)
 
 

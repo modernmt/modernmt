@@ -180,7 +180,7 @@ class MMTDecoder(object):
             max_len_a=0, max_len_b=1, min_len=1,
             stop_early=True, normalize_scores=True,
             len_penalty=1, unk_penalty=0,
-            sampling=False, sampling_topk=-1, sampling_temperature=1,
+            sampling=False, sampling_topk=-1, temperature=1,
             diverse_beam_groups=1, diverse_beam_strength=0.5
         )
 

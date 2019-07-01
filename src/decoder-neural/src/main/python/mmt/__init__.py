@@ -1,13 +1,10 @@
 import locale
 import os
 
-from fairseq import options
-from fairseq.data import data_utils
 from fairseq.models import register_model_architecture
 from fairseq.models.transformer import base_architecture
 from fairseq.tasks import register_task
 from fairseq.tasks.translation import TranslationTask
-
 from mmt.textencoder import SubwordDictionary
 
 if locale.getpreferredencoding().lower() != 'utf-8':
@@ -16,31 +13,19 @@ if locale.getpreferredencoding().lower() != 'utf-8':
 
 @register_task('mmt_translation')
 class MMTTranslationTask(TranslationTask):
-    def __init__(self, args, subword_dict):
+    def __init__(self, args, subword_dict, _):
         super().__init__(args, subword_dict, subword_dict)
         self._subword_dict = subword_dict
 
     @classmethod
     def load_dictionary(cls, filename):
+        if os.path.basename(filename) != 'model.vcb':
+            filename = os.path.join(os.path.dirname(filename), 'model.vcb')
         return SubwordDictionary.load(filename)
 
     @classmethod
     def build_dictionary(cls, filenames, workers=1, threshold=-1, nwords=-1, padding_factor=8):
         raise NotImplementedError
-
-    @classmethod
-    def setup_task(cls, args, **kwargs):
-        args.left_pad_source = options.eval_bool(args.left_pad_source)
-        args.left_pad_target = options.eval_bool(args.left_pad_target)
-
-        # find language pair automatically
-        if args.source_lang is None or args.target_lang is None:
-            args.source_lang, args.target_lang = data_utils.infer_language_pair(args.data[0])
-
-        # load dictionary
-        subword_dict = SubwordDictionary.load(os.path.join(args.data[0], 'model.vcb'))
-
-        return cls(args, subword_dict)
 
 
 @register_model_architecture('transformer', 'transformer_mmt_big')
