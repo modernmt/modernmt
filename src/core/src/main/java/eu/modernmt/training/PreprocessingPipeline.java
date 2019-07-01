@@ -2,6 +2,7 @@ package eu.modernmt.training;
 
 import eu.modernmt.io.IOCorporaUtils;
 import eu.modernmt.lang.LanguageDirection;
+import eu.modernmt.model.corpus.MaskedMultilingualCorpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
@@ -43,7 +44,7 @@ public class PreprocessingPipeline {
         // Masking input corpora
         ArrayList<MultilingualCorpus> maskedMultilingualCorpora = new ArrayList<>(corpora.size());
         for (MultilingualCorpus corpus : corpora)
-            maskedMultilingualCorpora.add(new MultilingualCorpusMask(language, corpus));
+            maskedMultilingualCorpora.add(new MaskedMultilingualCorpus(language, corpus));
 
         // Start processing
         Preprocessor preprocessor = new Preprocessor(threads);

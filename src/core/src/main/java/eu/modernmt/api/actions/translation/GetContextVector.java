@@ -1,17 +1,17 @@
 package eu.modernmt.api.actions.translation;
 
-import eu.modernmt.context.ContextAnalyzerException;
-import eu.modernmt.facade.ModernMT;
-import eu.modernmt.io.FileProxy;
-import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguageDirection;
-import eu.modernmt.model.ContextVector;
-import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.api.actions.util.ContextUtils;
 import eu.modernmt.api.framework.*;
 import eu.modernmt.api.framework.actions.ObjectAction;
 import eu.modernmt.api.framework.routing.Route;
 import eu.modernmt.api.model.ContextVectorResult;
+import eu.modernmt.context.ContextAnalyzerException;
+import eu.modernmt.facade.ModernMT;
+import eu.modernmt.io.FileProxy;
+import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.LanguageDirection;
+import eu.modernmt.model.ContextVector;
+import eu.modernmt.persistence.PersistenceException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -47,7 +47,7 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
     @Override
     protected ContextVectorResult execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, PersistenceException, IOException {
         Params params = (Params) _params;
-        Map<Language, ContextVector> contexts;
+        Map<Language2, ContextVector> contexts;
 
         File temp = null;
 
@@ -93,8 +93,8 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
         public static final int DEFAULT_LIMIT = 10;
 
         public final UUID user;
-        public final Language source;
-        public final Language[] targets;
+        public final Language2 source;
+        public final Language2[] targets;
         public final int limit;
         public final String text;
         public final File localFile;
@@ -108,15 +108,15 @@ public class GetContextVector extends ObjectAction<ContextVectorResult> {
             this.user = getUUID("user", null);
             this.limit = getInt("limit", DEFAULT_LIMIT);
 
-            Language sourceLanguage = getLanguage("source", null);
-            Language[] targetLanguages = getLanguageArray("targets", null);
+            Language2 sourceLanguage = getLanguage("source", null);
+            Language2[] targetLanguages = getLanguageArray("targets", null);
 
             if (sourceLanguage == null && targetLanguages == null) {
                 LanguageDirection engineDirection = ModernMT.getNode().getEngine().getLanguageIndex().asSingleLanguagePair();
 
                 if (engineDirection != null) {
                     this.source = engineDirection.source;
-                    this.targets = new Language[]{engineDirection.target};
+                    this.targets = new Language2[]{engineDirection.target};
                     this.backwardCompatible = true;
                 } else {
                     throw new ParameterParsingException("source");

@@ -6,7 +6,7 @@ import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.lang.LanguageDirection;
-import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguageIndex2;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Preprocessor;
@@ -25,7 +25,7 @@ class KafkaDataBatch implements DataBatch {
     private final ArrayList<Deletion> deletions = new ArrayList<>();
     private final HashMap<Short, Long> currentPositions = new HashMap<>();
 
-    private final LanguageIndex languageIndex;
+    private final LanguageIndex2 languageIndex;
     private final Preprocessor preprocessor;
     private final Aligner aligner;
     private final KafkaDataManager manager;
@@ -33,7 +33,7 @@ class KafkaDataBatch implements DataBatch {
     private final Stack<DataPartition> cachedPartitions = new Stack<>();
     private final HashMap<LanguageDirection, DataPartition> cachedDataSet = new HashMap<>();
 
-    public KafkaDataBatch(LanguageIndex languageIndex, Preprocessor preprocessor, Aligner aligner, KafkaDataManager manager) {
+    public KafkaDataBatch(LanguageIndex2 languageIndex, Preprocessor preprocessor, Aligner aligner, KafkaDataManager manager) {
         this.languageIndex = languageIndex;
         this.preprocessor = preprocessor;
         this.aligner = aligner;

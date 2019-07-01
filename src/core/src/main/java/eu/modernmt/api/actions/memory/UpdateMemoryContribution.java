@@ -1,17 +1,17 @@
 package eu.modernmt.api.actions.memory;
 
-import eu.modernmt.data.DataManagerException;
-import eu.modernmt.facade.ModernMT;
-import eu.modernmt.lang.Language;
-import eu.modernmt.lang.LanguageDirection;
-import eu.modernmt.model.ImportJob;
-import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.api.framework.HttpMethod;
 import eu.modernmt.api.framework.Parameters;
 import eu.modernmt.api.framework.RESTRequest;
 import eu.modernmt.api.framework.actions.ObjectAction;
 import eu.modernmt.api.framework.routing.Route;
 import eu.modernmt.api.framework.routing.TemplateException;
+import eu.modernmt.data.DataManagerException;
+import eu.modernmt.facade.ModernMT;
+import eu.modernmt.lang.Language2;
+import eu.modernmt.lang.LanguageDirection;
+import eu.modernmt.model.ImportJob;
+import eu.modernmt.persistence.PersistenceException;
 
 /**
  * Created by davide on 15/12/15.
@@ -50,8 +50,8 @@ public class UpdateMemoryContribution extends ObjectAction<ImportJob> {
             previousSentence = getString("old_sentence", false);
             previousTranslation = getString("old_translation", false);
 
-            Language sourceLanguage = getLanguage("source");
-            Language targetLanguage = getLanguage("target");
+            Language2 sourceLanguage = getLanguage("source");
+            Language2 targetLanguage = getLanguage("target");
             direction = new LanguageDirection(sourceLanguage, targetLanguage);
         }
     }

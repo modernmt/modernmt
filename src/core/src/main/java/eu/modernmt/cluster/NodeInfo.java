@@ -1,7 +1,7 @@
 package eu.modernmt.cluster;
 
 import com.hazelcast.core.Member;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.LanguageDirection;
 
 import java.util.*;
@@ -139,8 +139,8 @@ public class NodeInfo {
             String sourceTag = tags[0].substring(1);
             String targetTag = tags[1].substring(0, tags[1].length() - 1);
 
-            Language source = Language.fromString(sourceTag);
-            Language target = Language.fromString(targetTag);
+            Language2 source = Language2.fromString(sourceTag);
+            Language2 target = Language2.fromString(targetTag);
 
             result.add(new LanguageDirection(source, target));
         }

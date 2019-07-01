@@ -1,9 +1,13 @@
 package eu.modernmt.api.actions.memory;
 
+import eu.modernmt.api.framework.*;
+import eu.modernmt.api.framework.actions.ObjectAction;
+import eu.modernmt.api.framework.routing.Route;
+import eu.modernmt.api.framework.routing.TemplateException;
 import eu.modernmt.data.DataManagerException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.io.FileProxy;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -11,10 +15,6 @@ import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
 import eu.modernmt.persistence.PersistenceException;
-import eu.modernmt.api.framework.*;
-import eu.modernmt.api.framework.actions.ObjectAction;
-import eu.modernmt.api.framework.routing.Route;
-import eu.modernmt.api.framework.routing.TemplateException;
 
 import java.io.File;
 
@@ -77,8 +77,8 @@ public class AddToMemoryCorpus extends ObjectAction<ImportJob> {
                         corpus = new TMXCorpus(getFileProxy(null, gzipped));
                         break;
                     case PARALLEL:
-                        Language sourceLanguage = getLanguage("source");
-                        Language targetLanguage = getLanguage("target");
+                        Language2 sourceLanguage = getLanguage("source");
+                        Language2 targetLanguage = getLanguage("target");
                         LanguageDirection language = new LanguageDirection(sourceLanguage, targetLanguage);
 
                         corpus = new ParallelFileCorpus(language, getFileProxy("source", gzipped), getFileProxy("target", gzipped));
@@ -94,8 +94,8 @@ public class AddToMemoryCorpus extends ObjectAction<ImportJob> {
                 if (target == null)
                     throw new ParameterParsingException("translation");
 
-                Language sourceLanguage = getLanguage("source");
-                Language targetLanguage = getLanguage("target");
+                Language2 sourceLanguage = getLanguage("source");
+                Language2 targetLanguage = getLanguage("target");
                 direction = new LanguageDirection(sourceLanguage, targetLanguage);
 
                 corpus = null;

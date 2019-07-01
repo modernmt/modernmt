@@ -6,7 +6,7 @@ import eu.modernmt.api.framework.routing.RouterServlet;
 import eu.modernmt.api.model.ContextVectorResult;
 import eu.modernmt.api.model.TranslationResponse;
 import eu.modernmt.api.serializers.*;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.ImportJob;
@@ -28,7 +28,7 @@ public class ApiServer {
         JSONSerializer.registerCustomSerializer(TranslationResponse.class, new TranslationResponseSerializer());
         JSONSerializer.registerCustomSerializer(Alignment.class, new AlignmentSerializer());
         JSONSerializer.registerCustomSerializer(ContextVectorResult.class, new ContextVectorResultSerializer());
-        JSONSerializer.registerCustomSerializer(Language.class, new LanguageSerializer());
+        JSONSerializer.registerCustomSerializer(Language2.class, new LanguageSerializer());
         JSONSerializer.registerCustomSerializer(LanguageDirection.class, new LanguagePairSerializer());
         JSONSerializer.registerCustomSerializer(ImportJob.class, new ImportJobSerializer());
     }

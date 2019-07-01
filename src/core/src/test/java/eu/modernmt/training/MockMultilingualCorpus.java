@@ -1,6 +1,6 @@
 package eu.modernmt.training;
 
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.BaseMultilingualCorpus;
 
@@ -15,7 +15,7 @@ import java.util.Date;
 public class MockMultilingualCorpus extends BaseMultilingualCorpus {
 
     private static final long MOCK_EPOCH = new Date().getTime();
-    private static final LanguageDirection MOCK_LANGUAGE = new LanguageDirection(Language.ENGLISH, Language.ITALIAN);
+    private static final LanguageDirection MOCK_LANGUAGE = new LanguageDirection(Language2.ENGLISH, Language2.ITALIAN);
 
     private final String name;
     private final StringPair[] lines;

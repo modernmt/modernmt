@@ -3,7 +3,7 @@ package eu.modernmt.cluster.kafka;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.io.UTF8Charset;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
@@ -78,8 +78,8 @@ public class KafkaPacket {
 
                 Charset charset = UTF8Charset.get();
 
-                Language source = Language.fromString(deserializeString(buffer, charset));
-                Language target = Language.fromString(deserializeString(buffer, charset));
+                Language2 source = Language2.fromString(deserializeString(buffer, charset));
+                Language2 target = Language2.fromString(deserializeString(buffer, charset));
                 direction = new LanguageDirection(source, target);
 
                 sentence = deserializeString(buffer, charset);

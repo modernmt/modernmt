@@ -1,6 +1,6 @@
 package eu.modernmt.training.partitioning;
 
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
 import org.apache.commons.io.FileUtils;
@@ -37,7 +37,7 @@ public class CorporaPartition {
             }
         }
 
-        Language language = sourceCorpus.getLanguage();
+        Language2 language = sourceCorpus.getLanguage();
         String name = sourceCorpus.getName();
         String filename = name + "." + language.toLanguageTag();
 

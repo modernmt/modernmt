@@ -4,7 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
-import eu.modernmt.lang.Language;
+import eu.modernmt.lang.Language2;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.api.framework.routing.RouteTemplate;
 
@@ -205,35 +205,35 @@ public class Parameters {
         }
     }
 
-    public Language getLanguage(String name) throws ParameterParsingException {
-        return Language.fromString(getString(name, false));
+    public Language2 getLanguage(String name) throws ParameterParsingException {
+        return Language2.fromString(getString(name, false));
     }
 
-    public Language getLanguage(String name, Language def) throws ParameterParsingException {
+    public Language2 getLanguage(String name, Language2 def) throws ParameterParsingException {
         String tag = getString(name, false, null);
-        return tag == null ? def : Language.fromString(tag);
+        return tag == null ? def : Language2.fromString(tag);
     }
 
-    public Language[] getLanguageArray(String name) throws ParameterParsingException {
+    public Language2[] getLanguageArray(String name) throws ParameterParsingException {
         String[] rawArray = getString(name, false).split(",");
-        Language[] array = new Language[rawArray.length];
+        Language2[] array = new Language2[rawArray.length];
 
         for (int i = 0; i < rawArray.length; i++)
-            array[i] = Language.fromString(rawArray[i]);
+            array[i] = Language2.fromString(rawArray[i]);
 
         return array;
     }
 
-    public Language[] getLanguageArray(String name, Language[] def) throws ParameterParsingException {
+    public Language2[] getLanguageArray(String name, Language2[] def) throws ParameterParsingException {
         String rawValue = getString(name, false, null);
         if (rawValue == null)
             return def;
 
         String[] rawArray = rawValue.split(",");
-        Language[] array = new Language[rawArray.length];
+        Language2[] array = new Language2[rawArray.length];
 
         for (int i = 0; i < rawArray.length; i++)
-            array[i] = Language.fromString(rawArray[i]);
+            array[i] = Language2.fromString(rawArray[i]);
 
         return array;
     }
@@ -250,8 +250,8 @@ public class Parameters {
      * @throws ParameterParsingException
      */
     public LanguageDirection getLanguagePair(String sourceName, String targetName, LanguageDirection def) throws ParameterParsingException {
-        Language sourceLanguage = getLanguage(sourceName, null);
-        Language targetLanguage = getLanguage(targetName, null);
+        Language2 sourceLanguage = getLanguage(sourceName, null);
+        Language2 targetLanguage = getLanguage(targetName, null);
 
         if (sourceLanguage == null && targetLanguage == null) {
             return def;
