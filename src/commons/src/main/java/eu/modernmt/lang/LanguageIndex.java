@@ -17,7 +17,7 @@ public class LanguageIndex {
             return this;
         }
 
-        public Builder addRule(Language pattern, Language output) throws IllegalArgumentException {
+        public Builder addRule(LanguagePattern pattern, Language output) throws IllegalArgumentException {
             rules.computeIfAbsent(pattern.getLanguage(), k -> new ArrayList<>())
                     .add(new LanguageRule(pattern, output));
 

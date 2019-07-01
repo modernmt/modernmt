@@ -4,6 +4,7 @@ import eu.modernmt.config.*;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.lang.LanguagePattern;
 import org.w3c.dom.Element;
 
 /**
@@ -87,18 +88,20 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
             return;
 
         for (Element rule : rules) {
-            Language pattern = getLanguageAttribute(rule, "match");
-            if (pattern == null)
+            String _pattern = getStringAttribute(rule, "match");
+            if (_pattern == null)
                 throw new ConfigException("Missing 'match' attribute");
 
-            Language value = getLanguageAttribute(rule, "value");
-            if (value == null)
-                throw new ConfigException("Missing 'value' attribute");
-
             try {
+                LanguagePattern pattern = LanguagePattern.parse(_pattern);
+
+                Language value = getLanguageAttribute(rule, "value");
+                if (value == null)
+                    throw new ConfigException("Missing 'value' attribute");
+
                 builder.addRule(pattern, value);
             } catch (IllegalArgumentException e) {
-                throw new ConfigException("Invalid 'match' attribute: " + pattern, e);
+                throw new ConfigException("Invalid 'match' attribute: " + _pattern, e);
             }
         }
     }
