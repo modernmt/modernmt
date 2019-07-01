@@ -160,7 +160,7 @@ public class TestData {
     }
 
     public static TranslationUnit tu(int channel, long channelPosition, UUID owner, long memory, LanguageDirection language, String source, String target, Date timestamp) {
-        return new TranslationUnit((short) channel, channelPosition, owner, language, memory,
+        return new TranslationUnit((short) channel, channelPosition, owner, language, language, memory,
                 source, target, null, null, timestamp,
                 sentence(source), sentence(target), null);
     }
@@ -172,7 +172,7 @@ public class TestData {
     public static Set<String> tuGetTerms(List<TranslationUnit> units, boolean source, LanguageDirection direction) throws IOException {
         HashSet<String> terms = new HashSet<>();
         for (TranslationUnit unit : units) {
-            if (direction == null || unit.direction.equals(direction)) {
+            if (direction == null || unit.language.equals(direction)) {
                 String text = source ? unit.rawSentence : unit.rawTranslation;
                 terms.addAll(Arrays.asList(text.split(" ")));
             }
@@ -188,7 +188,7 @@ public class TestData {
     public static String tuGetContent(List<TranslationUnit> units, boolean source, LanguageDirection direction) {
         StringBuilder builder = new StringBuilder();
         for (TranslationUnit unit : units) {
-            if (direction == null || unit.direction.equals(direction)) {
+            if (direction == null || unit.language.equals(direction)) {
                 builder.append(source ? unit.rawSentence : unit.rawTranslation);
                 builder.append('\n');
             }
@@ -361,12 +361,12 @@ public class TestData {
         }
 
         @Override
-        public MultilingualLineWriter getContentWriter(boolean append) throws IOException {
+        public MultilingualLineWriter getContentWriter(boolean append) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public MultilingualLineReader getContentReader() throws IOException {
+        public MultilingualLineReader getContentReader() {
             return new MultilingualLineReader() {
 
                 private int index = 0;

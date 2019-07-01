@@ -167,10 +167,10 @@ class KafkaDataBatch implements DataBatch {
                     Sentence translation = targetSentences.get(i);
                     Alignment alignment = alignments != null ? alignments[i] : null;
 
-                    output.add(packets.get(i).asTranslationUnit(sentence, translation, alignment));
+                    output.add(packets.get(i).asTranslationUnit(direction, sentence, translation, alignment));
                 }
             } else {
-                for (KafkaPacket packet : packets) output.add(packet.asTranslationUnit());
+                for (KafkaPacket packet : packets) output.add(packet.asTranslationUnit(direction));
             }
         }
     }

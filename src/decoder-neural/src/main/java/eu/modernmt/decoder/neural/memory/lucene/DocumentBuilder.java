@@ -28,17 +28,17 @@ public class DocumentBuilder {
         String translation = TokensOutputStream.serialize(unit.translation, false, true);
         String hash = HashGenerator.hash(unit.rawSentence, unit.rawTranslation);
 
-        return newInstance(unit.direction, unit.memory, sentence, translation, hash);
+        return newInstance(unit.language, unit.memory, sentence, translation, hash);
     }
 
-    public static Document newInstance(LanguageDirection direction, long memory, String sentence, String translation, String hash) {
+    public static Document newInstance(LanguageDirection language, long memory, String sentence, String translation, String hash) {
         Document document = new Document();
         document.add(new LongField(MEMORY_FIELD, memory, Field.Store.YES));
         document.add(new HashField(HASH_FIELD, hash, Field.Store.NO));
-        document.add(new StringField(makeLanguageFieldName(direction.source), direction.source.toLanguageTag(), Field.Store.YES));
-        document.add(new StringField(makeLanguageFieldName(direction.target), direction.target.toLanguageTag(), Field.Store.YES));
-        document.add(new TextField(makeContentFieldName(direction), sentence, Field.Store.YES));
-        document.add(new TextField(makeContentFieldName(direction.reversed()), translation, Field.Store.YES));
+        document.add(new StringField(makeLanguageFieldName(language.source), language.source.toLanguageTag(), Field.Store.YES));
+        document.add(new StringField(makeLanguageFieldName(language.target), language.target.toLanguageTag(), Field.Store.YES));
+        document.add(new TextField(makeContentFieldName(language), sentence, Field.Store.YES));
+        document.add(new TextField(makeContentFieldName(language.reversed()), translation, Field.Store.YES));
 
         return document;
     }

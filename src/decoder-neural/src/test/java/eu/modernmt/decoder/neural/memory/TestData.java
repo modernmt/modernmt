@@ -119,7 +119,7 @@ public class TestData {
     }
 
     public static TranslationUnit tu(int channel, long channelPosition, UUID owner, long memory, LanguageDirection language, String source, String target, String previousSource, String previousTarget, Date timestamp) {
-        return new TranslationUnit((short) channel, channelPosition, owner, language, memory,
+        return new TranslationUnit((short) channel, channelPosition, owner, language, language, memory,
                 source, target, previousSource, previousTarget, timestamp,
                 sentence(source), sentence(target), null);
     }
@@ -129,7 +129,7 @@ public class TestData {
     public static MultilingualCorpus corpus(String name, List<TranslationUnit> units) {
         final HashMap<LanguageDirection, ArrayList<TranslationUnit>> lang2units = new HashMap<>();
         for (TranslationUnit unit : units)
-            lang2units.computeIfAbsent(unit.direction, key -> new ArrayList<>()).add(unit);
+            lang2units.computeIfAbsent(unit.language, key -> new ArrayList<>()).add(unit);
 
         return new MultilingualCorpus() {
             @Override
@@ -158,7 +158,7 @@ public class TestData {
                         if (index < units.size()) {
                             TranslationUnit unit = units.get(index++);
 
-                            return new StringPair(unit.direction, unit.rawSentence, unit.rawTranslation);
+                            return new StringPair(unit.language, unit.rawSentence, unit.rawTranslation);
                         } else {
                             return null;
                         }

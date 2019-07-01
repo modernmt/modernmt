@@ -39,8 +39,8 @@ public class CorporaBackupStorage implements DataListener, Closeable {
             if (channels.skipData(unit.channel, unit.channelPosition))
                 continue;
 
-            writer = writers.getWriter(unit.memory, unit.direction);
-            writer.write(new MultilingualCorpus.StringPair(unit.direction, unit.rawSentence, unit.rawTranslation, unit.timestamp));
+            writer = writers.getWriter(unit.memory, unit.language);
+            writer.write(new MultilingualCorpus.StringPair(unit.language, unit.rawSentence, unit.rawTranslation, unit.timestamp));
         }
 
         writers.flush();

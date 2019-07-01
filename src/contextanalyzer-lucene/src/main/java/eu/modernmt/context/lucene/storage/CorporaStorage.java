@@ -75,11 +75,11 @@ public class CorporaStorage implements DataListener, Closeable {
             if (skipData(unit.channel, unit.channelPosition))
                 continue;
 
-            Bucket fwdBucket = buckets.get(unit.memory, unit.direction, unit.owner);
+            Bucket fwdBucket = buckets.get(unit.memory, unit.language, unit.owner);
             fwdBucket.getWriter().append(unit.rawSentence);
             pendingUpdatesBuckets.add(fwdBucket);
 
-            Bucket bwdBucket = buckets.get(unit.memory, unit.direction.reversed(), unit.owner);
+            Bucket bwdBucket = buckets.get(unit.memory, unit.language.reversed(), unit.owner);
             bwdBucket.getWriter().append(unit.rawTranslation);
             pendingUpdatesBuckets.add(bwdBucket);
         }

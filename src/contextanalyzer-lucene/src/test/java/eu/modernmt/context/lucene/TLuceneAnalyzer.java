@@ -245,7 +245,7 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
 
             MultilingualCorpus.StringPair pair;
             while ((pair = reader.read()) != null) {
-                TranslationUnit unit = new TranslationUnit((short) 0, position++, memory.getOwner(), pair.language, memory.getId(),
+                TranslationUnit unit = new TranslationUnit((short) 0, position++, memory.getOwner(), pair.language, pair.language, memory.getId(),
                         pair.source, pair.target, null, null, new Date(), null, null, null);
                 units.add(unit);
             }

@@ -15,7 +15,8 @@ public class TranslationUnit extends DataMessage {
     public final long memory;
     public final UUID owner;
 
-    public final LanguageDirection direction;
+    public final LanguageDirection rawLanguage;  // this is the original language tag from the translation unit
+    public final LanguageDirection language;  // this is the language mapped by the engine's language index
     public final String rawSentence;
     public final String rawTranslation;
     public final String rawPreviousSentence;
@@ -26,13 +27,14 @@ public class TranslationUnit extends DataMessage {
     public final Sentence translation;
     public final Alignment alignment;
 
-    public TranslationUnit(short channel, long channelPosition, UUID owner, LanguageDirection direction, long memory,
+    public TranslationUnit(short channel, long channelPosition, UUID owner, LanguageDirection rawLanguage, LanguageDirection language, long memory,
                            String rawSentence, String rawTranslation, String rawPreviousSentence, String rawPreviousTranslation,
                            Date timestamp, Sentence sentence, Sentence translation, Alignment alignment) {
         super(channel, channelPosition);
         this.memory = memory;
         this.owner = owner;
-        this.direction = direction;
+        this.rawLanguage = rawLanguage;
+        this.language = language;
         this.rawSentence = rawSentence;
         this.rawTranslation = rawTranslation;
         this.rawPreviousSentence = rawPreviousSentence;
@@ -50,7 +52,7 @@ public class TranslationUnit extends DataMessage {
         builder.append('<');
         builder.append(memory);
         builder.append(':');
-        builder.append(direction);
+        builder.append(language);
         builder.append(':');
         builder.append(rawSentence);
         builder.append(':');
