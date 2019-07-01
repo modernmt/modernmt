@@ -19,7 +19,7 @@ public abstract class SentenceSplitter {
 
     private static final SentenceSplitter DEFAULT_IMPL = new DefaultSentenceSplitter();
     private static final Map<String, SentenceSplitter> IMPLEMENTATIONS = new HashMap<>();
-    private static final int MIN_SENTENCE_SIZE = 2000;
+    private static final int MIN_SENTENCE_SIZE = 128;
 
     public static SentenceSplitter forLanguage(Language language) {
         return IMPLEMENTATIONS.getOrDefault(language.getLanguage(), DEFAULT_IMPL);
