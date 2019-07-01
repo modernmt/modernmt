@@ -103,8 +103,8 @@ public class FastAlign implements Aligner {
             Long nativeHandle = entry.getValue();
 
             for (LanguageDirection pair : parseLanguagesFromFilename(path)) {
-                if (pair.source.getRegion() != null || pair.target.getRegion() != null)
-                    throw new IOException("Cannot specify region for model language tag in model: " + path);
+                if (!pair.source.isLanguageOnly() || !pair.target.isLanguageOnly())
+                    throw new IOException("FastAlign models support language-only tags, found '" + pair + "' for path: " + path);
 
                 this.models.put(LanguageKey.parse(pair), nativeHandle);
             }

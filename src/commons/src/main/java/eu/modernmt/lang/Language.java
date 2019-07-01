@@ -222,6 +222,10 @@ public final class Language implements Serializable {
         return true;
     }
 
+    public boolean isLanguageOnly() {
+        return language.equals(tag);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

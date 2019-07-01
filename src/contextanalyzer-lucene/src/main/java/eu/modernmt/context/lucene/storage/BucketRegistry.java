@@ -394,9 +394,9 @@ public class BucketRegistry implements Closeable {
                 Language owSource = null;
                 Language owTarget = null;
 
-                if (language.source.getRegion() != null)
+                if (!language.source.isLanguageOnly())
                     owSource = new Language(language.source.getLanguage());
-                if (language.target.getRegion() != null)
+                if (!language.target.isLanguageOnly())
                     owTarget = new Language(language.target.getLanguage());
 
                 if (owSource != null || owTarget != null) {
