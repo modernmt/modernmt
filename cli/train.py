@@ -121,7 +121,7 @@ class TrainActivity(StatefulActivity):
 
         cmd = ['fairseq-train', self.args.data_path, '--save-dir', self.state.nn_path, '--task', 'mmt_translation',
                '--user-dir', MMT_FAIRSEQ_USER_DIR, '--share-all-embeddings', '--no-progress-bar',
-               '--tensorboard-logdir', tensorboard_logdir]
+               '--tensorboard-logdir', tensorboard_logdir, '--dataset-impl', 'mmap']
 
         if self.args.train_steps is not None:
             cmd.extend(['--max-update', str(self.args.train_steps)])
