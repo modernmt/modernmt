@@ -11,8 +11,8 @@ import eu.modernmt.decoder.neural.execution.DecoderQueue;
 import eu.modernmt.decoder.neural.execution.PythonDecoder;
 import eu.modernmt.decoder.neural.execution.impl.DecoderQueueImpl;
 import eu.modernmt.decoder.neural.execution.impl.PythonDecoderImpl;
-import eu.modernmt.decoder.neural.memory.ScoreEntry;
-import eu.modernmt.decoder.neural.memory.TranslationMemory;
+import eu.modernmt.memory.ScoreEntry;
+import eu.modernmt.memory.TranslationMemory;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguageDirection;
@@ -99,6 +99,11 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
     }
 
     // Decoder
+
+    @Override
+    public TranslationMemory getTranslationMemory() {
+        return memory;
+    }
 
     @Override
     public void setListener(DecoderListener listener) {

@@ -1,4 +1,4 @@
-package eu.modernmt.decoder.neural.memory;
+package eu.modernmt.memory;
 
 import eu.modernmt.data.DataListener;
 import eu.modernmt.lang.LanguageDirection;
@@ -15,5 +15,7 @@ import java.util.UUID;
 public interface TranslationMemory extends Closeable, DataListener {
 
     ScoreEntry[] search(UUID user, LanguageDirection direction, Sentence source, ContextVector contextVector, int limit) throws IOException;
+
+    int size();
 
 }

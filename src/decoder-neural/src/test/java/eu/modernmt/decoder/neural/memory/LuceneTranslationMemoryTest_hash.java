@@ -3,6 +3,7 @@ package eu.modernmt.decoder.neural.memory;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.neural.memory.lucene.DocumentBuilder;
 import eu.modernmt.decoder.neural.memory.lucene.query.DefaultQueryBuilder;
+import eu.modernmt.memory.ScoreEntry;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;

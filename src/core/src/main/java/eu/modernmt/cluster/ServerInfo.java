@@ -34,11 +34,13 @@ public class ServerInfo {
     private final ClusterInfo cluster;
     private final BuildInfo build;
     private final Set<LanguageDirection> languages;
+    private final int memorySize;
 
-    public ServerInfo(ClusterInfo cluster, BuildInfo build, Set<LanguageDirection> languages) {
+    public ServerInfo(ClusterInfo cluster, BuildInfo build, Set<LanguageDirection> languages, int memorySize) {
         this.cluster = cluster;
         this.build = build;
         this.languages = languages;
+        this.memorySize = memorySize;
     }
 
 }

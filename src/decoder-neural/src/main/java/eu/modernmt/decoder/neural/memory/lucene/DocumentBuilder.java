@@ -2,7 +2,7 @@ package eu.modernmt.decoder.neural.memory.lucene;
 
 import eu.modernmt.data.HashGenerator;
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.decoder.neural.memory.ScoreEntry;
+import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;

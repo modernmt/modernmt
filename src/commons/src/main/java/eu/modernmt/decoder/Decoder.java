@@ -2,6 +2,7 @@ package eu.modernmt.decoder;
 
 import eu.modernmt.config.DecoderConfig;
 import eu.modernmt.lang.LanguageDirection;
+import eu.modernmt.memory.TranslationMemory;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -18,6 +19,8 @@ public abstract class Decoder implements Closeable {
     public Decoder(File model, DecoderConfig config) throws DecoderException {
         // no-op
     }
+
+    public abstract TranslationMemory getTranslationMemory();
 
     public abstract void setListener(DecoderListener listener);
 

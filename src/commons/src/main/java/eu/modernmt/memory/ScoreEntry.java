@@ -1,4 +1,4 @@
-package eu.modernmt.decoder.neural.memory;
+package eu.modernmt.memory;
 
 import eu.modernmt.lang.LanguageDirection;
 

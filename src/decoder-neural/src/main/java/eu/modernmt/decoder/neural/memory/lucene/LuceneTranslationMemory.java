@@ -4,8 +4,8 @@ import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.HashGenerator;
 import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.decoder.neural.memory.ScoreEntry;
-import eu.modernmt.decoder.neural.memory.TranslationMemory;
+import eu.modernmt.memory.ScoreEntry;
+import eu.modernmt.memory.TranslationMemory;
 import eu.modernmt.decoder.neural.memory.lucene.analysis.AnalyzerFactory;
 import eu.modernmt.decoder.neural.memory.lucene.analysis.DefaultAnalyzerFactory;
 import eu.modernmt.decoder.neural.memory.lucene.query.DefaultQueryBuilder;
@@ -161,6 +161,17 @@ public class LuceneTranslationMemory implements TranslationMemory {
         return this.indexWriter;
     }
 
+    @Override
+    public int size() {
+        try {
+            IndexReader reader = getIndexReader();
+            return Math.max(reader.numDocs(), reader.maxDoc() - 1);
+        } catch (IOException e) {
+            logger.warn("Error while invoking getIndexReader()", e);
+            return 0;
+        }
+    }
+
     public void dump(Consumer<ScoreEntry> consumer) throws IOException {
         IndexSearcher searcher = getIndexSearcher();
         IndexReader reader = getIndexReader();
@@ -215,12 +226,18 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     public synchronized void optimize() throws IOException {
-        logger.info("Starting memory forced merge");
+        IndexReader reader = getIndexReader();
+        logger.info("Starting memory forced merge " +
+                "(deleted-docs = " + reader.numDeletedDocs() + ", size = " + reader.numDocs() + ", max-doc = " + reader.maxDoc());
+
         long begin = System.currentTimeMillis();
         this.indexWriter.forceMerge(1);
         this.indexWriter.commit();
         long elapsed = System.currentTimeMillis() - begin;
-        logger.info("Memory forced merge completed in " + (elapsed / 1000.) + "s");
+
+        reader = getIndexReader();
+        logger.info("Memory forced merge completed in " + (elapsed / 1000.) + "s " +
+                "(deleted-docs = " + reader.numDeletedDocs() + ", size = " + reader.numDocs() + ", max-doc = " + reader.maxDoc());
     }
 
     // DataListener

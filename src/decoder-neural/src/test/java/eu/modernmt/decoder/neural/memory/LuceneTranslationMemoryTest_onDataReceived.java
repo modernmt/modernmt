@@ -1,6 +1,7 @@
 package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.memory.ScoreEntry;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

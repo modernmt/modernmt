@@ -3,7 +3,7 @@ package eu.modernmt.decoder.neural.execution.impl;
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.decoder.neural.execution.PythonDecoder;
-import eu.modernmt.decoder.neural.memory.ScoreEntry;
+import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;

@@ -5,7 +5,7 @@ import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.decoder.neural.execution.PythonDecoder;
 import eu.modernmt.decoder.neural.execution.PythonProcess;
-import eu.modernmt.decoder.neural.memory.ScoreEntry;
+import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Alignment;

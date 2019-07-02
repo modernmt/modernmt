@@ -4,6 +4,8 @@ import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
+import eu.modernmt.io.RuntimeIOException;
+import eu.modernmt.memory.ScoreEntry;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
@@ -18,8 +20,13 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
         super(new RAMDirectory(), 10);
     }
 
-    public int size() throws IOException {
-        return getIndexReader().numDocs();
+    @Override
+    public int size() {
+        try {
+            return getIndexReader().numDocs();
+        } catch (IOException e) {
+            throw new RuntimeIOException(e);
+        }
     }
 
     public Set<ScoreEntry> entrySet() throws IOException {

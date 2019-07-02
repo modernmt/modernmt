@@ -12,6 +12,7 @@ import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.facade.exceptions.TestFailedException;
 import eu.modernmt.lang.LanguageDirection;
+import eu.modernmt.memory.TranslationMemory;
 import eu.modernmt.persistence.Database;
 import eu.modernmt.persistence.PersistenceException;
 import org.apache.logging.log4j.LogManager;
@@ -68,7 +69,18 @@ public class ModernMT {
         String buildVersion = Pom.getProperty("mmt.version");
         long buildNumber = Long.parseLong(Pom.getProperty("mmt.build.number"));
 
-        return new ServerInfo(new ServerInfo.ClusterInfo(nodes), new ServerInfo.BuildInfo(buildVersion, buildNumber), languages);
+        int memorySize = 0;
+        if (engine != null) {
+            try {
+                Decoder decoder = engine.getDecoder();
+                TranslationMemory memory = decoder.getTranslationMemory();
+                memorySize = memory.size();
+            } catch (UnsupportedOperationException e) {
+                // Ignore - decoder not available
+            }
+        }
+
+        return new ServerInfo(new ServerInfo.ClusterInfo(nodes), new ServerInfo.BuildInfo(buildVersion, buildNumber), languages, memorySize);
     }
 
     public static void test(boolean strict) throws TestFailedException {

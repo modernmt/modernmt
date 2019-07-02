@@ -2,6 +2,7 @@ package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.lang.LanguageDirection;
+import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.model.ContextVector;
 import org.junit.After;
 import org.junit.Before;

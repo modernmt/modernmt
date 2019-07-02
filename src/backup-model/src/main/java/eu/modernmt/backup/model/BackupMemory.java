@@ -70,7 +70,7 @@ public class BackupMemory implements Closeable, DataListener {
         }
     }
 
-    protected synchronized IndexReader getIndexReader() throws IOException {
+    private synchronized IndexReader getIndexReader() throws IOException {
         if (this._indexReader == null) {
             this._indexReader = DirectoryReader.open(this.indexDirectory);
             this._indexReader.incRef();
@@ -90,16 +90,12 @@ public class BackupMemory implements Closeable, DataListener {
         return this._indexReader;
     }
 
-    public IndexSearcher getIndexSearcher() throws IOException {
+    private IndexSearcher getIndexSearcher() throws IOException {
         getIndexReader();
         return this._indexSearcher;
     }
 
-    public IndexWriter getIndexWriter() {
-        return this.indexWriter;
-    }
-
-    public void dump(final Consumer<BackupEntry> consumer) throws IOException {
+    public void dump(long memory, final Consumer<BackupEntry> consumer) throws IOException {
         IndexSearcher searcher = getIndexSearcher();
         IndexReader reader = getIndexReader();
 
@@ -107,7 +103,9 @@ public class BackupMemory implements Closeable, DataListener {
         if (size == 0)
             return;
 
-        searcher.search(new MatchAllDocsQuery(), null, new Collector() {
+        Query query = new TermQuery(DocumentBuilder.makeMemoryTerm(memory));
+
+        searcher.search(query, null, new Collector() {
             private IndexReader currentReader;
 
             @Override
@@ -137,12 +135,18 @@ public class BackupMemory implements Closeable, DataListener {
     }
 
     public synchronized void optimize() throws IOException {
-        logger.info("Starting backup memory forced merge");
+        IndexReader reader = getIndexReader();
+        logger.info("Starting backup memory forced merge " +
+                "(deleted-docs = " + reader.numDeletedDocs() + ", size = " + reader.numDocs() + ", max-doc = " + reader.maxDoc());
+
         long begin = System.currentTimeMillis();
         this.indexWriter.forceMerge(1);
         this.indexWriter.commit();
         long elapsed = System.currentTimeMillis() - begin;
-        logger.info("BackupFile memory forced merge completed in " + (elapsed / 1000.) + "s");
+
+        reader = getIndexReader();
+        logger.info("Backup memory forced merge completed in " + (elapsed / 1000.) + "s " +
+                "(deleted-docs = " + reader.numDeletedDocs() + ", size = " + reader.numDocs() + ", max-doc = " + reader.maxDoc());
     }
 
     private Query getHashQuery(long memory, String hash) {
