@@ -30,5 +30,7 @@ if __name__ == '__main__':
     from testcases.privacy import *
     # noinspection PyUnresolvedReferences
     from testcases.onlinelearning import *
+    # noinspection PyUnresolvedReferences
+    from testcases.backup import *
 
     main()

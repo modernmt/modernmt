@@ -7,7 +7,8 @@ from collections import defaultdict
 
 from cli import mmt
 from cli.mmt.engine import Engine, EngineNode
-from cli.utils import osutils
+from cli.mmt.mmtcli import mmt_java
+from cli.utils import osutils, network
 from cli.utils.osutils import ShellError
 from testcases.utils import Namespace
 
@@ -221,8 +222,10 @@ class _MemoryContent(object):
         def __hash__(self) -> int:
             return hash(self._id)
 
-    def __init__(self, model_path) -> None:
-        cmd = ['java', '-cp', mmt.MMT_JAR, 'eu.modernmt.decoder.neural.memory.lucene.utils.Dump', model_path]
+    def __init__(self, model_path, main_class=None) -> None:
+        if main_class is None:
+            main_class = 'eu.modernmt.decoder.neural.memory.lucene.utils.Dump'
+        cmd = ['java', '-cp', mmt.MMT_JAR, main_class, model_path]
         std_out, _ = osutils.shell_exec(cmd)
 
         self._content_by_memory = defaultdict(set)
@@ -257,3 +260,28 @@ class _MemoryContent(object):
             return __Memory(self._content_by_memory[item])
         else:
             raise KeyError(item)
+
+
+class BackupDaemonConnector(object):
+    def __init__(self, engine_name):
+        self.engine = Engine(engine_name)
+        self._process = None
+
+    def start(self):
+        command = mmt_java('eu.modernmt.cli.BackupDaemonMain', args=['-e', self.engine.name, '-i', '3600', '-l', '1'])
+        env = dict(os.environ, MMT_Q_HOST=network.get_ip())
+        self._process = osutils.shell_exec(command, background=True, env=env)
+
+    def stop(self):
+        if self._process is not None:
+            self._process.terminate()
+            self._process.wait()
+            self._process = None
+
+    def delete(self):
+        shutil.rmtree(self.engine.path, ignore_errors=True)
+        shutil.rmtree(self.engine.runtime_path, ignore_errors=True)
+
+    def dump_translation_memory(self):
+        return _MemoryContent(os.path.join(self.engine.models_path, 'backup'),
+                              main_class='eu.modernmt.backup.model.utils.Dump')

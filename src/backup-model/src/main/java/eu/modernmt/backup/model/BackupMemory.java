@@ -95,15 +95,23 @@ public class BackupMemory implements Closeable, DataListener {
         return this._indexSearcher;
     }
 
+    public void dump(final Consumer<BackupEntry> consumer) throws IOException {
+        Query query = new MatchAllDocsQuery();
+        dump(query, consumer);
+    }
+
     public void dump(long memory, final Consumer<BackupEntry> consumer) throws IOException {
+        Query query = new TermQuery(DocumentBuilder.makeMemoryTerm(memory));
+        dump(query, consumer);
+    }
+
+    private void dump(Query query, final Consumer<BackupEntry> consumer) throws IOException {
         IndexSearcher searcher = getIndexSearcher();
         IndexReader reader = getIndexReader();
 
         int size = reader.numDocs();
         if (size == 0)
             return;
-
-        Query query = new TermQuery(DocumentBuilder.makeMemoryTerm(memory));
 
         searcher.search(query, null, new Collector() {
             private IndexReader currentReader;

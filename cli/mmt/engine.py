@@ -257,6 +257,11 @@ class _RestApi(object):
         params = {'sentence': sentence, 'translation': translation, 'source': source, 'target': target}
         return self._post('memories/' + str(memory) + '/corpus', params=params)
 
+    def replace_in_memory(self, source, target, memory, sentence, translation, old_sentence, old_translation):
+        params = {'sentence': sentence, 'translation': translation, 'source': source, 'target': target,
+                  'old_sentence': old_sentence, 'old_translation': old_translation}
+        return self._put('memories/' + str(memory) + '/corpus', params=params)
+
     def import_into_memory(self, memory, tmx=None, compact=None,
                            source_file=None, target_file=None, source_lang=None, target_lang=None):
         if tmx is not None:
