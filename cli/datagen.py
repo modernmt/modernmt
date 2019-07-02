@@ -227,7 +227,7 @@ class DatagenActivity(StatefulActivity):
         cmd = ['fairseq-preprocess', '--source-lang', 'sl', '--target-lang', 'tl', '--user-dir', MMT_FAIRSEQ_USER_DIR,
                '--task', 'mmt_translation', '--trainpref', train_pref, '--validpref', valid_pref,
                '--destdir', self.args.output_path, '--workers', str(multiprocessing.cpu_count()),
-               '--srcdict', self.state.vocab, '--joined-dictionary']
+               '--srcdict', self.state.vocab, '--joined-dictionary', '--dataset-impl', 'mmap']
 
         osutils.shell_exec(cmd, stdout=self.log_fobj, stderr=self.log_fobj)
 
