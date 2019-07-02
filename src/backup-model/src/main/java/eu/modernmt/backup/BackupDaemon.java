@@ -69,7 +69,7 @@ public class BackupDaemon implements Closeable {
     }
 
     private void backup() throws IOException {
-        Backup currentBackup = Backup.create(this.backups);
+        BackupFile currentBackup = BackupFile.create(this.backups);
 
         logger.info("Creating backup: " + currentBackup);
         long begin = System.currentTimeMillis();
@@ -78,10 +78,10 @@ public class BackupDaemon implements Closeable {
         FileUtils.copyDirectory(this.engine.getModelsPath(), currentBackup.getPath(), true);
 
         // Delete old backups
-        List<Backup> allBackups = Backup.list(backups);
-        Set<Backup> retainBackups = policy.retain(allBackups);
+        List<BackupFile> allBackups = BackupFile.list(backups);
+        Set<BackupFile> retainBackups = policy.retain(allBackups);
 
-        for (Backup backup : allBackups) {
+        for (BackupFile backup : allBackups) {
             if (!retainBackups.contains(backup)) {
                 logger.info("Deleting old backup: " + backup);
                 FileUtils.forceDelete(backup.getPath());
@@ -89,7 +89,7 @@ public class BackupDaemon implements Closeable {
         }
 
         long elapsed = System.currentTimeMillis() - begin;
-        logger.info("Backup created in " + (elapsed / 1000.) + "s");
+        logger.info("BackupFile created in " + (elapsed / 1000.) + "s");
     }
 
     public void interrupt() {

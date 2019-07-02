@@ -1,6 +1,6 @@
 package eu.modernmt.backup;
 
-import eu.modernmt.backup.storage.CorporaBackupStorage;
+import eu.modernmt.backup.model.BackupMemory;
 import eu.modernmt.cluster.kafka.KafkaDataManager;
 import eu.modernmt.config.AnalyzerConfig;
 import eu.modernmt.config.DataStreamConfig;
@@ -35,7 +35,7 @@ public class BackupEngine {
     private LuceneAnalyzer contextAnalyzer = null;
     private LuceneTranslationMemory memory = null;
     private DataManager dataManager = null;
-    private CorporaBackupStorage storage = null;
+    private BackupMemory backupMemory = null;
 
     public BackupEngine(NodeConfig config, File models) {
         this.uuid = UUID.randomUUID().toString();
@@ -65,13 +65,13 @@ public class BackupEngine {
 
         contextAnalyzer = new LuceneAnalyzer(Paths.join(models, "context"), new AnalyzerConfig());
         memory = new LuceneTranslationMemory(Paths.join(models, "memory"), 1);
-        storage = new CorporaBackupStorage(Paths.join(models, "storage"));
+        backupMemory = new BackupMemory(Paths.join(models, "backup"));
 
         dataManager = new KafkaDataManager(config.getEngineConfig().getLanguageIndex(), new Preprocessor(), null, uuid, config.getDataStreamConfig());
         for (DataListener listener : contextAnalyzer.getDataListeners())
             dataManager.addDataListener(listener);
         dataManager.addDataListener(memory);
-        dataManager.addDataListener(storage);
+        dataManager.addDataListener(backupMemory);
 
         Map<Short, Long> positions;
         try {
@@ -81,7 +81,7 @@ public class BackupEngine {
         }
 
         long elapsed = System.currentTimeMillis() - begin;
-        logger.info("Backup engine started in " + (elapsed / 1000.) + "s, channels: " + positions);
+        logger.info("BackupFile engine started in " + (elapsed / 1000.) + "s, channels: " + positions);
     }
 
     public void stop() throws IOException {
@@ -110,16 +110,16 @@ public class BackupEngine {
                 elapsed = System.currentTimeMillis() - begin;
                 logger.info("Optimization for Memory completed in " + (elapsed / 1000.) + "s");
 
-                logger.info("Running optimization for Storage...");
+                logger.info("Running optimization for Backup...");
                 begin = System.currentTimeMillis();
-                storage.optimize();
+                backupMemory.optimize();
                 elapsed = System.currentTimeMillis() - begin;
-                logger.info("Optimization for Storage completed in " + (elapsed / 1000.) + "s");
+                logger.info("Optimization for Backup completed in " + (elapsed / 1000.) + "s");
             }
         } finally {
             caError = close(contextAnalyzer);
             mError = close(memory);
-            sError = close(storage);
+            sError = close(backupMemory);
         }
 
         if (dmError != null)
@@ -134,9 +134,9 @@ public class BackupEngine {
         dataManager = null;
         contextAnalyzer = null;
         memory = null;
-        storage = null;
+        backupMemory = null;
 
-        logger.info("Backup engine stopped");
+        logger.info("BackupFile engine stopped");
     }
 
 

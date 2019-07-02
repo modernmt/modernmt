@@ -14,7 +14,7 @@ public class FileLimitRetentionPolicy implements RetentionPolicy {
     }
 
     @Override
-    public Set<Backup> retain(List<Backup> backups) {
+    public Set<BackupFile> retain(List<BackupFile> backups) {
         Collections.sort(backups);
         Collections.reverse(backups);
 

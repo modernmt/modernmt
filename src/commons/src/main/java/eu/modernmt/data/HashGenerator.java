@@ -1,11 +1,12 @@
-package eu.modernmt.decoder.neural.memory.lucene;
+package eu.modernmt.data;
 
 import eu.modernmt.io.UTF8Charset;
+import eu.modernmt.lang.LanguageDirection;
 
 /**
  * Created by davide on 30/09/17.
  */
-class HashGenerator {
+public class HashGenerator {
 
     private static final long TRUE_HASH_SIZE = 1L << 40;
     private static final long TRUE_HASH_MASK = TRUE_HASH_SIZE - 1;
@@ -13,12 +14,9 @@ class HashGenerator {
     private static final long FNV_OFFSET_BASIS = 0xcbf29ce484222325L;
     private static final String CHARS = "0123456789ABCDEF";
 
-    public static String hash(String sentence, String translation) {
-        if (sentence.compareTo(translation) > 0) {
-            String tmp = sentence;
-            sentence = translation;
-            translation = tmp;
-        }
+    public static String hash(LanguageDirection language, String sentence, String translation) {
+        sentence = language.source.toLanguageTag() + "|||" + sentence;
+        translation = language.target.toLanguageTag() + "|||" + translation;
 
         long h1_40bit = FNV_1a_lazy_mod_mapping(sentence);
         long h2_40bit = FNV_1a_lazy_mod_mapping(translation);

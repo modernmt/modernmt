@@ -17,6 +17,7 @@
         <module>persistence-mysql</module>
         <module>core</module>
         <module>command-line</module>
+        <module>backup-model</module>
     </modules>
 
     <packaging>pom</packaging>

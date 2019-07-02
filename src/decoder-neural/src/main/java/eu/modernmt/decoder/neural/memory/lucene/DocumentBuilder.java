@@ -1,5 +1,6 @@
 package eu.modernmt.decoder.neural.memory.lucene;
 
+import eu.modernmt.data.HashGenerator;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.neural.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
@@ -26,7 +27,7 @@ public class DocumentBuilder {
     public static Document newInstance(TranslationUnit unit) {
         String sentence = TokensOutputStream.serialize(unit.sentence, false, true);
         String translation = TokensOutputStream.serialize(unit.translation, false, true);
-        String hash = HashGenerator.hash(unit.rawSentence, unit.rawTranslation);
+        String hash = HashGenerator.hash(unit.rawLanguage, unit.rawSentence, unit.rawTranslation);
 
         return newInstance(unit.language, unit.memory, sentence, translation, hash);
     }
