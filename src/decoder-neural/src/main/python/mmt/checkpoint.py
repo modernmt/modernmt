@@ -26,6 +26,7 @@ class UnsupportedLanguageException(KeyError):
 class Checkpoint(object):
     def __init__(self, task, model_state, decode_stats, multilingual_target=False):
         self.task = task
+        self._checkpoint_path = self.task.args.data
         self._decode_stats = decode_stats or {}
         self._state = model_state
         self._multilingual_target = multilingual_target
@@ -62,17 +63,17 @@ class Checkpoint(object):
 
     def __eq__(self, o):
         if isinstance(self, o.__class__):
-            return self.task.args.data[0] == o.task.args.data[0]
+            return self._checkpoint_path == o._checkpoint_path
         return False
 
     def __ne__(self, o):
         return not (self == o)
 
     def __hash__(self):
-        return hash(self.task.args.data[0])
+        return hash(self._checkpoint_path)
 
     def __str__(self):
-        return self.__class__.__name__ + '@' + self.task.args.data[0]
+        return self.__class__.__name__ + '@' + self._checkpoint_path
 
     def __repr__(self):
         return str(self)
