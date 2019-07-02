@@ -15,4 +15,6 @@ public interface DataListener {
 
     boolean needsAlignment();
 
+    boolean includeDiscardedTranslationUnits();
+
 }

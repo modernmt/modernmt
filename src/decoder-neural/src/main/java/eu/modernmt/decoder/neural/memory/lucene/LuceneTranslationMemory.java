@@ -269,6 +269,11 @@ public class LuceneTranslationMemory implements TranslationMemory {
         return false;
     }
 
+    @Override
+    public boolean includeDiscardedTranslationUnits() {
+        return false;
+    }
+
     private void onTranslationUnitsReceived(Collection<TranslationUnit> units) throws IOException {
         for (TranslationUnit unit : units) {
             Long currentPosition = this.channels.get(unit.channel);

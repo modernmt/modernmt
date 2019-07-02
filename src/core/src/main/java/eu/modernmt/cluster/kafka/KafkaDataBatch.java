@@ -21,6 +21,7 @@ import java.util.*;
  */
 class KafkaDataBatch implements DataBatch {
 
+    private final ArrayList<TranslationUnit> discardedTranslationUnits = new ArrayList<>();
     private final ArrayList<TranslationUnit> translationUnits = new ArrayList<>();
     private final ArrayList<Deletion> deletions = new ArrayList<>();
     private final HashMap<Short, Long> currentPositions = new HashMap<>();
@@ -41,6 +42,7 @@ class KafkaDataBatch implements DataBatch {
     }
 
     public void clear() {
+        discardedTranslationUnits.clear();
         translationUnits.clear();
         deletions.clear();
         currentPositions.clear();
@@ -57,7 +59,7 @@ class KafkaDataBatch implements DataBatch {
         cachedPartitions.push(partition.clear());
     }
 
-    public void load(ConsumerRecords<Integer, KafkaPacket> records, boolean process, boolean align) throws ProcessingException, AlignerException {
+    public void load(ConsumerRecords<Integer, KafkaPacket> records, boolean process, boolean align, boolean includeDiscarded) throws ProcessingException, AlignerException {
         // Load records
 
         this.clear();
@@ -81,7 +83,10 @@ class KafkaDataBatch implements DataBatch {
                 deletions.add(packet.asDeletion());
             } else {
                 LanguageDirection direction = languageIndex.mapIgnoringDirection(packet.getDirection());
-                if (direction != null) {
+                if (direction == null) {
+                    if (includeDiscarded)
+                        discardedTranslationUnits.add(packet.asTranslationUnit(null));
+                } else {
                     DataPartition partition = cachedDataSet.computeIfAbsent(direction, key -> getDataPartition(key, size));
                     partition.add(packet);
                 }
@@ -89,8 +94,6 @@ class KafkaDataBatch implements DataBatch {
         }
 
         // Process translation units
-
-        this.translationUnits.ensureCapacity(size);
         for (DataPartition partition : cachedDataSet.values()) {
             partition.process(process, align, this.translationUnits);
             releaseDataPartition(partition);
@@ -101,6 +104,11 @@ class KafkaDataBatch implements DataBatch {
 
     public int size() {
         return translationUnits.size() + deletions.size();
+    }
+
+    @Override
+    public Collection<TranslationUnit> getDiscardedTranslationUnits() {
+        return discardedTranslationUnits;
     }
 
     @Override

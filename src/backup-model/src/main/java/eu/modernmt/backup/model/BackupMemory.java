@@ -169,6 +169,7 @@ public class BackupMemory implements Closeable, DataListener {
         boolean success = false;
 
         try {
+            this.onTranslationUnitsReceived(batch.getDiscardedTranslationUnits());
             this.onTranslationUnitsReceived(batch.getTranslationUnits());
             this.onDeletionsReceived(batch.getDeletions());
 
@@ -203,6 +204,11 @@ public class BackupMemory implements Closeable, DataListener {
     @Override
     public boolean needsAlignment() {
         return false;
+    }
+
+    @Override
+    public boolean includeDiscardedTranslationUnits() {
+        return true;
     }
 
     private void onTranslationUnitsReceived(Collection<TranslationUnit> units) throws IOException {

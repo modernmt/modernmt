@@ -137,17 +137,20 @@ class DataPollingThread extends Thread {
 
                 boolean process = false;
                 boolean align = false;
+                boolean includeDiscarded = false;
                 for (DataListener listener : listeners) {
-                    if (process && align)
+                    if (process && align && includeDiscarded)
                         break;
 
                     process |= listener.needsProcessing();
                     align |= listener.needsAlignment();
+                    includeDiscarded |= listener.includeDiscardedTranslationUnits();
                 }
 
                 if (logger.isDebugEnabled())
-                    logger.debug("Loading batch of " + records.count() + " records: process=" + process + ", align=" + align);
-                batch.load(records, process, align);
+                    logger.debug("Loading batch of " + records.count() + " records: " +
+                            "process=" + process + ", align=" + align + ", includeDiscarded=" + includeDiscarded);
+                batch.load(records, process, align, includeDiscarded);
 
                 if (logger.isDebugEnabled())
                     logger.debug("Delivering batch of " + batch.size() + " updates");
