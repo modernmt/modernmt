@@ -18,7 +18,23 @@ class __BackupTest(ModernMTTestCase):
     CORPUS_ZH = CompactFileFormat('en', 'zh', os.path.join(TEST_RESOURCES, 'onlinelearning', 'Memory.en__zh.cfc'))
 
     ALL_CORPORA = [CORPUS_DE, CORPUS_ES, CORPUS_FR, CORPUS_IT, CORPUS_ZH]
-    FINAL_CORPORA = [CORPUS_DE, CORPUS_ES, CORPUS_IT, CORPUS_ZH]
+    BACKUP_CORPORA = [CORPUS_DE, CORPUS_ES, CORPUS_IT, CORPUS_ZH]
+    MEMORY_CORPORA = [CORPUS_ES, CORPUS_IT, CORPUS_ZH]
+
+    @staticmethod
+    def map_lang(lang):
+        if lang.startswith('es'):
+            if lang == 'es' or lang == 'es-ES':
+                return 'es-ES'
+            else:
+                return 'es-MX'
+        elif lang.startswith('zh'):
+            if lang == 'zh-HK' or lang == 'zh-TW':
+                return 'zh-TW'
+            else:
+                return 'zh-CN'
+        else:
+            return lang.split('-')[0]
 
     def setUp(self):
         super().setUp()
@@ -127,12 +143,29 @@ class BackupTest(__BackupTest):
         self.mmt.stop()
         self.backup_daemon.stop()
 
-        backup_memory = self.backup_daemon.dump_translation_memory()
+        translation_memory = self.backup_daemon.dump_translation_memory()
+        backup_memory = self.backup_daemon.dump_backup_translation_memory()
 
-        # Verify Memory content
+        # Verify translation memory
+        self.assertEqual(3, len(translation_memory))
+
+        for corpus in self.MEMORY_CORPORA:
+            memory = memories[corpus.name]
+            memory_id = int(memory['id'])
+
+            self.assertIn(memory_id, translation_memory)
+            content = translation_memory[memory_id]
+
+            with corpus.reader_with_languages() as reader:
+                for src_lang, tgt_lang, src_line, tgt_line in reader:
+                    src_lang, tgt_lang = self.map_lang(src_lang), self.map_lang(tgt_lang)
+                    updated_tgt_line = self._update_of(tgt_line)
+                    self.assertIn((src_lang, tgt_lang, src_line, updated_tgt_line or tgt_line), content)
+
+        # Verify backup memory
         self.assertEqual(4, len(backup_memory))
 
-        for corpus in self.FINAL_CORPORA:
+        for corpus in self.BACKUP_CORPORA:
             memory = memories[corpus.name]
             memory_id = int(memory['id'])
 

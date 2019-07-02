@@ -283,5 +283,8 @@ class BackupDaemonConnector(object):
         shutil.rmtree(self.engine.runtime_path, ignore_errors=True)
 
     def dump_translation_memory(self):
+        return _MemoryContent(os.path.join(self.engine.models_path, 'memory'))
+
+    def dump_backup_translation_memory(self):
         return _MemoryContent(os.path.join(self.engine.models_path, 'backup'),
                               main_class='eu.modernmt.backup.model.utils.Dump')
