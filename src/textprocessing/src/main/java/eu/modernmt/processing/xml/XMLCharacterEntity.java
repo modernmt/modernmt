@@ -289,12 +289,20 @@ public class XMLCharacterEntity {
         }
     }
 
-    public static String unescape(String entity) {
+    public static String unescape(String entity) throws IllegalArgumentException {
         int codepoint = unescapeCodepoint(entity);
-        return codepoint == 0 ? null : new String(Character.toChars(codepoint));
+        if (codepoint == 0)
+            return null;
+
+        try {
+            return new String(Character.toChars(codepoint));
+        } catch (IllegalArgumentException e) {
+            // Specified entity is not a valid Unicode code point
+            return null;
+        }
     }
 
-    public static String unescapeAll(String line) {
+    public static String unescapeAll(String line) throws IllegalArgumentException {
         char[] chars = null;
         StringBuilder builder = null;
 
@@ -318,7 +326,12 @@ public class XMLCharacterEntity {
             if (c == 0) {
                 builder.append(entity);
             } else {
-                builder.appendCodePoint(c);
+                try {
+                    builder.appendCodePoint(c);
+                } catch (IllegalArgumentException e) {
+                    // Current entity is not a valid Unicode code point
+                    builder.append(entity);
+                }
             }
 
             stringIndex = mend;
