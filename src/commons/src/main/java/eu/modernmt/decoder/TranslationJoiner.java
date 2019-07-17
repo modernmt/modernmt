@@ -1,4 +1,4 @@
-package eu.modernmt.processing.splitter;
+package eu.modernmt.decoder;
 
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;

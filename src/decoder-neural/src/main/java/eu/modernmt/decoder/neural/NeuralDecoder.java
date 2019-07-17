@@ -3,10 +3,7 @@ package eu.modernmt.decoder.neural;
 import eu.modernmt.config.DecoderConfig;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
-import eu.modernmt.decoder.Decoder;
-import eu.modernmt.decoder.DecoderException;
-import eu.modernmt.decoder.DecoderListener;
-import eu.modernmt.decoder.DecoderWithNBest;
+import eu.modernmt.decoder.*;
 import eu.modernmt.decoder.neural.execution.DecoderQueue;
 import eu.modernmt.decoder.neural.execution.PythonDecoder;
 import eu.modernmt.decoder.neural.execution.impl.DecoderQueueImpl;
@@ -20,6 +17,7 @@ import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
+import eu.modernmt.processing.splitter.SentenceSplitter;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -98,6 +96,10 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
             return DecoderQueueImpl.newCPUInstance(modelConfig, builder, decoderConfig.getThreads());
     }
 
+    public boolean isEchoServer() {
+        return echoServer;
+    }
+
     // Decoder
 
     @Override
@@ -132,60 +134,47 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         if (!this.directions.contains(direction))
             throw new UnsupportedLanguageException(direction);
 
-        long decodeTime = 0L;
+        // Preparing translation jobs
+        SentenceSplitter splitter = new SentenceSplitter(text);
+        Sentence[] textSplits = splitter.split();
+        TranslationJob[] jobs;
+
+        if (textSplits == null) {
+            jobs = new TranslationJob[]{new TranslationJob(this, user, direction, text, contextVector)};
+        } else {
+            jobs = new TranslationJob[textSplits.length];
+            for (int i = 0; i < textSplits.length; i++)
+                jobs[i] = new TranslationJob(this, user, direction, textSplits[i], contextVector);
+        }
+
+        // Search for suggestions
         long lookupTime = 0L;
-        Translation translation;
+        for (TranslationJob job : jobs)
+            lookupTime += job.computeSuggestions(this.suggestionsLimit);
 
-        if (text.hasWords()) {
-            ScoreEntry[] suggestions = null;
+        // Translate sentence pieces
+        long decodeTime = 0L;
 
-            if (contextVector != null && !contextVector.isEmpty()) {
-                long begin = System.currentTimeMillis();
+        PythonDecoder decoder = null;
 
-                try {
-                    suggestions = memory.search(user, direction, text, contextVector, this.suggestionsLimit);
-                } catch (IOException e) {
-                    throw new DecoderException("Failed to retrieve suggestions from memory", e);
-                }
+        try {
+            decoder = echoServer ? null : decoderQueue.take(direction);
 
-                lookupTime = System.currentTimeMillis() - begin;
-            }
+            for (TranslationJob job : jobs)
+                lookupTime += job.computeTranslation(decoder);
+        } finally {
+            if (decoder != null)
+                decoderQueue.release(decoder);
+        }
 
-            if (this.echoServer) {
-                if (suggestions != null && suggestions.length > 0) {
-                    translation = Translation.fromTokens(text, suggestions[0].translation);
-                } else {
-                    translation = Translation.fromTokens(text, TokensOutputStream.tokens(text, false, true));
-                }
-            } else {
-                PythonDecoder decoder = null;
+        // Collect translation splits
+        Translation[] translations = new Translation[jobs.length];
 
-                try {
-                    decoder = decoderQueue.take(direction);
-
-                    long begin = System.currentTimeMillis();
-
-                    if (suggestions != null && suggestions.length > 0) {
-                        // if perfect match, force translate with suggestion instead
-                        if (suggestions[0].score == 1.f) {
-                            translation = decoder.translate(direction, text, suggestions[0].translation);
-                        } else {
-                            translation = decoder.translate(direction, text, suggestions, nbestListSize);
-                        }
-                    } else {
-                        translation = decoder.translate(direction, text, nbestListSize);
-                    }
-
-                    decodeTime = System.currentTimeMillis() - begin;
-
-                    lastSuccessfulTranslation = System.currentTimeMillis();
-                } finally {
-                    if (decoder != null)
-                        decoderQueue.release(decoder);
-                }
-            }
-
+        for (int i = 0; i < jobs.length; i++) {
             if (logger.isDebugEnabled()) {
+                Translation translation = jobs[i].getTranslation();
+                ScoreEntry[] suggestions = jobs[i].getSuggestions();
+
                 String sourceText = TokensOutputStream.serialize(text, false, true);
                 String targetText = TokensOutputStream.serialize(translation, false, true);
 
@@ -203,12 +192,21 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
                 logger.debug(log);
             }
-        } else {
-            translation = Translation.emptyTranslation(text);
+
+            translations[i] = jobs[i].getTranslation();
         }
 
+        // Merge translation splits
+        Translation translation;
+
+        if (textSplits == null) {
+            translation = translations[0];
+        } else {
+            translation = TranslationJoiner.join(text, textSplits, translations);
+        }
         translation.setDecodeTime(decodeTime);
         translation.setMemoryLookupTime(lookupTime);
+        
         return translation;
     }
 
