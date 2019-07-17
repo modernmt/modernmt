@@ -135,7 +135,7 @@ public class PostprocessorMain {
                     throw new IOException("Unexpected EOF");
 
                 try {
-                    sentence = preprocessor.process(language, sources.readLine());
+                    sentence = preprocessor.process(language, sourceStr);
                 } catch (ProcessingException e) {
                     throw new IOException(e);
                 }
