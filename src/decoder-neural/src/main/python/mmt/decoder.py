@@ -2,7 +2,6 @@ import configparser
 import logging
 import math
 import os
-import re
 import time
 
 import fairseq
@@ -14,69 +13,12 @@ from mmt import textencoder
 from mmt.alignment import make_alignment
 from mmt.tuning import Tuner, TuningOptions
 
-# Regular expression to match strong punctuation split points; splitting points are sequences of
-# strong punctuation marks in several alphabets, optionally separated by spaces.
-#
-# Western: '.?!'
-# Chinese/Japanese: '。？！'
-# Korean: '.?!'
-# Arabic: '.؟!'
-#
-_STOPS_RE = re.compile(r'( [\s\?\!\.。？！؟]+ )')
-
 
 class Translation(object):
     def __init__(self, text, alignment=None, score=None):
         self.text = text
         self.alignment = alignment
         self.score = score
-
-    @classmethod
-    def split(cls, text):
-        # greedy approach for splitting the text into sentences according to strong punctuation
-        substrings = _STOPS_RE.split(text.strip())
-        if len(substrings) % 2 == 1:
-            substrings.append('')
-
-        # list of pairs: (string, separator)
-        string_pairs = [[substrings[i], substrings[i + 1]] for i in range(0, len(substrings), 2)]
-
-        text_splits = []
-        for e in string_pairs:
-            if len(text_splits) == 0:
-                text_splits.append(e)
-            else:
-                starting_char = e[0][0]
-                if starting_char.isalpha() and (starting_char.isupper() or not starting_char.islower()):
-                    text_splits.append(e)
-                else:
-                    text_splits[-1].extend(e)
-
-        return [''.join(e).strip() for e in text_splits]
-
-    @classmethod
-    def concatenate(cls, sources, translations, separator=' '):
-        source_lengths = [len(s.split()) for s in sources]
-        translation_lengths = [len(t.text.split()) for t in translations]
-
-        log_scores = [math.log(t.score) for t in translations]
-        avg_score = math.exp(sum([s * w for s, w in zip(log_scores, translation_lengths)]) / sum(translation_lengths))
-
-        result = Translation(text=separator.join([t.text for t in translations]),
-                             alignment=translations[0].alignment, score=avg_score)
-
-        # concatenate alignment with index shifting
-        source_len_offset = 0
-        translation_len_offset = 0
-        for i in range(1, len(translations)):
-            source_len_offset += source_lengths[i - 1]
-            translation_len_offset += translation_lengths[i - 1]
-
-            for al in translations[i].alignment:
-                new_al = (al[0] + source_len_offset, al[1] + translation_len_offset)
-                result.alignment.append(new_al)
-
-        return result
 
 
 class Suggestion(object):
@@ -236,13 +178,7 @@ class MMTDecoder(object):
         if forced_translation is not None:
             result = self._force_decode(target_lang, text, forced_translation)
         else:
-            # split the input text into sentences according to strong punctuation
-            text_splits = Translation.split(text)
-
-            translations = self._decode(source_lang, target_lang, text_splits)
-
-            # concatenate Translations of all splits into one Translation
-            result = Translation.concatenate(text_splits, translations)
+            result = self._decode(source_lang, target_lang, [text])[0]
 
         decode_time = time.time() - begin
 
