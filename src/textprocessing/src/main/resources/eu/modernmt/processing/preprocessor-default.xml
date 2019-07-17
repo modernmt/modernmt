@@ -23,5 +23,9 @@
     <!-- Tokenization -->
     <processor>eu.modernmt.processing.tokenizer.Tokenizer</processor>
 
+    <!-- Compiling -->
     <processor>eu.modernmt.processing.string.SentenceCompiler</processor>
+
+    <!-- Sentence splitting -->
+    <processor>eu.modernmt.processing.splitter.SentenceBreakProcessor</processor>
 </pipeline>

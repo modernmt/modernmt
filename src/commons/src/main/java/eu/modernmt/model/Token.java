@@ -1,19 +1,21 @@
 package eu.modernmt.model;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * Created by davide on 17/02/16.
  */
 public class Token implements Serializable {
 
-    /*the original text in the original string*/
+    // the original form of this token
     protected String text;
-    /*the text version that was identified as a token:
-     * It may be partly processed*/
+    // the text version that was identified as a token, it may be partly processed
     protected String placeholder;
-    /*the original string between this token and the next one*/
+    // the original string between this token and the next one
     protected String rightSpace;
+    // if true, this token mark an end of sentence
+    protected boolean sentenceBreak;
 
     public Token(String placeholder) {
         this(null, placeholder, null);
@@ -27,6 +29,7 @@ public class Token implements Serializable {
         this.text = text;
         this.placeholder = placeholder;
         this.rightSpace = rightSpace;
+        this.sentenceBreak = false;
     }
 
     public String getText() {
@@ -64,6 +67,14 @@ public class Token implements Serializable {
         this.rightSpace = rightSpace;
     }
 
+    public boolean isSentenceBreak() {
+        return sentenceBreak;
+    }
+
+    public void setSentenceBreak(boolean sentenceBreak) {
+        this.sentenceBreak = sentenceBreak;
+    }
+
     @Override
     public String toString() {
         return text == null ? placeholder : text;
@@ -76,9 +87,9 @@ public class Token implements Serializable {
 
         Token token = (Token) o;
 
-        if (text != null ? !text.equals(token.text) : token.text != null) return false;
+        if (!Objects.equals(text, token.text)) return false;
         if (!placeholder.equals(token.placeholder)) return false;
-        return rightSpace != null ? rightSpace.equals(token.rightSpace) : token.rightSpace == null;
+        return Objects.equals(rightSpace, token.rightSpace);
 
     }
 

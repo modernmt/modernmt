@@ -24,13 +24,14 @@ import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
-import eu.modernmt.processing.splitter.SentenceSplitter;
-import eu.modernmt.processing.splitter.TranslationJoiner;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -224,14 +225,11 @@ public class TranslationFacade {
             Postprocessor postprocessor = engine.getPostprocessor();
 
             Sentence sentence = preprocessor.process(direction, text);
-            Translation translation;
 
-            // Sentence splitter
-            Sentence[] sentencePieces = SentenceSplitter.forLanguage(direction.source).split(sentence);
-            Translation[] translationPieces = translate(sentencePieces, decoder);
+            // Translation
+            Translation translation = translate(sentence, decoder);
 
-            translation = this.merge(sentence, sentencePieces, translationPieces);
-
+            // Post-processing
             postprocessor.process(direction, translation);
 
             // NBest list
@@ -246,15 +244,6 @@ public class TranslationFacade {
             return translation;
         }
 
-        private Translation[] translate(Sentence[] sentences, Decoder decoder) throws DecoderException {
-            Translation[] translations = new Translation[sentences.length];
-
-            for (int i = 0; i < sentences.length; i++)
-                translations[i] = this.translate(sentences[i], decoder);
-
-            return translations;
-        }
-
         private Translation translate(Sentence sentence, Decoder decoder) throws DecoderException {
             Translation translation;
 
@@ -263,34 +252,6 @@ public class TranslationFacade {
                 translation = nBestDecoder.translate(user, direction, sentence, context, nbest);
             } else {
                 translation = decoder.translate(user, direction, sentence, context);
-            }
-
-            return translation;
-        }
-
-        private Translation merge(Sentence originalSentence, Sentence[] sentencePieces, Translation[] translationPieces) {
-            Translation translation = TranslationJoiner.join(originalSentence, sentencePieces, translationPieces);
-
-            if (translation.hasNbest()) {
-                int nbestSize = 0;
-                for (Translation piece : translationPieces)
-                    nbestSize = Math.max(nbestSize, piece.getNbest().size());
-
-                List<Translation> globalNBests = new ArrayList<>(nbestSize);
-                Translation[] ithNBests = new Translation[translationPieces.length];
-
-                for (int i = 0; i < nbestSize; i++) {
-                    for (int t = 0; t < translationPieces.length; t++) {
-                        Translation piece = translationPieces[t];
-                        int index = Math.min(i, piece.length() - 1);  // If not enough options, take the last one
-
-                        ithNBests[t] = piece.getNbest().get(index);
-                    }
-
-                    globalNBests.add(TranslationJoiner.join(originalSentence, sentencePieces, ithNBests));
-                }
-
-                translation.setNbest(globalNBests);
             }
 
             return translation;

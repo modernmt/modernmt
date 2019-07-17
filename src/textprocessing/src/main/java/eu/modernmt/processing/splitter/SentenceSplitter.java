@@ -1,74 +1,89 @@
 package eu.modernmt.processing.splitter;
 
-import eu.modernmt.lang.Language;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-/**
- * A SentenceSplitter is a preprocessing component that is capable of
- * - receiving a list of tokens obtained from a text
- * - decide whether they form multiple sentences
- * - return the positions after which a sentence ends (splits)
- */
-public abstract class SentenceSplitter {
+public class SentenceSplitter {
 
-    private static final SentenceSplitter DEFAULT_IMPL = new DefaultSentenceSplitter();
-    private static final Map<String, SentenceSplitter> IMPLEMENTATIONS = new HashMap<>();
-    private static final int MIN_SENTENCE_SIZE = 128;
+    public static int DEFAULT_MIN_SENTENCE_LENGTH = 8;
 
-    public static SentenceSplitter forLanguage(Language language) {
-        return IMPLEMENTATIONS.getOrDefault(language.getLanguage(), DEFAULT_IMPL);
+    private static int maxSplits(Sentence sentence) {
+        int result = 0;
+
+        for (Word word : sentence.getWords()) {
+            if (word.isSentenceBreak())
+                result++;
+        }
+
+        return 1 + result;
+    }
+
+    private final Word[] words;
+    private final int minLength;
+    private int begin;
+    private int end;
+    private final ArrayList<Sentence> accumulator;
+
+    public SentenceSplitter(Sentence sentence) {
+        this(sentence, DEFAULT_MIN_SENTENCE_LENGTH);
     }
 
     /**
-     * This method splits a sentence into multiple sentences by looking for splits among its words.
-     * A split is a Word in correspondence of which a sentence ends.
-     * So, if splits are found, it means that multiple sentences are contained in the passed text,
-     * (and they should be handled separately by the translation engine.)
+     * Splits the sentence into sub-sentences following the Sentence-Break annotation.
+     * <b>Important</b>: tags are not included in the resulting sub-sentences
      *
-     * @param sentence the text to find the splits of, in the form of a Word array
-     * @return a List containing the split positions in the array.
+     * @param sentence  the sentence to split
+     * @param minLength the minimum desired length of a sub-sentence
      */
-    public Sentence[] split(Sentence sentence) {
-        Word[] originalWords = sentence.getWords();
-        List<Sentence> splitSentences = new ArrayList<>();
+    public SentenceSplitter(Sentence sentence, int minLength) {
+        this.words = sentence.getWords();
+        this.begin = 0;
+        this.end = -1;
+        this.minLength = minLength;
 
-        int prevSplit = -1;
-        for (int i = 0; i < originalWords.length; i++) {
-            /* i - prevSplit is the amount of words seen since the last split. Do not even check the split if it is too low */
-            if (i - prevSplit < MIN_SENTENCE_SIZE)
-                continue;
+        int maxSize = maxSplits(sentence);
+        this.accumulator = maxSize == 1 ? null : new ArrayList<>(maxSize);
+    }
 
-            if (isSplit(sentence, i)) {
-                Word[] newSplitSentenceWords = new Word[i - prevSplit];
-                for (int j = 0; j < i - prevSplit; j++)
-                    newSplitSentenceWords[j] = originalWords[j + prevSplit + 1];
-                splitSentences.add(new Sentence(newSplitSentenceWords));
-                prevSplit = i;
+    /**
+     * @return an array of sentences obtained by splitting the input one, or {@code null} if no split is computed.
+     */
+    public Sentence[] split() {
+        if (accumulator == null)
+            return null;
+
+        accumulator.clear();
+
+        for (int i = 0; i < words.length; i++) {
+            if (words[i].isSentenceBreak() || i == words.length - 1) {
+                if (end >= 0 && getCurrentSplitSize(i) > minLength)
+                    accumulator.add(split(end));
+
+                end = i;
             }
         }
 
-        //handle the last sentence
-        Word[] lastSplitSentenceWords = new Word[originalWords.length - 1 - prevSplit];
-        for (int j = 0; j < originalWords.length - 1 - prevSplit; j++)
-            lastSplitSentenceWords[j] = originalWords[j + prevSplit + 1];
-        splitSentences.add(new Sentence(lastSplitSentenceWords));
+        accumulator.add(split(end));
 
-        Sentence[] array = new Sentence[splitSentences.size()];
-        return splitSentences.toArray(array);
+        return accumulator.toArray(new Sentence[0]);
     }
 
-    /**
-     * This method checks if the a Word at a certain index in a Sentence is a split.
-     *
-     * @param sentence  the sentence to check the presence of splits in
-     * @param wordIndex the index of the word to check
-     * @return TRUE is the current word is a split, FALSE otherwise.
-     */
-    protected abstract boolean isSplit(Sentence sentence, int wordIndex);
+    private int getCurrentSplitSize(int position) {
+        return position + 1 - begin;
+    }
+
+    private Sentence split(int end) {
+        int size = end + 1 - begin;
+
+        Word[] subWords = new Word[size];
+        System.arraycopy(words, begin, subWords, 0, size);
+
+        this.begin = end + 1;
+        this.end = -1;
+
+        return new Sentence(subWords);
+    }
+
 }
