@@ -142,20 +142,31 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
 
     @Override
     public Translation translate(LanguageDirection direction, Sentence sentence, int nBest) throws DecoderException {
-        return this.translate(sentence, serialize(direction, sentence, null, null));
+        return this.translate(direction, new Sentence[]{sentence}, nBest)[0];
     }
 
     @Override
     public Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException {
-        return this.translate(sentence, serialize(direction, sentence, suggestions, null));
+        return this.translate(direction, new Sentence[]{sentence}, suggestions, nBest)[0];
     }
 
     @Override
-    public Translation translate(LanguageDirection direction, Sentence sentence, String[] translation) throws DecoderException {
-        return this.translate(sentence, serialize(direction, sentence, null, translation));
+    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, int nBest) throws DecoderException {
+        return this.translate(sentences, serialize(direction, sentences, null, null));
     }
 
-    private Translation translate(Sentence sentence, String payload) throws DecoderException {
+    @Override
+    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, int nBest) throws DecoderException {
+        return this.translate(sentences, serialize(direction, sentences, suggestions, null));
+    }
+
+    @Override
+    public Translation align(LanguageDirection direction, Sentence sentence, String[] translation) throws DecoderException {
+        Sentence[] sentences = new Sentence[]{sentence};
+        return this.translate(sentences, serialize(direction, sentences, null, translation))[0];
+    }
+
+    private Translation[] translate(Sentence[] sentences, String payload) throws DecoderException {
         if (!isAlive())
             throw new DecoderUnavailableException("Neural decoder process not available");
 
@@ -168,10 +179,10 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
             if (response == null)
                 throw new DecoderUnavailableException("Neural decoder process not responding (timeout)");
 
-            Translation translation = deserialize(response, sentence);
+            Translation[] translations = deserialize(response, sentences);
 
             success = true;
-            return translation;
+            return translations;
         } catch (IOException e) {
             throw new DecoderUnavailableException("Failed to send request to decoder process", e);
         } finally {
@@ -182,8 +193,11 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
         }
     }
 
-    private String serialize(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, String[] forcedTranslation) {
-        String text = TokensOutputStream.serialize(sentence, false, true);
+    private String serialize(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, String[] forcedTranslation) {
+        String[] serialized = new String[sentences.length];
+        for (int i = 0; i < serialized.length; i++)
+            serialized[i] = TokensOutputStream.serialize(sentences[i], false, true);
+        String text = StringUtils.join(serialized, '\n');
 
         JsonObject json = new JsonObject();
         json.addProperty("q", text);
@@ -213,7 +227,7 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
         return json.toString().replace('\n', ' ');
     }
 
-    private Translation deserialize(String response, Sentence sentence) throws IOException, DecoderException {
+    private Translation[] deserialize(String response, Sentence[] sentences) throws IOException, DecoderException {
         JsonObject json;
         try {
             json = parser.parse(response).getAsJsonObject();
@@ -222,20 +236,28 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
         }
 
         boolean success = json.get("success").getAsBoolean();
-        JsonObject data = json.getAsJsonObject("data");
 
         if (success) {
-            Word[] words = TokensOutputStream.deserializeWords(data.get("text").getAsString());
-            JsonElement jsonAlignment = data.get("a");
-            Alignment alignment = jsonAlignment == null ? null : parseAlignment(jsonAlignment.getAsJsonArray());
+            JsonArray data = json.getAsJsonArray("data");
 
-            return new Translation(words, sentence, alignment);
+            Translation[] translations = new Translation[data.size()];
+            for (int i = 0; i < translations.length; i++) {
+                JsonObject e = data.get(i).getAsJsonObject();
+
+                Word[] words = TokensOutputStream.deserializeWords(e.get("text").getAsString());
+                JsonElement jsonAlignment = e.get("a");
+                Alignment alignment = jsonAlignment == null ? null : parseAlignment(jsonAlignment.getAsJsonArray());
+
+                translations[i] = new Translation(words, sentences[i], alignment);
+            }
+
+            return translations;
         } else {
-            String type = data.get("type").getAsString();
+            String type = json.get("type").getAsString();
             String message = null;
 
-            if (data.has("msg"))
-                message = data.get("msg").getAsString();
+            if (json.has("msg"))
+                message = json.get("msg").getAsString();
 
             throw (message == null) ? new DecoderException(type) : new DecoderException(type + " - " + message);
         }

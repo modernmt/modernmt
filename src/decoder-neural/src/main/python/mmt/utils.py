@@ -51,10 +51,10 @@ def mask_std_streams():
 
 
 class TranslationRequest(object):
-    def __init__(self, source_lang, target_lang, query, suggestions=None, forced_translation=None):
+    def __init__(self, source_lang, target_lang, batch, suggestions=None, forced_translation=None):
         self.source_lang = source_lang
         self.target_lang = target_lang
-        self.query = query
+        self.batch = batch
         self.suggestions = suggestions if suggestions is not None else []
         self.forced_translation = forced_translation
 
@@ -65,7 +65,7 @@ class TranslationRequest(object):
         if len(obj) == 0:
             return TranslationRequest(None, None, None)  # Test request
 
-        query = obj['q']
+        batch = obj['q'].split('\n')
         source_lang = obj['sl']
         target_lang = obj['tl']
         forced_translation = obj['f'] if 'f' in obj else None
@@ -82,46 +82,46 @@ class TranslationRequest(object):
 
                 suggestions.append(Suggestion(sugg_sl, sugg_tl, sugg_seg, sugg_tra, sugg_scr))
 
-        return TranslationRequest(source_lang, target_lang, query,
+        return TranslationRequest(source_lang, target_lang, batch,
                                   suggestions=suggestions, forced_translation=forced_translation)
 
 
 class TranslationResponse(object):
     @staticmethod
     def to_json_string(obj):
-        if isinstance(obj, Translation):
-            return TranslationResponse.__translation_to_json_string(obj)
-        else:
+        if isinstance(obj, BaseException):
             return TranslationResponse.__error_to_json_string(obj)
+        else:
+            return TranslationResponse.__translations_to_json_string(obj)
 
     @staticmethod
     def __error_to_json_string(cause):
         return json.dumps({
             'success': False,
-            'data': {
-                'type': 'UnknownError' if isinstance(cause, str) else type(cause).__name__,
-                'msg': cause if isinstance(cause, str) else str(cause)
-            }
+            'type': 'UnknownError' if isinstance(cause, str) else type(cause).__name__,
+            'msg': cause if isinstance(cause, str) else str(cause)
         }).replace('\n', ' ')
 
     @staticmethod
-    def __translation_to_json_string(translation):
-        alignment = TranslationResponse._encode_alignment(translation.alignment)
+    def __translations_to_json_string(translations):
+        def __encode_alignment(a):
+            return [[e[0] for e in a], [e[1] for e in a]] if a is not None else None
 
-        payload = {'text': translation.text}
-        if alignment is not None:
-            payload['a'] = alignment
-        if translation.score is not None:
-            payload['s'] = round(translation.score, 4)
+        def __to_json(translation):
+            alignment = __encode_alignment(translation.alignment)
+
+            payload = {'text': translation.text}
+            if alignment is not None:
+                payload['a'] = alignment
+            if translation.score is not None:
+                payload['s'] = round(translation.score, 4)
+
+            return payload
 
         return json.dumps({
             'success': True,
-            'data': payload,
+            'data': [__to_json(translation) for translation in translations],
         }).replace('\n', ' ')
-
-    @staticmethod
-    def _encode_alignment(a):
-        return [[e[0] for e in a], [e[1] for e in a]] if a is not None else None
 
 
 def serve_forever(stdin, stdout, decoder):
@@ -136,15 +136,15 @@ def serve_forever(stdin, stdout, decoder):
 
             request = TranslationRequest.from_json_string(line)
 
-            if request.query is None:
+            if request.batch is None:
                 decoder.test()
-                translation = Translation(text="")
+                translations = [Translation(text="")]
             else:
-                translation = decoder.translate(request.source_lang, request.target_lang, request.query,
-                                                suggestions=request.suggestions,
-                                                forced_translation=request.forced_translation)
+                translations = decoder.translate(request.source_lang, request.target_lang, request.batch,
+                                                 suggestions=request.suggestions,
+                                                 forced_translation=request.forced_translation)
 
-            response = TranslationResponse.to_json_string(translation)
+            response = TranslationResponse.to_json_string(translations)
 
             stdout.write(response + '\n')
             stdout.flush()

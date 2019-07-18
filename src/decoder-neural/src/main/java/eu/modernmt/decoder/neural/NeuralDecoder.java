@@ -6,14 +6,16 @@ import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.*;
 import eu.modernmt.decoder.neural.execution.DecoderQueue;
 import eu.modernmt.decoder.neural.execution.PythonDecoder;
+import eu.modernmt.decoder.neural.execution.Scheduler;
+import eu.modernmt.decoder.neural.execution.TranslationSplit;
 import eu.modernmt.decoder.neural.execution.impl.DecoderQueueImpl;
 import eu.modernmt.decoder.neural.execution.impl.PythonDecoderImpl;
-import eu.modernmt.memory.ScoreEntry;
-import eu.modernmt.memory.TranslationMemory;
+import eu.modernmt.decoder.neural.execution.impl.SynchronousScheduler;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
-import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.UnsupportedLanguageException;
+import eu.modernmt.memory.ScoreEntry;
+import eu.modernmt.memory.TranslationMemory;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -27,6 +29,8 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -43,13 +47,12 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         }
     }
 
-    private final Logger logger = LogManager.getLogger(getClass());
-
     private final boolean echoServer;
     private final int suggestionsLimit;
     private final TranslationMemory memory;
     private final Set<LanguageDirection> directions;
     private final DecoderQueue decoderQueue;
+    private final Scheduler scheduler;
 
     private volatile long lastSuccessfulTranslation = 0L;
 
@@ -77,6 +80,9 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
         // Decoder Queue
         this.decoderQueue = this.echoServer ? null : loadDecoderQueue(modelConfig, config, model);
+
+        // Scheduler
+        this.scheduler = createScheduler(this.decoderQueue);
     }
 
     protected ModelConfig loadModelConfig(File filepath) throws IOException {
@@ -96,8 +102,8 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
             return DecoderQueueImpl.newCPUInstance(modelConfig, builder, decoderConfig.getThreads());
     }
 
-    public boolean isEchoServer() {
-        return echoServer;
+    protected Scheduler createScheduler(DecoderQueue queue) throws DecoderException {
+        return new SynchronousScheduler(queue);
     }
 
     // Decoder
@@ -134,68 +140,63 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         if (!this.directions.contains(direction))
             throw new UnsupportedLanguageException(direction);
 
-        // Preparing translation jobs
-        Sentence[] textSplits = SentenceSplitter.split(text).toArray(new Sentence[0]);
-        TranslationJob[] jobs = new TranslationJob[textSplits.length];
-
-        for (int i = 0; i < textSplits.length; i++)
-            jobs[i] = new TranslationJob(this, user, direction, textSplits[i], contextVector);
+        // Preparing translation splits
+        List<Sentence> textSplits = split(text);
+        TranslationSplit[] splits = new TranslationSplit[textSplits.size()];
 
         // Search for suggestions
-        long lookupTime = 0L;
-        for (TranslationJob job : jobs)
-            lookupTime += job.computeSuggestions(this.suggestionsLimit);
+        long lookupBegin = System.currentTimeMillis();
 
-        // Translate sentence pieces
-        long decodeTime = 0L;
+        for (int i = 0; i < splits.length; i++) {
+            Sentence split = textSplits.get(i);
+            ScoreEntry[] suggestions = lookup(user, direction, split, contextVector);
+            splits[i] = new TranslationSplit(split, suggestions);
+        }
 
-        PythonDecoder decoder = null;
+        long lookupTime = System.currentTimeMillis() - lookupBegin;
+
+        // Translate sentence splits with scheduler
+        long decodeBegin = System.currentTimeMillis();
 
         try {
-            decoder = echoServer ? null : decoderQueue.take(direction);
+            Future<Translation> result = scheduler.schedule(direction, text, splits);
+            Translation translation = result.get();
+            long decodeTime = System.currentTimeMillis() - decodeBegin;
 
-            for (TranslationJob job : jobs)
-                lookupTime += job.computeTranslation(decoder);
-        } finally {
-            if (decoder != null)
-                decoderQueue.release(decoder);
+            translation.setMemoryLookupTime(lookupTime);
+            translation.setDecodeTime(decodeTime);
+
+            return translation;
+        } catch (InterruptedException e) {
+            throw new DecoderException("Translation interrupted", e);
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+
+            if (cause instanceof RuntimeException)
+                throw (RuntimeException) cause;
+            else if (cause instanceof DecoderException)
+                throw (DecoderException) cause;
+            else
+                throw new DecoderException("Unexpected error while translating", e);
         }
+    }
 
-        // Collect translation splits
-        Translation[] translations = new Translation[jobs.length];
+    protected List<Sentence> split(Sentence sentence) {
+        return SentenceSplitter.split(sentence);
+    }
 
-        for (int i = 0; i < jobs.length; i++) {
-            if (logger.isDebugEnabled()) {
-                Translation translation = jobs[i].getTranslation();
-                ScoreEntry[] suggestions = jobs[i].getSuggestions();
+    protected ScoreEntry[] lookup(UUID user, LanguageDirection direction, Sentence text, ContextVector contextVector) throws DecoderException {
+        ScoreEntry[] entries = null;
 
-                String sourceText = TokensOutputStream.serialize(text, false, true);
-                String targetText = TokensOutputStream.serialize(translation, false, true);
-
-                StringBuilder log = new StringBuilder("Translation received from neural decoder:\n" +
-                        "   sentence = " + sourceText + "\n" +
-                        "   translation = " + targetText + "\n" +
-                        "   suggestions = [\n");
-
-                if (suggestions != null && suggestions.length > 0) {
-                    for (ScoreEntry entry : suggestions)
-                        log.append("      ").append(entry).append('\n');
-                }
-
-                log.append("   ]");
-
-                logger.debug(log);
+        if (text.hasWords() && contextVector != null && !contextVector.isEmpty()) {
+            try {
+                entries = memory.search(user, direction, text, contextVector, suggestionsLimit);
+            } catch (IOException e) {
+                throw new DecoderException("Failed to retrieve suggestions from memory", e);
             }
-
-            translations[i] = jobs[i].getTranslation();
         }
 
-        // Merge translation splits
-        Translation translation = TranslationJoiner.join(text, textSplits, translations);
-        translation.setDecodeTime(decodeTime);
-        translation.setMemoryLookupTime(lookupTime);
-        
-        return translation;
+        return entries != null && entries.length > 0 ? entries : null;
     }
 
     @Override
