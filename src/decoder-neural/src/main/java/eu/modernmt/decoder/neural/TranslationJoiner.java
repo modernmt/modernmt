@@ -1,5 +1,6 @@
 package eu.modernmt.decoder.neural;
 
+import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.neural.execution.TranslationSplit;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
@@ -8,7 +9,7 @@ import eu.modernmt.model.Word;
 
 public class TranslationJoiner {
 
-    public static Translation join(Sentence originalSentence, Sentence[] sentencePieces, TranslationSplit[] translationPieces) {
+    public static Translation join(Sentence originalSentence, Sentence[] sentencePieces, TranslationSplit[] translationPieces) throws DecoderException {
         int globalWordsSize = 0;
         int globalWordAlignmentSize = 0;
 

@@ -3,7 +3,10 @@ package eu.modernmt.decoder.neural;
 import eu.modernmt.config.DecoderConfig;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
-import eu.modernmt.decoder.*;
+import eu.modernmt.decoder.Decoder;
+import eu.modernmt.decoder.DecoderException;
+import eu.modernmt.decoder.DecoderListener;
+import eu.modernmt.decoder.DecoderWithNBest;
 import eu.modernmt.decoder.neural.execution.DecoderQueue;
 import eu.modernmt.decoder.neural.execution.PythonDecoder;
 import eu.modernmt.decoder.neural.execution.Scheduler;
@@ -21,16 +24,12 @@ import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.splitter.SentenceSplitter;
 import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -158,7 +157,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         // Translate sentence splits with scheduler
         try {
             long decodeBegin = System.currentTimeMillis();
-            scheduler.schedule(direction, splits).get();
+            scheduler.schedule(direction, splits).await();
             long decodeTime = System.currentTimeMillis() - decodeBegin;
 
             Translation translation = TranslationJoiner.join(text, textSplits, splits);
@@ -168,15 +167,6 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
             return translation;
         } catch (InterruptedException e) {
             throw new DecoderException("Translation interrupted", e);
-        } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-
-            if (cause instanceof RuntimeException)
-                throw (RuntimeException) cause;
-            else if (cause instanceof DecoderException)
-                throw (DecoderException) cause;
-            else
-                throw new DecoderException("Unexpected error while translating", e);
         }
     }
 

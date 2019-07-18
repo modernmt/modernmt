@@ -9,8 +9,6 @@ import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Translation;
 
-import java.util.concurrent.Future;
-
 public class SynchronousScheduler implements Scheduler {
 
     private final DecoderQueue queue;
@@ -20,18 +18,22 @@ public class SynchronousScheduler implements Scheduler {
     }
 
     @Override
-    public Future<Void> schedule(LanguageDirection direction, TranslationSplit[] splits) throws DecoderException {
+    public Lock schedule(LanguageDirection direction, TranslationSplit[] splits) throws DecoderException {
         PythonDecoder decoder = null;
 
         try {
             decoder = queue == null ? null : queue.take(direction);
 
             for (TranslationSplit split : splits) {
-                Translation translation = translate(decoder, direction, split);
-                split.setTranslation(translation);
+                try {
+                    Translation translation = translate(decoder, direction, split);
+                    split.setTranslation(translation);
+                } catch (DecoderException e) {
+                    split.setException(e);
+                }
             }
 
-            return NoopFuture.INSTANCE;
+            return NoopLock.INSTANCE;
         } finally {
             if (decoder != null)
                 queue.release(decoder);
@@ -62,4 +64,5 @@ public class SynchronousScheduler implements Scheduler {
             return Translation.emptyTranslation(split.sentence);
         }
     }
+
 }
