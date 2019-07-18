@@ -12,7 +12,7 @@ import eu.modernmt.model.Translation;
 import java.io.IOException;
 import java.util.UUID;
 
-class TranslationJob {
+public class TranslationJob {
 
     private final NeuralDecoder decoder;
     private final UUID user;

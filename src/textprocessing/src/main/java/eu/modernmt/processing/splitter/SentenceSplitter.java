@@ -4,85 +4,52 @@ import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class SentenceSplitter {
 
-    public static int DEFAULT_MIN_SENTENCE_LENGTH = 8;
+    private static int count(Sentence sentence) {
+        Word[] words = sentence.getWords();
 
-    private static int maxSplits(Sentence sentence) {
         int result = 0;
-
-        for (Word word : sentence.getWords()) {
-            if (word.isSentenceBreak())
+        for (int i = 0; i < words.length; i++) {
+            if (words[i].isSentenceBreak() || i == words.length - 1)
                 result++;
         }
 
-        return 1 + result;
+        return result;
     }
 
-    private final Word[] words;
-    private final int minLength;
-    private int begin;
-    private int end;
-    private final ArrayList<Sentence> accumulator;
-
-    public SentenceSplitter(Sentence sentence) {
-        this(sentence, DEFAULT_MIN_SENTENCE_LENGTH);
+    public static List<Sentence> split(Sentence sentence) {
+        return split(sentence, 4);
     }
 
-    /**
-     * Splits the sentence into sub-sentences following the Sentence-Break annotation.
-     * <b>Important</b>: tags are not included in the resulting sub-sentences
-     *
-     * @param sentence  the sentence to split
-     * @param minLength the minimum desired length of a sub-sentence
-     */
-    public SentenceSplitter(Sentence sentence, int minLength) {
-        this.words = sentence.getWords();
-        this.begin = 0;
-        this.end = -1;
-        this.minLength = minLength;
+    public static List<Sentence> split(Sentence sentence, int minLength) {
+        ArrayList<Sentence> result = new ArrayList<>(count(sentence));
+        Word[] words = sentence.getWords();
 
-        int maxSize = maxSplits(sentence);
-        this.accumulator = maxSize == 1 ? null : new ArrayList<>(maxSize);
-    }
-
-    /**
-     * @return an array of sentences obtained by splitting the input one, or {@code null} if no split is computed.
-     */
-    public Sentence[] split() {
-        if (accumulator == null)
-            return null;
-
-        accumulator.clear();
+        int splitBegin = 0;
+        int splitLength = 0;
 
         for (int i = 0; i < words.length; i++) {
-            if (words[i].isSentenceBreak() || i == words.length - 1) {
-                if (end >= 0 && getCurrentSplitSize(i) > minLength)
-                    accumulator.add(split(end));
+            splitLength++;
 
-                end = i;
+            if ((words[i].isSentenceBreak() || i == words.length - 1) && splitLength >= minLength) {
+                result.add(split(words, splitBegin, splitLength));
+                splitBegin = i + 1;
+                splitLength = 0;
             }
         }
 
-        accumulator.add(split(end));
+        if (splitLength > 0)
+            result.add(split(words, splitBegin, splitLength));
 
-        return accumulator.toArray(new Sentence[0]);
+        return result;
     }
 
-    private int getCurrentSplitSize(int position) {
-        return position + 1 - begin;
-    }
-
-    private Sentence split(int end) {
-        int size = end + 1 - begin;
-
+    private static Sentence split(Word[] words, int begin, int size) {
         Word[] subWords = new Word[size];
         System.arraycopy(words, begin, subWords, 0, size);
-
-        this.begin = end + 1;
-        this.end = -1;
-
         return new Sentence(subWords);
     }
 

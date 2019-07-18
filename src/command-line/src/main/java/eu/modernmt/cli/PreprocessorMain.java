@@ -12,6 +12,7 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Created by davide on 17/12/15.
@@ -110,14 +111,12 @@ public class PreprocessorMain {
     }
 
     private static void write(Outputter outputter, Sentence sentence, boolean split) throws IOException {
-        Sentence[] sentences = null;
+        List<Sentence> sentences = null;
 
-        if (split) {
-            SentenceSplitter splitter = new SentenceSplitter(sentence);
-            sentences = splitter.split();
-        }
+        if (split)
+            sentences = SentenceSplitter.split(sentence);
 
-        if (sentences == null) {
+        if (sentences == null || sentences.size() < 2) {
             outputter.write(sentence);
         } else {
             for (Sentence sentenceSplit : sentences)

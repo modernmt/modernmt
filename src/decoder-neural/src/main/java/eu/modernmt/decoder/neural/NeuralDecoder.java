@@ -135,17 +135,11 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
             throw new UnsupportedLanguageException(direction);
 
         // Preparing translation jobs
-        SentenceSplitter splitter = new SentenceSplitter(text);
-        Sentence[] textSplits = splitter.split();
-        TranslationJob[] jobs;
+        Sentence[] textSplits = SentenceSplitter.split(text).toArray(new Sentence[0]);
+        TranslationJob[] jobs = new TranslationJob[textSplits.length];
 
-        if (textSplits == null) {
-            jobs = new TranslationJob[]{new TranslationJob(this, user, direction, text, contextVector)};
-        } else {
-            jobs = new TranslationJob[textSplits.length];
-            for (int i = 0; i < textSplits.length; i++)
-                jobs[i] = new TranslationJob(this, user, direction, textSplits[i], contextVector);
-        }
+        for (int i = 0; i < textSplits.length; i++)
+            jobs[i] = new TranslationJob(this, user, direction, textSplits[i], contextVector);
 
         // Search for suggestions
         long lookupTime = 0L;
@@ -197,13 +191,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         }
 
         // Merge translation splits
-        Translation translation;
-
-        if (textSplits == null) {
-            translation = translations[0];
-        } else {
-            translation = TranslationJoiner.join(text, textSplits, translations);
-        }
+        Translation translation = TranslationJoiner.join(text, textSplits, translations);
         translation.setDecodeTime(decodeTime);
         translation.setMemoryLookupTime(lookupTime);
         
