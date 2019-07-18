@@ -1,14 +1,12 @@
 package eu.modernmt.decoder.neural.execution.impl;
 
 import eu.modernmt.decoder.DecoderException;
-import eu.modernmt.decoder.TranslationJoiner;
 import eu.modernmt.decoder.neural.execution.DecoderQueue;
 import eu.modernmt.decoder.neural.execution.PythonDecoder;
 import eu.modernmt.decoder.neural.execution.Scheduler;
 import eu.modernmt.decoder.neural.execution.TranslationSplit;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguageDirection;
-import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 
 import java.util.concurrent.Future;
@@ -22,20 +20,18 @@ public class SynchronousScheduler implements Scheduler {
     }
 
     @Override
-    public Future<Translation> schedule(LanguageDirection direction, Sentence sentence, TranslationSplit[] translationSplits) throws DecoderException {
+    public Future<Void> schedule(LanguageDirection direction, TranslationSplit[] splits) throws DecoderException {
         PythonDecoder decoder = null;
 
         try {
             decoder = queue == null ? null : queue.take(direction);
 
-            Sentence[] splits = new Sentence[translationSplits.length];
-            Translation[] translations = new Translation[translationSplits.length];
-            for (int i = 0; i < translations.length; i++) {
-                splits[i] = translationSplits[i].sentence;
-                translations[i] = translate(decoder, direction, translationSplits[i]);
+            for (TranslationSplit split : splits) {
+                Translation translation = translate(decoder, direction, split);
+                split.setTranslation(translation);
             }
 
-            return new TrivialFuture<>(TranslationJoiner.join(sentence, splits, translations));
+            return NoopFuture.INSTANCE;
         } finally {
             if (decoder != null)
                 queue.release(decoder);

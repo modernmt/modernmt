@@ -5,22 +5,21 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-public class TrivialFuture<V> implements Future<V> {
+public class NoopFuture implements Future<Void> {
 
-    private final V value;
+    public static final NoopFuture INSTANCE = new NoopFuture();
 
-    public TrivialFuture(V value) {
-        this.value = value;
+    private NoopFuture() {
     }
 
     @Override
     public boolean cancel(boolean mayInterruptIfRunning) {
-        throw new UnsupportedOperationException();
+        return false;
     }
 
     @Override
     public boolean isCancelled() {
-        throw new UnsupportedOperationException();
+        return false;
     }
 
     @Override
@@ -29,12 +28,12 @@ public class TrivialFuture<V> implements Future<V> {
     }
 
     @Override
-    public V get() {
-        return value;
+    public Void get() {
+        return null;
     }
 
     @Override
-    public V get(long timeout, @NotNull TimeUnit unit) {
-        throw new UnsupportedOperationException();
+    public Void get(long timeout, @NotNull TimeUnit unit) {
+        return null;
     }
 }

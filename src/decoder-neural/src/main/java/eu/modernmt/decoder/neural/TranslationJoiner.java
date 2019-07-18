@@ -1,5 +1,6 @@
-package eu.modernmt.decoder;
+package eu.modernmt.decoder.neural;
 
+import eu.modernmt.decoder.neural.execution.TranslationSplit;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -7,15 +8,16 @@ import eu.modernmt.model.Word;
 
 public class TranslationJoiner {
 
-    public static Translation join(Sentence originalSentence, Sentence[] sentencePieces, Translation[] translationPieces) {
+    public static Translation join(Sentence originalSentence, Sentence[] sentencePieces, TranslationSplit[] translationPieces) {
         int globalWordsSize = 0;
         int globalWordAlignmentSize = 0;
 
-        for (Translation piece : translationPieces) {
-            globalWordsSize += piece.getWords().length;
+        for (TranslationSplit piece : translationPieces) {
+            Translation translation = piece.getTranslation();
+            globalWordsSize += translation.getWords().length;
 
-            if (piece.hasAlignment())
-                globalWordAlignmentSize += piece.getWordAlignment().size();
+            if (translation.hasAlignment())
+                globalWordAlignmentSize += translation.getWordAlignment().size();
         }
 
         long totalDecodeTime = 0L;
@@ -25,7 +27,7 @@ public class TranslationJoiner {
         AlignmentJoiner alignment = globalWordAlignmentSize > 0 ? new AlignmentJoiner(globalWordAlignmentSize) : null;
 
         for (int i = 0; i < sentencePieces.length; i++) {
-            Translation translationPiece = translationPieces[i];
+            Translation translationPiece = translationPieces[i].getTranslation();
             Sentence sentencePiece = sentencePieces[i];
 
             // Times
