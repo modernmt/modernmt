@@ -18,7 +18,7 @@ public class SynchronousScheduler implements Scheduler {
     }
 
     @Override
-    public Lock schedule(LanguageDirection direction, TranslationSplit[] splits) throws DecoderException {
+    public TranslationLock schedule(LanguageDirection direction, TranslationSplit[] splits) throws DecoderException {
         PythonDecoder decoder = null;
 
         try {
@@ -33,7 +33,7 @@ public class SynchronousScheduler implements Scheduler {
                 }
             }
 
-            return NoopLock.INSTANCE;
+            return TranslationLock.NOOP;
         } finally {
             if (decoder != null)
                 queue.release(decoder);
@@ -65,4 +65,8 @@ public class SynchronousScheduler implements Scheduler {
         }
     }
 
+    @Override
+    public void close() {
+        // Nothing to do
+    }
 }

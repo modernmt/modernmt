@@ -232,6 +232,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
     @Override
     public void close() {
+        IOUtils.closeQuietly(this.scheduler);
         IOUtils.closeQuietly(this.decoderQueue);
         IOUtils.closeQuietly(this.memory);
     }

@@ -3,19 +3,36 @@ package eu.modernmt.decoder.neural.execution;
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.lang.LanguageDirection;
 
+import java.io.Closeable;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
-public interface Scheduler {
+public interface Scheduler extends Closeable {
 
-    interface Lock {
+    interface TranslationLock {
+
+        TranslationLock NOOP = new TranslationLock() {
+            @Override
+            public void await() {
+            }
+
+            @Override
+            public boolean await(long timeout, TimeUnit unit) {
+                return true;
+            }
+
+            @Override
+            public void translationSplitCompleted(TranslationSplit split) {
+            }
+        };
 
         void await() throws InterruptedException;
 
-        void await(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException;
+        boolean await(long timeout, TimeUnit unit) throws InterruptedException;
+
+        void translationSplitCompleted(TranslationSplit split);
 
     }
 
-    Lock schedule(LanguageDirection direction, TranslationSplit[] translationSplits) throws DecoderException;
+    TranslationLock schedule(LanguageDirection direction, TranslationSplit[] translationSplits) throws DecoderException;
 
 }

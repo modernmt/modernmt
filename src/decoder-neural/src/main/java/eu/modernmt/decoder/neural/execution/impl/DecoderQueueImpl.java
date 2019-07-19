@@ -81,6 +81,11 @@ public class DecoderQueueImpl implements DecoderQueue {
     }
 
     @Override
+    public int size() {
+        return maxAvailability;
+    }
+
+    @Override
     public void setListener(DecoderListener listener) {
         this.listener = listener;
     }
