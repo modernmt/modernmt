@@ -75,6 +75,11 @@
             <artifactId>mmt-commons</artifactId>
             <version>${mmt.version}</version>
         </dependency>
+        <dependency>
+            <groupId>eu.modernmt</groupId>
+            <artifactId>mmt-textprocessing</artifactId>
+            <version>${mmt.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.lucene</groupId>

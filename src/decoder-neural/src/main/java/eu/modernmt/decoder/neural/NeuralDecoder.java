@@ -9,20 +9,21 @@ import eu.modernmt.decoder.DecoderListener;
 import eu.modernmt.decoder.DecoderWithNBest;
 import eu.modernmt.decoder.neural.execution.DecoderQueue;
 import eu.modernmt.decoder.neural.execution.PythonDecoder;
+import eu.modernmt.decoder.neural.execution.Scheduler;
+import eu.modernmt.decoder.neural.execution.TranslationSplit;
 import eu.modernmt.decoder.neural.execution.impl.DecoderQueueImpl;
 import eu.modernmt.decoder.neural.execution.impl.PythonDecoderImpl;
-import eu.modernmt.memory.ScoreEntry;
-import eu.modernmt.memory.TranslationMemory;
+import eu.modernmt.decoder.neural.execution.impl.SynchronousScheduler;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
-import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.UnsupportedLanguageException;
+import eu.modernmt.memory.ScoreEntry;
+import eu.modernmt.memory.TranslationMemory;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
+import eu.modernmt.processing.splitter.SentenceSplitter;
 import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,13 +46,12 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         }
     }
 
-    private final Logger logger = LogManager.getLogger(getClass());
-
     private final boolean echoServer;
     private final int suggestionsLimit;
     private final TranslationMemory memory;
     private final Set<LanguageDirection> directions;
     private final DecoderQueue decoderQueue;
+    private final Scheduler scheduler;
 
     private volatile long lastSuccessfulTranslation = 0L;
 
@@ -79,6 +79,9 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
         // Decoder Queue
         this.decoderQueue = this.echoServer ? null : loadDecoderQueue(modelConfig, config, model);
+
+        // Scheduler
+        this.scheduler = createScheduler(this.decoderQueue);
     }
 
     protected ModelConfig loadModelConfig(File filepath) throws IOException {
@@ -96,6 +99,10 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
             return DecoderQueueImpl.newGPUInstance(modelConfig, builder, decoderConfig.getGPUs());
         else
             return DecoderQueueImpl.newCPUInstance(modelConfig, builder, decoderConfig.getThreads());
+    }
+
+    protected Scheduler createScheduler(DecoderQueue queue) throws DecoderException {
+        return new SynchronousScheduler(queue);
     }
 
     // Decoder
@@ -132,84 +139,53 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         if (!this.directions.contains(direction))
             throw new UnsupportedLanguageException(direction);
 
-        long decodeTime = 0L;
-        long lookupTime = 0L;
-        Translation translation;
+        // Preparing translation splits
+        Sentence[] textSplits = split(text).toArray(new Sentence[0]);
+        TranslationSplit[] splits = new TranslationSplit[textSplits.length];
 
-        if (text.hasWords()) {
-            ScoreEntry[] suggestions = null;
+        // Search for suggestions
+        long lookupBegin = System.currentTimeMillis();
 
-            if (contextVector != null && !contextVector.isEmpty()) {
-                long begin = System.currentTimeMillis();
-
-                try {
-                    suggestions = memory.search(user, direction, text, contextVector, this.suggestionsLimit);
-                } catch (IOException e) {
-                    throw new DecoderException("Failed to retrieve suggestions from memory", e);
-                }
-
-                lookupTime = System.currentTimeMillis() - begin;
-            }
-
-            if (this.echoServer) {
-                if (suggestions != null && suggestions.length > 0) {
-                    translation = Translation.fromTokens(text, suggestions[0].translation);
-                } else {
-                    translation = Translation.fromTokens(text, TokensOutputStream.tokens(text, false, true));
-                }
-            } else {
-                PythonDecoder decoder = null;
-
-                try {
-                    decoder = decoderQueue.take(direction);
-
-                    long begin = System.currentTimeMillis();
-
-                    if (suggestions != null && suggestions.length > 0) {
-                        // if perfect match, force translate with suggestion instead
-                        if (suggestions[0].score == 1.f) {
-                            translation = decoder.translate(direction, text, suggestions[0].translation);
-                        } else {
-                            translation = decoder.translate(direction, text, suggestions, nbestListSize);
-                        }
-                    } else {
-                        translation = decoder.translate(direction, text, nbestListSize);
-                    }
-
-                    decodeTime = System.currentTimeMillis() - begin;
-
-                    lastSuccessfulTranslation = System.currentTimeMillis();
-                } finally {
-                    if (decoder != null)
-                        decoderQueue.release(decoder);
-                }
-            }
-
-            if (logger.isDebugEnabled()) {
-                String sourceText = TokensOutputStream.serialize(text, false, true);
-                String targetText = TokensOutputStream.serialize(translation, false, true);
-
-                StringBuilder log = new StringBuilder("Translation received from neural decoder:\n" +
-                        "   sentence = " + sourceText + "\n" +
-                        "   translation = " + targetText + "\n" +
-                        "   suggestions = [\n");
-
-                if (suggestions != null && suggestions.length > 0) {
-                    for (ScoreEntry entry : suggestions)
-                        log.append("      ").append(entry).append('\n');
-                }
-
-                log.append("   ]");
-
-                logger.debug(log);
-            }
-        } else {
-            translation = Translation.emptyTranslation(text);
+        for (int i = 0; i < splits.length; i++) {
+            Sentence split = textSplits[i];
+            ScoreEntry[] suggestions = lookup(user, direction, split, contextVector);
+            splits[i] = new TranslationSplit(split, suggestions);
         }
 
-        translation.setDecodeTime(decodeTime);
-        translation.setMemoryLookupTime(lookupTime);
-        return translation;
+        long lookupTime = System.currentTimeMillis() - lookupBegin;
+
+        // Translate sentence splits with scheduler
+        try {
+            long decodeBegin = System.currentTimeMillis();
+            scheduler.schedule(direction, splits).await();
+            long decodeTime = System.currentTimeMillis() - decodeBegin;
+
+            Translation translation = TranslationJoiner.join(text, textSplits, splits);
+            translation.setMemoryLookupTime(lookupTime);
+            translation.setDecodeTime(decodeTime);
+
+            return translation;
+        } catch (InterruptedException e) {
+            throw new DecoderException("Translation interrupted", e);
+        }
+    }
+
+    protected List<Sentence> split(Sentence sentence) {
+        return SentenceSplitter.split(sentence);
+    }
+
+    protected ScoreEntry[] lookup(UUID user, LanguageDirection direction, Sentence text, ContextVector contextVector) throws DecoderException {
+        ScoreEntry[] entries = null;
+
+        if (text.hasWords() && contextVector != null && !contextVector.isEmpty()) {
+            try {
+                entries = memory.search(user, direction, text, contextVector, suggestionsLimit);
+            } catch (IOException e) {
+                throw new DecoderException("Failed to retrieve suggestions from memory", e);
+            }
+        }
+
+        return entries != null && entries.length > 0 ? entries : null;
     }
 
     @Override
@@ -256,6 +232,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
     @Override
     public void close() {
+        IOUtils.closeQuietly(this.scheduler);
         IOUtils.closeQuietly(this.decoderQueue);
         IOUtils.closeQuietly(this.memory);
     }

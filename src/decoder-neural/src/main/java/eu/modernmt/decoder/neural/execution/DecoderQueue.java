@@ -17,6 +17,8 @@ public interface DecoderQueue extends Closeable {
 
     int availability();
 
+    int size();
+
     void setListener(DecoderListener listener);
 
 }

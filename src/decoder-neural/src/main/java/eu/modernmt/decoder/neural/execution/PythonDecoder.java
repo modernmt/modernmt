@@ -1,8 +1,8 @@
 package eu.modernmt.decoder.neural.execution;
 
 import eu.modernmt.decoder.DecoderException;
-import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.lang.LanguageDirection;
+import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 
@@ -27,7 +27,11 @@ public interface PythonDecoder extends Closeable {
 
     Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException;
 
-    Translation translate(LanguageDirection direction, Sentence sentence, String[] translation) throws DecoderException;
+    Translation[] translate(LanguageDirection direction, Sentence[] sentences, int nBest) throws DecoderException;
+
+    Translation[] translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, int nBest) throws DecoderException;
+
+    Translation align(LanguageDirection direction, Sentence sentence, String[] translation) throws DecoderException;
 
     void test() throws DecoderException;
 

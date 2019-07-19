@@ -115,6 +115,9 @@ class Tuner(object):
         return tuning_epochs, tuning_learning_rate
 
     def tune(self, dataset, num_iterations, lr):
+        if len(dataset) == 0:
+            return
+
         epoch_itr = self._task.get_batch_iterator(
             dataset=dataset,
             max_tokens=self._tuning_ops.tuning_max_batch_size,
@@ -124,15 +127,17 @@ class Tuner(object):
             seed=1, num_shards=1, shard_id=0,
         )
 
-        sample = next(epoch_itr.next_epoch_itr(shuffle=False, fix_batches_to_gpus=False))
-        sample = self._prepare_sample(sample)
+        optimizer = self._build_optimizer()
 
-        if sample is not None:
-            optimizer = self._build_optimizer()
+        for step in range(num_iterations):
+            for sample in epoch_itr.next_epoch_itr(shuffle=False, fix_batches_to_gpus=False):
+                if len(sample) == 0:
+                    continue
 
-            for step in range(num_iterations):
+                sample = utils.move_to_cuda(sample)
                 optimizer.set_lr(lr)
                 self._train_step(optimizer, sample, step)
+                del sample
 
     def _train_step(self, optimizer, sample, step=0):
         """Do forward, backward and parameter update."""
@@ -161,10 +166,3 @@ class Tuner(object):
             optimizer.step()
         except OverflowError as e:
             self._logger.warning('overflow detected, ' + str(e))
-
-    def _prepare_sample(self, sample):
-        if sample is None or len(sample) == 0:
-            return None
-        if self._cuda:
-            sample = utils.move_to_cuda(sample)
-        return sample

@@ -1,74 +1,56 @@
 package eu.modernmt.processing.splitter;
 
-import eu.modernmt.lang.Language;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-/**
- * A SentenceSplitter is a preprocessing component that is capable of
- * - receiving a list of tokens obtained from a text
- * - decide whether they form multiple sentences
- * - return the positions after which a sentence ends (splits)
- */
-public abstract class SentenceSplitter {
+public class SentenceSplitter {
 
-    private static final SentenceSplitter DEFAULT_IMPL = new DefaultSentenceSplitter();
-    private static final Map<String, SentenceSplitter> IMPLEMENTATIONS = new HashMap<>();
-    private static final int MIN_SENTENCE_SIZE = 128;
+    private static int count(Sentence sentence) {
+        Word[] words = sentence.getWords();
 
-    public static SentenceSplitter forLanguage(Language language) {
-        return IMPLEMENTATIONS.getOrDefault(language.getLanguage(), DEFAULT_IMPL);
+        int result = 0;
+        for (int i = 0; i < words.length; i++) {
+            if (words[i].isSentenceBreak() || i == words.length - 1)
+                result++;
+        }
+
+        return result;
     }
 
-    /**
-     * This method splits a sentence into multiple sentences by looking for splits among its words.
-     * A split is a Word in correspondence of which a sentence ends.
-     * So, if splits are found, it means that multiple sentences are contained in the passed text,
-     * (and they should be handled separately by the translation engine.)
-     *
-     * @param sentence the text to find the splits of, in the form of a Word array
-     * @return a List containing the split positions in the array.
-     */
-    public Sentence[] split(Sentence sentence) {
-        Word[] originalWords = sentence.getWords();
-        List<Sentence> splitSentences = new ArrayList<>();
+    public static List<Sentence> split(Sentence sentence) {
+        return split(sentence, 4);
+    }
 
-        int prevSplit = -1;
-        for (int i = 0; i < originalWords.length; i++) {
-            /* i - prevSplit is the amount of words seen since the last split. Do not even check the split if it is too low */
-            if (i - prevSplit < MIN_SENTENCE_SIZE)
-                continue;
+    public static List<Sentence> split(Sentence sentence, int minLength) {
+        ArrayList<Sentence> result = new ArrayList<>(count(sentence));
+        Word[] words = sentence.getWords();
 
-            if (isSplit(sentence, i)) {
-                Word[] newSplitSentenceWords = new Word[i - prevSplit];
-                for (int j = 0; j < i - prevSplit; j++)
-                    newSplitSentenceWords[j] = originalWords[j + prevSplit + 1];
-                splitSentences.add(new Sentence(newSplitSentenceWords));
-                prevSplit = i;
+        int splitBegin = 0;
+        int splitLength = 0;
+
+        for (int i = 0; i < words.length; i++) {
+            splitLength++;
+
+            if ((words[i].isSentenceBreak() || i == words.length - 1) && splitLength >= minLength) {
+                result.add(split(words, splitBegin, splitLength));
+                splitBegin = i + 1;
+                splitLength = 0;
             }
         }
 
-        //handle the last sentence
-        Word[] lastSplitSentenceWords = new Word[originalWords.length - 1 - prevSplit];
-        for (int j = 0; j < originalWords.length - 1 - prevSplit; j++)
-            lastSplitSentenceWords[j] = originalWords[j + prevSplit + 1];
-        splitSentences.add(new Sentence(lastSplitSentenceWords));
+        if (splitLength > 0)
+            result.add(split(words, splitBegin, splitLength));
 
-        Sentence[] array = new Sentence[splitSentences.size()];
-        return splitSentences.toArray(array);
+        return result;
     }
 
-    /**
-     * This method checks if the a Word at a certain index in a Sentence is a split.
-     *
-     * @param sentence  the sentence to check the presence of splits in
-     * @param wordIndex the index of the word to check
-     * @return TRUE is the current word is a split, FALSE otherwise.
-     */
-    protected abstract boolean isSplit(Sentence sentence, int wordIndex);
+    private static Sentence split(Word[] words, int begin, int size) {
+        Word[] subWords = new Word[size];
+        System.arraycopy(words, begin, subWords, 0, size);
+        return new Sentence(subWords);
+    }
+
 }
