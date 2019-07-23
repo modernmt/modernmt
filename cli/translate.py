@@ -119,6 +119,8 @@ def parse_args(argv=None):
     parser.add_argument('--batch', action='store_true', dest='batch', default=False,
                         help='if set, the script will read the whole stdin before send translations to MMT.'
                              'This can be used to execute translation in parallel for a faster translation. ')
+    parser.add_argument('--threads', dest='threads', default=None, type=int,
+                        help='number of concurrent translation requests.')
     parser.add_argument('--xliff', dest='is_xliff', action='store_true', default=False,
                         help='if set, the input is a XLIFF file.')
 
@@ -157,6 +159,6 @@ def main(argv=None):
             translator = InteractiveTranslator(mmt)
 
         try:
-            translator.run(sys.stdin, sys.stdout)
+            translator.run(sys.stdin, sys.stdout, threads=args.threads)
         except KeyboardInterrupt:
             pass  # exit
