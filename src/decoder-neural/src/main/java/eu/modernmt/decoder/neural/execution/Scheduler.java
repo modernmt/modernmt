@@ -1,6 +1,6 @@
 package eu.modernmt.decoder.neural.execution;
 
-import eu.modernmt.decoder.DecoderException;
+import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.lang.LanguageDirection;
 
 import java.io.Closeable;
@@ -33,6 +33,6 @@ public interface Scheduler extends Closeable {
 
     }
 
-    TranslationLock schedule(LanguageDirection direction, TranslationSplit[] translationSplits) throws DecoderException;
+    TranslationLock schedule(LanguageDirection direction, TranslationSplit[] translationSplits) throws DecoderUnavailableException;
 
 }

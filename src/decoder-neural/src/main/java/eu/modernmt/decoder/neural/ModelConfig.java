@@ -20,8 +20,8 @@ public class ModelConfig {
     private final int DEFAULT_SUGGESTIONS_LIMIT = 1;
     private final int DEFAULT_QUERY_MIN_RESULTS = 10;
 
-    private final HierarchicalINIConfiguration config;
-    private final File basePath;
+    protected final HierarchicalINIConfiguration config;
+    protected final File basePath;
 
     public static ModelConfig load(File path) throws IOException {
         try {
@@ -31,7 +31,7 @@ public class ModelConfig {
         }
     }
 
-    private ModelConfig(HierarchicalINIConfiguration config, File basePath) {
+    protected ModelConfig(HierarchicalINIConfiguration config, File basePath) {
         this.config = config;
         this.basePath = basePath;
     }

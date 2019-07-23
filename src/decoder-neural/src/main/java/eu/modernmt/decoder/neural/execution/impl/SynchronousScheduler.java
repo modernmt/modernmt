@@ -1,6 +1,7 @@
 package eu.modernmt.decoder.neural.execution.impl;
 
 import eu.modernmt.decoder.DecoderException;
+import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.decoder.neural.execution.DecoderQueue;
 import eu.modernmt.decoder.neural.execution.PythonDecoder;
 import eu.modernmt.decoder.neural.execution.Scheduler;
@@ -18,7 +19,7 @@ public class SynchronousScheduler implements Scheduler {
     }
 
     @Override
-    public TranslationLock schedule(LanguageDirection direction, TranslationSplit[] splits) throws DecoderException {
+    public TranslationLock schedule(LanguageDirection direction, TranslationSplit[] splits) throws DecoderUnavailableException {
         PythonDecoder decoder = null;
 
         try {

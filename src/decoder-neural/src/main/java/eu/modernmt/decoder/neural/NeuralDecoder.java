@@ -3,10 +3,7 @@ package eu.modernmt.decoder.neural;
 import eu.modernmt.config.DecoderConfig;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
-import eu.modernmt.decoder.Decoder;
-import eu.modernmt.decoder.DecoderException;
-import eu.modernmt.decoder.DecoderListener;
-import eu.modernmt.decoder.DecoderWithNBest;
+import eu.modernmt.decoder.*;
 import eu.modernmt.decoder.neural.execution.DecoderQueue;
 import eu.modernmt.decoder.neural.execution.PythonDecoder;
 import eu.modernmt.decoder.neural.execution.Scheduler;
@@ -30,6 +27,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -81,7 +79,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         this.decoderQueue = this.echoServer ? null : loadDecoderQueue(modelConfig, config, model);
 
         // Scheduler
-        this.scheduler = createScheduler(this.decoderQueue);
+        this.scheduler = createScheduler(modelConfig, this.decoderQueue);
     }
 
     protected ModelConfig loadModelConfig(File filepath) throws IOException {
@@ -101,7 +99,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
             return DecoderQueueImpl.newCPUInstance(modelConfig, builder, decoderConfig.getThreads());
     }
 
-    protected Scheduler createScheduler(DecoderQueue queue) throws DecoderException {
+    protected Scheduler createScheduler(ModelConfig modelConfig, DecoderQueue queue) throws DecoderException {
         return new SynchronousScheduler(queue);
     }
 
@@ -166,7 +164,7 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
             return translation;
         } catch (InterruptedException e) {
-            throw new DecoderException("Translation interrupted", e);
+            throw new DecoderException("Decoder interrupted", e);
         }
     }
 
