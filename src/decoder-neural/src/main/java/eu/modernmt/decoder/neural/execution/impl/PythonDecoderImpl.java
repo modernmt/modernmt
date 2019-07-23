@@ -166,7 +166,7 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
         return this.translate(sentences, serialize(direction, sentences, null, translation))[0];
     }
 
-    private Translation[] translate(Sentence[] sentences, String payload) throws DecoderException {
+    private synchronized Translation[] translate(Sentence[] sentences, String payload) throws DecoderException {
         if (!isAlive())
             throw new DecoderUnavailableException("Neural decoder process not available");
 

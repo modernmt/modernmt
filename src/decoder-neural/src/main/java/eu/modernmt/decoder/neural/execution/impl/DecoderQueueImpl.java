@@ -13,7 +13,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,7 +45,7 @@ public class DecoderQueueImpl implements DecoderQueue {
     protected final Logger logger = LogManager.getLogger(getClass());
 
     private final Map<LanguageDirection, File> checkpoints;
-    private final BlockingQueue<Handler> queue;
+    private final HandlerBlockingQueue queue;
     private final ExecutorService initExecutor;
     private final int maxAvailability;
 
@@ -56,7 +55,7 @@ public class DecoderQueueImpl implements DecoderQueue {
 
     protected DecoderQueueImpl(Map<LanguageDirection, File> checkpoints, Handler[] handlers) throws DecoderException {
         this.checkpoints = checkpoints;
-        this.queue = new ArrayBlockingQueue<>(handlers.length);
+        this.queue = new HandlerBlockingQueue(handlers.length, false);
         this.maxAvailability = handlers.length;
         this.initExecutor = handlers.length > 1 ? Executors.newCachedThreadPool() : Executors.newSingleThreadExecutor();
 
@@ -100,41 +99,25 @@ public class DecoderQueueImpl implements DecoderQueue {
         if (!this.active || this.aliveProcesses.get() == 0)
             throw new DecoderUnavailableException("No alive NMT processes available");
 
-        PythonDecoder decoder = null;
+        Handler decoder = null;
         try {
+            File checkpoint = null;
             if (language != null)
-                decoder = tryGetByLanguagePair(language);
+                checkpoint = checkpoints.get(language);
 
-            if (decoder == null) {
-                if (timeout > 0)
-                    decoder = this.queue.poll(timeout, unit);
-                else
-                    decoder = this.queue.take();
-            }
+
+            if (timeout > 0)
+                decoder = this.queue.poll(checkpoint, timeout, unit);
+            else
+                decoder = this.queue.take(checkpoint);
 
             return decoder;
         } catch (InterruptedException e) {
             throw new DecoderUnavailableException("No NMT processes available", e);
         } finally {
             if (decoder != null)
-                ((Handler) decoder).setInUse();
+                decoder.setInUse();
         }
-    }
-
-    private PythonDecoder tryGetByLanguagePair(LanguageDirection language) {
-        File checkpoint = checkpoints.get(language);
-
-        Iterator<Handler> iterator = this.queue.iterator();
-        while (iterator.hasNext()) {
-            Handler handler = iterator.next();
-
-            if (checkpoint.equals(handler.getLastCheckpoint())) {
-                iterator.remove();
-                return handler;
-            }
-        }
-
-        return null;
     }
 
     @Override
