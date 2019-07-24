@@ -138,7 +138,7 @@ def serve_forever(stdin, stdout, decoder):
 
             if request.batch is None:
                 decoder.test()
-                translations = [Translation(text="")]
+                translations = []
             else:
                 translations = decoder.translate(request.source_lang, request.target_lang, request.batch,
                                                  suggestions=request.suggestions,

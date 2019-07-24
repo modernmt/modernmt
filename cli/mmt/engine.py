@@ -229,6 +229,9 @@ class _RestApi(object):
         result = data['vectors']
         return None if len(result) != 1 else list(result.values())[0]
 
+    def health_check(self):
+        return self._get('_health')
+
     def translate(self, source, target, text, context=None, nbest=None, verbose=False, priority=None, user=None):
         p = {'q': text, 'source': source, 'target': target}
         if nbest is not None:
