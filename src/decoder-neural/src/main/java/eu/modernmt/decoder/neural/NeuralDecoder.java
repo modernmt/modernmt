@@ -12,6 +12,7 @@ import eu.modernmt.decoder.neural.execution.impl.DecoderQueueImpl;
 import eu.modernmt.decoder.neural.execution.impl.PythonDecoderImpl;
 import eu.modernmt.decoder.neural.execution.impl.SynchronousScheduler;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
+import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.memory.ScoreEntry;
@@ -21,6 +22,8 @@ import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.splitter.SentenceSplitter;
 import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,6 +46,8 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
             throw new DecoderException("Unable to resolve JAR file", e);
         }
     }
+
+    private final Logger logger = LogManager.getLogger(getClass());
 
     private final boolean echoServer;
     private final int suggestionsLimit;
@@ -161,6 +166,27 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
             Translation translation = TranslationJoiner.join(text, textSplits, splits);
             translation.setMemoryLookupTime(lookupTime);
             translation.setDecodeTime(decodeTime);
+
+            if (logger.isDebugEnabled()) {
+                String sourceText = TokensOutputStream.serialize(text, false, true);
+                String targetText = TokensOutputStream.serialize(translation, false, true);
+
+                StringBuilder log = new StringBuilder("Translation received from neural decoder:\n" +
+                        "   sentence = " + sourceText + "\n" +
+                        "   translation = " + targetText + "\n" +
+                        "   suggestions = [\n");
+
+                for (TranslationSplit split : splits) {
+                    if (split.suggestions != null && split.suggestions.length > 0) {
+                        for (ScoreEntry entry : split.suggestions)
+                            log.append("      ").append(entry).append('\n');
+                    }
+                }
+
+                log.append("   ]");
+
+                logger.debug(log);
+            }
 
             return translation;
         } catch (InterruptedException e) {
