@@ -65,7 +65,7 @@ public class ApiServer {
     private final Server jettyServer;
 
     public ApiServer(ServerOptions options) {
-        jettyServer = new Server(new QueuedThreadPool(512));
+        jettyServer = new Server(new QueuedThreadPool(450));
 
         ServerConnector connector = new ServerConnector(jettyServer);
         connector.setPort(options.port);
