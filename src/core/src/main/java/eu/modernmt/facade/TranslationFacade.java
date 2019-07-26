@@ -79,6 +79,9 @@ public class TranslationFacade {
         try {
             translation = insecureGet(user, direction, sentence, translationContext, nbest, priority, expirationTimestamp);
         } catch (DecoderException | HazelcastException e) {
+            if (e instanceof TranslationTimeoutException)
+                throw e;
+
             logger.warn("Translation failed, retry after delay", e);
 
             try {
