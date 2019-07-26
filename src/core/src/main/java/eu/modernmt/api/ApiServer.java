@@ -10,10 +10,14 @@ import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.ImportJob;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.reflections.Reflections;
 
 import java.io.File;
@@ -58,10 +62,14 @@ public class ApiServer {
         }
     }
 
-    private Server jettyServer;
+    private final Server jettyServer;
 
     public ApiServer(ServerOptions options) {
-        this.jettyServer = new Server(options.port);
+        jettyServer = new Server(new QueuedThreadPool(512));
+
+        ServerConnector connector = new ServerConnector(jettyServer);
+        connector.setPort(options.port);
+        jettyServer.setConnectors(new Connector[]{connector});
 
         Handler rootHandler;
         String contextPath = normalizeContextPath(options.contextPath);

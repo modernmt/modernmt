@@ -19,7 +19,7 @@ public class DecoderConfig {
         return cores > 1 ? (cores * 2) / 3 : cores;
     }
 
-    private int queueSize = 4096;
+    private int queueSize = 512;
     private int threads = DEFAULT_THREADS;
     private int[] gpus = DEFAULT_GPUS;
     private String decoderClass = null;
