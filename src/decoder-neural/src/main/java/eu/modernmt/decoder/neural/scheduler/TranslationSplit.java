@@ -2,7 +2,6 @@ package eu.modernmt.decoder.neural.scheduler;
 
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.TranslationTimeoutException;
-import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.model.Priority;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -11,7 +10,7 @@ public class TranslationSplit {
 
     public final Priority priority;
     public final Sentence sentence;
-    public final ScoreEntry[] suggestions;
+    public final String[] reference;
 
     private Translation translation;
     private Throwable exception;
@@ -24,15 +23,15 @@ public class TranslationSplit {
 
     private Scheduler.TranslationLock lock;
 
-    public TranslationSplit(Priority priority, Sentence sentence, ScoreEntry[] suggestions, long expiration) {
-        this.priority = priority;
-        this.sentence = sentence;
-        this.suggestions = suggestions;
-        this.expiration = expiration;
+    public TranslationSplit(Priority priority, Sentence sentence, long expiration) {
+        this(priority, sentence, null, expiration);
     }
 
-    public boolean alignOnly() {
-        return suggestions != null && suggestions.length > 0 && suggestions[0].score == 1.f;
+    public TranslationSplit(Priority priority, Sentence sentence, String[] reference, long expiration) {
+        this.priority = priority;
+        this.sentence = sentence;
+        this.reference = reference;
+        this.expiration = expiration;
     }
 
     public void setLock(Scheduler.TranslationLock lock) {

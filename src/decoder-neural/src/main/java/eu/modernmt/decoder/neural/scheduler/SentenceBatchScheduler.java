@@ -2,9 +2,11 @@ package eu.modernmt.decoder.neural.scheduler;
 
 import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.lang.LanguageDirection;
+import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.model.Priority;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.concurrent.locks.Condition;
@@ -16,7 +18,7 @@ public class SentenceBatchScheduler implements Scheduler {
     private final int maxQueueSize;
 
     private final ReentrantLock lock = new ReentrantLock();
-    private final Condition notEmptyCondition = lock.newCondition();
+    private final Condition notEmpty = lock.newCondition();
     private boolean active = true;
 
     public SentenceBatchScheduler(int queueSize) {
@@ -25,24 +27,24 @@ public class SentenceBatchScheduler implements Scheduler {
     }
 
     @Override
-    public TranslationLock schedule(LanguageDirection direction, TranslationSplit[] translationSplits) throws DecoderUnavailableException {
-        CountDownTranslationLock tLock = new CountDownTranslationLock(translationSplits.length);
-        for (TranslationSplit split : translationSplits)
+    public TranslationLock schedule(LanguageDirection direction, TranslationSplit[] splits, ScoreEntry[] suggestions) throws DecoderUnavailableException {
+        CountDownTranslationLock tLock = new CountDownTranslationLock(splits.length);
+        for (TranslationSplit split : splits)
             split.setLock(tLock);
 
         try {
             lock.lock();
 
-            int qSize = queue.size();
-
-            if (qSize + translationSplits.length > maxQueueSize)
-                throw new DecoderUnavailableException("Decoder unavailable due to a temporary overloading");
             if (!active)
                 throw new DecoderUnavailableException("Decoder has been shut down");
 
-            queue.add(new JobImpl(qSize, direction, translationSplits));
+            int qSize = queue.size();
+            if (qSize + splits.length > maxQueueSize)
+                throw new DecoderUnavailableException("Decoder unavailable due to a temporary overloading");
+
+            queue.add(new JobImpl(qSize, direction, splits, suggestions));
+            notEmpty.signal();
         } finally {
-            notEmptyCondition.signalAll();
             lock.unlock();
         }
 
@@ -54,12 +56,14 @@ public class SentenceBatchScheduler implements Scheduler {
         try {
             lock.lock();
             while (queue.isEmpty() && active)
-                notEmptyCondition.await();
+                notEmpty.await();
 
-            if (queue.isEmpty())
-                throw new InterruptedException();
+            if (!queue.isEmpty())
+                return queue.poll();
 
-            return queue.poll();
+            // scheduler is not active anymore
+            notEmpty.signal();  // pass the signal to next thread in queue
+            throw new InterruptedException();
         } finally {
             lock.unlock();
         }
@@ -70,8 +74,8 @@ public class SentenceBatchScheduler implements Scheduler {
         try {
             lock.lock();
             active = false;
+            notEmpty.signal();
         } finally {
-            notEmptyCondition.signalAll();
             lock.unlock();
         }
     }
@@ -80,12 +84,14 @@ public class SentenceBatchScheduler implements Scheduler {
 
         private final LanguageDirection direction;
         private final List<TranslationSplit> splits;
+        private final List<ScoreEntry> suggestions;
         private final long timestamp;
         private final Priority priority;
 
-        JobImpl(int qSize, LanguageDirection direction, TranslationSplit[] splits) {
+        JobImpl(int qSize, LanguageDirection direction, TranslationSplit[] splits, ScoreEntry[] suggestions) {
             this.direction = direction;
             this.splits = Arrays.asList(splits);
+            this.suggestions = suggestions != null && suggestions.length > 0 ? Arrays.asList(suggestions) : null;
 
             this.timestamp = System.currentTimeMillis();
             for (TranslationSplit split : splits)
@@ -107,7 +113,7 @@ public class SentenceBatchScheduler implements Scheduler {
         @Override
         public boolean isAlignmentJob() {
             for (TranslationSplit split : splits) {
-                if (!split.alignOnly())
+                if (split.reference == null)
                     return false;
             }
 
@@ -117,6 +123,11 @@ public class SentenceBatchScheduler implements Scheduler {
         @Override
         public List<TranslationSplit> getTranslationSplits() {
             return splits;
+        }
+
+        @Override
+        public Collection<ScoreEntry> getSuggestions() {
+            return suggestions;
         }
 
         @Override

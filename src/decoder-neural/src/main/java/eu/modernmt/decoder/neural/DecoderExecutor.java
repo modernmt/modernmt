@@ -11,10 +11,7 @@ import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 public class DecoderExecutor extends Thread {
 
@@ -39,32 +36,34 @@ public class DecoderExecutor extends Thread {
         Scheduler.Job job;
 
         while ((job = take()) != null) {
-            PythonDecoder decoder = null;
+            List<TranslationSplit> splits = filter(job.getTranslationSplits());
 
-            try {
-                decoder = queue.take(job.getLanguageDirection());
+            if (!splits.isEmpty()) {
+                PythonDecoder decoder = null;
 
-                LanguageDirection language = job.getLanguageDirection();
-                List<TranslationSplit> splits = filter(job.getTranslationSplits());
+                try {
+                    decoder = queue.take(job.getLanguageDirection());
 
-                long timestamp = System.currentTimeMillis();
-                for (TranslationSplit split : splits)
-                    split.onTranslationBegin(timestamp);
+                    long timestamp = System.currentTimeMillis();
+                    for (TranslationSplit split : splits)
+                        split.onTranslationBegin(timestamp);
 
-                if (job.isAlignmentJob())
-                    align(decoder, language, splits);
-                else
-                    translate(decoder, language, splits);
+                    LanguageDirection language = job.getLanguageDirection();
+                    if (job.isAlignmentJob())
+                        align(decoder, language, splits);
+                    else
+                        translate(decoder, language, splits, job.getSuggestions());
 
-                timestamp = System.currentTimeMillis();
-                for (TranslationSplit split : splits)
-                    split.onTranslationEnd(timestamp);
-            } catch (Throwable e) {
-                for (TranslationSplit split : job.getTranslationSplits())
-                    split.setException(e);
-            } finally {
-                if (decoder != null)
-                    queue.release(decoder);
+                    timestamp = System.currentTimeMillis();
+                    for (TranslationSplit split : splits)
+                        split.onTranslationEnd(timestamp);
+                } catch (Throwable e) {
+                    for (TranslationSplit split : job.getTranslationSplits())
+                        split.setException(e);
+                } finally {
+                    if (decoder != null)
+                        queue.release(decoder);
+                }
             }
         }
     }
@@ -90,22 +89,25 @@ public class DecoderExecutor extends Thread {
 
     private static void align(PythonDecoder decoder, LanguageDirection language, List<TranslationSplit> splits) throws DecoderException {
         Sentence[] sentences = mergeSentences(splits);
-        String[][] translations = mergeTranslations(splits);
+        String[][] references = mergeReferences(splits);
 
-        Translation[] result = decoder.align(language, sentences, translations);
+        Translation[] result = decoder.align(language, sentences, references);
 
         int i = 0;
         for (TranslationSplit split : splits)
             split.setTranslation(result[i++]);
     }
 
-    private static void translate(PythonDecoder decoder, LanguageDirection language, List<TranslationSplit> splits) throws DecoderException {
+    private static void translate(PythonDecoder decoder, LanguageDirection language, List<TranslationSplit> splits, Collection<ScoreEntry> suggestions) throws DecoderException {
         Sentence[] sentences = mergeSentences(splits);
-        ScoreEntry[] suggestions = mergeSuggestions(splits);
+        Translation[] translations;
 
-        Translation[] translations = suggestions == null ?
-                decoder.translate(language, sentences, 0) :
-                decoder.translate(language, sentences, suggestions, 0);
+        if (suggestions == null || suggestions.isEmpty()) {
+            translations = decoder.translate(language, sentences, 0);
+        } else {
+            ScoreEntry[] suggestionArray = suggestions.toArray(new ScoreEntry[0]);
+            translations = decoder.translate(language, sentences, suggestionArray, 0);
+        }
 
         int i = 0;
         for (TranslationSplit split : splits)
@@ -119,23 +121,12 @@ public class DecoderExecutor extends Thread {
         return sentences;
     }
 
-    private static ScoreEntry[] mergeSuggestions(List<TranslationSplit> splits) {
-        HashSet<ScoreEntry> suggestions = new HashSet<>();
-
-        for (TranslationSplit split : splits) {
-            if (split.suggestions != null)
-                Collections.addAll(suggestions, split.suggestions);
-        }
-
-        return suggestions.isEmpty() ? null : suggestions.toArray(new ScoreEntry[0]);
-    }
-
-    private static String[][] mergeTranslations(List<TranslationSplit> splits) {
+    private static String[][] mergeReferences(List<TranslationSplit> splits) {
         String[][] result = new String[splits.size()][];
 
         int i = 0;
         for (TranslationSplit split : splits)
-            result[i++] = split.suggestions[0].translation;
+            result[i++] = split.reference;
 
         return result;
     }

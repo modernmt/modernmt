@@ -142,24 +142,35 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
         if (!isLanguageSupported(direction))
             throw new UnsupportedLanguageException(direction);
 
-        // Preparing translation splits
-        Sentence[] textSplits = split(text).toArray(new Sentence[0]);
-        TranslationSplit[] splits = new TranslationSplit[textSplits.length];
-
         // Search for suggestions
         long lookupBegin = System.currentTimeMillis();
-
-        for (int i = 0; i < splits.length; i++) {
-            Sentence split = textSplits[i];
-            ScoreEntry[] suggestions = lookup(user, direction, split, context);
-            splits[i] = new TranslationSplit(priority, split, suggestions, timeout);
-        }
-
+        ScoreEntry[] suggestions = lookup(user, direction, text, context);
         long lookupTime = System.currentTimeMillis() - lookupBegin;
+
+        // Preparing translation splits
+        boolean align = (suggestions != null && suggestions[0].score == 1.f);
+        Sentence[] textSplits;
+        TranslationSplit[] splits;
+
+        if (align) {
+            textSplits = new Sentence[]{text};
+            splits = new TranslationSplit[]{new TranslationSplit(priority, text, suggestions[0].translation, timeout)};
+        } else {
+            textSplits = split(text).toArray(new Sentence[0]);
+            splits = new TranslationSplit[textSplits.length];
+
+            for (int i = 0; i < textSplits.length; i++)
+                splits[i] = new TranslationSplit(priority, textSplits[i], timeout);
+        }
 
         // Translate sentence splits with scheduler
         try {
-            scheduler.schedule(direction, splits).await();
+            Scheduler.TranslationLock lock;
+            if (align)
+                lock = scheduler.schedule(direction, splits, null);
+            else
+                lock = scheduler.schedule(direction, splits, suggestions);
+            lock.await();
 
             Translation translation = TranslationJoiner.join(text, textSplits, splits);
             translation.setMemoryLookupTime(lookupTime);
@@ -173,11 +184,9 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
                         "   translation = " + targetText + "\n" +
                         "   suggestions = [\n");
 
-                for (TranslationSplit split : splits) {
-                    if (split.suggestions != null && split.suggestions.length > 0) {
-                        for (ScoreEntry entry : split.suggestions)
-                            log.append("      ").append(entry).append('\n');
-                    }
+                if (suggestions != null) {
+                    for (ScoreEntry entry : suggestions)
+                        log.append("      ").append(entry).append('\n');
                 }
 
                 log.append("   ]");
