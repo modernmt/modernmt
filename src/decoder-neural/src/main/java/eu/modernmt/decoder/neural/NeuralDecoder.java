@@ -142,6 +142,9 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
         if (!isLanguageSupported(direction))
             throw new UnsupportedLanguageException(direction);
 
+        if (!text.hasWords())
+            return Translation.emptyTranslation(text);
+
         // Search for suggestions
         long lookupBegin = System.currentTimeMillis();
         ScoreEntry[] suggestions = lookup(user, direction, text, context);

@@ -108,6 +108,9 @@ public class TranslationFacade {
         if (expirationTimestamp > 0 && expirationTimestamp < System.currentTimeMillis())
             throw new TranslationTimeoutException();
 
+        if (!sentence.hasWords())
+            return Translation.emptyTranslation(sentence);
+
         try {
             ClusterNode node = ModernMT.getNode();
 
