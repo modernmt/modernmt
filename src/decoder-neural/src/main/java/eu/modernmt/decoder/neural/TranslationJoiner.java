@@ -10,23 +10,6 @@ import eu.modernmt.model.Word;
 public class TranslationJoiner {
 
     public static Translation join(Sentence originalSentence, Sentence[] splits, TranslationSplit[] translationSplits) throws DecoderException {
-        if (translationSplits.length == 1) {
-            TranslationSplit split = translationSplits[0];
-            long queueTime = split.getTranslationBegin() - split.getQueueWaitingBegin();
-            long decodeTime = split.getTranslationEnd() - split.getTranslationBegin();
-
-            Translation translation = split.getTranslation();
-            translation.setQueueLength(split.getQueueSize());
-            translation.setQueueTime(queueTime);
-            translation.setDecodeTime(decodeTime);
-
-            return translation;
-        } else {
-            return doJoin(originalSentence, splits, translationSplits);
-        }
-    }
-
-    private static Translation doJoin(Sentence originalSentence, Sentence[] splits, TranslationSplit[] translationSplits) throws DecoderException {
         int wordCount = wordCount(translationSplits);
         int alignmentCount = alignmentCount(translationSplits);
 
