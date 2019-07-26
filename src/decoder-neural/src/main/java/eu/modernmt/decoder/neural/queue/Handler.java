@@ -1,8 +1,7 @@
-package eu.modernmt.decoder.neural.execution.impl;
+package eu.modernmt.decoder.neural.queue;
 
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.DecoderUnavailableException;
-import eu.modernmt.decoder.neural.execution.PythonDecoder;
 import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Sentence;
@@ -112,6 +111,15 @@ class Handler implements PythonDecoder {
 
         checkpoint = checkpoints.get(direction);
         return delegate.align(direction, sentence, translation);
+    }
+
+    @Override
+    public Translation[] align(LanguageDirection direction, Sentence[] sentences, String[][] translations) throws DecoderException {
+        if (delegate == null)
+            throw new DecoderUnavailableException("Decoder process is dead");
+
+        checkpoint = checkpoints.get(direction);
+        return delegate.align(direction, sentences, translations);
     }
 
     @Override

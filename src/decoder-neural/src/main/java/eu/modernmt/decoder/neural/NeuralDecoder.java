@@ -4,20 +4,18 @@ import eu.modernmt.config.DecoderConfig;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.*;
-import eu.modernmt.decoder.neural.execution.DecoderQueue;
-import eu.modernmt.decoder.neural.execution.PythonDecoder;
-import eu.modernmt.decoder.neural.execution.Scheduler;
-import eu.modernmt.decoder.neural.execution.TranslationSplit;
-import eu.modernmt.decoder.neural.execution.impl.DecoderQueueImpl;
-import eu.modernmt.decoder.neural.execution.impl.PythonDecoderImpl;
-import eu.modernmt.decoder.neural.execution.impl.SynchronousScheduler;
+import eu.modernmt.decoder.neural.queue.*;
+import eu.modernmt.decoder.neural.scheduler.Scheduler;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
+import eu.modernmt.decoder.neural.scheduler.SentenceBatchScheduler;
+import eu.modernmt.decoder.neural.scheduler.TranslationSplit;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.memory.TranslationMemory;
 import eu.modernmt.model.ContextVector;
+import eu.modernmt.model.Priority;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.splitter.SentenceSplitter;
@@ -30,13 +28,12 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Created by davide on 22/05/17.
  */
-public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataListenerProvider {
+public class NeuralDecoder extends Decoder implements DataListenerProvider {
 
     private static File getJarPath() throws DecoderException {
         URL url = Decoder.class.getProtectionDomain().getCodeSource().getLocation();
@@ -53,8 +50,9 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
     private final int suggestionsLimit;
     private final TranslationMemory memory;
     private final Set<LanguageDirection> directions;
-    private final DecoderQueue decoderQueue;
     private final Scheduler scheduler;
+    private final DecoderExecutor[] executors;
+    private final DecoderQueue decoderQueue;
 
     private volatile long lastSuccessfulTranslation = 0L;
 
@@ -81,10 +79,17 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
         }
 
         // Decoder Queue
-        this.decoderQueue = this.echoServer ? null : loadDecoderQueue(modelConfig, config, model);
+        this.decoderQueue = this.echoServer ? new EchoServerDecoderQueue() : loadDecoderQueue(modelConfig, config, model);
 
         // Scheduler
-        this.scheduler = createScheduler(modelConfig, this.decoderQueue);
+        this.scheduler = createScheduler(modelConfig, config.getQueueSize());
+
+        // Executors
+        this.executors = new DecoderExecutor[this.decoderQueue.size()];
+        for (int i = 0; i < this.executors.length; i++) {
+            this.executors[i] = new DecoderExecutor(this.scheduler, this.decoderQueue);
+            this.executors[i].start();
+        }
     }
 
     protected ModelConfig loadModelConfig(File filepath) throws IOException {
@@ -104,8 +109,8 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
             return DecoderQueueImpl.newCPUInstance(modelConfig, builder, decoderConfig.getThreads());
     }
 
-    protected Scheduler createScheduler(ModelConfig modelConfig, DecoderQueue queue) throws DecoderException {
-        return new SynchronousScheduler(queue);
+    protected Scheduler createScheduler(ModelConfig modelConfig, int queueSize) throws DecoderException {
+        return new SentenceBatchScheduler(queueSize);
     }
 
     // Decoder
@@ -123,23 +128,18 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
     }
 
     @Override
-    public Translation translate(UUID user, LanguageDirection direction, Sentence text) throws DecoderException {
-        return translate(user, direction, text, null, 0);
+    public boolean isLanguageSupported(LanguageDirection language) {
+        return this.directions.contains(language);
     }
 
     @Override
-    public Translation translate(UUID user, LanguageDirection direction, Sentence text, int nbestListSize) throws DecoderException {
-        return translate(user, direction, text, null, nbestListSize);
+    public Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, long timeout) throws DecoderException {
+        return translate(priority, user, direction, text, null, timeout);
     }
 
     @Override
-    public Translation translate(UUID user, LanguageDirection direction, Sentence text, ContextVector contextVector) throws DecoderException {
-        return translate(user, direction, text, contextVector, 0);
-    }
-
-    @Override
-    public Translation translate(UUID user, LanguageDirection direction, Sentence text, ContextVector contextVector, int nbestListSize) throws DecoderException {
-        if (!this.directions.contains(direction))
+    public Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, ContextVector context, long timeout) throws DecoderException {
+        if (!isLanguageSupported(direction))
             throw new UnsupportedLanguageException(direction);
 
         // Preparing translation splits
@@ -151,21 +151,18 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
 
         for (int i = 0; i < splits.length; i++) {
             Sentence split = textSplits[i];
-            ScoreEntry[] suggestions = lookup(user, direction, split, contextVector);
-            splits[i] = new TranslationSplit(split, suggestions);
+            ScoreEntry[] suggestions = lookup(user, direction, split, context);
+            splits[i] = new TranslationSplit(priority, split, suggestions, timeout);
         }
 
         long lookupTime = System.currentTimeMillis() - lookupBegin;
 
         // Translate sentence splits with scheduler
         try {
-            long decodeBegin = System.currentTimeMillis();
             scheduler.schedule(direction, splits).await();
-            long decodeTime = System.currentTimeMillis() - decodeBegin;
 
             Translation translation = TranslationJoiner.join(text, textSplits, splits);
             translation.setMemoryLookupTime(lookupTime);
-            translation.setDecodeTime(decodeTime);
 
             if (logger.isDebugEnabled()) {
                 String sourceText = TokensOutputStream.serialize(text, false, true);
@@ -257,6 +254,15 @@ public class NeuralDecoder extends Decoder implements DecoderWithNBest, DataList
     @Override
     public void close() {
         IOUtils.closeQuietly(this.scheduler);
+
+        for (Thread executor : executors) {
+            try {
+                executor.join();
+            } catch (InterruptedException e) {
+                // Ignore it
+            }
+        }
+
         IOUtils.closeQuietly(this.decoderQueue);
         IOUtils.closeQuietly(this.memory);
     }

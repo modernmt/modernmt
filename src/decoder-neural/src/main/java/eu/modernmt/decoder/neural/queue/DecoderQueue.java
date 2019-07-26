@@ -1,4 +1,4 @@
-package eu.modernmt.decoder.neural.execution;
+package eu.modernmt.decoder.neural.queue;
 
 import eu.modernmt.decoder.DecoderListener;
 import eu.modernmt.decoder.DecoderUnavailableException;

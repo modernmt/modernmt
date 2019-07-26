@@ -53,7 +53,7 @@ public class IOCorporaUtils {
                 } catch (ExecutionException e) {
                     unwrapException(e);
                 } catch (InterruptedException e) {
-                    throw new IOException("Interrupted execution", e);
+                    throw new IOException("Interrupted queue", e);
                 }
             }
 

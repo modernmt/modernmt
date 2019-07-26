@@ -27,7 +27,7 @@ public class RareCharsNormalizer extends TextProcessor<SentenceBuilder, Sentence
      * @param metadata additional information on the current pipe
      *                 (not used in this specific operation)
      * @return the SentenceBuilder received as a parameter;
-     * its internal state has been updated by the execution of the call() method
+     * its internal state has been updated by the queue of the call() method
      * @throws ProcessingException
      */
     @Override

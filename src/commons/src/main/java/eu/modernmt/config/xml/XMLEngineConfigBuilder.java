@@ -127,6 +127,9 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
         }
 
         public DecoderConfig build(DecoderConfig config) throws ConfigException {
+            if (hasAttribute("queue-size"))
+                config.setQueueSize(getIntAttribute("queue-size"));
+
             if (hasAttribute("enabled"))
                 config.setEnabled(getBooleanAttribute("enabled"));
 

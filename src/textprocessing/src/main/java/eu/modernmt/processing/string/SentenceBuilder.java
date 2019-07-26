@@ -26,7 +26,7 @@ import java.util.*;
  * that for each position on the local version of the string in the current Editor
  * contains the position on the correspondent character on the original string.
  * <p>
- * During the execution of the build() method the SentenceBuilder
+ * During the queue of the build() method the SentenceBuilder
  * uses Transformations to create Tokens, that are employed to generate a Sentence.
  * <p>
  * In order to save memory and time, during all preprocessing activities for all strings
@@ -406,7 +406,7 @@ public class SentenceBuilder {
      * Therefore, during commit(), the Editor scans its newly generated Transformations
      * and if they involve replacements it applies them to the current String.
      * <p>
-     * During the execution of the commit method, the Editor
+     * During the queue of the commit method, the Editor
      * - scans all the transformations in the local list
      * - applies replacements to the current String
      * - updates the start and end indexes of the transformation,

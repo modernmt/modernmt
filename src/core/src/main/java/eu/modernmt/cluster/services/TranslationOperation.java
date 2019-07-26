@@ -30,11 +30,11 @@ class TranslationOperation extends Operation {
      * Note that this implies using Operations *asynchronously*, as when the sendResponse method is called
      * the TranslationOperation.run() execution itself has already ended a while ago.
      */
-    public class TranslationRunnable implements Runnable, Prioritizable {
+    class TranslationRunnable implements Runnable {
 
         private final TranslationTask task;
 
-        public TranslationRunnable(TranslationTask task) {
+        TranslationRunnable(TranslationTask task) {
             this.task = task;
         }
 
@@ -51,15 +51,6 @@ class TranslationOperation extends Operation {
             }
         }
 
-        @Override
-        public int getPriority() {
-            return task.getPriority();
-        }
-
-        @Override
-        public void setQueueLength(int size) {
-            task.setQueueLength(size);
-        }
     }
 
 
@@ -76,7 +67,7 @@ class TranslationOperation extends Operation {
     }
 
     @Override
-    public void run() throws Exception {
+    public void run() {
         TranslationService translationService = getService();
         ExecutorService executor = translationService.getExecutor();
 
@@ -119,7 +110,7 @@ class TranslationOperation extends Operation {
      * (since the operation service does not know that the response is yet to be sent)
      * and if enough operation heartbeats are not sent, the caller may declare the operation timed out.
      */
-    public void startAsyncOperation() {
+    private void startAsyncOperation() {
         /*get a reference to the local OperationService proxy*/
         OperationServiceImpl operationServiceProxy = (OperationServiceImpl) this.getNodeEngine().getOperationService();
         operationServiceProxy.onStartAsyncOperation(this);
@@ -133,7 +124,7 @@ class TranslationOperation extends Operation {
      * <p>
      * It must be called when the TranslationTask that this Operation is wrapping is completely over.
      */
-    public void completeAsyncOperation() {
+    private void completeAsyncOperation() {
         /*get a reference to the local OperationService proxy*/
         OperationServiceImpl operationService = (OperationServiceImpl) this.getNodeEngine().getOperationService();
         operationService.onCompletionAsyncOperation(this);

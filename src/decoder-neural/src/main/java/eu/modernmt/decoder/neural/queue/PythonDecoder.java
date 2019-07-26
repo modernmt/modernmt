@@ -1,4 +1,4 @@
-package eu.modernmt.decoder.neural.execution;
+package eu.modernmt.decoder.neural.queue;
 
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.lang.LanguageDirection;
@@ -32,6 +32,8 @@ public interface PythonDecoder extends Closeable {
     Translation[] translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, int nBest) throws DecoderException;
 
     Translation align(LanguageDirection direction, Sentence sentence, String[] translation) throws DecoderException;
+
+    Translation[] align(LanguageDirection direction, Sentence[] sentences, String[][] translations) throws DecoderException;
 
     void test() throws DecoderException;
 

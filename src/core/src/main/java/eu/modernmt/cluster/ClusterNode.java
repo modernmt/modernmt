@@ -202,19 +202,6 @@ public class ClusterNode {
                 tcpIpConfig.addMember(member.getHost() + ":" + member.getPort());
         }
 
-        /* for the translation service use as many threads as the decoder threads */
-        DecoderConfig decoderConfig = nodeConfig.getEngineConfig().getDecoderConfig();
-        TranslationQueueConfig queueConfig = nodeConfig.getTranslationQueueConfig();
-
-        int threads = decoderConfig.getParallelismDegree();
-        threads = Math.max(threads, Runtime.getRuntime().availableProcessors());
-
-        TranslationService.getConfig(hazelcastConfig)
-                .setThreads(threads)
-                .setHighPriorityQueueSize(queueConfig.getHighPrioritySize())
-                .setNormalPriorityQueueSize(queueConfig.getNormalPrioritySize())
-                .setBackgroundPriorityQueueSize(queueConfig.getBackgroundPrioritySize());
-
         return hazelcastConfig;
     }
 
@@ -460,7 +447,7 @@ public class ClusterNode {
     }
 
     public Future<Translation> submit(TranslationTask task) throws DecoderUnavailableException {
-        LanguageDirection language = task.getLanguage();
+        LanguageDirection language = task.getLanguageDirection();
 
         Set<Member> members = hazelcast.getCluster().getMembers();
         ArrayList<Member> candidates = new ArrayList<>();

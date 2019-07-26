@@ -25,7 +25,7 @@ public class TranslationServiceProxy extends AbstractDistributedObject<Translati
 
     private final String name;
 
-    protected TranslationServiceProxy(NodeEngine nodeEngine, TranslationService service, String name) {
+    TranslationServiceProxy(NodeEngine nodeEngine, TranslationService service, String name) {
         super(nodeEngine, service);
         this.name = name;
     }

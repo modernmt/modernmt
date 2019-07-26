@@ -22,7 +22,6 @@ public class XMLConfigBuilder extends XMLAbstractBuilder {
     private final XMLDataStreamConfigBuilder dataStreamConfigBuilder;
     private final XMLDatabaseConfigBuilder databaseConfigBuilder;
     private final XMLEngineConfigBuilder engineConfigBuilder;
-    private final XMLTranslationQueueConfigBuilder translationQueueConfigBuilder;
 
     private XMLConfigBuilder(Element element) {
         super(element);
@@ -31,7 +30,6 @@ public class XMLConfigBuilder extends XMLAbstractBuilder {
         dataStreamConfigBuilder = new XMLDataStreamConfigBuilder(getChild("datastream"));
         databaseConfigBuilder = new XMLDatabaseConfigBuilder(getChild("db"));
         engineConfigBuilder = new XMLEngineConfigBuilder(getChild("engine"));
-        translationQueueConfigBuilder = new XMLTranslationQueueConfigBuilder(getChild("translation-queue"));
     }
 
     public static NodeConfig build(File file) throws ConfigException {
@@ -59,7 +57,6 @@ public class XMLConfigBuilder extends XMLAbstractBuilder {
         dataStreamConfigBuilder.build(config.getDataStreamConfig());
         databaseConfigBuilder.build(config.getDatabaseConfig());
         engineConfigBuilder.build(config.getEngineConfig());
-        translationQueueConfigBuilder.build(config.getTranslationQueueConfig());
 
         return config;
     }

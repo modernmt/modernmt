@@ -1,13 +1,11 @@
-package eu.modernmt.decoder.neural.execution.impl;
+package eu.modernmt.decoder.neural.queue;
 
 import com.google.gson.*;
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.DecoderUnavailableException;
-import eu.modernmt.decoder.neural.execution.PythonDecoder;
-import eu.modernmt.decoder.neural.execution.PythonProcess;
-import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguageDirection;
+import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -164,6 +162,15 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
     public Translation align(LanguageDirection direction, Sentence sentence, String[] translation) throws DecoderException {
         Sentence[] sentences = new Sentence[]{sentence};
         return this.translate(sentences, serialize(direction, sentences, null, translation))[0];
+    }
+
+    @Override
+    public Translation[] align(LanguageDirection direction, Sentence[] sentences, String[][] translations) throws DecoderException {
+        // TODO: should be implemented natively
+        Translation[] result = new Translation[sentences.length];
+        for (int i = 0; i < result.length; i++)
+            result[i] = align(direction, sentences[i], translations[i]);
+        return result;
     }
 
     private synchronized Translation[] translate(Sentence[] sentences, String payload) throws DecoderException {

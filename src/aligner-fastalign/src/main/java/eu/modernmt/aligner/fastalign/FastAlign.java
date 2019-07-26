@@ -67,7 +67,7 @@ public class FastAlign implements Aligner {
                 try {
                     models.put(paths[i], (Long) futures[i].get());
                 } catch (InterruptedException e) {
-                    throw new RuntimeException("Interrupted execution", e);
+                    throw new RuntimeException("Interrupted queue", e);
                 } catch (ExecutionException e) {
                     Throwable cause = e.getCause();
                     if (cause instanceof RuntimeException)

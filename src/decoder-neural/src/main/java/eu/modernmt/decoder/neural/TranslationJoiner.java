@@ -1,7 +1,7 @@
 package eu.modernmt.decoder.neural;
 
 import eu.modernmt.decoder.DecoderException;
-import eu.modernmt.decoder.neural.execution.TranslationSplit;
+import eu.modernmt.decoder.neural.scheduler.TranslationSplit;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
@@ -9,50 +9,103 @@ import eu.modernmt.model.Word;
 
 public class TranslationJoiner {
 
-    public static Translation join(Sentence originalSentence, Sentence[] sentencePieces, TranslationSplit[] translationPieces) throws DecoderException {
-        int globalWordsSize = 0;
-        int globalWordAlignmentSize = 0;
+    public static Translation join(Sentence originalSentence, Sentence[] splits, TranslationSplit[] translationSplits) throws DecoderException {
+        int wordCount = wordCount(translationSplits);
+        int alignmentCount = alignmentCount(translationSplits);
 
-        for (TranslationSplit piece : translationPieces) {
-            Translation translation = piece.getTranslation();
-            globalWordsSize += translation.getWords().length;
+        WordsJoiner words = new WordsJoiner(wordCount);
+        AlignmentJoiner alignment = alignmentCount > 0 ? new AlignmentJoiner(alignmentCount) : null;
 
-            if (translation.hasAlignment())
-                globalWordAlignmentSize += translation.getWordAlignment().size();
-        }
-
-        long totalDecodeTime = 0L;
-        long totalLookupTime = 0L;
-
-        WordsJoiner words = new WordsJoiner(globalWordsSize);
-        AlignmentJoiner alignment = globalWordAlignmentSize > 0 ? new AlignmentJoiner(globalWordAlignmentSize) : null;
-
-        for (int i = 0; i < sentencePieces.length; i++) {
-            Translation translationPiece = translationPieces[i].getTranslation();
-            Sentence sentencePiece = sentencePieces[i];
-
-            // Times
-            totalDecodeTime += translationPiece.getDecodeTime();
-            totalLookupTime += translationPiece.getMemoryLookupTime();
+        for (int i = 0; i < splits.length; i++) {
+            Translation translationSplit = translationSplits[i].getTranslation();
+            Sentence sentenceSplit = splits[i];
 
             // Target words
-            words.append(translationPiece.getWords());
+            words.append(translationSplit.getWords());
 
             // Alignment
             if (alignment != null)
-                alignment.append(sentencePiece, translationPiece);
+                alignment.append(sentenceSplit, translationSplit);
         }
 
-        Translation globalTranslation;
+        Translation translation;
         if (alignment == null)
-            globalTranslation = new Translation(words.build(), originalSentence, null);
+            translation = new Translation(words.build(), originalSentence, null);
         else
-            globalTranslation = new Translation(words.build(), originalSentence, alignment.build());
+            translation = new Translation(words.build(), originalSentence, alignment.build());
 
-        globalTranslation.setDecodeTime(totalDecodeTime);
-        globalTranslation.setMemoryLookupTime(totalLookupTime);
+        // Calculate stats
+        int queueSize = getQueueSize(translationSplits);
+        long realTime = getRealTime(translationSplits);
+        long computeTime = getComputeTime(translationSplits);
+        double totalDecodingTime = getDecodingTime(translationSplits);
 
-        return globalTranslation;
+        long decodeTime = Math.round((totalDecodingTime / computeTime) * realTime);
+        long queueTime = realTime - decodeTime;
+
+        translation.setQueueLength(queueSize);
+        translation.setQueueTime(queueTime);
+        translation.setDecodeTime(decodeTime);
+
+        return translation;
+    }
+
+    private static int wordCount(TranslationSplit[] splits) throws DecoderException {
+        int count = 0;
+        for (TranslationSplit split : splits)
+            count += split.getTranslation().getWords().length;
+        return count;
+    }
+
+    private static int alignmentCount(TranslationSplit[] splits) throws DecoderException {
+        int count = 0;
+
+        for (TranslationSplit split : splits) {
+            Translation translation = split.getTranslation();
+            if (translation.hasAlignment())
+                count += translation.getWordAlignment().size();
+        }
+
+        return count;
+    }
+
+    private static long getRealTime(TranslationSplit[] splits) {
+        long begin = Long.MAX_VALUE, end = 0;
+        for (TranslationSplit split : splits) {
+            long value = split.getQueueWaitingBegin();
+            if (value < begin)
+                begin = value;
+
+            value = split.getTranslationEnd();
+            if (value > end)
+                end = value;
+        }
+
+        return end - begin;
+    }
+
+    private static int getQueueSize(TranslationSplit[] splits) {
+        int size = 0;
+        for (TranslationSplit split : splits) {
+            int value = split.getQueueSize();
+            if (value > size)
+                size = value;
+        }
+        return size;
+    }
+
+    private static long getComputeTime(TranslationSplit[] splits) {
+        long total = 0;
+        for (TranslationSplit split : splits)
+            total += split.getTranslationEnd() - split.getQueueWaitingBegin();
+        return total;
+    }
+
+    private static long getDecodingTime(TranslationSplit[] splits) {
+        long total = 0;
+        for (TranslationSplit split : splits)
+            total += split.getTranslationEnd() - split.getTranslationBegin();
+        return total;
     }
 
     private static class WordsJoiner {

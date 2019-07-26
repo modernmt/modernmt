@@ -39,7 +39,7 @@ public class ClusterNodeMain {
 
     /**
      * This class models the list of arguments that can be passed to the ClusterNodeMain main.
-     * It is typically created by parsing the arguments passed from the outside during the execution of MMT start.
+     * It is typically created by parsing the arguments passed from the outside during the queue of MMT start.
      */
     private static class Args {
 

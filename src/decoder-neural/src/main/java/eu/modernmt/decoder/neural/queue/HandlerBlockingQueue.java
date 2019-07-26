@@ -1,4 +1,4 @@
-package eu.modernmt.decoder.neural.execution.impl;
+package eu.modernmt.decoder.neural.queue;
 
 import java.io.File;
 import java.util.Objects;

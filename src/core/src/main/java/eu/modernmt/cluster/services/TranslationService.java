@@ -1,13 +1,13 @@
 package eu.modernmt.cluster.services;
 
-import com.hazelcast.config.Config;
 import com.hazelcast.core.DistributedObject;
 import com.hazelcast.spi.ManagedService;
 import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.RemoteService;
 
 import java.util.Properties;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * A TranslationService is an Hazelcast Service for performing translations in a ModernMT cluster.
@@ -29,62 +29,8 @@ public class TranslationService implements ManagedService, RemoteService {
 
     @Override
     public void init(NodeEngine nodeEngine, Properties properties) {
-        TranslationServiceConfig config = new TranslationServiceConfig(properties);
-
-        int threads = config.getThreads();
-        int highPriorityQueueSize = config.getHighPriorityQueueSize();
-        int normalPriorityQueueSize = config.getNormalPriorityQueueSize();
-        int backgroundPriorityQueueSize = config.getBackgroundPriorityQueueSize();
-
-        final PriorityBucketBlockingQueue<Runnable> queue = new PriorityBucketBlockingQueue<>(
-                highPriorityQueueSize, normalPriorityQueueSize, backgroundPriorityQueueSize);
-
         this.nodeEngine = nodeEngine;
-
-        /*Create a new ThreadPoolExecutor that can handle Prioritizable Runnables
-        without wrapping them in non Prioritizable Runnables */
-        this.executor = new ThreadPoolExecutor(threads, threads, 0L, TimeUnit.MILLISECONDS, queue) {
-
-            /**
-             * This method generates a new RunnableFuture wrapping a Runnable task.
-             * If the Runnable is Prioritizable, moreover, the obtained RunnableFuture
-             * is at turn wrapped in a PriorityRunnableFuture, which is then returned.
-             * @param runnable the Runnable to wrap in a new task
-             * @param value
-             * @param <T> the type that the RunnableFuture to generate must refer to
-             * @return a RunnableFuture wrapping the passed Runnable
-             */
-            @Override
-            protected <T> RunnableFuture<T> newTaskFor(Runnable runnable, T value) {
-                return wrap(runnable, super.newTaskFor(runnable, value));
-            }
-
-            /**
-             * This method generates a new RunnableFuture wrapping a Callable task.
-             * If the Callable is Prioritizable, moreover, the obtained RunnableFuture
-             * is at turn wrapped in a PriorityRunnableFuture, which is then returned.
-             * @param callable the Callable to wrap in a new task
-             * @param <T> the type that the Callable refers to
-             * @return the RunnableFuture wrapping the passed Callable
-             */
-            @Override
-            protected <T> RunnableFuture<T> newTaskFor(Callable<T> callable) {
-                return wrap(callable, super.newTaskFor(callable));
-            }
-
-            private <T> RunnableFuture<T> wrap(Object task, RunnableFuture<T> future) {
-                if (task instanceof Prioritizable) {
-                    Prioritizable prioritizable = (Prioritizable) task;
-                    int priority = prioritizable.getPriority();
-                    prioritizable.setQueueLength(queue.size(priority));
-
-                    future = new PriorityRunnableFuture<>(future, priority);
-                }
-
-                return future;
-            }
-
-        };
+        this.executor = Executors.newCachedThreadPool();
     }
 
     ExecutorService getExecutor() {
@@ -93,7 +39,7 @@ public class TranslationService implements ManagedService, RemoteService {
 
     @Override
     public void reset() {
-
+        // nothing to do
     }
 
     @Override
@@ -103,9 +49,6 @@ public class TranslationService implements ManagedService, RemoteService {
 
     /**
      * This method returns a local proxy to the TranslationService.
-     *
-     * @param objectName
-     * @return
      */
     @Override
     public DistributedObject createDistributedObject(String objectName) {
@@ -114,19 +57,7 @@ public class TranslationService implements ManagedService, RemoteService {
 
     @Override
     public void destroyDistributedObject(String objectName) {
-
+        // nothing to do
     }
 
-    /**
-     * This static method gets from the passed Hazelcast Config object the specific configuration for the TranslationService
-     *
-     * @param hazelcastConfig a Hazelcast Config object
-     * @return the TranslationServiceConfig parsed from the Config
-     */
-    public static TranslationServiceConfig getConfig(Config hazelcastConfig) {
-        return new TranslationServiceConfig(hazelcastConfig
-                .getServicesConfig()
-                .getServiceConfig(SERVICE_NAME)
-                .getProperties());
-    }
 }

@@ -1,11 +1,9 @@
-package eu.modernmt.decoder.neural.execution.impl;
+package eu.modernmt.decoder.neural.queue;
 
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.DecoderListener;
 import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.decoder.neural.ModelConfig;
-import eu.modernmt.decoder.neural.execution.DecoderQueue;
-import eu.modernmt.decoder.neural.execution.PythonDecoder;
 import eu.modernmt.lang.LanguageDirection;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;

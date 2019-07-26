@@ -1,4 +1,4 @@
-package eu.modernmt.decoder.neural.execution;
+package eu.modernmt.decoder.neural.queue;
 
 import eu.modernmt.io.UTF8Charset;
 import org.apache.commons.io.IOUtils;

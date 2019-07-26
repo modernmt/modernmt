@@ -7,7 +7,7 @@ import eu.modernmt.persistence.PersistenceException;
 
 /**
  * CassandraUtils offers a series of static methods
- * for the execution of queries and statements,
+ * for the queue of queries and statements,
  * making sure that any possible exception thrown
  * during the interaction with Cassandra
  * is caught and handled.
@@ -15,12 +15,12 @@ import eu.modernmt.persistence.PersistenceException;
 public class CassandraUtils {
 
     /**
-     * This method performs the execution of a statement
+     * This method performs the queue of a statement
      * and checks for all the possible exceptions that it may throw
      *
      * @param connection the current connection with the DB
      * @param statement  the statement to execute
-     * @return the ResultSet obtained from the execution of the statement
+     * @return the ResultSet obtained from the queue of the statement
      * @throws PersistenceException
      */
     public static ResultSet checkedExecute(CassandraConnection connection, Statement statement) throws PersistenceException {
@@ -32,12 +32,12 @@ public class CassandraUtils {
     }
 
     /**
-     * This method performs the execution of a query string
+     * This method performs the queue of a query string
      * and checks for all the possible exceptions that it may throw
      *
      * @param connection the current connection with the DB
      * @param query      the string with the query to execute
-     * @return the ResultSet obtained from the execution of the query
+     * @return the ResultSet obtained from the queue of the query
      * @throws PersistenceException
      */
     public static ResultSet checkedExecute(CassandraConnection connection, String query) throws PersistenceException {

@@ -19,10 +19,19 @@ public class DecoderConfig {
         return cores > 1 ? (cores * 2) / 3 : cores;
     }
 
+    private int queueSize = 4096;
     private int threads = DEFAULT_THREADS;
     private int[] gpus = DEFAULT_GPUS;
     private String decoderClass = null;
     private boolean enabled = true;
+
+    public int getQueueSize() {
+        return queueSize;
+    }
+
+    public void setQueueSize(int queueSize) {
+        this.queueSize = queueSize;
+    }
 
     public boolean isEnabled() {
         return enabled;
@@ -93,6 +102,7 @@ public class DecoderConfig {
     @Override
     public String toString() {
         return "[Neural decoder]\n" +
+                "  queue = " + queueSize + "\n" +
                 "  threads = " + threads + "\n" +
                 "  gpus = " + Arrays.toString(gpus) + "\n" +
                 "  class = " + decoderClass + "\n" +
