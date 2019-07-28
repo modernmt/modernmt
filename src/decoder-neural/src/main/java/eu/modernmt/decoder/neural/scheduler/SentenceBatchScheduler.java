@@ -89,6 +89,9 @@ public class SentenceBatchScheduler implements Scheduler {
         private final Priority priority;
 
         JobImpl(int qSize, LanguageDirection direction, TranslationSplit[] splits, ScoreEntry[] suggestions) {
+            if (splits == null || splits.length == 0)
+                throw new IllegalArgumentException("splits cannot be null or empty");
+
             this.direction = direction;
             this.splits = Arrays.asList(splits);
             this.suggestions = suggestions != null && suggestions.length > 0 ? Arrays.asList(suggestions) : null;
