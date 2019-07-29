@@ -3,10 +3,12 @@ package eu.modernmt.decoder.neural;
 import eu.modernmt.config.DecoderConfig;
 import eu.modernmt.data.DataListener;
 import eu.modernmt.data.DataListenerProvider;
-import eu.modernmt.decoder.*;
+import eu.modernmt.decoder.Decoder;
+import eu.modernmt.decoder.DecoderException;
+import eu.modernmt.decoder.DecoderListener;
+import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.decoder.neural.queue.*;
 import eu.modernmt.decoder.neural.scheduler.Scheduler;
-import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.decoder.neural.scheduler.SentenceBatchScheduler;
 import eu.modernmt.decoder.neural.scheduler.TranslationSplit;
 import eu.modernmt.io.TokensOutputStream;
@@ -150,32 +152,30 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
         ScoreEntry[] suggestions = lookup(user, direction, text, context);
         long lookupTime = System.currentTimeMillis() - lookupBegin;
 
-        // Preparing translation splits
-        boolean align = (suggestions != null && suggestions[0].score == 1.f);
-        Sentence[] textSplits;
+        // Scheduling translation
+        Scheduler.TranslationLock lock;
         TranslationSplit[] splits;
 
-        if (align) {
-            textSplits = new Sentence[]{text};
-            splits = new TranslationSplit[]{new TranslationSplit(priority, text, suggestions[0].translation, timeout)};
+        if (suggestions != null && suggestions[0].score == 1.f) {  // align
+            TranslationSplit split = new TranslationSplit(priority, text, suggestions[0].translation, timeout);
+            splits = new TranslationSplit[]{split};
+            lock = scheduler.schedule(direction, split);
         } else {
-            textSplits = split(text).toArray(new Sentence[0]);
-            splits = new TranslationSplit[textSplits.length];
+            List<Sentence> textSplits = split(text);
+            splits = new TranslationSplit[textSplits.size()];
 
-            for (int i = 0; i < textSplits.length; i++)
-                splits[i] = new TranslationSplit(priority, textSplits[i], timeout);
+            int i = 0;
+            for (Sentence textSplit : textSplits)
+                splits[i++] = new TranslationSplit(priority, textSplit, timeout);
+
+            lock = scheduler.schedule(direction, splits, suggestions);
         }
 
-        // Translate sentence splits with scheduler
+        // Wait for translation to be completed
         try {
-            Scheduler.TranslationLock lock;
-            if (align)
-                lock = scheduler.schedule(direction, splits, null);
-            else
-                lock = scheduler.schedule(direction, splits, suggestions);
             lock.await();
 
-            Translation translation = TranslationJoiner.join(text, textSplits, splits);
+            Translation translation = TranslationJoiner.join(text, splits);
             translation.setMemoryLookupTime(lookupTime);
 
             if (logger.isDebugEnabled()) {

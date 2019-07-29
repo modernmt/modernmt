@@ -5,10 +5,7 @@ import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.model.Priority;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.PriorityQueue;
+import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -28,10 +25,26 @@ public class SentenceBatchScheduler implements Scheduler {
 
     @Override
     public TranslationLock schedule(LanguageDirection direction, TranslationSplit[] splits, ScoreEntry[] suggestions) throws DecoderUnavailableException {
-        CountDownTranslationLock tLock = new CountDownTranslationLock(splits.length);
+        CountDownTranslationLock lock = new CountDownTranslationLock(splits.length);
         for (TranslationSplit split : splits)
-            split.setLock(tLock);
+            split.setLock(lock);
 
+        schedule(splits.length, new JobImpl(direction, splits, suggestions));
+
+        return lock;
+    }
+
+    @Override
+    public TranslationLock schedule(LanguageDirection direction, TranslationSplit split) throws DecoderUnavailableException {
+        CountDownTranslationLock lock = new CountDownTranslationLock(1);
+        split.setLock(lock);
+
+        schedule(1, new JobImpl(direction, split));
+
+        return lock;
+    }
+
+    private void schedule(int size, JobImpl job) throws DecoderUnavailableException {
         try {
             lock.lock();
 
@@ -39,16 +52,15 @@ public class SentenceBatchScheduler implements Scheduler {
                 throw new DecoderUnavailableException("Decoder has been shut down");
 
             int qSize = queue.size();
-            if (qSize + splits.length > maxQueueSize)
+            if (qSize + size > maxQueueSize)
                 throw new DecoderUnavailableException("Decoder unavailable due to a temporary overloading");
 
-            queue.add(new JobImpl(qSize, direction, splits, suggestions));
+            job.onStartWaitingInQueue(qSize);
+            queue.add(job);
             notEmpty.signal();
         } finally {
             lock.unlock();
         }
-
-        return tLock;
     }
 
     @Override
@@ -85,20 +97,24 @@ public class SentenceBatchScheduler implements Scheduler {
         private final LanguageDirection direction;
         private final List<TranslationSplit> splits;
         private final List<ScoreEntry> suggestions;
-        private final long timestamp;
         private final Priority priority;
+        private long timestamp;
 
-        JobImpl(int qSize, LanguageDirection direction, TranslationSplit[] splits, ScoreEntry[] suggestions) {
-            if (splits == null || splits.length == 0)
+        JobImpl(LanguageDirection direction, TranslationSplit split) {
+            this(direction, Collections.singletonList(split), null);
+        }
+
+        JobImpl(LanguageDirection direction, TranslationSplit[] splits, ScoreEntry[] suggestions) {
+            this(direction, Arrays.asList(splits), suggestions != null && suggestions.length > 0 ? Arrays.asList(suggestions) : null);
+        }
+
+        private JobImpl(LanguageDirection direction, List<TranslationSplit> splits, List<ScoreEntry> suggestions) {
+            if (splits == null || splits.isEmpty())
                 throw new IllegalArgumentException("splits cannot be null or empty");
 
             this.direction = direction;
-            this.splits = Arrays.asList(splits);
-            this.suggestions = suggestions != null && suggestions.length > 0 ? Arrays.asList(suggestions) : null;
-
-            this.timestamp = System.currentTimeMillis();
-            for (TranslationSplit split : splits)
-                split.onStartWaitingInQueue(qSize, this.timestamp);
+            this.splits = splits;
+            this.suggestions = suggestions;
 
             Priority priority = null;
             for (TranslationSplit split : splits) {
@@ -106,6 +122,12 @@ public class SentenceBatchScheduler implements Scheduler {
                     priority = split.priority;
             }
             this.priority = priority;
+        }
+
+        private void onStartWaitingInQueue(int queueSize) {
+            this.timestamp = System.currentTimeMillis();
+            for (TranslationSplit split : splits)
+                split.onStartWaitingInQueue(queueSize, this.timestamp);
         }
 
         @Override

@@ -9,23 +9,44 @@ import eu.modernmt.model.Word;
 
 public class TranslationJoiner {
 
-    public static Translation join(Sentence originalSentence, Sentence[] splits, TranslationSplit[] translationSplits) throws DecoderException {
-        int wordCount = wordCount(translationSplits);
-        int alignmentCount = alignmentCount(translationSplits);
+    public static Translation join(Sentence originalSentence, TranslationSplit[] splits) throws DecoderException {
+        if (splits.length == 0) {
+            return Translation.emptyTranslation(originalSentence);
+        } else if (splits.length == 1) {
+            TranslationSplit split = splits[0];
+            Translation translation = split.getTranslation();
+            Sentence sentence = translation.getSource();
+
+            if (originalSentence != sentence)
+                translation = new Translation(translation.getWords(), originalSentence, translation.getWordAlignment());
+
+            translation.setQueueLength(split.getQueueSize());
+            translation.setQueueTime(split.getQueueTime());
+            translation.setDecodeTime(split.getTranslationTime());
+
+            return translation;
+        } else {
+            return doJoin(originalSentence, splits);
+        }
+    }
+
+    private static Translation doJoin(Sentence originalSentence, TranslationSplit[] splits) throws DecoderException {
+        int wordCount = wordCount(splits);
+        int alignmentCount = alignmentCount(splits);
 
         WordsJoiner words = new WordsJoiner(wordCount);
         AlignmentJoiner alignment = alignmentCount > 0 ? new AlignmentJoiner(alignmentCount) : null;
 
-        for (int i = 0; i < splits.length; i++) {
-            Translation translationSplit = translationSplits[i].getTranslation();
-            Sentence sentenceSplit = splits[i];
+        for (TranslationSplit split : splits) {
+            Translation translation = split.getTranslation();
+            Sentence sentence = split.sentence;
 
             // Target words
-            words.append(translationSplit.getWords());
+            words.append(translation.getWords());
 
             // Alignment
             if (alignment != null)
-                alignment.append(sentenceSplit, translationSplit);
+                alignment.append(sentence, translation);
         }
 
         Translation translation;
@@ -35,10 +56,10 @@ public class TranslationJoiner {
             translation = new Translation(words.build(), originalSentence, alignment.build());
 
         // Calculate stats
-        int queueSize = getQueueSize(translationSplits);
-        long realTime = getRealTime(translationSplits);
-        long computeTime = getComputeTime(translationSplits);
-        double totalDecodingTime = getDecodingTime(translationSplits);
+        int queueSize = getQueueSize(splits);
+        long realTime = getRealTime(splits);
+        long computeTime = getComputeTime(splits);
+        double totalDecodingTime = getDecodingTime(splits);
 
         long decodeTime = Math.round((totalDecodingTime / computeTime) * realTime);
         long queueTime = realTime - decodeTime;

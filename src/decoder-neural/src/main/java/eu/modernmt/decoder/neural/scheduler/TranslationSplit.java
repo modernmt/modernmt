@@ -97,4 +97,12 @@ public class TranslationSplit {
         return translationEnd;
     }
 
+    public long getQueueTime() {
+        return translationBegin - qWaitingBegin;
+    }
+
+    public long getTranslationTime() {
+        return translationEnd - translationBegin;
+    }
+
 }
