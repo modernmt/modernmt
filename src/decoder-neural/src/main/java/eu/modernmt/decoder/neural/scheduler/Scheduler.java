@@ -30,6 +30,8 @@ public interface Scheduler extends Closeable {
         List<TranslationSplit> getTranslationSplits();
 
         Collection<ScoreEntry> getSuggestions();
+
+        void onStartWaitingInQueue(int queueSize);
     }
 
     /**

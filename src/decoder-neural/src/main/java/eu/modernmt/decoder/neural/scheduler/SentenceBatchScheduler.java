@@ -6,21 +6,29 @@ import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.model.Priority;
 
 import java.util.*;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
 
-public class SentenceBatchScheduler implements Scheduler {
+public class SentenceBatchScheduler extends AbstractScheduler<SentenceBatchScheduler.JobImpl> {
 
-    private final PriorityQueue<Job> queue;
-    private final int maxQueueSize;
+    public SentenceBatchScheduler(final int queueSize) {
+        super(new PriorityQueue<JobImpl>(queueSize) {
 
-    private final ReentrantLock lock = new ReentrantLock();
-    private final Condition notEmpty = lock.newCondition();
-    private boolean active = true;
+            @Override
+            public boolean add(JobImpl job) {
+                if (offer(job))
+                    return true;
+                else
+                    throw new IllegalStateException("Queue full");
+            }
 
-    public SentenceBatchScheduler(int queueSize) {
-        queue = new PriorityQueue<>(queueSize);
-        maxQueueSize = queueSize;
+            @Override
+            public boolean offer(JobImpl job) {
+                if (size() + 1 > queueSize)
+                    return false;
+
+                return super.offer(job);
+            }
+
+        });
     }
 
     @Override
@@ -44,55 +52,7 @@ public class SentenceBatchScheduler implements Scheduler {
         return lock;
     }
 
-    private void schedule(JobImpl job) throws DecoderUnavailableException {
-        try {
-            lock.lock();
-
-            if (!active)
-                throw new DecoderUnavailableException("Decoder has been shut down");
-
-            int qSize = queue.size();
-            if (qSize + 1 > maxQueueSize)
-                throw new DecoderUnavailableException("Decoder unavailable due to a temporary overloading");
-
-            job.onStartWaitingInQueue(qSize);
-            queue.add(job);
-            notEmpty.signal();
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    @Override
-    public Job take() throws InterruptedException {
-        try {
-            lock.lock();
-            while (queue.isEmpty() && active)
-                notEmpty.await();
-
-            if (!queue.isEmpty())
-                return queue.poll();
-
-            // scheduler is not active anymore
-            notEmpty.signal();  // pass the signal to next thread in queue
-            throw new InterruptedException();
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    @Override
-    public void close() {
-        try {
-            lock.lock();
-            active = false;
-            notEmpty.signal();
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    private static class JobImpl implements Scheduler.Job, Comparable<JobImpl> {
+    public static class JobImpl implements Scheduler.Job, Comparable<JobImpl> {
 
         private final LanguageDirection direction;
         private final List<TranslationSplit> splits;
@@ -124,7 +84,8 @@ public class SentenceBatchScheduler implements Scheduler {
             this.priority = priority;
         }
 
-        private void onStartWaitingInQueue(int queueSize) {
+        @Override
+        public void onStartWaitingInQueue(int queueSize) {
             this.timestamp = System.currentTimeMillis();
             for (TranslationSplit split : splits)
                 split.onStartWaitingInQueue(queueSize, this.timestamp);
