@@ -29,7 +29,7 @@ public class SentenceBatchScheduler implements Scheduler {
         for (TranslationSplit split : splits)
             split.setLock(lock);
 
-        schedule(splits.length, new JobImpl(direction, splits, suggestions));
+        schedule(new JobImpl(direction, splits, suggestions));
 
         return lock;
     }
@@ -39,12 +39,12 @@ public class SentenceBatchScheduler implements Scheduler {
         CountDownTranslationLock lock = new CountDownTranslationLock(1);
         split.setLock(lock);
 
-        schedule(1, new JobImpl(direction, split));
+        schedule(new JobImpl(direction, split));
 
         return lock;
     }
 
-    private void schedule(int size, JobImpl job) throws DecoderUnavailableException {
+    private void schedule(JobImpl job) throws DecoderUnavailableException {
         try {
             lock.lock();
 
@@ -52,7 +52,7 @@ public class SentenceBatchScheduler implements Scheduler {
                 throw new DecoderUnavailableException("Decoder has been shut down");
 
             int qSize = queue.size();
-            if (qSize + size > maxQueueSize)
+            if (qSize + 1 > maxQueueSize)
                 throw new DecoderUnavailableException("Decoder unavailable due to a temporary overloading");
 
             job.onStartWaitingInQueue(qSize);
