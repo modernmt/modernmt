@@ -11,36 +11,69 @@ import java.util.HashSet;
 
 public class StatisticalChineseAnnotator implements BaseTokenizer.Annotator {
 
-    private final int maxLength;
-    private final HashSet<String> words;
+    private static class Dictionary {
 
-    public StatisticalChineseAnnotator() {
-        InputStream stream = null;
+        private static Dictionary load(String filename) throws IOException {
+            InputStream stream = null;
 
-        try {
-            this.words = new HashSet<>(21000);
-            int maxLength = 0;
+            try {
+                HashSet<String> words = new HashSet<>(21000);
+                int maxLength = 0;
 
-            stream = getClass().getResourceAsStream("chinese-words.list");
+                stream = StatisticalChineseAnnotator.class.getResourceAsStream(filename);
 
-            LineIterator lines = IOUtils.lineIterator(stream, Charset.forName("UTF-8"));
-            while (lines.hasNext()) {
-                String line = lines.nextLine();
+                LineIterator lines = IOUtils.lineIterator(stream, Charset.forName("UTF-8"));
+                while (lines.hasNext()) {
+                    String line = lines.nextLine();
 
-                this.words.add(line);
-                maxLength = Math.max(maxLength, line.length());
+                    words.add(line);
+                    maxLength = Math.max(maxLength, line.length());
+                }
+
+                return new Dictionary(maxLength, words);
+            } finally {
+                IOUtils.closeQuietly(stream);
             }
-
-            this.maxLength = maxLength;
-        } catch (IOException e) {
-            throw new Error(e);
-        } finally {
-            IOUtils.closeQuietly(stream);
         }
+
+        private final int maxLength;
+        private final HashSet<String> words;
+
+        private Dictionary(int maxLength, HashSet<String> words) {
+            this.maxLength = maxLength;
+            this.words = words;
+        }
+
+        public boolean contains(String word) {
+            return words.contains(word);
+        }
+
+        public int getWordMaxLength() {
+            return maxLength;
+        }
+    }
+
+    private static Dictionary dictionary = null;
+
+    private static Dictionary getDictionary() throws ProcessingException {
+        if (dictionary == null) {
+            synchronized (StatisticalChineseAnnotator.class) {
+                if (dictionary == null) {
+                    try {
+                        dictionary = Dictionary.load("chinese-words.list");
+                    } catch (IOException e) {
+                        throw new ProcessingException("Failed to load Chinese dictionary: chinese-words.list");
+                    }
+                }
+            }
+        }
+
+        return dictionary;
     }
 
     @Override
     public void annotate(TokenizedString string) throws ProcessingException {
+        Dictionary dictionary = getDictionary();
         String text = string.toString();
 
         int i = 0;
@@ -48,12 +81,12 @@ public class StatisticalChineseAnnotator implements BaseTokenizer.Annotator {
         while (i < text.length() - 1) {
             int length;
 
-            for (length = maxLength; length > 1; length--) {
+            for (length = dictionary.getWordMaxLength(); length > 1; length--) {
                 if (i + length > text.length())
                     continue;
 
                 String word = text.substring(i, i + length);
-                if (words.contains(word)) {
+                if (dictionary.contains(word)) {
                     string.protect(i + 1, i + length);
                     break;
                 }
