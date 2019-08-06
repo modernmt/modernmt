@@ -2,25 +2,34 @@ package eu.modernmt.lang;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.junit.Assert.*;
 
 /**
  * Created by davide on 10/02/18.
  */
 public class LanguageIndexTest {
 
-    private static Language l(String s) {
-        return Language.fromString(s);
+    private static Language l(String v) {
+        return Language.fromString(v);
     }
 
-    private static LanguagePattern p(String s) {
-        return LanguagePattern.parse(s);
+    private static LanguagePattern p(String v) {
+        return LanguagePattern.parse(v);
     }
 
-    private static LanguageDirection lp(String s) {
-        String[] parts = s.split("\\s+");
+    private static LanguageDirection lp(String v) {
+        String[] parts = v.split("\\s+");
         return new LanguageDirection(Language.fromString(parts[0]), Language.fromString(parts[1]));
+    }
+
+    private static Set<LanguageDirection> lpset(String... v) {
+        HashSet<LanguageDirection> result = new HashSet<>(v.length);
+        for (String s : v)
+            result.add(lp(s));
+        return result;
     }
 
     @Test
@@ -196,5 +205,97 @@ public class LanguageIndexTest {
         assertEquals(lp("en zh-TW"), index.map(lp("en zh-MO")));
         assertEquals(lp("en zh-CN"), index.map(lp("en zh")));
         assertEquals(lp("en zh-CN"), index.map(lp("en zh-Unkn")));
+    }
+
+    @Test
+    public void simpleLanguagePivot() {
+        LanguageIndex index = new LanguageIndex.Builder()
+                .add(lp("it en"))
+                .add(lp("en fr"))
+                .build(false);
+
+        assertEquals(lpset("it en", "en fr"), index.getLanguages());
+        assertFalse(index.hasPivotLanguage(lp("it en")));
+        assertFalse(index.hasPivotLanguage(lp("en fr")));
+
+        index = new LanguageIndex.Builder()
+                .add(lp("it en"))
+                .add(lp("en fr"))
+                .build(true);
+
+        assertEquals(lpset("it en", "en fr", "it fr"), index.getLanguages());
+        assertFalse(index.hasPivotLanguage(lp("it en")));
+        assertFalse(index.hasPivotLanguage(lp("en fr")));
+        assertTrue(index.hasPivotLanguage(lp("it fr")));
+        assertEquals(l("en"), index.getPivotLanguage(lp("it fr")));
+    }
+
+    @Test
+    public void identityLanguagePivot() {
+        LanguageIndex index = new LanguageIndex.Builder()
+                .add(lp("it en"))
+                .add(lp("en it"))
+                .build(false);
+
+        assertEquals(lpset("it en", "en it"), index.getLanguages());
+
+        index = new LanguageIndex.Builder()
+                .add(lp("it en"))
+                .add(lp("en it"))
+                .build(true);
+
+        assertEquals(lpset("it en", "en it"), index.getLanguages());
+    }
+
+    @Test
+    public void multiLanguagePivot() {
+        LanguageIndex index = new LanguageIndex.Builder()
+                .add(lp("it en"))
+                .add(lp("fr en"))
+                .add(lp("de en"))
+                .add(lp("en it"))
+                .add(lp("en fr"))
+                .add(lp("en de"))
+                .build(false);
+
+        assertEquals(lpset("it en", "fr en", "de en", "en it", "en fr", "en de"), index.getLanguages());
+        assertFalse(index.hasPivotLanguage(lp("it en")));
+        assertFalse(index.hasPivotLanguage(lp("fr en")));
+        assertFalse(index.hasPivotLanguage(lp("de en")));
+        assertFalse(index.hasPivotLanguage(lp("en it")));
+        assertFalse(index.hasPivotLanguage(lp("en fr")));
+        assertFalse(index.hasPivotLanguage(lp("en de")));
+
+        index = new LanguageIndex.Builder()
+                .add(lp("it en"))
+                .add(lp("fr en"))
+                .add(lp("de en"))
+                .add(lp("en it"))
+                .add(lp("en fr"))
+                .add(lp("en de"))
+                .build(true);
+
+        assertEquals(lpset("it en", "fr en", "de en", "en it", "en fr", "en de",
+                "it fr", "it de", "fr it", "fr de", "de it", "de fr"), index.getLanguages());
+        assertFalse(index.hasPivotLanguage(lp("it en")));
+        assertFalse(index.hasPivotLanguage(lp("fr en")));
+        assertFalse(index.hasPivotLanguage(lp("de en")));
+        assertFalse(index.hasPivotLanguage(lp("en it")));
+        assertFalse(index.hasPivotLanguage(lp("en fr")));
+        assertFalse(index.hasPivotLanguage(lp("en de")));
+
+        assertTrue(index.hasPivotLanguage(lp("it fr")));
+        assertTrue(index.hasPivotLanguage(lp("it de")));
+        assertTrue(index.hasPivotLanguage(lp("fr it")));
+        assertTrue(index.hasPivotLanguage(lp("fr de")));
+        assertTrue(index.hasPivotLanguage(lp("de it")));
+        assertTrue(index.hasPivotLanguage(lp("de fr")));
+
+        assertEquals(l("en"), index.getPivotLanguage(lp("it fr")));
+        assertEquals(l("en"), index.getPivotLanguage(lp("it de")));
+        assertEquals(l("en"), index.getPivotLanguage(lp("fr it")));
+        assertEquals(l("en"), index.getPivotLanguage(lp("fr de")));
+        assertEquals(l("en"), index.getPivotLanguage(lp("de it")));
+        assertEquals(l("en"), index.getPivotLanguage(lp("de fr")));
     }
 }
