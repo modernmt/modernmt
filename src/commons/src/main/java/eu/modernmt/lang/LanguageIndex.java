@@ -29,35 +29,41 @@ public class LanguageIndex {
         }
 
         public LanguageIndex build(boolean includePivot) {
-            return new LanguageIndex(index, rules, includePivot);
+            Map<LanguageDirection, LanguageBridge> pivots = includePivot ? computePivotLanguages() : Collections.emptyMap();
+            return new LanguageIndex(index, rules, pivots);
         }
 
-    }
+        private Map<LanguageDirection, LanguageBridge> computePivotLanguages() {
+            HashMap<String, HashSet<LanguageDirection>> sourceToDirections = new HashMap<>();
+            for (List<LanguageDirection> list : index.values()) {
+                for (LanguageDirection direction : list) {
+                    String source = direction.source.getLanguage();
+                    sourceToDirections.computeIfAbsent(source, k -> new HashSet<>()).add(direction);
+                }
+            }
 
-    private static Map<LanguageDirection, Language> collectPivotLanguages(Set<LanguageDirection> languages) {
-        HashMap<Language, HashSet<LanguageDirection>> sourceToDirections = new HashMap<>();
-        for (LanguageDirection direction : languages) {
-            Language source = direction.source.isLanguageOnly() ? direction.source : new Language(direction.source.getLanguage());
-            sourceToDirections.computeIfAbsent(source, k -> new HashSet<>()).add(direction);
-        }
+            HashMap<LanguageDirection, LanguageBridge> directionToBridge = new HashMap<>();
+            for (List<LanguageDirection> list : index.values()) {
+                for (LanguageDirection source : list) {
+                    HashSet<LanguageDirection> targets = sourceToDirections.get(source.target.getLanguage());
 
-        HashMap<LanguageDirection, Language> directionToPivot = new HashMap<>();
-        for (LanguageDirection source : languages) {
-            HashSet<LanguageDirection> targets = sourceToDirections.get(source.target);
-
-            if (targets != null) {
-                for (LanguageDirection target : targets) {
-                    if (!source.source.getLanguage().equals(target.target.getLanguage())) {
-                        LanguageDirection pivoted = new LanguageDirection(source.source, target.target);
-                        directionToPivot.put(pivoted, source.target);
+                    if (targets != null) {
+                        for (LanguageDirection target : targets) {
+                            if (!source.source.getLanguage().equals(target.target.getLanguage())) {
+                                LanguageDirection pivoted = new LanguageDirection(source.source, target.target);
+                                directionToBridge.put(pivoted, new LanguageBridge(source, target));
+                            }
+                        }
                     }
                 }
             }
+
+            for (LanguageDirection direction : directionToBridge.keySet())
+                this.add(direction);
+
+            return directionToBridge;
         }
 
-        languages.addAll(directionToPivot.keySet());
-
-        return directionToPivot;
     }
 
     private final Map<SimpleLanguageDirection, List<LanguageDirection>> index;
@@ -65,14 +71,14 @@ public class LanguageIndex {
 
     private final Set<LanguageDirection> languages;
     private final ConcurrentHashMap<LanguageDirection, LanguageDirection> mappingCache;
-    private final Map<LanguageDirection, Language> pivotLanguages;
+    private final Map<LanguageDirection, LanguageBridge> pivotLanguages;
 
-    private LanguageIndex(Map<SimpleLanguageDirection, List<LanguageDirection>> index, Map<String, List<LanguageRule>> rules, boolean includePivot) {
+    private LanguageIndex(Map<SimpleLanguageDirection, List<LanguageDirection>> index, Map<String, List<LanguageRule>> rules, Map<LanguageDirection, LanguageBridge> pivots) {
         HashSet<LanguageDirection> languages = new HashSet<>();
         for (List<LanguageDirection> entries : index.values())
             languages.addAll(entries);
 
-        this.pivotLanguages = includePivot ? collectPivotLanguages(languages) : Collections.emptyMap();
+        this.pivotLanguages = pivots;
         this.languages = Collections.unmodifiableSet(languages);
         this.index = index;
         this.rules = rules;
@@ -91,12 +97,12 @@ public class LanguageIndex {
         return languages.size() == 1 ? languages.iterator().next() : null;
     }
 
-    public Language getPivotLanguage(LanguageDirection direction) {
-        return pivotLanguages.get(direction);
-    }
-
     public boolean hasPivotLanguage(LanguageDirection direction) {
         return pivotLanguages.containsKey(direction);
+    }
+
+    public LanguageBridge getLanguageBridge(LanguageDirection direction) {
+        return pivotLanguages.get(direction);
     }
 
     /**
