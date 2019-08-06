@@ -24,25 +24,26 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
     }
 
     public EngineConfig build(EngineConfig config) throws ConfigException {
+        boolean pivot = hasAttribute("use-pivot") && getBooleanAttribute("use-pivot");
+
+        LanguageIndex.Builder builder;
+
         if (hasAttribute("source-language") || hasAttribute("target-language")) {
             if (hasAttribute("source-language") && hasAttribute("target-language")) {
                 Language source = getLanguageAttribute("source-language");
                 Language target = getLanguageAttribute("target-language");
 
-                LanguageIndex languageIndex = new LanguageIndex.Builder()
-                        .add(new LanguageDirection(source, target))
-                        .build();
-
-                config.setLanguageIndex(languageIndex);
+                builder = new LanguageIndex.Builder().add(new LanguageDirection(source, target));
             } else {
                 throw new ConfigException("Missing source/target language specifier in <engine> element");
             }
         } else {
-            parseLanguages(getChild("languages"), config);
+            builder = parseLanguages(getChild("languages"));
         }
 
-        if (config.getLanguageIndex() == null)
+        if (builder == null)
             throw new ConfigException("Missing language specification for <engine> element");
+        config.setLanguageIndex(builder.build(pivot));
 
         decoderConfigBuilder.build(config.getDecoderConfig());
         alignerConfigBuilder.build(config.getAlignerConfig());
@@ -51,10 +52,10 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
         return config;
     }
 
-    private static void parseLanguages(Element element, EngineConfig config) throws ConfigException {
+    private static LanguageIndex.Builder parseLanguages(Element element) throws ConfigException {
         Element[] pairs = getChildren(element, "pair");
         if (pairs == null)
-            return;
+            return null;
 
         LanguageIndex.Builder builder = null;
 
@@ -76,10 +77,10 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
             builder.add(new LanguageDirection(source, target));
         }
 
-        if (builder != null) {
+        if (builder != null)
             parseLanguageRules(getChild(element, "rules"), builder);
-            config.setLanguageIndex(builder.build());
-        }
+
+        return builder;
     }
 
     private static void parseLanguageRules(Element element, LanguageIndex.Builder builder) throws ConfigException {
