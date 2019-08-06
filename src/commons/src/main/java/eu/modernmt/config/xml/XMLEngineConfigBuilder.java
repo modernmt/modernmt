@@ -24,26 +24,25 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
     }
 
     public EngineConfig build(EngineConfig config) throws ConfigException {
-        boolean pivot = hasAttribute("use-pivot") && getBooleanAttribute("use-pivot");
-
-        LanguageIndex.Builder builder;
+        LanguageIndex languages;
 
         if (hasAttribute("source-language") || hasAttribute("target-language")) {
             if (hasAttribute("source-language") && hasAttribute("target-language")) {
                 Language source = getLanguageAttribute("source-language");
                 Language target = getLanguageAttribute("target-language");
 
-                builder = new LanguageIndex.Builder().add(new LanguageDirection(source, target));
+                languages = new LanguageIndex.Builder().add(new LanguageDirection(source, target)).build();
             } else {
                 throw new ConfigException("Missing source/target language specifier in <engine> element");
             }
         } else {
-            builder = parseLanguages(getChild("languages"));
+            languages = parseLanguages(getChild("languages"));
         }
 
-        if (builder == null)
+        if (languages == null)
             throw new ConfigException("Missing language specification for <engine> element");
-        config.setLanguageIndex(builder.build(pivot));
+
+        config.setLanguageIndex(languages);
 
         decoderConfigBuilder.build(config.getDecoderConfig());
         alignerConfigBuilder.build(config.getAlignerConfig());
@@ -52,11 +51,12 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
         return config;
     }
 
-    private static LanguageIndex.Builder parseLanguages(Element element) throws ConfigException {
+    private LanguageIndex parseLanguages(Element element) throws ConfigException {
         Element[] pairs = getChildren(element, "pair");
         if (pairs == null)
             return null;
 
+        boolean pivot = hasAttribute(element, "use-pivot") && getBooleanAttribute(element, "use-pivot");
         LanguageIndex.Builder builder = null;
 
         for (Element pair : pairs) {
@@ -80,7 +80,7 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
         if (builder != null)
             parseLanguageRules(getChild(element, "rules"), builder);
 
-        return builder;
+        return builder == null ? null : builder.build(pivot);
     }
 
     private static void parseLanguageRules(Element element, LanguageIndex.Builder builder) throws ConfigException {
