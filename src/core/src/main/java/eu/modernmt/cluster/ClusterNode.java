@@ -23,6 +23,7 @@ import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.hw.NetworkUtils;
+import eu.modernmt.lang.LanguageBridge;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Translation;
@@ -448,6 +449,7 @@ public class ClusterNode {
 
     public Future<Translation> submit(TranslationTask task) throws DecoderUnavailableException {
         LanguageDirection language = task.getLanguageDirection();
+        LanguageBridge bridge = engine.getLanguageIndex().getLanguageBridge(language);
 
         Set<Member> members = hazelcast.getCluster().getMembers();
         ArrayList<Member> candidates = new ArrayList<>();
@@ -460,7 +462,7 @@ public class ClusterNode {
 
             activeNodes++;
 
-            if (NodeInfo.hasTranslationDirection(member, language))
+            if (hasTranslationDirection(member, language, bridge))
                 candidates.add(member);
         }
 
@@ -475,6 +477,13 @@ public class ClusterNode {
         Member member = candidates.get(i);
 
         return translationService.submit(task, member.getAddress());
+    }
+
+    private static boolean hasTranslationDirection(Member member, LanguageDirection language, LanguageBridge bridge) {
+        if (bridge == null)
+            return NodeInfo.hasTranslationDirection(member, language);
+        else
+            return NodeInfo.hasTranslationDirection(member, bridge.source) && NodeInfo.hasTranslationDirection(member, bridge.target);
     }
 
     public synchronized void shutdown() {
