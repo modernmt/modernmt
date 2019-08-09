@@ -9,11 +9,13 @@ package eu.modernmt.config;
  * (or obtained in some different way)
  */
 public class DatabaseConfig {
+
     public static final int MYSQL_DEFAULT_PORT = 3306;
     public static final int CASSANDRA_DEFAULT_PORT = 9042;
 
     public enum Type {CASSANDRA, MYSQL}
 
+    private final NodeConfig parent;
     private boolean embedded = true;
     /*if DB enabled, at start MMT launches/connects to a DB process. If disabled, will not use any DBs. By default: enabled*/
     private boolean enabled = true;
@@ -29,6 +31,14 @@ public class DatabaseConfig {
     /*user and password are only used if this is mysql*/
     private String user = null;
     private String password = null;
+
+    public DatabaseConfig(NodeConfig parent) {
+        this.parent = parent;
+    }
+
+    public NodeConfig getParentConfig() {
+        return parent;
+    }
 
     public boolean isEmbedded() {
         return this.embedded;

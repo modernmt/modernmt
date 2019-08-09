@@ -5,10 +5,19 @@ package eu.modernmt.config;
  */
 public class ApiConfig {
 
+    private final NetworkConfig parent;
     private boolean enabled = true;
     private String listeningInterface = null;
     private int port = 8045;
     private String apiRoot = null;
+
+    public ApiConfig(NetworkConfig parent) {
+        this.parent = parent;
+    }
+
+    public NetworkConfig getParentConfig() {
+        return parent;
+    }
 
     public boolean isEnabled() {
         return enabled;

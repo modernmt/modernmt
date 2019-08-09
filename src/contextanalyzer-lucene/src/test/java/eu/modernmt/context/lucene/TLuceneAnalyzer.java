@@ -51,7 +51,7 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
     }
 
     public TLuceneAnalyzer() throws IOException {
-        this(new AnalyzerConfig());
+        this(new AnalyzerConfig(null));
     }
 
     public TLuceneAnalyzer(AnalyzerConfig config) throws IOException {

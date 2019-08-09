@@ -7,11 +7,20 @@ import eu.modernmt.hw.NetworkUtils;
  */
 public class NetworkConfig {
 
+    private final NodeConfig parent;
     private String listeningInterface = null;
     private int port = 5016;
     private String host = NetworkUtils.getMyIpv4Address();
-    private final ApiConfig apiConfig = new ApiConfig();
-    private final JoinConfig joinConfig = new JoinConfig();
+    private final ApiConfig apiConfig = new ApiConfig(this);
+    private final JoinConfig joinConfig = new JoinConfig(this);
+
+    public NetworkConfig(NodeConfig parent) {
+        this.parent = parent;
+    }
+
+    public NodeConfig getParentConfig() {
+        return parent;
+    }
 
     public ApiConfig getApiConfig() {
         return apiConfig;

@@ -7,11 +7,20 @@ import eu.modernmt.lang.LanguageIndex;
  */
 public class EngineConfig {
 
+    private final NodeConfig parent;
     private String name = "default";
     private LanguageIndex languageIndex = null;
-    private DecoderConfig decoderConfig = new DecoderConfig();
-    private AlignerConfig alignerConfig = new AlignerConfig();
-    private AnalyzerConfig analyzerConfig = new AnalyzerConfig();
+    private DecoderConfig decoderConfig = new DecoderConfig(this);
+    private AlignerConfig alignerConfig = new AlignerConfig(this);
+    private AnalyzerConfig analyzerConfig = new AnalyzerConfig(this);
+
+    public EngineConfig(NodeConfig parent) {
+        this.parent = parent;
+    }
+
+    public NodeConfig getParentConfig() {
+        return parent;
+    }
 
     public String getName() {
         return name;

@@ -10,11 +10,20 @@ package eu.modernmt.config;
  */
 public class DataStreamConfig {
 
+    private final NodeConfig parent;
     private boolean enabled = true;
     private boolean embedded = true;
     private String host = "localhost";
     private int port = 9092;
     private String name = null;
+
+    public DataStreamConfig(NodeConfig parent) {
+        this.parent = parent;
+    }
+
+    public NodeConfig getParentConfig() {
+        return parent;
+    }
 
     public boolean isEnabled() {
         return enabled;
