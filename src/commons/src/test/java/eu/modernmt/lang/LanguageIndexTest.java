@@ -258,6 +258,30 @@ public class LanguageIndexTest {
     }
 
     @Test
+    public void skippedLanguagePivot() {
+        LanguageIndex index = new LanguageIndex.Builder()
+                .add(lp("it en"))
+                .add(lp("fr en"))
+                .add(lp("en it"))
+                .add(lp("en fr"))
+                .add(lp("it fr"))
+                .build(true);
+
+        assertEquals(lpset("it en", "fr en", "en it", "en fr", "it fr", "fr it"), index.getLanguages());
+
+        for (LanguageDirection p : lpset("it en", "fr en", "en it", "en fr")) {
+            assertFalse(index.hasPivotLanguage(p));
+            assertEquals(p, index.map(p));
+        }
+
+        assertFalse(index.hasPivotLanguage(lp("it fr")));
+        assertEquals(lp("it fr"), index.map(lp("it fr")));
+
+        assertTrue(index.hasPivotLanguage(lp("fr it")));
+        assertEquals(lp("fr it"), index.map(lp("fr it")));
+    }
+
+    @Test
     public void multiLanguagePivot() {
         LanguageIndex index = new LanguageIndex.Builder()
                 .add(lp("it en"))

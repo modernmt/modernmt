@@ -51,7 +51,10 @@ public class LanguageIndex {
                         for (LanguageDirection target : targets) {
                             if (!source.source.getLanguage().equals(target.target.getLanguage())) {
                                 LanguageDirection pivoted = new LanguageDirection(source.source, target.target);
-                                directionToBridge.put(pivoted, new LanguageBridge(source, target));
+                                SimpleLanguageDirection pivotedKey = SimpleLanguageDirection.fromLanguageDirection(pivoted);
+
+                                if (!index.containsKey(pivotedKey))
+                                    directionToBridge.put(pivoted, new LanguageBridge(source, target));
                             }
                         }
                     }
