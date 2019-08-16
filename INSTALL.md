@@ -160,7 +160,7 @@ Next, run the installation script:
 python3 setup.py
 ```
 
-Finally you can compile the cource code with maven:
+Finally you can compile the source code with maven:
 ```bash
 pushd src
 mvn clean install
