@@ -142,21 +142,20 @@ public class PostprocessorMain {
 
                 alignment = parseAlignment(alignmentStr);
             }
-
             return new Translation(words, sentence, alignment);
         }
 
         private static Alignment parseAlignment(String string) {
             String[] parts = string.split("\\s+");
-            int[] sourceIndexes = new int[parts.length];
-            int[] targetIndexes = new int[parts.length];
+            int IndexesLength = string.equals("") ? 0 : parts.length;
+            int[] sourceIndexes = new int[IndexesLength];
+            int[] targetIndexes = new int[IndexesLength];
 
-            for (int i = 0; i < parts.length; ++i) {
+            for (int i = 0; i < IndexesLength; ++i) {
                 String[] st = parts[i].split("-", 2);
                 sourceIndexes[i] = Integer.parseInt(st[0]);
                 targetIndexes[i] = Integer.parseInt(st[1]);
             }
-
             return new Alignment(sourceIndexes, targetIndexes);
         }
 
