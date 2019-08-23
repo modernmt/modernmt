@@ -76,7 +76,7 @@ public class Tag extends Token implements Comparable<Tag> {
     protected int position;
     protected boolean dtd;
 
-    protected Tag(String name, String text, boolean leftSpace, String rightSpace, int position, Type type, boolean dtd) {
+    public Tag(String name, String text, boolean leftSpace, String rightSpace, int position, Type type, boolean dtd) {
         super(text, text, rightSpace);
         this.leftSpace = leftSpace;
         this.position = position;
