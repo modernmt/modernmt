@@ -2,6 +2,7 @@ package eu.modernmt.processing.xml.projection;
 
 import eu.modernmt.model.Tag;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -15,9 +16,8 @@ abstract class InputFormatMap {
 }
 
 class HtmlInputFormatMap extends InputFormatMap {
-
-    static final Set<String> emptyHtmlTags = new HashSet<String>(){{"br"}};
-    static final Set<String> htmlTags = new HashSet<String>(){{"br","html"}};
+    static final Set<String> emptyHtmlTags = new HashSet<>(Arrays.asList("br"));
+    static final Set<String> htmlTags = new HashSet<>(Arrays.asList("br", "href"));
     static final float accptanceRate = 0.5f;
 
     public HtmlInputFormatMap() {
@@ -25,6 +25,8 @@ class HtmlInputFormatMap extends InputFormatMap {
     }
 
     protected static Tag[] transform(Tag[] tags) {
+        Set<String> h = new HashSet<>(Arrays.asList("br"));
+
         Tag[] mappedTags = new Tag[tags.length];
         for (int t = 0 ; t < tags.length ; t++){
             if ( (tags[t].getType() == Tag.Type.OPENING_TAG) && emptyHtmlTags.contains(tags[t].getName()) ) {
@@ -59,8 +61,7 @@ class HtmlInputFormatMap extends InputFormatMap {
 
 class XLiffInputFormatMap extends InputFormatMap {
 
-    static final Set<String> emptyHtmlTags = new HashSet<String>(){{"br"}};
-    static final Set<String> xliffTags = new HashSet<String>(){{"ex","bx","bpt","ept"}}; //TODO: list all xliff-compliant tags
+    static final Set<String> xliffTags = new HashSet<>(Arrays.asList("ex","bx","bpt","ept")); //TODO: list all xliff-compliant tags
 
     public XLiffInputFormatMap() {
         super();
