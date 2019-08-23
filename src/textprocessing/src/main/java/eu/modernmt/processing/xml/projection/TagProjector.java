@@ -45,16 +45,25 @@ public class TagProjector {
 
 
         Word[] sentenceWords = sentence.getWords();
+//        for (Word w : sentenceWords) {
+//            System.out.println("w:" + w);
+//        }
         Word[] translationWords = translation.getWords();
+//        for (Word w : translationWords) {
+//            System.out.println("w:" + w);
+//        }
 
         if (tags.length == 0) { //no tag to project; just return the translation
             //do nothing
         } else if (sentenceWords.length == 0) { //there are no source words; just copy the source tags in the target tags
             translation.setTags(tags);
         } else {
-            Tag[] mappedTags = mapTags(tags);
+            HtmlInputFormatMap mapper = new HtmlInputFormatMap();
+            Tag[] mappedTags = mapper.transform(tags);
 //        printTags(mappedTags);
             Alignment alignment = translation.getWordAlignment();
+//            System.out.println("alignment:" + alignment.toString());
+
             Tag[] translationTags = null;
             try {
                 /*list of tags obtained by the tokenization process*/
@@ -229,7 +238,6 @@ public class TagProjector {
                 }
             } else {
                 for (int bt = openingTags.size() - 1; bt >= 0; bt--) {
-
                     int beginTagIdx = openingTags.get(bt);
 
                     if (tagVisit[beginTagIdx]) {
@@ -241,6 +249,7 @@ public class TagProjector {
                         int idx = closingTags.get(et);
                         if (!tagVisit[idx] && idx > beginTagIdx) {
                             endTagIdx = idx;
+                            break;
                         }
                     }
                     if (endTagIdx != -1) {
@@ -290,6 +299,7 @@ public class TagProjector {
                         int idx = openingTags.get(bt);
                         if (!tagVisit[idx] && idx > endTagIdx) {
                             beginTagIdx = idx;
+                            break;
                         }
                     }
 
@@ -324,6 +334,7 @@ public class TagProjector {
 
         int spanIdx = ROOT_INDEX;
         Span span = new Span(spanIdx, level, beginTag, endTag, words);
+        span.setAnchor(0);
         spanIdx++;
         spans.add(span);
         for (int t = 0; t < tags.length; t++) {
@@ -353,153 +364,6 @@ public class TagProjector {
 //        printSpans(spans);
 
         return spans;
-
-        /*
-//        {
-//        List<Span> spans = new ArrayList<>();
-
-//        int level = ROOT_LEVEL;
-//        int spanIdx = ROOT_INDEX;
-
-            // insert the root span, which does not have any opening or closing tags, and which covers all positions
-//        Span span = new Span(spanIdx, level, null, null, words);
-            spanIdx++;
-            spans.add(span);
-
-//        boolean[] tagVisit = new boolean[tags.length];
-            for (int beginTagIndex = 0; beginTagIndex < tags.length; beginTagIndex++) {
-                System.out.println("HERE 1 beginTagIndex:" + beginTagIndex + " tagVisit:" + tagVisit[beginTagIndex] + " type:" + tags[beginTagIndex].getType());
-                if (tagVisit[beginTagIndex]) {
-                    if (tags[beginTagIndex].getType() == Tag.Type.CLOSING_TAG) {
-                        level--;
-                    }
-                    continue;
-                }
-
-                System.out.println("HERE 2 beginTagIndex:" + beginTagIndex + " tagVisit:" + tagVisit[beginTagIndex] + " type:" + tags[beginTagIndex].getType());
-
-                if (tags[beginTagIndex].getType() == Tag.Type.EMPTY_TAG) {
-                    span = new Span(spanIdx, level + 1, tags[beginTagIndex], tags[beginTagIndex], words);
-                    spanIdx++;
-                    spans.add(span);
-                    tagVisit[beginTagIndex] = true;
-                } else if (tags[beginTagIndex].getType() == Tag.Type.OPENING_TAG) {
-                    level++;
-                    int endTagIndex = tags.length - 1;
-                    while (endTagIndex > beginTagIndex) {
-
-                        if (tagVisit[endTagIndex]) {
-                            endTagIndex--;
-                            continue;
-                        }
-                        if (tags[endTagIndex].getType() == Tag.Type.CLOSING_TAG && tags[endTagIndex].getName().equals(tags[beginTagIndex].getName())) {
-
-                            span = new Span(spanIdx, level, tags[beginTagIndex], tags[endTagIndex], words);
-                            spanIdx++;
-                            spans.add(span);
-                            tagVisit[beginTagIndex] = true;
-                            tagVisit[endTagIndex] = true;
-                            break;
-                        }
-                        endTagIndex--;
-                    }
-                } else if (tags[beginTagIndex].getType() == Tag.Type.CLOSING_TAG) {
-                    //this is a spurious tag (closing of nothing),
-                    //this is case is
-                }
-            }
-
-            // Fix spurious tags
-            int firstStillOpened = Integer.MAX_VALUE;
-            int openedAtRight = 0;
-            int tagIdx = 0;
-            for (int t = 0; t < tagVisit.length; t++) {
-                System.out.println("t:" + t + " tagVisit:" + tagVisit[t]);
-            }
-            while (firstStillOpened == Integer.MAX_VALUE && tagIdx < tags.length) {
-                System.out.println("tagIdx:" + tagIdx + " firstStillOpened:" + firstStillOpened + " tagVisit[tagIdx]:" + tagVisit[tagIdx] + " tags[tagIdx].getType()" + tags[tagIdx].getType());
-                if (tagVisit[tagIdx] == false && tags[tagIdx].getType() == Tag.Type.OPENING_TAG) {
-                    firstStillOpened = tagIdx;
-                }
-                tagIdx++;
-            }
-            tagIdx = (firstStillOpened == Integer.MAX_VALUE) ? Integer.MAX_VALUE : Math.min(Integer.MAX_VALUE, firstStillOpened + 1);
-
-            System.out.println("tagIdx:" + tagIdx + " tagVisit.length" + tagVisit.length);
-            while (tagIdx < tagVisit.length) {
-                if (tagVisit[tagIdx] == true) {
-                    System.out.println("tagIdx:" + tagIdx + " tagVisit[tagIdx]:" + tagVisit[tagIdx] + " tags[tagIdx].getType()" + tags[tagIdx].getType());
-                    System.out.println("openedAtRight:" + openedAtRight);
-                    if (tags[tagIdx].getType() == Tag.Type.OPENING_TAG) {
-                        openedAtRight++;
-                    } else if (tags[tagIdx].getType() == Tag.Type.CLOSING_TAG) {
-                        openedAtRight--;
-                    }
-                }
-                tagIdx++;
-            }
-            if (openedAtRight != 0) {
-                throw new Exception("tags are not xml compliant");
-            }
-
-            // fix opening tags without closing tags
-            level = 0;
-            for (tagIdx = firstStillOpened; tagIdx < tagVisit.length; tagIdx++) {
-                if (tagVisit[tagIdx] == false) {
-                    if (tags[tagIdx].getType() == Tag.Type.OPENING_TAG) {
-                        level++;
-                        //inserting span covering from tagIdx till the end of the sentence
-                        span = new Span(spanIdx, level, tags[tagIdx], null, words);
-                        spanIdx++;
-                        spans.add(span);
-                        tagVisit[tagIdx] = true;
-                    }
-                }
-            }
-
-            int lastStillClosed = Integer.MIN_VALUE;
-            int closedAtLeft = 0;
-            tagIdx = tagVisit.length - 1;
-            while (lastStillClosed == Integer.MIN_VALUE && tagIdx >= 0) {
-                if (tagVisit[tagIdx] == false && tags[tagIdx].getType() == Tag.Type.CLOSING_TAG) {
-                    lastStillClosed = tagIdx;
-                }
-                tagIdx--;
-            }
-            tagIdx = (lastStillClosed == Integer.MIN_VALUE) ? Integer.MIN_VALUE : Math.max(Integer.MIN_VALUE, lastStillClosed - 1);
-
-            while (tagIdx >= 0) {
-                if (tagVisit[tagIdx] == true) {
-                    if (tags[tagIdx].getType() == Tag.Type.OPENING_TAG) {
-                        closedAtLeft++;
-                    } else if (tags[tagIdx].getType() == Tag.Type.CLOSING_TAG) {
-                        closedAtLeft--;
-                    }
-                }
-                tagIdx--;
-            }
-            if (closedAtLeft != 0) {
-                throw new Exception("tags are not xml compliant");
-            }
-
-
-            // fix opening tags without closing tags
-            level = 0;
-            for (tagIdx = lastStillClosed; tagIdx >= 0; tagIdx--) {
-                if (tagVisit[tagIdx] == false) {
-                    level++;
-                    //inserting span covering from the beginning of the sentence till tagIdx
-                    span = new Span(spanIdx, level, null, tags[tagIdx], words);
-                    spanIdx++;
-                    spans.add(span);
-                    tagVisit[tagIdx] = true;
-                }
-            }
-
-            return spans;
-        }
-        */
-
     }
 
     private Node<Span> createTree(List<Span> spans) throws Exception {
@@ -589,7 +453,8 @@ public class TagProjector {
         for (Span sourceSpan : sourceSpans) {
             Span targetSpan = new Span(sourceSpan.getId(), sourceSpan.getLevel(), sourceSpan.getBeginTag(), sourceSpan.getEndTag(), targetWords);
             if (sourceSpan.getId() == ROOT_INDEX) { //main span covering the full sentence
-                //do nothing
+                //just set the anchor to 0
+                targetSpan.setAnchor(0);
             } else {
                 //compute and set new positions
                 SortedSet<Integer> newPositions = new TreeSet<>();
@@ -628,104 +493,173 @@ public class TagProjector {
         Set<Node<Span>> nodeVisit = new HashSet<>();
         fixNode(targetRoot, nodeVisit);
 //        printTree(sourceRoot);
+//        System.out.println("\nAFTER fixNode");
+//        printTree(targetRoot);
         fixAnchors(targetRoot, sourceRoot, alignmentList);
+//        System.out.println("\nAFTER fixAnchors");
+//        printTree(targetRoot);
         fixUndefinedAnchors(targetRoot);
+//        System.out.println("\nAFTER fixUndefinedAnchors");
 //        printTree(targetRoot);
         return targetRoot;
     }
 
     private void fixUndefinedAnchors(Node<Span> node) {
-
         if (node.getChildren().size() >= 2) {
+            //fix anchor of children having beginTag == null; it assign the anchor of the closest right span with anchors ~= -1
             for (int i = 0; i < node.getChildren().size(); i++) {
                 Node<Span> childI = node.getChildren().get(i);
 
-                int anchorI = childI.getData().getAnchor();
-                if (anchorI == -1 && childI.getData().getBeginTag() == null) {
+                int newAnchor = childI.getData().getAnchor();
+                if (newAnchor == -1 && childI.getData().getBeginTag() == null) {
 
-                    for (int j = i+1; j < node.getChildren().size(); j++) {
+                    for (int j = i + 1; j < node.getChildren().size(); j++) {
                         Node<Span> childJ = node.getChildren().get(j);
-                        int newAnchorI = childJ.getData().getAnchor();
-                        if (newAnchorI != -1) {
-                            anchorI = newAnchorI;
+                        newAnchor = childJ.getData().getAnchor();
+                        if (newAnchor != -1) {
                             break;
                         }
                     }
-                    childI.getData().setAnchor(anchorI);
+                    childI.getData().setAnchor(newAnchor);
                 }
             }
 
+            //fix anchor of children having endTag == null; it assign the anchor of the closest left span with anchors ~= -1
+            for (int i = node.getChildren().size() - 1; i >= 0; i--) {
+                Node<Span> childI = node.getChildren().get(i);
 
+                int newAnchor = childI.getData().getAnchor();
+                if (newAnchor == -1 && childI.getData().getEndTag() == null) {
+
+                    for (int j = i - 1; j >= 0; j--) {
+                        Node<Span> childJ = node.getChildren().get(j);
+                        newAnchor = childJ.getData().getAnchor();
+                        if (newAnchor != -1) {
+                            break;
+                        }
+                        int sz = childJ.getData().getPositions().size();
+                        newAnchor = (sz > 0) ? childJ.getData().getPositions().get(sz - 1) + 1 : newAnchor;
+
+                        if (newAnchor != -1) {
+                            break;
+                        }
+                    }
+                    childI.getData().setAnchor(newAnchor);
+                }
+            }
+            //fix anchor of children having both beginTag end endTag != null; it assign the anchor of the closest left or right span with anchors ~= -1
             for (int i = node.getChildren().size() - 1; i >= 0; i--) {
                 Node<Span> childI = node.getChildren().get(i);
 
                 int anchorI = childI.getData().getAnchor();
-                if (anchorI == -1 && childI.getData().getEndTag() == null) {
+                if (anchorI == -1 && childI.getData().getEndTag() != null && childI.getData().getBeginTag() != null) {
 
-                    for (int j = i-1; j >= 0; j--) {
+                    int leftClosest = 0;
+                    int leftAnchor = -1;
+                    for (int j = i - 1; j >= 0; j--) {
                         Node<Span> childJ = node.getChildren().get(j);
-                        int newAnchorI = childJ.getData().getAnchor();
-                        int s = childJ.getData().getPositions().size();
-                        if (s > 0) {
-                            newAnchorI = childJ.getData().getPositions().get(s-1) + 1;
+                        leftAnchor = childJ.getData().getAnchor();
+                        if (leftAnchor != -1) {
+                            leftClosest = j;
+                            break;
                         }
-                        if (newAnchorI != -1) {
-                            anchorI = newAnchorI;
+                        int sz = childJ.getData().getPositions().size();
+                        leftAnchor = (sz > 0) ? childJ.getData().getPositions().get(sz - 1) + 1 : leftAnchor;
+                        if (leftAnchor != -1) {
+                            leftClosest = j;
                             break;
                         }
                     }
-                    childI.getData().setAnchor(anchorI);
+
+                    int rightClosest = node.getChildren().size();
+                    int rightAnchor = -1;
+                    for (int j = i + 1; j < node.getChildren().size(); j++) {
+                        Node<Span> childJ = node.getChildren().get(j);
+                        rightAnchor = childJ.getData().getAnchor();
+                        if (rightAnchor != -1) {
+                            rightClosest = j;
+                            break;
+                        }
+                    }
+                    int newAnchor;
+                    if (rightAnchor != -1 ) {
+                        if (leftAnchor != -1) {
+                            newAnchor = (i-leftClosest < i-rightClosest) ? leftAnchor : rightAnchor;
+                        } else {
+                            newAnchor = rightAnchor;
+                        }
+                    } else{
+                        newAnchor = leftAnchor;
+
+                    }
+
+                    childI.getData().setAnchor(newAnchor);
                 }
             }
-
         }
     }
 
     private void fixAnchors(Node<Span> node, Node<Span> sourceRoot, List<SortedSet<Integer>> alignmentList) {
+//        System.out.println("\nfixAnchors on " + node);
         int anchor = 0;
         Span targetSpan = node.getData();
-        int spanIdx = targetSpan.getId();
-        Node<Span> sourceNode = sourceRoot.getNode(spanIdx); // get the corresponding sourceNode
-        anchor = closestAnchor(node, sourceNode, alignmentList);
-        node.getData().setAnchor(anchor);
+        if (targetSpan.getAnchor() == -1) {
+            int spanIdx = targetSpan.getId();
+            Node<Span> sourceNode = sourceRoot.getNode(spanIdx); // get the corresponding sourceNode
+
+//            System.out.println("old anchor" + anchor);
+            anchor = closestAnchor(node, sourceNode, alignmentList);
+//            System.out.println("new anchor" + anchor);
+            targetSpan.setAnchor(anchor);
+        }
         for (Node<Span> child : node.getChildren()) {
             fixAnchors(child, sourceRoot, alignmentList);
         }
     }
 
     private int closestAnchor(Node<Span> node, Node<Span> sourceNode, List<SortedSet<Integer>> alignmentList) {
-        int targetAnchor ;
+//        System.out.println("closestAnchor on node" + node);
+        int targetAnchor = -1;
 
-        if (sourceNode.getData().getBeginTag() == null) {
-            targetAnchor = -1;
-        } else if (sourceNode.getData().getEndTag() == null) {
-            if (alignmentList.get(sourceNode.getData().getAnchor()).size() > 0) {
-                targetAnchor = alignmentList.get(sourceNode.getData().getAnchor()).last();
-            } else {
-                targetAnchor = -1;
-            }
+        if (node.getData().getBeginTag() == null) {
+            targetAnchor = 0;
         } else {
-            ArrayList<Integer> contiguousPositions = contiguous(node.getData().getPositions());
-            ArrayList<Integer> positions = new ArrayList<>();
-            positions.add(sourceNode.getData().getAnchor());
-            positions.addAll(sourceNode.getData().getPositions());
-            targetAnchor = -1;
-            for (int closest : positions) {
-                if (alignmentList.get(closest).size() > 0) {
-                    targetAnchor = alignmentList.get(closest).first();
-                    if (contiguousPositions.contains(targetAnchor)) {
-                        break;
-                    } else {
-                        if (node.getParent() == null) {
-                            targetAnchor = closestAnchor(node.getParent(), sourceNode, alignmentList);
-                        }
-                        if (targetAnchor != -1) {
-                            break;
-                        }
-                    }
-                }
+            if (node.getData().getPositions().size() > 0) {
+                targetAnchor = node.getData().getPositions().get(0);
             }
         }
+
+//            if (sourceNode.getData().getEndTag() == null) {
+//                if (sourceNode.getData().getPositions().size() > 0) {
+//                    targetAnchor = sourceNode.getData().getPositions().get(0);
+//                } else if (alignmentList.get(sourceNode.getData().getAnchor()).size() > 0) {
+//                    targetAnchor = alignmentList.get(sourceNode.getData().getAnchor()).last();
+//                } else {
+//                    targetAnchor = -1;
+//                }
+//            } else {
+//                ArrayList<Integer> contiguousPositions = contiguous(node.getData().getPositions());
+//                ArrayList<Integer> positions = new ArrayList<>();
+//                positions.add(sourceNode.getData().getAnchor());
+//                positions.addAll(sourceNode.getData().getPositions());
+//                targetAnchor = -1;
+//                for (int closest : positions) {
+//                    if (alignmentList.get(closest).size() > 0) {
+//                        targetAnchor = alignmentList.get(closest).first();
+//                        if (contiguousPositions.contains(targetAnchor)) {
+//                            break;
+//                        } else {
+//                            if (node.getParent() == null) {
+//                                targetAnchor = closestAnchor(node.getParent(), sourceNode, alignmentList);
+//                            }
+//                            if (targetAnchor != -1) {
+//                                break;
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+
         return targetAnchor;
     }
 
