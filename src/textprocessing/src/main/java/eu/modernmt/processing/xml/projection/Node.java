@@ -4,21 +4,17 @@ package eu.modernmt.processing.xml.projection;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 
 public class Node<T>  implements Comparable<Node<T>>{
     private List<Node<T>> children = new ArrayList<Node<T>>();
     private Node<T> parent = null;
-    private T data = null;
+    private T data;
 
     public Node(T data) {
         this.data = data;
-    }
-
-    public Node(T data, Node<T> parent) {
-        this.data = data;
-        this.setParent(parent);
     }
 
     public List<Node<T>> getChildren() {
@@ -52,7 +48,6 @@ public class Node<T>  implements Comparable<Node<T>>{
     public T getData() {
         return this.data;
     }
-
 
     public int getId() {
         return ((Span) this.data).getId();
@@ -101,10 +96,9 @@ public class Node<T>  implements Comparable<Node<T>>{
         if (this.getId() == index) {
             found = this;
         } else {
-            for (Node<T> child : this.children) {
-                found = child.getNode(index);
-                if (found != null)
-                    break;
+            Iterator<Node<T>> iterator = this.getChildren().iterator();
+            while (found == null && iterator.hasNext()){
+                found = iterator.next().getNode(index);
             }
         }
         return found;
@@ -116,20 +110,17 @@ public class Node<T>  implements Comparable<Node<T>>{
         }
 
         ArrayList<Node> nodes = new ArrayList<>(children.size());
-        List<Node<T>> tmpChildren = getChildren();
-        for (Node<T> child : tmpChildren) {
+        for (Node<T> child : this.children) {
             child.sortChildren();
             nodes.add(child);
         }
-
-        this.children.clear();
         nodes.sort(Node::compareTo);
 
-        for (Node<T> node : nodes) {
-            this.addChild(node);
+        this.children.clear();
+        for (Node<T> child : nodes) {
+            this.addChild(child);
         }
     }
-
 
     @Override
     public int compareTo(@NotNull Node<T> a) {
