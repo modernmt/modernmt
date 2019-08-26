@@ -41,17 +41,8 @@ public class TagProjector {
         Sentence sentence = translation.getSource();
 
         Tag[] tags = sentence.getTags();
-//        printTags(tags);
-
-
         Word[] sentenceWords = sentence.getWords();
-//        for (Word w : sentenceWords) {
-//            System.out.println("w:" + w);
-//        }
         Word[] translationWords = translation.getWords();
-//        for (Word w : translationWords) {
-//            System.out.println("w:" + w);
-//        }
 
         if (tags.length == 0) { //no tag to project; just return the translation
             //do nothing
@@ -62,7 +53,6 @@ public class TagProjector {
             Tag[] mappedTags = mapper.transform(tags);
 //        printTags(mappedTags);
             Alignment alignment = translation.getWordAlignment();
-//            System.out.println("alignment:" + alignment.toString());
 
             Tag[] translationTags = null;
             try {
@@ -70,40 +60,24 @@ public class TagProjector {
                 List<Span> sentenceSpans;
                 Node<Span> sentenceRoot;
                 sentenceSpans = createSpans(mappedTags, sentenceWords.length);
-//            printSpans(sentenceSpans);
 
                 sentenceRoot = createTree(sentenceSpans);
-
                 sortTree(sentenceRoot);
-//                printTree(sentenceRoot);
-
-
-/*
-                List<SortedSet<Integer>> dummyAlignmentList = getDummyAlignment(sentenceWords.length, translationWords.length);
-                Node<Span> sentenceRootNew = projectTree(sentenceSpans, sentenceSpans, sentenceRoot, dummyAlignmentList, mappedTags);
-                sortTree(sentenceRootNew);
-*/
-//                printTree(sentenceRootNew);
 
                 List<SortedSet<Integer>> alignmentList = getAlignment(alignment, sentenceWords.length, translationWords.length);
 
                 List<Span> translationSpans = projectSpan(sentenceSpans, alignmentList, translationWords.length);
-//            printSpans(translationSpans);
 
-                Node<Span> translationRoot = projectTree(sentenceSpans, translationSpans, sentenceRoot, alignmentList, mappedTags);
-
+                Node<Span> translationRoot = projectTree(sentenceSpans, translationSpans, sentenceRoot, alignmentList, translationWords.length);
                 sortTree(translationRoot);
-//                printTree(translationRoot);
 
                 translationTags = createTags(translationRoot);
-//                printTags(translationTags);
 
             } catch (Exception e) {
                 e.printStackTrace();
             }
             translation.setTags(translationTags);
         }
-//        System.out.println("returning translation:" + translation);
         return translation;
     }
 
@@ -114,18 +88,7 @@ public class TagProjector {
             child.sortChildren();
         }
     }
-
-
-    private List<SortedSet<Integer>> getDummyAlignment(int sourceWords, int targetWords) {
-        //A Treeset is a sorted set
-        List<SortedSet<Integer>> list = new ArrayList<>(sourceWords + 1);
-        for (int i = 0 ; i < sourceWords + 1; i++) {
-            list.add(new TreeSet<>());
-            list.get(i).add(i);
-        }
-
-        return list;
-    }
+    
     private List<SortedSet<Integer>> getAlignment(Alignment alignment, int sourceWords, int targetWords) {
         //A Treeset is a sorted set
         List<SortedSet<Integer>> list = new ArrayList<>(sourceWords + 1);
@@ -226,9 +189,8 @@ public class TagProjector {
 
 
         for (String name : openingTagSet.keySet()) {
-
-            List<Integer> openingTags = (ArrayList<Integer>) openingTagSet.get(name);
-            List<Integer> closingTags = (ArrayList<Integer>) closingTagSet.get(name);
+            List<Integer> openingTags = openingTagSet.get(name);
+            List<Integer> closingTags = closingTagSet.get(name);
             if (closingTags == null) { // there are no closing tags for this name; hence all opening tags for this name are spurious
 
                 for (int bt = openingTags.size() - 1; bt >= 0; bt--) {
@@ -264,8 +226,6 @@ public class TagProjector {
                         //found opening tag without closing
                         //create the corresponding span opening span without closing
                         //visit opening tag
-                        beginTag = tags[beginTagIdx];
-                        endTag = null;
                         tagVisit[beginTagIdx] = true;
                         tagLink[beginTagIdx] = -1;
 
@@ -275,9 +235,8 @@ public class TagProjector {
         }
 
         for (String name : closingTagSet.keySet()) {
-
-            List<Integer> openingTags = (ArrayList<Integer>) openingTagSet.get(name);
-            List<Integer> closingTags = (ArrayList<Integer>) closingTagSet.get(name);
+            List<Integer> openingTags = openingTagSet.get(name);
+            List<Integer> closingTags = closingTagSet.get(name);
             if (openingTags == null) { // there are no opening tags for this name; hence all closing tags for this name are spurious
 
                 for (int et = closingTags.size() - 1; et >= 0; et--) {
@@ -315,25 +274,20 @@ public class TagProjector {
                         //found opening tag without closing
                         //create the corresponding span opening span without closing
                         //visit opening tag
-                        endTag = tags[endTagIdx];
                         tagLink[endTagIdx] = -1;
-
                     }
                 }
             }
         }
 
         for (String name : emptyTagSet.keySet()) {
-            List<Integer> emptyTags = (ArrayList<Integer>) emptyTagSet.get(name);
-            for (int t = 0; t < emptyTags.size(); t++) {
-
-                int tagIdx = emptyTags.get(t);
-                tagLink[tagIdx] = -1;
+            for (Integer emptyTag : emptyTagSet.get(name)) {
+                tagLink[emptyTag] = -1;
             }
         }
 
         int spanIdx = ROOT_INDEX;
-        Span span = new Span(spanIdx, level, beginTag, endTag, words);
+        Span span = new Span(spanIdx, level, null, null, words);
         span.setAnchor(0);
         spanIdx++;
         spans.add(span);
@@ -479,32 +433,42 @@ public class TagProjector {
                 }
                 targetSpan.clearPositions();
                 targetSpan.addPositions(newPositions);
-                //invalidate new anchor
-                targetSpan.setAnchor(-1);
+
+                //set new anchors if possible, otherwise invalidate them
+                if (targetSpan.getPositions().size() > 0) {
+                    targetSpan.setAnchor(targetSpan.getPositions().get(0));
+                } else {
+                    int sourceAnchor = sourceSpan.getAnchor();
+                    if (alignmentList.get(sourceAnchor).size() > 0) {
+                        targetSpan.setAnchor(alignmentList.get(sourceAnchor).first());
+                    } else {
+                        targetSpan.setAnchor(-1);
+                    }
+                }
             }
             targetSpans.add(targetSpan);
         }
         return targetSpans;
     }
 
-    private Node<Span> projectTree(List<Span> sourceSpans, List<Span> targetSpans, Node<Span> sourceRoot, List<SortedSet<Integer>> alignmentList, Tag[] tags) {
+    private Node<Span> projectTree(List<Span> sourceSpans, List<Span> targetSpans, Node<Span> sourceRoot, List<SortedSet<Integer>> alignmentList,int targetWords) {
         Node<Span> targetRoot = cloneTree(sourceSpans, targetSpans, sourceRoot);
 
         Set<Node<Span>> nodeVisit = new HashSet<>();
         fixNode(targetRoot, nodeVisit);
-//        printTree(sourceRoot);
-//        System.out.println("\nAFTER fixNode");
-//        printTree(targetRoot);
-        fixAnchors(targetRoot, sourceRoot, alignmentList);
-//        System.out.println("\nAFTER fixAnchors");
-//        printTree(targetRoot);
+        System.out.println("\nAFTER fixNode");
+        printTree(targetRoot);
+        fixAnchors(targetRoot, alignmentList, targetWords);
+        System.out.println("\nAFTER fixAnchors");
+        printTree(targetRoot);
         fixUndefinedAnchors(targetRoot);
-//        System.out.println("\nAFTER fixUndefinedAnchors");
-//        printTree(targetRoot);
+        System.out.println("\nAFTER fixUndefinedAnchors");
+        printTree(targetRoot);
         return targetRoot;
     }
 
     private void fixUndefinedAnchors(Node<Span> node) {
+//        System.out.println("fixUndefinedAnchors on node:" + node);
         if (node.getChildren().size() >= 2) {
             //fix anchor of children having beginTag == null; it assign the anchor of the closest right span with anchors ~= -1
             for (int i = 0; i < node.getChildren().size(); i++) {
@@ -582,13 +546,13 @@ public class TagProjector {
                         }
                     }
                     int newAnchor;
-                    if (rightAnchor != -1 ) {
+                    if (rightAnchor != -1) {
                         if (leftAnchor != -1) {
-                            newAnchor = (i-leftClosest < i-rightClosest) ? leftAnchor : rightAnchor;
+                            newAnchor = (i - leftClosest < i - rightClosest) ? leftAnchor : rightAnchor;
                         } else {
                             newAnchor = rightAnchor;
                         }
-                    } else{
+                    } else {
                         newAnchor = leftAnchor;
 
                     }
@@ -596,76 +560,125 @@ public class TagProjector {
                     childI.getData().setAnchor(newAnchor);
                 }
             }
-        }
-    }
-
-    private void fixAnchors(Node<Span> node, Node<Span> sourceRoot, List<SortedSet<Integer>> alignmentList) {
-//        System.out.println("\nfixAnchors on " + node);
-        int anchor = 0;
-        Span targetSpan = node.getData();
-        if (targetSpan.getAnchor() == -1) {
-            int spanIdx = targetSpan.getId();
-            Node<Span> sourceNode = sourceRoot.getNode(spanIdx); // get the corresponding sourceNode
-
-//            System.out.println("old anchor" + anchor);
-            anchor = closestAnchor(node, sourceNode, alignmentList);
-//            System.out.println("new anchor" + anchor);
-            targetSpan.setAnchor(anchor);
-        }
-        for (Node<Span> child : node.getChildren()) {
-            fixAnchors(child, sourceRoot, alignmentList);
-        }
-    }
-
-    private int closestAnchor(Node<Span> node, Node<Span> sourceNode, List<SortedSet<Integer>> alignmentList) {
-//        System.out.println("closestAnchor on node" + node);
-        int targetAnchor = -1;
-
-        if (node.getData().getBeginTag() == null) {
-            targetAnchor = 0;
         } else {
-            if (node.getData().getPositions().size() > 0) {
-                targetAnchor = node.getData().getPositions().get(0);
+            if ((node.getData().getAnchor() == -1) && (node.getParent() != null)) {
+                node.getData().setAnchor(((Node<Span>) node.getParent()).getData().getAnchor());
             }
         }
 
-//            if (sourceNode.getData().getEndTag() == null) {
-//                if (sourceNode.getData().getPositions().size() > 0) {
-//                    targetAnchor = sourceNode.getData().getPositions().get(0);
-//                } else if (alignmentList.get(sourceNode.getData().getAnchor()).size() > 0) {
-//                    targetAnchor = alignmentList.get(sourceNode.getData().getAnchor()).last();
-//                } else {
-//                    targetAnchor = -1;
-//                }
-//            } else {
-//                ArrayList<Integer> contiguousPositions = contiguous(node.getData().getPositions());
-//                ArrayList<Integer> positions = new ArrayList<>();
-//                positions.add(sourceNode.getData().getAnchor());
-//                positions.addAll(sourceNode.getData().getPositions());
-//                targetAnchor = -1;
-//                for (int closest : positions) {
-//                    if (alignmentList.get(closest).size() > 0) {
-//                        targetAnchor = alignmentList.get(closest).first();
-//                        if (contiguousPositions.contains(targetAnchor)) {
-//                            break;
-//                        } else {
-//                            if (node.getParent() == null) {
-//                                targetAnchor = closestAnchor(node.getParent(), sourceNode, alignmentList);
-//                            }
-//                            if (targetAnchor != -1) {
-//                                break;
-//                            }
-//                        }
-//                    }
-//                }
-//            }
+        for (Node<Span> child : node.getChildren()) {
+            fixUndefinedAnchors(child);
+        }
+    }
+
+    private void fixAnchors(Node<Span> node, List<SortedSet<Integer>> alignmentList, int targetWords) {
+//        System.out.println("\nfixAnchors on " + node);
+        Span targetSpan = node.getData();
+        if (targetSpan.getAnchor() == -1) {
+            targetSpan.setAnchor(computeAnchor(node, alignmentList, targetWords));
+        }
+        //overwrite anchors of empty tags
+        if ((targetSpan.getBeginTag() != null) && (targetSpan.getBeginTag().getType() == Tag.Type.EMPTY_TAG)) {
+            targetSpan.setAnchor(computeAnchorForSelfClosing(targetSpan.getBeginTag().getPosition(), alignmentList, targetWords));
+        }
+        for (Node<Span> child : node.getChildren()) {
+            fixAnchors(child, alignmentList, targetWords);
+        }
+    }
+
+    private int computeAnchor(Node<Span> node, List<SortedSet<Integer>> alignmentList,int targetWords) {
+//        System.out.println("closestAnchor on node" + node);
+        int targetAnchor = -1;
+        Span span = node.getData();
+        if (span.getBeginTag() == null) {
+            targetAnchor = 0;
+        } else {
+            if (span.getPositions().size() > 0) { //node with at least 1 contained token
+                targetAnchor = span.getPositions().get(0);
+            } else if (span.getBeginTag().getType() == Tag.Type.EMPTY_TAG) {
+                targetAnchor = computeAnchorForSelfClosing(span.getBeginTag().getPosition(), alignmentList, targetWords);
+            }
+        }
 
         return targetAnchor;
     }
 
+    private int computeAnchorForSelfClosing(int sourcePosition, List<SortedSet<Integer>> alignmentList,int targetWords) {
+        System.out.println("computeAnchorForSelfClosing on sourcePosition:" + sourcePosition);
+        Set<Integer> sourceLeftToken = new HashSet<>();
+        Set<Integer> sourceRightToken = new HashSet<>();
+        Set<Integer> targetLeftToken = new HashSet<>();
+        Set<Integer> targetRightToken = new HashSet<>();
+        Set<Integer> leftTokenIntersection = new HashSet<>();
+        Set<Integer> rightTokenIntersection = new HashSet<>();
+
+        //Words that are at the left of the tag in the source sentence, should be at left of the mapped tag
+        //in the translation. Some reasoning for those that are at the right.
+
+        for (int sourceP = 0; sourceP < alignmentList.size(); sourceP++) {
+            if (sourceP < sourcePosition) {
+                //If the word is at the left of the current tag
+                for (int targetP : alignmentList.get(sourceP)){
+                    //Remember that it should be at the left also in the translation
+                    sourceLeftToken.add(targetP);
+                }
+            } else {
+                for (int targetP : alignmentList.get(sourceP)){
+                    //Remember that it should be at the right also in the translation
+                    sourceRightToken.add(targetP);
+                }
+            }
+        }
+
+        //Find the mapped position that respects most of the left-right word-tag relationship as possible.
+        for (int i = 0; i < targetWords; i++) {
+            targetRightToken.add(i);
+        }
+        rightTokenIntersection.addAll(sourceRightToken);
+        rightTokenIntersection.retainAll(targetRightToken);
+        int maxScore = rightTokenIntersection.size();
+        int bestPosition = 0;
+        int actualPosition = 0;
+        for (int i = 0; i < targetWords; i++) {
+            actualPosition++;
+
+            targetLeftToken.add(i);
+            targetRightToken.remove(i);
+            leftTokenIntersection.clear();
+            rightTokenIntersection.clear();
+
+            leftTokenIntersection.addAll(sourceLeftToken);
+            leftTokenIntersection.retainAll(targetLeftToken);
+            rightTokenIntersection.addAll(sourceRightToken);
+            rightTokenIntersection.retainAll(targetRightToken);
+            int score = leftTokenIntersection.size() + rightTokenIntersection.size();
+
+            //Remember the best position and score (for opening tag prefer to shift them to the right)
+            if (score >= maxScore ) {
+                maxScore = score;
+                bestPosition = actualPosition;
+            }
+        }
+        System.out.println("bestPosition:" + bestPosition + " maxScore:" + maxScore);
+
+        return bestPosition;
+    }
+
+
+
+
+
+
+
+
+
+
     private void  fixNode(Node<Span> node, Set<Node<Span>> nodeVisit) {
         if (nodeVisit.contains(node)) {
-        } else if (node.getChildren().size() == 0) { // there are no children
+            //do nothing
+            return;
+        }
+        if (node.getChildren().size() == 0) { // there are no children
             //do nothing; just label as visited
             nodeVisit.add(node);
         } else if (node.getChildren().size() == 1) { // there is only one child
@@ -756,6 +769,14 @@ public class TagProjector {
     private void fixChildren(Node<Span> node, ArrayList<Integer> positionsToRemove) {
         ArrayList<Integer> nodePositions = node.getData().getPositions();
 
+        if ( nodePositions.size() == 0  ) {
+            if (positionsToRemove.contains(node.getData().getAnchor())) {
+                node.getData().setAnchor(-1);
+            }
+        } else {
+            node.getData().setAnchor(nodePositions.get(0));
+        }
+
         List<Node<Span>> childrenToRemove = new ArrayList<>();
         for (Node<Span> child : node.getChildren()) {
             ArrayList<Integer> childPositions = node.getData().getPositions();
@@ -777,6 +798,10 @@ public class TagProjector {
                         childrenToRemove.add(child);
                     }
                     fixChildren(child, positionsToRemove);
+                }
+            } else {
+                if (positionsToRemove.contains(child.getData().getAnchor())) {
+                    child.getData().setAnchor(-1);
                 }
             }
         }
@@ -829,11 +854,12 @@ public class TagProjector {
     }
 
     static public int choosePosition(ArrayList<Integer> posI, ArrayList<Integer> posJ) {
+        //TODO: check if the choice of the position to remove is correct
         int minI = Collections.min(posI);
         int minJ = Collections.min(posJ);
-        int maxJ = Collections.max(posJ);
+        int maxI = Collections.max(posI);
         if (minI <= minJ) {
-            return maxJ;
+            return maxI;
         } else {
             return minJ;
         }
