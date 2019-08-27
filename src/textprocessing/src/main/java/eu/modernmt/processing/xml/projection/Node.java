@@ -21,7 +21,7 @@ public class Node<T>  implements Comparable<Node<T>>{
         return children;
     }
 
-    public Node getParent() {
+    public Node<T> getParent() {
         return parent;
     }
 
@@ -69,28 +69,6 @@ public class Node<T>  implements Comparable<Node<T>>{
         this.parent = null;
     }
 
-    public Node getRoot() {
-        if(parent == null){
-            return this;
-        }
-        return parent.getRoot();
-    }
-
-    public String toString() {
-        String str = "Node";
-        if (this.parent == null) {
-            str += " parent:" + this.parent;
-        } else {
-            str += " parent:" + ((Span) this.parent.getData()).getId();
-        }
-        str += " data:" + this.getData();
-        str += " children:";
-        for (Node<T> child : this.children) {
-            str += ((Span) child.getData()).getId() + ",";
-        }
-        return str;
-    }
-
     public Node<T> getNode(int index) {
         Node<T> found = null;
         if (this.getId() == index) {
@@ -102,6 +80,28 @@ public class Node<T>  implements Comparable<Node<T>>{
             }
         }
         return found;
+    }
+
+    public Node<T> getRoot() {
+        if (this.parent == null){
+            return this;
+        }
+        return this.parent.getRoot();
+    }
+
+    public String toString() {
+        String str = "Node";
+        if (this.parent == null) {
+            str += " parent:" + this.parent;
+        } else {
+            str += " parent:" + this.parent.getId();
+        }
+        str += " data:" + this.getData();
+        str += " children:";
+        for (Node<T> child : this.children) {
+            str += ((Span) child.getData()).getId() + ",";
+        }
+        return str;
     }
 
     public void sortChildren() {

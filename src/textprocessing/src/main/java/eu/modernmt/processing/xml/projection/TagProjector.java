@@ -10,13 +10,6 @@ public class TagProjector {
     private static int ROOT_LEVEL = 0;
     private static int ROOT_INDEX = 0;
 
-/*
-    private Tag[] htmlMapTags(Tag[] tags) {
-        for (int t = 0 ; t < tags.length ; t++) {
-
-        }
-    }*/
-
     private Tag[] mapTags(Tag[] tags) {
         Tag[] mappedTags = new Tag[tags.length];
         for (int t = 0 ; t < tags.length ; t++){
@@ -35,48 +28,42 @@ public class TagProjector {
         return mappedTags;
     }
 
-
     public Translation project(Translation translation) {
-        //TODO: stub-implementation
         Sentence sentence = translation.getSource();
 
         Tag[] tags = sentence.getTags();
         Word[] sentenceWords = sentence.getWords();
         Word[] translationWords = translation.getWords();
 
-        if (tags.length == 0) { //no tag to project; just return the translation
-            //do nothing
-        } else if (sentenceWords.length == 0) { //there are no source words; just copy the source tags in the target tags
-            translation.setTags(tags);
-        } else {
-            HtmlInputFormatMap mapper = new HtmlInputFormatMap();
-            Tag[] mappedTags = mapper.transform(tags);
-//        printTags(mappedTags);
-            Alignment alignment = translation.getWordAlignment();
+        if (tags.length != 0) {
+            if (sentenceWords.length == 0) { //there are no source words; just copy the source tags in the target tags
+                translation.setTags(tags);
+            } else {
+                InputFormatMap mapper = InputFormatMapFactory.build(tags);
+                Tag[] mappedTags = mapper.transform(tags);
+                Alignment alignment = translation.getWordAlignment();
 
-            Tag[] translationTags = null;
-            try {
-                /*list of tags obtained by the tokenization process*/
-                List<Span> sentenceSpans;
-                Node<Span> sentenceRoot;
-                sentenceSpans = createSpans(mappedTags, sentenceWords.length);
+                Tag[] translationTags = null;
+                try {
+                    /*list of tags obtained by the tokenization process*/
+                    List<Span> sentenceSpans = createSpans(mappedTags, sentenceWords.length);
+                    Node<Span> sentenceRoot = createTree(sentenceSpans);
+                    sortTree(sentenceRoot);
 
-                sentenceRoot = createTree(sentenceSpans);
-                sortTree(sentenceRoot);
+                    List<SortedSet<Integer>> alignmentList = getAlignment(alignment, sentenceWords.length, translationWords.length);
 
-                List<SortedSet<Integer>> alignmentList = getAlignment(alignment, sentenceWords.length, translationWords.length);
+                    List<Span> translationSpans = projectSpan(sentenceSpans, alignmentList, translationWords.length);
+                    Node<Span> translationRoot = projectTree(translationSpans, sentenceRoot, alignmentList, translationWords.length);
+                    sortTree(translationRoot);
 
-                List<Span> translationSpans = projectSpan(sentenceSpans, alignmentList, translationWords.length);
-
-                Node<Span> translationRoot = projectTree(sentenceSpans, translationSpans, sentenceRoot, alignmentList, translationWords.length);
-                sortTree(translationRoot);
-
-                translationTags = createTags(translationRoot);
-
-            } catch (Exception e) {
-                e.printStackTrace();
+                    translationTags = createTags(translationRoot);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                translation.setTags(translationTags);
             }
-            translation.setTags(translationTags);
+        } else { //no tag to project; just return the translation
+            //do nothing
         }
         return translation;
     }
@@ -88,7 +75,7 @@ public class TagProjector {
             child.sortChildren();
         }
     }
-    
+
     private List<SortedSet<Integer>> getAlignment(Alignment alignment, int sourceWords, int targetWords) {
         //A Treeset is a sorted set
         List<SortedSet<Integer>> list = new ArrayList<>(sourceWords + 1);
@@ -127,50 +114,45 @@ public class TagProjector {
         node.getChildren().forEach(each ->  printTree(each, "  " + appender));
     }
 
-    private List<Span> createSpans(Tag[] tags, int words) throws Exception {
+    private List<Span> createSpans(Tag[] tags, int words) {
 
-        Map<String, List<Integer>> openingTagSet = new HashMap();
-        Map<String, List<Integer>> closingTagSet = new HashMap();
-        Map<String, List<Integer>> emptyTagSet = new HashMap();
+        Map<String, List<Integer>> openingTagSet = new HashMap<>();
+        Map<String, List<Integer>> closingTagSet = new HashMap<>();
+        Map<String, List<Integer>> emptyTagSet = new HashMap<>();
 
         for (int tagIndex = 0; tagIndex < tags.length; tagIndex++) {
-            if (tags[tagIndex].getType() ==  Tag.Type.OPENING_TAG) {
-                if (openingTagSet.get(tags[tagIndex].getName()) == null) {
-                    openingTagSet.put(tags[tagIndex].getName(), new ArrayList<>());
-                }
-                openingTagSet.get(tags[tagIndex].getName()).add(tagIndex);
+            Tag tag = tags[tagIndex];
+            String name = tag.getName();
+            if (tag.getType() ==  Tag.Type.OPENING_TAG) {
+                openingTagSet.computeIfAbsent(name, k -> new ArrayList<>());
+                openingTagSet.get(name).add(tagIndex);
             }
-            if (tags[tagIndex].getType() ==  Tag.Type.CLOSING_TAG) {
-                if (closingTagSet.get(tags[tagIndex].getName()) == null) {
-                    closingTagSet.put(tags[tagIndex].getName(), new ArrayList<>());
-                }
-                closingTagSet.get(tags[tagIndex].getName()).add(tagIndex);
+            if (tag.getType() ==  Tag.Type.CLOSING_TAG) {
+                closingTagSet.computeIfAbsent(name, k -> new ArrayList<>());
+                closingTagSet.get(tag.getName()).add(tagIndex);
             }
-            if (tags[tagIndex].getType() ==  Tag.Type.EMPTY_TAG) {
-                if (emptyTagSet.get(tags[tagIndex].getName()) == null) {
-                    emptyTagSet.put(tags[tagIndex].getName(), new ArrayList<>());
-                }
-                emptyTagSet.get(tags[tagIndex].getName()).add(tagIndex);
+            if (tag.getType() ==  Tag.Type.EMPTY_TAG) {
+                emptyTagSet.computeIfAbsent(name, k -> new ArrayList<>());
+                emptyTagSet.get(name).add(tagIndex);
             }
 
         }
 
         int[] tagLevel = new int[tags.length];
-        int[] tagLink = new int[tags.length];
-
 
         int level = ROOT_LEVEL;
         int minLevel = 0;
         for (int t = 0; t < tags.length; t++) {
-            if (tags[t].getType() == Tag.Type.EMPTY_TAG) {
+            Tag.Type type = tags[t].getType();
+            if (type == Tag.Type.EMPTY_TAG) {
                 //do nothing
                 tagLevel[t] = level;
                 minLevel = minLevel < level ? minLevel : level;
-            } else if (tags[t].getType() == Tag.Type.OPENING_TAG) {
+            } else if (type == Tag.Type.OPENING_TAG) {
                 tagLevel[t] = level;
                 level++;
                 minLevel = minLevel < level ? minLevel : level;
-            } else if (tags[t].getType() == Tag.Type.CLOSING_TAG) {
+            } else if (type == Tag.Type.CLOSING_TAG) {
                 level--;
                 tagLevel[t] = level;
                 minLevel = minLevel < level ? minLevel : level;
@@ -181,20 +163,15 @@ public class TagProjector {
             tagLevel[t] = tagLevel[t] - minLevel;
         }
 
+        int[] tagLink = new int[tags.length];
         boolean[] tagVisit = new boolean[tags.length];
-
-        List<Span> spans = new ArrayList<>();
-        Tag beginTag = null;
-        Tag endTag = null;
-
 
         for (String name : openingTagSet.keySet()) {
             List<Integer> openingTags = openingTagSet.get(name);
             List<Integer> closingTags = closingTagSet.get(name);
-            if (closingTags == null) { // there are no closing tags for this name; hence all opening tags for this name are spurious
-
-                for (int bt = openingTags.size() - 1; bt >= 0; bt--) {
-                    int beginTagIdx = openingTags.get(bt);
+            if (closingTags == null) {
+                // there are no closing tags for this name; hence all opening tags for this name are spurious
+                for (Integer beginTagIdx : openingTags) {
                     tagVisit[beginTagIdx] = true;
                     tagLink[beginTagIdx] = -1;
                 }
@@ -237,16 +214,14 @@ public class TagProjector {
         for (String name : closingTagSet.keySet()) {
             List<Integer> openingTags = openingTagSet.get(name);
             List<Integer> closingTags = closingTagSet.get(name);
-            if (openingTags == null) { // there are no opening tags for this name; hence all closing tags for this name are spurious
-
-                for (int et = closingTags.size() - 1; et >= 0; et--) {
-                    int endTagIdx = closingTags.get(et);
+            if (openingTags == null) {
+                // there are no opening tags for this name; hence all closing tags for this name are spurious
+                for (Integer endTagIdx : closingTags) {
                     tagVisit[endTagIdx] = true;
                     tagLink[endTagIdx] = -1;
                 }
             } else {
                 for (int et = 0; et < closingTags.size(); et++) {
-
                     int endTagIdx = closingTags.get(et);
 
                     if (tagVisit[endTagIdx]) {
@@ -271,9 +246,10 @@ public class TagProjector {
                         tagLink[beginTagIdx] = endTagIdx;
                         tagLink[endTagIdx] = beginTagIdx;
                     } else {
-                        //found opening tag without closing
-                        //create the corresponding span opening span without closing
-                        //visit opening tag
+                        //found closing tag without opening
+                        //create the corresponding span closing span without opening
+                        //visit closing tag
+                        tagVisit[endTagIdx] = true;
                         tagLink[endTagIdx] = -1;
                     }
                 }
@@ -281,54 +257,58 @@ public class TagProjector {
         }
 
         for (String name : emptyTagSet.keySet()) {
-            for (Integer emptyTag : emptyTagSet.get(name)) {
-                tagLink[emptyTag] = -1;
+            for (Integer emptyTagIdx : emptyTagSet.get(name)) {
+                tagVisit[emptyTagIdx] = true;
+                tagLink[emptyTagIdx] = emptyTagIdx;
             }
         }
 
+        List<Span> spans = new ArrayList<>();
+        Tag beginTag = null, endTag = null;
+
         int spanIdx = ROOT_INDEX;
-        Span span = new Span(spanIdx, level, null, null, words);
+        Span span = new Span(spanIdx, level, beginTag, endTag, words);
         span.setAnchor(0);
         spanIdx++;
         spans.add(span);
+
         for (int t = 0; t < tags.length; t++) {
+            Tag.Type type = tags[t].getType();
             if (tagLink[t] != -1) {
-                if (tags[t].getType() == Tag.Type.OPENING_TAG) {
+                if ((type == Tag.Type.OPENING_TAG) || (type == Tag.Type.EMPTY_TAG)) {
                     beginTag = tags[t];
                     endTag = tags[tagLink[t]];
                 } else {
                     continue;
                 }
             } else {
-                if (tags[t].getType() == Tag.Type.OPENING_TAG) {
+                if (type == Tag.Type.OPENING_TAG) {
                     beginTag = tags[t];
                     endTag = null;
-                } else if (tags[t].getType() == Tag.Type.CLOSING_TAG) {
+                } else if (type == Tag.Type.CLOSING_TAG) {
                     beginTag = null;
                     endTag = tags[t];
                 } else {
-                    beginTag = tags[t];
-                    endTag = tags[t];
+                    //do nothing
                 }
             }
             span = new Span(spanIdx, tagLevel[t], beginTag, endTag, words);
             spans.add(span);
             spanIdx++;
         }
-//        printSpans(spans);
 
         return spans;
     }
 
-    private Node<Span> createTree(List<Span> spans) throws Exception {
+    private Node<Span> createTree(List<Span> spans) {
         List<Boolean> spanVisit = new ArrayList<>(spans.size());
-        for (Span span: spans) {
+        for (int i = 0; i < spans.size(); i++) {
             spanVisit.add(false);
         }
         return createTree(spans, ROOT_INDEX, spanVisit);
     }
 
-    private Node<Span> createTree(List<Span> spans, int spanIdx, List<Boolean> spanVisit) throws Exception {
+    private Node<Span> createTree(List<Span> spans, int spanIdx, List<Boolean> spanVisit) {
         Node<Span> root = new Node<>(spans.get(spanIdx));
         int rootLevel = root.getData().getLevel();
 
@@ -364,8 +344,6 @@ public class TagProjector {
             idx++;
 
         }
-//        System.out.println("tree when condiering root:" + root);
-//        printTree(root);
 
         firstChildIdx = spanIdx - 1;
         //search for the first span on the right having level = root.getLevel()+1
@@ -451,19 +429,16 @@ public class TagProjector {
         return targetSpans;
     }
 
-    private Node<Span> projectTree(List<Span> sourceSpans, List<Span> targetSpans, Node<Span> sourceRoot, List<SortedSet<Integer>> alignmentList,int targetWords) {
-        Node<Span> targetRoot = cloneTree(sourceSpans, targetSpans, sourceRoot);
+    private Node<Span> projectTree(List<Span> targetSpans, Node<Span> sourceRoot, List<SortedSet<Integer>> alignmentList,int targetWords) {
+        Node<Span> targetRoot = cloneTree(targetSpans, sourceRoot);
 
         Set<Node<Span>> nodeVisit = new HashSet<>();
         fixNode(targetRoot, nodeVisit);
-        System.out.println("\nAFTER fixNode");
-        printTree(targetRoot);
+
         fixAnchors(targetRoot, alignmentList, targetWords);
-        System.out.println("\nAFTER fixAnchors");
-        printTree(targetRoot);
+
         fixUndefinedAnchors(targetRoot);
-        System.out.println("\nAFTER fixUndefinedAnchors");
-        printTree(targetRoot);
+
         return targetRoot;
     }
 
@@ -562,7 +537,7 @@ public class TagProjector {
             }
         } else {
             if ((node.getData().getAnchor() == -1) && (node.getParent() != null)) {
-                node.getData().setAnchor(((Node<Span>) node.getParent()).getData().getAnchor());
+                node.getData().setAnchor(node.getParent().getData().getAnchor());
             }
         }
 
@@ -572,7 +547,6 @@ public class TagProjector {
     }
 
     private void fixAnchors(Node<Span> node, List<SortedSet<Integer>> alignmentList, int targetWords) {
-//        System.out.println("\nfixAnchors on " + node);
         Span targetSpan = node.getData();
         if (targetSpan.getAnchor() == -1) {
             targetSpan.setAnchor(computeAnchor(node, alignmentList, targetWords));
@@ -587,7 +561,6 @@ public class TagProjector {
     }
 
     private int computeAnchor(Node<Span> node, List<SortedSet<Integer>> alignmentList,int targetWords) {
-//        System.out.println("closestAnchor on node" + node);
         int targetAnchor = -1;
         Span span = node.getData();
         if (span.getBeginTag() == null) {
@@ -604,7 +577,6 @@ public class TagProjector {
     }
 
     private int computeAnchorForSelfClosing(int sourcePosition, List<SortedSet<Integer>> alignmentList,int targetWords) {
-        System.out.println("computeAnchorForSelfClosing on sourcePosition:" + sourcePosition);
         Set<Integer> sourceLeftToken = new HashSet<>();
         Set<Integer> sourceRightToken = new HashSet<>();
         Set<Integer> targetLeftToken = new HashSet<>();
@@ -618,15 +590,11 @@ public class TagProjector {
         for (int sourceP = 0; sourceP < alignmentList.size(); sourceP++) {
             if (sourceP < sourcePosition) {
                 //If the word is at the left of the current tag
-                for (int targetP : alignmentList.get(sourceP)){
-                    //Remember that it should be at the left also in the translation
-                    sourceLeftToken.add(targetP);
-                }
+                //Remember that it should be at the left also in the translation
+                sourceLeftToken.addAll(alignmentList.get(sourceP));
             } else {
-                for (int targetP : alignmentList.get(sourceP)){
-                    //Remember that it should be at the right also in the translation
-                    sourceRightToken.add(targetP);
-                }
+                //Remember that it should be at the right also in the translation
+                sourceRightToken.addAll(alignmentList.get(sourceP));
             }
         }
 
@@ -659,18 +627,9 @@ public class TagProjector {
                 bestPosition = actualPosition;
             }
         }
-        System.out.println("bestPosition:" + bestPosition + " maxScore:" + maxScore);
 
         return bestPosition;
     }
-
-
-
-
-
-
-
-
 
 
     private void  fixNode(Node<Span> node, Set<Node<Span>> nodeVisit) {
@@ -683,15 +642,13 @@ public class TagProjector {
             nodeVisit.add(node);
         } else if (node.getChildren().size() == 1) { // there is only one child
             nodeVisit.add(node);
-            Iterator<Node<Span>> iteratorI = node.getChildren().iterator();
-            while (iteratorI.hasNext()) {
-                Node<Span> childI = iteratorI.next();
+            for (Node<Span> childI : node.getChildren()) {
                 fixNode(childI, nodeVisit);
             }
         } else { // there are at least two children
 
             Iterator<Node<Span>> iteratorI = node.getChildren().iterator();
-            Node<Span> childI = null;
+            Node<Span> childI;
             ArrayList<Integer> positionsToRemove = new ArrayList<>();
 
             boolean modifiedI = true;
@@ -727,10 +684,9 @@ public class TagProjector {
                             Iterator<Integer> iterator = positionsToRemove.iterator();
                             while (!modifiedI && !modifiedJ && iterator.hasNext()) {
                                 Integer pos = iterator.next();
-//                            for (Integer pos : positionsToRemove) {
-                                modifiedI = modifiedI || posI.remove(pos);
+                                modifiedI = modifiedI | posI.remove(pos);
                                 if (!modifiedI) {
-                                    modifiedJ = modifiedJ || posJ.remove(pos);
+                                    modifiedJ = modifiedJ | posJ.remove(pos);
                                 }
                             }
                         } else {
@@ -811,16 +767,16 @@ public class TagProjector {
         }
     }
 
-    private Node<Span> cloneTree(List<Span> sourceSpans, List<Span> targetSpans, Node<Span> sourceNode) {
+    private Node<Span> cloneTree(List<Span> targetSpans, Node<Span> sourceNode) {
         Node<Span> cloneNode = new Node<>(targetSpans.get(sourceNode.getData().getId()));
         for (Node<Span> sourceChild : sourceNode.getChildren()){
-            Node<Span> cloneChild = cloneTree(sourceSpans, targetSpans, sourceChild);
+            Node<Span> cloneChild = cloneTree(targetSpans, sourceChild);
             cloneNode.addChild(cloneChild);
         }
         return cloneNode;
     }
 
-    static public ArrayList<Integer> intersection(ArrayList<Integer> posI, ArrayList<Integer> posJ) {
+    static private ArrayList<Integer> intersection(ArrayList<Integer> posI, ArrayList<Integer> posJ) {
         ArrayList<Integer> intersection = new ArrayList<>();
         for (Integer pos : posI) {
             if (posJ.contains(pos)) {
@@ -842,30 +798,23 @@ public class TagProjector {
 
 
     static private ArrayList<Integer> contiguous(ArrayList<Integer> positions) {
-        if (positions.size() >0) {
-            ArrayList<Integer> contiguous = new ArrayList(positions.size());
+        ArrayList<Integer> contiguous = new ArrayList<>(positions.size());
+        if (positions.size() > 0) {
             for (int i = Collections.min(positions); i <= Collections.max(positions); i++) {
                 contiguous.add(i);
             }
-            return contiguous;
-        } else {
-            return new ArrayList(positions.size());
         }
+        return contiguous;
     }
 
-    static public int choosePosition(ArrayList<Integer> posI, ArrayList<Integer> posJ) {
-        //TODO: check if the choice of the position to remove is correct
+    static private int choosePosition(ArrayList<Integer> posI, ArrayList<Integer> posJ) {
         int minI = Collections.min(posI);
         int minJ = Collections.min(posJ);
         int maxI = Collections.max(posI);
-        if (minI <= minJ) {
-            return maxI;
-        } else {
-            return minJ;
-        }
+        return (minI <= minJ) ? maxI : minJ;
     }
 
-    static public ArrayList<Integer> choosePositions(final ArrayList<Integer> posI, final ArrayList<Integer> posJ) {
+    static private ArrayList<Integer> choosePositions(final ArrayList<Integer> posI, final ArrayList<Integer> posJ) {
         ArrayList<Integer> positions = new ArrayList<>();
 
         ArrayList<Integer> tmpPosI = new ArrayList<>(posI);
@@ -875,7 +824,6 @@ public class TagProjector {
 
             tmpPosI.remove(chosenP);
             tmpPosJ.remove(chosenP);
-
             positions.add(chosenP);
 
             ArrayList<Integer> tmpIntersection = intersection(contiguous(tmpPosI), contiguous(tmpPosJ));
@@ -890,6 +838,9 @@ public class TagProjector {
         ArrayList<Tag> tags = new ArrayList<>();
 
         createTags(node, tags);
+
+        //Sort the tag in according to their position and order in the source sentence
+        Collections.sort(tags);
 
         Tag[] t = new Tag[tags.size()];
         return tags.toArray(t);
