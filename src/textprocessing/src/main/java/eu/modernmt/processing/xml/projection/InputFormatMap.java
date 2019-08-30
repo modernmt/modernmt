@@ -6,71 +6,125 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-class InputFormatMap {
-    static Tag[] transform(Tag[] tags) { return tags; };
-    protected static boolean isCompliant(Tag[] tags) { return true; }
-}
+import static java.util.Arrays.asList;
+import static java.util.Arrays.stream;
 
-class InputFormatMapFactory {
-    public static InputFormatMap build(Tag[] tags) {
-        if (XLiffInputFormatMap.isCompliant(tags)) {
-            return new XLiffInputFormatMap();
-        } else if (HtmlInputFormatMap.isCompliant(tags)) {
-            return new HtmlInputFormatMap();
+abstract class InputFormatMap {
+
+    Tag[] tags;
+
+    enum Type {
+        HTML,
+        XLIFF,
+        AUTO,
+    }
+
+    static InputFormatMap build(Tag[] tags, InputFormatMap.Type type) {
+        if (type == InputFormatMap.Type.XLIFF) {
+            System.out.println("select InputFormatMap: XLIFF");
+            return new XliffInputFormatMap(tags);
+        } else if (type == InputFormatMap.Type.HTML) {
+            System.out.println("select InputFormatMap: HTML");
+            return new HtmlInputFormatMap(tags);
         } else {
-            return new InputFormatMap();
+            if (XliffInputFormatMap.isCompliant(tags)) {
+                System.out.println("select InputFormatMap: XLIFF");
+                return new XliffInputFormatMap(tags);
+            } else if (HtmlInputFormatMap.isCompliant(tags)) {
+                System.out.println("select InputFormatMap: HTML");
+                return new HtmlInputFormatMap(tags);
+            } else {
+                System.out.println("select InputFormatMap: AUTO");
+                return new DefaultInputFormatMap(tags);
+            }
         }
     }
+
+    InputFormatMap(Tag[] tags) {
+        this.tags = tags;
+    }
+
+    abstract void transform();
+}
+
+class DefaultInputFormatMap extends InputFormatMap {
+    DefaultInputFormatMap(Tag[] tags) {
+        super(tags);
+    }
+
+    void transform() {}
 }
 
 class HtmlInputFormatMap extends InputFormatMap {
-    private static final Set<String> emptyHtmlTags = new HashSet<>(Arrays.asList("br"));
-    private static final Set<String> htmlTags = new HashSet<>(Arrays.asList("br", "href"));
-    private static final float acceptanceRate = 0.5f;
+    private static Set<String> emptyTags = new HashSet<>(Arrays.asList("br"));
+    private static Set<String> legalTags = new HashSet<>(Arrays.asList("h", "p", "span", "div", "br", "a", "ul", "li", "ol", "dl", "dt", "dd", "table", "tr", "td", "th", "img"));
+    private static float acceptanceRate = 0.5f;
 
-    protected static Tag[] transform(Tag[] tags) {
-        Tag[] mappedTags = new Tag[tags.length];
-        for (int t = 0 ; t < tags.length ; t++){
-            Tag tag = tags[t];
-            if ( (tag.getType() == Tag.Type.OPENING_TAG) && emptyHtmlTags.contains(tag.getName()) ) {
-                mappedTags[t] = new Tag(tag.getName(),tag.getText(),tag.hasLeftSpace(),tag.getRightSpace(),tag.getPosition(), Tag.Type.EMPTY_TAG, tag.isDTD());
-            } else {
-                mappedTags[t] = Tag.fromTag(tag);
-            }
-        }
-        return mappedTags;
+    HtmlInputFormatMap(Tag[] tags) {
+        super(tags);
     }
 
-    protected static boolean isCompliant(Tag[] tags) {
-        if (tags.length == 0){
-             return true;
+    static boolean isCompliant(Tag[] tags) {
+        if (tags.length == 0) {
+            return true;
         }
+        if (legalTags != null) {
+            int occurrences = (int) stream(tags).filter(tag -> legalTags.contains(tag.getName())).count();
+            return ((float) occurrences / tags.length) >= acceptanceRate;
+        } else {
+            return true;
+        }
+    }
 
-        int occurrences = (int) Arrays.stream(tags).filter(tag -> htmlTags.contains(tag.getName())).count();
-
-        return ((float) occurrences / tags.length) > acceptanceRate;
+    void transform() {
+        if (emptyTags != null) {
+            for (Tag tag : tags) {
+                if (emptyTags.contains(tag.getName())) {
+                    tag.setType(Tag.Type.EMPTY_TAG);
+                }
+            }
+        }
     }
 }
 
 
-class XLiffInputFormatMap extends InputFormatMap {
 
-    private static final Set<String> xliffTags = new HashSet<>(Arrays.asList("ex","bx","bpt","ept")); //TODO: list all xliff-compliant tags
+class XliffInputFormatMap extends InputFormatMap {
+    private static Set<String> openingTags = new HashSet<>(asList("bx"));
+    private static Set<String> closingTags = new HashSet<>(asList("ex"));
+    private static Set<String> legalTags = new HashSet<>(asList("g","x","ex","bx","bpt","ept","ph","it","mrk"));
 
-    protected static Tag[] transform(Tag[] tags) {
-        Tag[] mappedTags = new Tag[tags.length];
-        //TODO: to implement the XLIFF map
-
-        return InputFormatMap.transform(tags);
+    XliffInputFormatMap(Tag[] tags) {
+        super(tags);
     }
 
-    protected static boolean isCompliant(Tag[] tags) {
+    static boolean isCompliant(Tag[] tags) {
         if (tags.length == 0){
             return true;
         }
+        if (legalTags != null) {
+            int occurrences = (int) stream(tags).filter(tag -> legalTags.contains(tag.getName())).count();
+            return occurrences == tags.length;
+        } else {
+            return true;
+        }
 
-        int occurrences = (int) Arrays.stream(tags).filter(tag -> xliffTags.contains(tag.getName())).count();
+    }
 
-        return occurrences == tags.length;
+    void transform() {
+        if (openingTags != null) {
+            for (Tag tag : tags) {
+                if (openingTags.contains(tag.getName())) {
+                    tag.setType(Tag.Type.OPENING_TAG);
+                }
+            }
+        }
+        if (closingTags != null) {
+            for (Tag tag : tags) {
+                if (closingTags.contains(tag.getName())) {
+                    tag.setType(Tag.Type.CLOSING_TAG);
+                }
+            }
+        }
     }
 }
