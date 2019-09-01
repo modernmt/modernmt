@@ -115,7 +115,8 @@ class _LogListener(object):
 
                     sentence = lines[1][lines[1].index(' = ') + 3:]
                     translation = lines[2][lines[2].index(' = ') + 3:]
-                    suggestions = [self._parse_suggestion(x) for x in lines[4:-1]]
+                    # alignment is skipped
+                    suggestions = [self._parse_suggestion(x) for x in lines[5:-1]]
 
                     self.translation = Namespace(sentence=sentence, translation=translation, suggestions=suggestions)
 
