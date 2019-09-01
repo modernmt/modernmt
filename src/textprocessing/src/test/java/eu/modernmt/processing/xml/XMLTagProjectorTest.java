@@ -1,4 +1,4 @@
-package eu.modernmt.xml;
+package eu.modernmt.processing.xml;
 
 import eu.modernmt.model.*;
 import eu.modernmt.processing.xml.projection.TagProjector;
