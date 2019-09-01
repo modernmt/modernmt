@@ -146,12 +146,16 @@ public class PostprocessorMain {
         }
 
         private static Alignment parseAlignment(String string) {
-            String[] parts = string.split("\\s+");
-            int IndexesLength = string.equals("") ? 0 : parts.length;
-            int[] sourceIndexes = new int[IndexesLength];
-            int[] targetIndexes = new int[IndexesLength];
+            string = string.trim();
 
-            for (int i = 0; i < IndexesLength; ++i) {
+            if (string.isEmpty())
+                return new Alignment(new int[0], new int[0]);
+
+            String[] parts = string.split("\\s+");
+            int[] sourceIndexes = new int[parts.length];
+            int[] targetIndexes = new int[parts.length];
+
+            for (int i = 0; i < parts.length; ++i) {
                 String[] st = parts[i].split("-", 2);
                 sourceIndexes[i] = Integer.parseInt(st[0]);
                 targetIndexes[i] = Integer.parseInt(st[1]);
