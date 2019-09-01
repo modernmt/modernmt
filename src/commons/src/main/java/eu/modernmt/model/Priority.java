@@ -4,8 +4,7 @@ public enum Priority {
 
     HIGH(100),         // translation should be done as soon as possible
     NORMAL(200),       // translation has a normal priority
-    BACKGROUND(300),   // translation should not impact normal operation
-    BEST_EFFORT(400);  // translation service does not provide any guarantee that the delivery time meets any quality of service
+    BACKGROUND(300);   // translation should not impact normal operation
 
     public final int intValue;
 
