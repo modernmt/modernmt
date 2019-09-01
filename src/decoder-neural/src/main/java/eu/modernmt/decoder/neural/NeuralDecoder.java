@@ -156,7 +156,7 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
                 StringBuilder log = new StringBuilder("Translation received from neural decoder:\n" +
                         "   sentence = " + sourceText + "\n" +
                         "   translation = " + targetText + "\n" +
-                        "   alignment = " + translation.getWordAlignment().toString() + "\n" +
+                        "   alignment = " + translation.getWordAlignment() + "\n" +
                         "   suggestions = [\n");
 
                 if (suggestions != null) {
