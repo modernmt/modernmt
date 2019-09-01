@@ -25,6 +25,7 @@ import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
+import eu.modernmt.processing.xml.format.InputFormat;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -60,19 +61,19 @@ public class TranslationFacade {
     //  Translation
     // =============================
 
-    public Translation get(UUID user, LanguageDirection direction, String text, Priority priority, long timeout) throws ProcessingException, DecoderException {
-        return get(user, direction, text, null, 0, priority, timeout);
+    public Translation get(UUID user, LanguageDirection direction, InputFormat.Type format, String text, Priority priority, long timeout) throws ProcessingException, DecoderException {
+        return get(user, direction, format, text, null, 0, priority, timeout);
     }
 
-    public Translation get(UUID user, LanguageDirection direction, String text, ContextVector translationContext, Priority priority, long timeout) throws ProcessingException, DecoderException {
-        return get(user, direction, text, translationContext, 0, priority, timeout);
+    public Translation get(UUID user, LanguageDirection direction, InputFormat.Type format, String text, ContextVector translationContext, Priority priority, long timeout) throws ProcessingException, DecoderException {
+        return get(user, direction, format, text, translationContext, 0, priority, timeout);
     }
 
-    public Translation get(UUID user, LanguageDirection direction, String text, int nbest, Priority priority, long timeout) throws ProcessingException, DecoderException {
-        return get(user, direction, text, null, nbest, priority, timeout);
+    public Translation get(UUID user, LanguageDirection direction, InputFormat.Type format, String text, int nbest, Priority priority, long timeout) throws ProcessingException, DecoderException {
+        return get(user, direction, format, text, null, nbest, priority, timeout);
     }
 
-    public Translation get(UUID user, LanguageDirection direction, String text, ContextVector translationContext, int nbest, Priority priority, long timeout) throws ProcessingException, DecoderException {
+    public Translation get(UUID user, LanguageDirection direction, InputFormat.Type format, String text, ContextVector translationContext, int nbest, Priority priority, long timeout) throws ProcessingException, DecoderException {
         direction = mapLanguage(direction);
         if (nbest > 0)
             ensureDecoderSupportsNBest();
@@ -82,7 +83,7 @@ public class TranslationFacade {
         Postprocessor postprocessor = engine.getPostprocessor();
 
         // Pre-processing text
-        Sentence sentence = preprocessor.process(direction, text);
+        Sentence sentence = preprocessor.process(direction, text, format);
 
         // Translating
         Translation translation;

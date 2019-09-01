@@ -142,11 +142,15 @@ public class PostprocessorMain {
 
                 alignment = parseAlignment(alignmentStr);
             }
-
             return new Translation(words, sentence, alignment);
         }
 
         private static Alignment parseAlignment(String string) {
+            string = string.trim();
+
+            if (string.isEmpty())
+                return new Alignment(new int[0], new int[0]);
+
             String[] parts = string.split("\\s+");
             int[] sourceIndexes = new int[parts.length];
             int[] targetIndexes = new int[parts.length];
@@ -156,7 +160,6 @@ public class PostprocessorMain {
                 sourceIndexes[i] = Integer.parseInt(st[0]);
                 targetIndexes[i] = Integer.parseInt(st[1]);
             }
-
             return new Alignment(sourceIndexes, targetIndexes);
         }
 

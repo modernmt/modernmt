@@ -1,7 +1,5 @@
 package eu.modernmt.processing;
 
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -10,14 +8,10 @@ import java.util.Map;
  */
 public class ProcessingPipeline<P, R> {
 
-    protected List<TextProcessor<Object, Object>> processors = new LinkedList<>();
+    protected List<TextProcessor<Object, Object>> processors;
 
     public ProcessingPipeline(List<TextProcessor<Object, Object>> processors) {
         this.processors = processors;
-    }
-
-    public R call(P input) throws ProcessingException {
-        return call(input, new HashMap<>());
     }
 
     /**

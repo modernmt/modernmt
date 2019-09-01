@@ -1,9 +1,9 @@
-package eu.modernmt.xml;
+package eu.modernmt.processing.xml;
 
 import eu.modernmt.model.Tag;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
-import eu.modernmt.processing.xml.XMLTagProjector;
+import eu.modernmt.processing.xml.projection.TagProjector;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -25,7 +25,7 @@ public class XMLTagProjectorSpacingTest {
                 Tag.fromText("<a>", true, null, 1),
                 Tag.fromText("</a>", false, null, 2),
         });
-        XMLTagProjector.simpleSpaceAnalysis(translation);
+        TagProjector.simpleSpaceAnalysis(translation);
 
         assertEquals("Hello world !", translation.toString(false, false));
         assertEquals("Hello <a>world</a>!", translation.toString());
@@ -43,7 +43,7 @@ public class XMLTagProjectorSpacingTest {
                 Tag.fromText("<a>", true, null, 1),
                 Tag.fromText("</a>", false, " ", 2),
         });
-        XMLTagProjector.simpleSpaceAnalysis(translation);
+        TagProjector.simpleSpaceAnalysis(translation);
 
         assertEquals("Hello world !", translation.toString(false, false));
         assertEquals("Hello <a>world</a>!", translation.toString());
@@ -60,7 +60,7 @@ public class XMLTagProjectorSpacingTest {
                 Tag.fromText("<a>", true, null, 1),
                 Tag.fromText("</a>", false, null, 2),
         });
-        XMLTagProjector.simpleSpaceAnalysis(translation);
+        TagProjector.simpleSpaceAnalysis(translation);
 
         assertEquals("Hello world !", translation.toString(false, false));
         assertEquals("Hello <a>world</a> !", translation.toString());
@@ -79,7 +79,7 @@ public class XMLTagProjectorSpacingTest {
                 Tag.fromText("</a>", true, " ", 1),
                 Tag.fromText("</b>", true, " ", 1),
         });
-        XMLTagProjector.simpleSpaceAnalysis(translation);
+        TagProjector.simpleSpaceAnalysis(translation);
 
         assertEquals("Hello world!", translation.toString(false, false));
         assertEquals("Hello <a> <b> </a> </b> world!", translation.toString());
@@ -97,7 +97,7 @@ public class XMLTagProjectorSpacingTest {
                 Tag.fromText("<b>", true, " ", 1),
                 Tag.fromText("</b>", true, " ", 1),
         });
-        XMLTagProjector.simpleSpaceAnalysis(translation);
+        TagProjector.simpleSpaceAnalysis(translation);
 
         assertEquals("Hello world!", translation.toString(false, false));
         assertEquals("Hello </a> <b> </b> world!", translation.toString());
@@ -116,7 +116,7 @@ public class XMLTagProjectorSpacingTest {
                 Tag.fromText("<b>", true, " ", 1),
                 Tag.fromText("</b>", true, " ", 2),
         });
-        XMLTagProjector.simpleSpaceAnalysis(translation);
+        TagProjector.simpleSpaceAnalysis(translation);
 
         assertEquals("That 's it!", translation.toString(false, false));
         assertEquals("That<b>&apos;s</b> it!", translation.toString());
@@ -134,7 +134,7 @@ public class XMLTagProjectorSpacingTest {
                 Tag.fromText("<!--", true, " ", 2),
                 Tag.fromText("-->", true, null, 4),
         });
-        XMLTagProjector.simpleSpaceAnalysis(translation);
+        TagProjector.simpleSpaceAnalysis(translation);
 
         assertEquals("This is XML comment", translation.toString(false, false));
         assertEquals("This is <!-- XML comment -->", translation.toString());
@@ -152,7 +152,7 @@ public class XMLTagProjectorSpacingTest {
                 Tag.fromText("<!--", false, " ", 2),
                 Tag.fromText("-->", true, null, 4),
         });
-        XMLTagProjector.simpleSpaceAnalysis(translation);
+        TagProjector.simpleSpaceAnalysis(translation);
 
         assertEquals("This is XML comment", translation.toString(false, false));
         assertEquals("This is<!-- XML comment -->", translation.toString());
@@ -170,7 +170,7 @@ public class XMLTagProjectorSpacingTest {
                 Tag.fromText("<!--", false, " ", 2),
                 Tag.fromText("-->", true, " ", 4),
         });
-        XMLTagProjector.simpleSpaceAnalysis(translation);
+        TagProjector.simpleSpaceAnalysis(translation);
 
         assertEquals("This is XML comment", translation.toString(false, false));
         assertEquals("This is<!-- XML comment -->", translation.toString());
