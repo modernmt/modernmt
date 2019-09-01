@@ -14,10 +14,6 @@ public class Tag extends Token implements Comparable<Tag> {
                     "(</(" + TAG_NAME + ")[^>]*>)|" +
                     "(<!--)|(-->)");
 
-    public void setType(Type type) {
-        this.type = type;
-    }
-
     public enum Type {
         OPENING_TAG,
         CLOSING_TAG,
@@ -80,7 +76,7 @@ public class Tag extends Token implements Comparable<Tag> {
     protected int position;
     protected boolean dtd;
 
-    public Tag(String name, String text, boolean leftSpace, String rightSpace, int position, Type type, boolean dtd) {
+    protected Tag(String name, String text, boolean leftSpace, String rightSpace, int position, Type type, boolean dtd) {
         super(text, text, rightSpace);
         this.leftSpace = leftSpace;
         this.position = position;
@@ -103,6 +99,10 @@ public class Tag extends Token implements Comparable<Tag> {
 
     public Type getType() {
         return type;
+    }
+
+    public void setType(Type type) {
+        this.type = type;
     }
 
     public String getName() {
