@@ -12,31 +12,17 @@ import java.util.Set;
  */
 public class Sentence implements Serializable, Iterable<Token> {
 
-
-    protected final Word leadingSpace;
-    protected final Word trailingSpace;
-
     protected final Word[] words;
     protected Tag[] tags;
     protected Set<String> annotations;
 
     public Sentence(Word[] words) {
-        this(words, null,null,null);
+        this(words, null);
     }
 
     public Sentence(Word[] words, Tag[] tags) {
-        this(words,tags,null,null);
-    }
-
-    public Sentence(Word[] words, Word ls, Word ts) {
-        this(words,null,ls,ts);
-    }
-
-    public Sentence(Word[] words, Tag[] tags, Word ls, Word ts) {
         this.words = words == null ? new Word[0] : words;
         this.tags = tags == null ? new Tag[0] : tags;
-        this.leadingSpace = ls;
-        this.trailingSpace = ts;
     }
 
     public Word[] getWords() {
@@ -100,9 +86,6 @@ public class Sentence implements Serializable, Iterable<Token> {
         boolean foundFirstWord = false;
         boolean printSpace = false;
 
-        if (this.leadingSpace != null)
-            builder.append(this.leadingSpace);
-
         for (Token token : this) {
             if (token instanceof Tag) {
                 printSpace = true;
@@ -118,16 +101,11 @@ public class Sentence implements Serializable, Iterable<Token> {
             }
         }
 
-        if (this.trailingSpace != null)
-            builder.append(this.trailingSpace);
         return builder.toString();
     }
 
     private String toXMLString(boolean printPlaceholders) {
         StringBuilder builder = new StringBuilder();
-
-        if (this.leadingSpace != null)
-            builder.append(this.leadingSpace);
 
         for (Token token : this) {
             if (token instanceof Tag) {
@@ -141,8 +119,6 @@ public class Sentence implements Serializable, Iterable<Token> {
                 builder.append(token.getRightSpace());
         }
 
-        if (this.trailingSpace != null)
-            builder.append(this.trailingSpace);
         return builder.toString();
     }
 
