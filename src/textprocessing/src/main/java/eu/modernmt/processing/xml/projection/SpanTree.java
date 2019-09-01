@@ -5,7 +5,7 @@ import java.util.*;
 import static eu.modernmt.model.Tag.Type;
 
 class SpanTree {
-    public class Node implements Comparable<Node>{
+    public class Node implements Comparable<Node> {
         private List<Node> children = new ArrayList<>();
         private Node parent = null;
         private Span data;
@@ -144,7 +144,7 @@ class SpanTree {
         int firstChildIdx = spanIdx + 1;
         //search for the first span on the right which has level = root.getLevel()+1, but is not child of a sibling
         while (firstChildIdx < spans.size()) {
-            if  ((spans.get(firstChildIdx).getLevel() == rootLevel) || (spans.get(firstChildIdx).getLevel() == rootLevel + 1) ) {
+            if ((spans.get(firstChildIdx).getLevel() == rootLevel) || (spans.get(firstChildIdx).getLevel() == rootLevel + 1)) {
                 break;
             }
             firstChildIdx++;
@@ -171,7 +171,7 @@ class SpanTree {
         firstChildIdx = spanIdx - 1;
         //search for the first span on the right having level = root.getLevel()+1
         while (firstChildIdx >= 0 && (spans.get(firstChildIdx).getLevel() != rootLevel + 1)) {
-            if ( (spans.get(firstChildIdx).getLevel() == rootLevel) || (spans.get(firstChildIdx).getLevel() == rootLevel + 1) ) {
+            if ((spans.get(firstChildIdx).getLevel() == rootLevel) || (spans.get(firstChildIdx).getLevel() == rootLevel + 1)) {
                 break;
             }
             firstChildIdx--;
@@ -393,7 +393,7 @@ class SpanTree {
             int score = leftTokenIntersection.size() + rightTokenIntersection.size();
 
             //Remember the best position and score (for opening tag prefer to shift them to the right)
-            if (score >= maxScore ) {
+            if (score >= maxScore) {
                 maxScore = score;
                 bestPosition = actualPosition;
             }
@@ -497,7 +497,7 @@ class SpanTree {
     static private void fixChildren(Node node, Coverage positionsToRemove) {
         Coverage nodePositions = node.getData().getPositions();
 
-        if ( nodePositions.size() == 0  ) {
+        if (nodePositions.size() == 0) {
             if (positionsToRemove.contains(node.getData().getAnchor())) {
                 node.getData().setAnchor(-1);
             }
@@ -509,7 +509,7 @@ class SpanTree {
         for (Node child : node.getChildren()) {
             Coverage childPositions = node.getData().getPositions();
 
-            if ( childPositions.size() > 0 ) {
+            if (childPositions.size() > 0) {
                 Coverage intersection = Coverage.intersection(childPositions, nodePositions);
                 if (intersection.size() == childPositions.size()) {
                     // child is not totally contained in  node

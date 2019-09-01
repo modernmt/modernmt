@@ -4,15 +4,15 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
-public class Coverage implements Iterable<Integer>{
+public class Coverage implements Iterable<Integer> {
 
     private ArrayList<Integer> positions;
 
-    Coverage(){
+    Coverage() {
         this.positions = new ArrayList<>();
     }
 
-    Coverage(int size){
+    Coverage(int size) {
         this.positions = new ArrayList<>(size);
     }
 
@@ -162,7 +162,7 @@ public class Coverage implements Iterable<Integer>{
     }
 
     public int last() {
-        return this.positions.get(size()-1);
+        return this.positions.get(size() - 1);
     }
 
     void uniq() {

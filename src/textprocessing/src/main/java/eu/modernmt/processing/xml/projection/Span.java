@@ -2,7 +2,7 @@ package eu.modernmt.processing.xml.projection;
 
 import eu.modernmt.model.Tag;
 
-class Span implements Comparable<Span>{
+class Span implements Comparable<Span> {
 
     private final int id;
     private final Tag beginTag;
@@ -17,7 +17,7 @@ class Span implements Comparable<Span>{
         this.endTag = endTag;
         this.level = level;
 
-        int begin = Math.min(Math.max(0, getBegin()),words);
+        int begin = Math.min(Math.max(0, getBegin()), words);
         int end = Math.min(words, getEnd());
 
         this.positions = new Coverage(end - begin);

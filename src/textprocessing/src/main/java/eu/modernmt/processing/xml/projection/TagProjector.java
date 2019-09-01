@@ -2,7 +2,7 @@ package eu.modernmt.processing.xml.projection;
 
 import eu.modernmt.model.*;
 
-import java.util.*;
+import java.util.Arrays;
 
 
 public class TagProjector {

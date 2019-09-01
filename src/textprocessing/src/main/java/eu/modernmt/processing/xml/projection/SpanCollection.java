@@ -14,11 +14,11 @@ class SpanCollection implements Iterable<Span> {
     private List<Span> list;
 
 
-    SpanCollection () {
+    SpanCollection() {
         list = new ArrayList<>();
     }
 
-    SpanCollection (Tag[] tags, int words) {
+    SpanCollection(Tag[] tags, int words) {
         list = new ArrayList<>();
         populate(tags, words);
     }
@@ -32,15 +32,15 @@ class SpanCollection implements Iterable<Span> {
         for (int tagIndex = 0; tagIndex < tags.length; tagIndex++) {
             Tag tag = tags[tagIndex];
             String name = tag.getName();
-            if (tag.getType() ==  Tag.Type.OPENING_TAG) {
+            if (tag.getType() == Tag.Type.OPENING_TAG) {
                 openingTagSet.computeIfAbsent(name, k -> new ArrayList<>());
                 openingTagSet.get(name).add(tagIndex);
             }
-            if (tag.getType() ==  Tag.Type.CLOSING_TAG) {
+            if (tag.getType() == Tag.Type.CLOSING_TAG) {
                 closingTagSet.computeIfAbsent(name, k -> new ArrayList<>());
                 closingTagSet.get(tag.getName()).add(tagIndex);
             }
-            if (tag.getType() ==  Tag.Type.EMPTY_TAG) {
+            if (tag.getType() == Tag.Type.EMPTY_TAG) {
                 emptyTagSet.computeIfAbsent(name, k -> new ArrayList<>());
                 emptyTagSet.get(name).add(tagIndex);
             }
@@ -204,7 +204,9 @@ class SpanCollection implements Iterable<Span> {
         }
     }
 
-    protected List<Span> asList() { return list; }
+    protected List<Span> asList() {
+        return list;
+    }
 
     protected void project(SpanCollection sourceSpans, Alignment alignment, int targetWords) {
         for (Span sourceSpan : sourceSpans) {
@@ -292,7 +294,7 @@ class SpanCollection implements Iterable<Span> {
     }
 
 
-    protected void print(){
+    protected void print() {
         for (Span span : this.list) {
             System.out.println("Span " + span.getId() + " " + span.toString());
         }

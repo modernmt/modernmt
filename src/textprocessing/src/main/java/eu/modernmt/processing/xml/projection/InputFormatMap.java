@@ -52,7 +52,8 @@ class DefaultInputFormatMap extends InputFormatMap {
         super(tags);
     }
 
-    void transform() {}
+    void transform() {
+    }
 }
 
 class HtmlInputFormatMap extends InputFormatMap {
@@ -88,18 +89,17 @@ class HtmlInputFormatMap extends InputFormatMap {
 }
 
 
-
 class XliffInputFormatMap extends InputFormatMap {
     private static Set<String> openingTags = new HashSet<>(asList("bx"));
     private static Set<String> closingTags = new HashSet<>(asList("ex"));
-    private static Set<String> legalTags = new HashSet<>(asList("g","x","ex","bx","bpt","ept","ph","it","mrk"));
+    private static Set<String> legalTags = new HashSet<>(asList("g", "x", "ex", "bx", "bpt", "ept", "ph", "it", "mrk"));
 
     XliffInputFormatMap(Tag[] tags) {
         super(tags);
     }
 
     static boolean isCompliant(Tag[] tags) {
-        if (tags.length == 0){
+        if (tags.length == 0) {
             return true;
         }
         if (legalTags != null) {
