@@ -11,7 +11,17 @@ public class HtmlInputFormat implements InputFormat {
 
     private static final float ACCEPTANCE_RATE = 0.5f;
     private static final Set<String> EMPTY_TAGS = Collections.singleton("br");
-    private static final Set<String> LEGAL_TAGS = new HashSet<>(Arrays.asList("h", "p", "span", "div", "br", "a", "ul", "li", "ol", "dl", "dt", "dd", "table", "tr", "td", "th", "img"));
+    private static final Set<String> LEGAL_TAGS = new HashSet<>(
+            Arrays.asList("a", "abbr", "address", "area", "article", "aside", "audio", "b", "base", "bdi",
+                    "bdo", "blockquote", "body", "br", "button", "canvas", "caption", "cite", "code", "col", "colgroup",
+                    "data", "datalist", "dd", "del", "details", "dfn", "dialog", "div", "dl", "dt", "em", "embed",
+                    "fieldset", "figcaption", "figure", "footer", "form", "h1", "h2", "h3", "h4", "h5", "h6", "head",
+                    "header", "hgroup", "hr", "html", "i", "iframe", "img", "input", "ins", "kbd", "label", "legend", "li",
+                    "link", "main", "map", "mark", "meta", "meter", "nav", "noframes", "noscript", "object", "ol",
+                    "optgroup", "option", "output", "p", "param", "picture", "pre", "progress", "q", "rp", "rt", "rtc",
+                    "ruby", "s", "samp", "script", "section", "select", "slot", "small", "source", "span", "strong",
+                    "style", "sub", "summary", "sup", "table", "tbody", "td", "template", "textarea", "tfoot", "th",
+                    "thead", "time", "title", "tr", "track", "u", "ul", "var", "video", "wbr"));
 
     public static boolean isCompliant(Tag[] tags) {
         int occurrences = (int) Arrays.stream(tags).filter(tag -> LEGAL_TAGS.contains(tag.getName())).count();
