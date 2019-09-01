@@ -55,7 +55,7 @@ public class TagProjector {
         return translation;
     }
 
-    private static void simpleSpaceAnalysis(Translation translation) {
+    public static void simpleSpaceAnalysis(Translation translation) {
 
         //Add whitespace between the last word and the next tag if the latter has left space
         Tag[] tags = translation.getTags();

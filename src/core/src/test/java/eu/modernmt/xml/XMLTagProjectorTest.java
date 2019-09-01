@@ -1,7 +1,7 @@
 package eu.modernmt.xml;
 
 import eu.modernmt.model.*;
-import eu.modernmt.processing.xml.XMLTagProjector;
+import eu.modernmt.processing.xml.projection.TagProjector;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -30,7 +30,7 @@ public class XMLTagProjectorTest {
                 {2, 2},
         }));
 
-        new XMLTagProjector().project(translation);
+        new TagProjector().project(translation);
 
         assertEquals("ciao <b>mondo</b>!", translation.toString());
         assertEquals("ciao mondo !", translation.toString(false, false));
@@ -61,7 +61,7 @@ public class XMLTagProjectorTest {
                 {2, 2},
         }));
 
-        new XMLTagProjector().project(translation);
+        new TagProjector().project(translation);
 
         assertEquals("<b>mondo</b> ciao!", translation.toString());
         assertEquals("mondo ciao!", translation.toString(false, false));
@@ -97,7 +97,7 @@ public class XMLTagProjectorTest {
                 {4, 3},
         }));
 
-        new XMLTagProjector().project(translation);
+        new TagProjector().project(translation);
 
         assertEquals("Esempio con un tag <empty/>empty", translation.toString());
         assertArrayEquals(new Tag[]{
@@ -127,7 +127,7 @@ public class XMLTagProjectorTest {
                 {2, 2},
         }));
 
-        new XMLTagProjector().project(translation);
+        new TagProjector().project(translation);
 
         assertEquals("ciao <g></g>mondo!", translation.toString());
         assertEquals("ciao mondo!", translation.toString(false, false));
@@ -159,7 +159,7 @@ public class XMLTagProjectorTest {
                 {2, 2},
         }));
 
-        new XMLTagProjector().project(translation);
+        new TagProjector().project(translation);
         //System.out.println(translation.getSource().toString());
         assertEquals("<g></g>mondo ciao!", translation.toString());
         assertEquals("mondo ciao!", translation.toString(false, false));
@@ -194,7 +194,7 @@ public class XMLTagProjectorTest {
                 {4, 3},
         }));
 
-        new XMLTagProjector().project(translation);
+        new TagProjector().project(translation);
 
         assertEquals("Esempio con <open>un tag malformato", translation.toString());
         assertEquals("Esempio con un tag malformato", translation.toString(false, false));
@@ -228,7 +228,7 @@ public class XMLTagProjectorTest {
                 {4, 3},
         }));
 
-        new XMLTagProjector().project(translation);
+        new TagProjector().project(translation);
 
         assertEquals("Esempio con</close> un tag malformato", translation.toString());
         assertEquals("Esempio con un tag malformato", translation.toString(false, false));
@@ -262,7 +262,7 @@ public class XMLTagProjectorTest {
                 {3, 2},
         }));
 
-        new XMLTagProjector().project(translation);
+        new TagProjector().project(translation);
 
         assertEquals("Esempio <a>con <b>tag</b> innestati</a>", translation.toString());
         assertEquals("Esempio con tag innestati", translation.toString(false, false));
@@ -298,7 +298,7 @@ public class XMLTagProjectorTest {
                 {3, 2},
         }));
 
-        new XMLTagProjector().project(translation);
+        new TagProjector().project(translation);
 
         assertEquals("Esempio con <!-- commenti XML -->", translation.toString());
         assertEquals("Esempio con commenti XML", translation.toString(false, false));
@@ -332,7 +332,7 @@ public class XMLTagProjectorTest {
                 {3, 2},
         }));
 
-        new XMLTagProjector().project(translation);
+        new TagProjector().project(translation);
 
         assertEquals("Esempio con <!--commenti XML-->", translation.toString());
         assertEquals("Esempio con commenti XML", translation.toString(false, false));
@@ -366,7 +366,7 @@ public class XMLTagProjectorTest {
                 {3, 3},
         }));
 
-        new XMLTagProjector().project(translation);
+        new TagProjector().project(translation);
 
         assertEquals("<!--Questo è un esempio-->", translation.toString());
         assertEquals("Questo è un esempio", translation.toString(false, false));
@@ -390,7 +390,7 @@ public class XMLTagProjectorTest {
                 {0, 0}
         }));
 
-        new XMLTagProjector().project(translation);
+        new TagProjector().project(translation);
 
         assertEquals("<!ENTITY key=\"value\"> Prova", translation.toString());
         assertEquals("Prova", translation.toString(false, false));
@@ -408,7 +408,7 @@ public class XMLTagProjectorTest {
 
         Translation translation = new Translation(null, source, null);
 
-        new XMLTagProjector().project(translation);
+        new TagProjector().project(translation);
 
         assertEquals("<a></a>", translation.toString());
         assertTrue(translation.toString(false, false).isEmpty());

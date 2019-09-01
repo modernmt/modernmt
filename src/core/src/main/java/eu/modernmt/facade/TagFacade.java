@@ -11,14 +11,14 @@ import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
-import eu.modernmt.processing.xml.XMLTagProjector;
+import eu.modernmt.processing.xml.projection.TagProjector;
 
 /**
  * Created by davide on 20/04/16.
  */
 public class TagFacade {
 
-    private static final XMLTagProjector tagProjector = new XMLTagProjector();
+    private static final TagProjector tagProjector = new TagProjector();
 
     public Translation project(LanguageDirection direction, String sentence, String translation) throws AlignerException, ProcessingException {
         return project(direction, sentence, translation, null);
