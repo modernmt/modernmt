@@ -8,16 +8,12 @@ import java.util.Arrays;
 public class TagProjector {
 
     public Translation project(Translation translation) {
-        //TODO: instead of using hardcoded AUTO, the actual value of type should be read as parameter
-        InputFormatMap.Type type = InputFormatMap.Type.AUTO;
-
         Sentence source = translation.getSource();
+
         if (source.hasTags()) {
             TagCollection sourceTags = new TagCollection(source.getTags());
 
             if (source.hasWords()) {
-                InputFormatMap mapper = InputFormatMap.build(sourceTags.getTags(), type);
-                mapper.transform();
                 sourceTags.fixXmlCompliance();
 
                 Word[] sourceWords = source.getWords();

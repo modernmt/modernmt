@@ -4,13 +4,17 @@ import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.builder.XMLPipelineBuilder;
 import eu.modernmt.processing.concurrent.PipelineExecutor;
+import eu.modernmt.processing.string.SentenceCompiler;
+import eu.modernmt.processing.xml.format.InputFormat;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -31,22 +35,41 @@ public class Preprocessor implements Closeable {
         this(threads, getDefaultBuilder());
     }
 
-    public Preprocessor(int threads, XMLPipelineBuilder<String, Sentence> builder) throws IOException {
+    public Preprocessor(int threads, XMLPipelineBuilder<String, Sentence> builder) {
         this.executor = new PipelineExecutor<>(builder, threads);
         this.threads = threads;
     }
 
     public Sentence[] process(LanguageDirection language, String[] batch) throws ProcessingException {
-        return this.executor.processBatch(language, batch, new Sentence[batch.length]);
+        return process(language, batch, null);
     }
 
     public List<Sentence> process(LanguageDirection language, List<String> batch) throws ProcessingException {
-        Sentence[] result = this.executor.processBatch(language, batch.toArray(new String[0]), new Sentence[batch.size()]);
-        return Arrays.asList(result);
+        return process(language, batch, null);
     }
 
     public Sentence process(LanguageDirection language, String text) throws ProcessingException {
-        return this.executor.process(language, text);
+        return process(language, text, null);
+    }
+
+    public Sentence[] process(LanguageDirection language, String[] batch, InputFormat.Type format) throws ProcessingException {
+        Map<String, Object> metadata = getMetadata(format);
+        return this.executor.processBatch(metadata, language, batch, new Sentence[batch.length]);
+    }
+
+    public List<Sentence> process(LanguageDirection language, List<String> batch, InputFormat.Type format) throws ProcessingException {
+        Map<String, Object> metadata = getMetadata(format);
+        Sentence[] result = this.executor.processBatch(metadata, language, batch.toArray(new String[0]), new Sentence[batch.size()]);
+        return Arrays.asList(result);
+    }
+
+    public Sentence process(LanguageDirection language, String text, InputFormat.Type format) throws ProcessingException {
+        Map<String, Object> metadata = getMetadata(format);
+        return this.executor.process(metadata, language, text);
+    }
+
+    private static Map<String, Object> getMetadata(InputFormat.Type format) {
+        return format == null ? Collections.emptyMap() : Collections.singletonMap(SentenceCompiler.INPUT_FORMAT_TYPE, format);
     }
 
     public int getThreads() {
