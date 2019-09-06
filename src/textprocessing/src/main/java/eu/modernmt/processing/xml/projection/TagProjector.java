@@ -14,12 +14,12 @@ public class TagProjector {
             TagCollection sourceTags = new TagCollection(source.getTags());
 
             if (source.hasWords()) {
-                sourceTags.fixXmlCompliance();
+                if (translation.hasAlignment()) {
+                    sourceTags.fixXmlCompliance();
 
-                Word[] sourceWords = source.getWords();
-                Word[] translationWords = translation.getWords();
-                TagCollection translationTags = new TagCollection();
-                try {
+                    Word[] sourceWords = source.getWords();
+                    Word[] translationWords = translation.getWords();
+                    TagCollection translationTags = new TagCollection();
                     SpanCollection sourceSpans = new SpanCollection(sourceTags.getTags(), sourceWords.length);
 
                     SpanTree sourceTree = new SpanTree(sourceSpans);
@@ -35,13 +35,9 @@ public class TagProjector {
 
                     translationTags.populate(translationTree);
 
-                } catch (Exception e) {
-                    e.printStackTrace();
+                    translation.setTags(translationTags.getTags());
+                    simpleSpaceAnalysis(translation);
                 }
-
-                translation.setTags(translationTags.getTags());
-                simpleSpaceAnalysis(translation);
-
             } else { //there are no source words; just copy the source tags in the target tags
                 Tag[] copy = Arrays.copyOf(sourceTags.getTags(), sourceTags.size());
                 translation.setTags(copy);
@@ -52,6 +48,8 @@ public class TagProjector {
     }
 
     public static void simpleSpaceAnalysis(Translation translation) {
+        if (!translation.hasTags())
+            return;
 
         //Add whitespace between the last word and the next tag if the latter has left space
         Tag[] tags = translation.getTags();
