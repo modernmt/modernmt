@@ -5,6 +5,7 @@ package eu.modernmt.config;
  */
 public class AnalyzerConfig {
 
+    private final EngineConfig parent;
     protected boolean enabled = true;
 
     // If set to false, the analysis won't be invoked.
@@ -26,6 +27,14 @@ public class AnalyzerConfig {
     // Force analysis if it has been written at least
     // 'maxToleratedMisalignment' bytes
     protected long maxToleratedMisalignment = 10L * 1024L; // 10Kb
+
+    public AnalyzerConfig(EngineConfig parent) {
+        this.parent = parent;
+    }
+
+    public EngineConfig getParentConfig() {
+        return parent;
+    }
 
     public boolean isEnabled() {
         return enabled;

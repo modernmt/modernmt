@@ -6,10 +6,8 @@ import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.DecoderListener;
-import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.decoder.neural.queue.*;
 import eu.modernmt.decoder.neural.scheduler.Scheduler;
-import eu.modernmt.decoder.neural.scheduler.SentenceBatchScheduler;
 import eu.modernmt.decoder.neural.scheduler.TranslationSplit;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguageDirection;
@@ -27,8 +25,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -37,15 +33,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class NeuralDecoder extends Decoder implements DataListenerProvider {
 
-    private static File getJarPath() throws DecoderException {
-        URL url = Decoder.class.getProtectionDomain().getCodeSource().getLocation();
-        try {
-            return new File(url.toURI());
-        } catch (URISyntaxException e) {
-            throw new DecoderException("Unable to resolve JAR file", e);
-        }
-    }
-
     private final Logger logger = LogManager.getLogger(getClass());
 
     private final boolean echoServer;
@@ -53,18 +40,22 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
     private final TranslationMemory memory;
     private final Set<LanguageDirection> directions;
     private final Scheduler scheduler;
-    private final DecoderExecutor[] executors;
+    private final DecoderExecutorThread[] executors;
     private final DecoderQueue decoderQueue;
 
     private volatile long lastSuccessfulTranslation = 0L;
 
     public NeuralDecoder(File model, DecoderConfig config) throws DecoderException {
+        this(model, config, new DefaultDecoderInitializer());
+    }
+
+    protected NeuralDecoder(File model, DecoderConfig config, DecoderInitializer init) throws DecoderException {
         super(model, config);
 
         // Load ModelConfig
         ModelConfig modelConfig;
         try {
-            modelConfig = this.loadModelConfig(new File(model, "model.conf"));
+            modelConfig = init.createModelConfig(new File(model, "model.conf"));
         } catch (IOException e) {
             throw new DecoderException("Failed to read file model.conf", e);
         }
@@ -75,44 +66,24 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
 
         // Translation Memory
         try {
-            this.memory = loadTranslationMemory(modelConfig, new File(model, "memory"));
+            this.memory = init.createTranslationMemory(config, modelConfig, new File(model, "memory"));
         } catch (IOException e) {
             throw new DecoderException("Failed to initialize memory", e);
         }
 
         // Decoder Queue
-        this.decoderQueue = this.echoServer ? new EchoServerDecoderQueue() : loadDecoderQueue(modelConfig, config, model);
+        this.decoderQueue = this.echoServer ? new EchoServerDecoderQueue() : init.createDecoderQueue(config, modelConfig, model);
 
         // Scheduler
-        this.scheduler = createScheduler(modelConfig, config.getQueueSize());
+        this.scheduler = init.createScheduler(config, modelConfig, config.getQueueSize());
 
         // Executors
-        this.executors = new DecoderExecutor[this.decoderQueue.size()];
+        DecoderExecutor executor = init.createDecoderExecutor(config, modelConfig);
+        this.executors = new DecoderExecutorThread[this.decoderQueue.size()];
         for (int i = 0; i < this.executors.length; i++) {
-            this.executors[i] = new DecoderExecutor(this.scheduler, this.decoderQueue);
+            this.executors[i] = new DecoderExecutorThread(this.scheduler, this.decoderQueue, executor);
             this.executors[i].start();
         }
-    }
-
-    protected ModelConfig loadModelConfig(File filepath) throws IOException {
-        return ModelConfig.load(filepath);
-    }
-
-    protected TranslationMemory loadTranslationMemory(ModelConfig config, File model) throws IOException {
-        return new LuceneTranslationMemory(model, config.getQueryMinimumResults());
-    }
-
-    protected DecoderQueue loadDecoderQueue(ModelConfig modelConfig, DecoderConfig decoderConfig, File model) throws DecoderException {
-        PythonDecoder.Builder builder = new PythonDecoderImpl.Builder(getJarPath(), model);
-
-        if (decoderConfig.isUsingGPUs())
-            return DecoderQueueImpl.newGPUInstance(modelConfig, builder, decoderConfig.getGPUs());
-        else
-            return DecoderQueueImpl.newCPUInstance(modelConfig, builder, decoderConfig.getThreads());
-    }
-
-    protected Scheduler createScheduler(ModelConfig modelConfig, int queueSize) throws DecoderException {
-        return new SentenceBatchScheduler(queueSize);
     }
 
     // Decoder
@@ -185,6 +156,7 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
                 StringBuilder log = new StringBuilder("Translation received from neural decoder:\n" +
                         "   sentence = " + sourceText + "\n" +
                         "   translation = " + targetText + "\n" +
+                        "   alignment = " + translation.getWordAlignment() + "\n" +
                         "   suggestions = [\n");
 
                 if (suggestions != null) {

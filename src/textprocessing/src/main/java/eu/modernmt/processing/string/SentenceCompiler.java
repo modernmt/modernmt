@@ -1,8 +1,12 @@
 package eu.modernmt.processing.string;
 
 import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Tag;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
+import eu.modernmt.processing.xml.format.InputFormat;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Map;
 
@@ -13,6 +17,10 @@ import java.util.Map;
  * by requesting their building to a SentenceBuilder instance.
  */
 public class SentenceCompiler extends TextProcessor<SentenceBuilder, Sentence> {
+
+    public static final String INPUT_FORMAT_TYPE = "SentenceCompiler.INPUT_FORMAT_TYPE";
+
+    private final Logger logger = LogManager.getLogger(SentenceCompiler.class);
 
     /**
      * This method asks the SentenceBuilder to generate a Sentence object,
@@ -29,9 +37,25 @@ public class SentenceCompiler extends TextProcessor<SentenceBuilder, Sentence> {
      */
     @Override
     public Sentence call(SentenceBuilder builder, Map<String, Object> metadata) throws ProcessingException {
-
-        Sentence s = builder.build();
+        Sentence sentence = builder.build();
         builder.clear();
-        return s;
+
+        if (sentence.hasTags()) {
+            InputFormat.Type type = (InputFormat.Type) metadata.get(INPUT_FORMAT_TYPE);
+            Tag[] tags = sentence.getTags();
+
+            InputFormat format = getInputFormat(tags, type);
+
+            if (logger.isDebugEnabled())
+                logger.debug("Transforming <xml> with InputFormat: " + format.getClass().getSimpleName());
+
+            format.transform(tags);
+        }
+
+        return sentence;
+    }
+
+    private static InputFormat getInputFormat(Tag[] tags, InputFormat.Type type) {
+        return type == null ? InputFormat.auto(tags) : InputFormat.build(type);
     }
 }

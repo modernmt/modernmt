@@ -488,6 +488,7 @@ class SubwordDictionary(Dictionary):
                             continue
                         else:
                             indexes.append(i)
+                            i += 1
                     elif self[_id].endswith('_'):
                         indexes.append(i)
                         i += 1

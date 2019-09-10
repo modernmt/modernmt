@@ -19,11 +19,20 @@ public class DecoderConfig {
         return cores > 1 ? (cores * 2) / 3 : cores;
     }
 
+    private final EngineConfig parent;
     private int queueSize = 400;
     private int threads = DEFAULT_THREADS;
     private int[] gpus = DEFAULT_GPUS;
     private String decoderClass = null;
     private boolean enabled = true;
+
+    public DecoderConfig(EngineConfig parent) {
+        this.parent = parent;
+    }
+
+    public EngineConfig getParentConfig() {
+        return parent;
+    }
 
     public int getQueueSize() {
         return queueSize;

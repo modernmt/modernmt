@@ -32,8 +32,17 @@ public class JoinConfig {
 
     }
 
+    private final NetworkConfig parent;
     private int timeout = 5;
     private Member[] members = null;
+
+    public JoinConfig(NetworkConfig parent) {
+        this.parent = parent;
+    }
+
+    public NetworkConfig getParentConfig() {
+        return parent;
+    }
 
     public int getTimeout() {
         return timeout;

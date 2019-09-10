@@ -5,7 +5,16 @@ package eu.modernmt.config;
  */
 public class AlignerConfig {
 
+    private final EngineConfig parent;
     protected boolean enabled = false;
+
+    public AlignerConfig(EngineConfig parent) {
+        this.parent = parent;
+    }
+
+    public EngineConfig getParentConfig() {
+        return parent;
+    }
 
     public boolean isEnabled() {
         return enabled;

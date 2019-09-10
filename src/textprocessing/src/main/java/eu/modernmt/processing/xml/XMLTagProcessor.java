@@ -2,6 +2,7 @@ package eu.modernmt.processing.xml;
 
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.TextProcessor;
+import eu.modernmt.processing.xml.projection.TagProjector;
 
 import java.util.Map;
 
@@ -10,7 +11,7 @@ import java.util.Map;
  */
 public class XMLTagProcessor extends TextProcessor<Translation, Translation> {
 
-    private final XMLTagProjector projector = new XMLTagProjector();
+    private final TagProjector projector = new TagProjector();
 
     @Override
     public Translation call(Translation translation, Map<String, Object> metadata) {

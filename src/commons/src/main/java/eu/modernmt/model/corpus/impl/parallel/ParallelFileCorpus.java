@@ -178,7 +178,7 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
             if (language.isEqualOrMoreGenericThan(pair.language)) {
                 sourceWriter.writeLine(pair.source);
                 targetWriter.writeLine(pair.target);
-            } else if (language.isEqualOrMoreGenericThan(language.reversed())) {
+            } else if (language.isEqualOrMoreGenericThan(pair.language.reversed())) {
                 sourceWriter.writeLine(pair.target);
                 targetWriter.writeLine(pair.source);
             } else {

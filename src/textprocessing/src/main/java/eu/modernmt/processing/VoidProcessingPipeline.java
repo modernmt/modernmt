@@ -12,11 +12,6 @@ public class VoidProcessingPipeline<P> extends ProcessingPipeline<P, Void> {
         super(processors);
     }
 
-    public Void call(P input) throws ProcessingException {
-        super.call(input);
-        return null;
-    }
-
     @SuppressWarnings("unchecked")
     public Void call(P input, Map<String, Object> metadata) throws ProcessingException {
         super.call(input, metadata);

@@ -277,9 +277,12 @@ class XLIFFFileFormat(FileFormat):
 
     @classmethod
     def _skip_source_tag(cls, tu, source_tag):
-        _id = source_tag.attrib['mid']
-        match = tu.find('.//sdl:seg[@id="%s"][@percent="100"]' % _id, cls.NAMESPACES)
-        return True if match is not None else False
+        if 'mid' in source_tag.attrib:
+            _id = source_tag.attrib['mid']
+            match = tu.find('.//sdl:seg[@id="%s"][@percent="100"]' % _id, cls.NAMESPACES)
+            return True if match is not None else False
+        else:
+            return True
 
     @classmethod
     def _get_tag_name(cls, e):

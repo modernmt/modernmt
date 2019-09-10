@@ -66,7 +66,7 @@ public class Tag extends Token implements Comparable<Tag> {
         return new Tag(other.name, other.text, other.leftSpace, other.rightSpace, other.position, other.type, other.dtd);
     }
 
-    protected final Type type; /* tag type */
+    protected Type type; /* tag type */
     protected final String name; /* tag name */
     protected boolean leftSpace; /* true if there is at least one space on the left of the tag*/
     /* position of the word after which the tag is placed; indexes of words start from 0
@@ -99,6 +99,10 @@ public class Tag extends Token implements Comparable<Tag> {
 
     public Type getType() {
         return type;
+    }
+
+    public void setType(Type type) {
+        this.type = type;
     }
 
     public String getName() {

@@ -63,7 +63,7 @@ public class BackupEngine {
         logger.info("Starting backup engine...");
         long begin = System.currentTimeMillis();
 
-        contextAnalyzer = new LuceneAnalyzer(Paths.join(models, "context"), new AnalyzerConfig());
+        contextAnalyzer = new LuceneAnalyzer(Paths.join(models, "context"), config.getEngineConfig().getAnalyzerConfig());
         memory = new LuceneTranslationMemory(Paths.join(models, "memory"), 1);
         backupMemory = new BackupMemory(Paths.join(models, "backup"));
 

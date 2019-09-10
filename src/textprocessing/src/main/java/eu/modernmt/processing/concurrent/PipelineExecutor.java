@@ -5,6 +5,8 @@ import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.ProcessingPipeline;
 import eu.modernmt.processing.builder.PipelineBuilder;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.*;
 
 /**
@@ -23,20 +25,28 @@ public class PipelineExecutor<P, R> {
     }
 
     public R process(LanguageDirection language, P input) throws ProcessingException {
+        return process(Collections.emptyMap(), language, input);
+    }
+
+    public R process(Map<String, Object> metadata, LanguageDirection language, P input) throws ProcessingException {
         ProcessingPipeline<P, R> pipeline = pipelines.get(language);
 
         try {
-            return pipeline.call(input);
+            return pipeline.call(input, metadata);
         } finally {
             pipelines.release(language, pipeline);
         }
     }
 
     public R[] processBatch(LanguageDirection language, P[] batch, R[] output) throws ProcessingException {
+        return processBatch(Collections.emptyMap(), language, batch, output);
+    }
+
+    public R[] processBatch(Map<String, Object> metadata, LanguageDirection language, P[] batch, R[] output) throws ProcessingException {
         Future<?>[] locks = new Future<?>[threads];
 
         if (batch.length < threads) {
-            locks[0] = executor.submit(new FragmentTask(language, batch, output, 0, batch.length));
+            locks[0] = executor.submit(new FragmentTask(metadata, language, batch, output, 0, batch.length));
         } else {
             int fragmentSize = batch.length / threads;
 
@@ -47,7 +57,7 @@ public class PipelineExecutor<P, R> {
                 if (i == threads - 1)
                     length = batch.length - offset;
 
-                locks[i] = executor.submit(new FragmentTask(language, batch, output, offset, length));
+                locks[i] = executor.submit(new FragmentTask(metadata, language, batch, output, offset, length));
             }
         }
 
@@ -88,13 +98,15 @@ public class PipelineExecutor<P, R> {
 
     public class FragmentTask implements Callable<Void> {
 
+        private final Map<String, Object> metadata;
         private final LanguageDirection language;
         private final P[] batch;
         private final Object[] output;
         private final int offset;
         private final int length;
 
-        public FragmentTask(LanguageDirection language, P[] batch, R[] output, int offset, int length) {
+        public FragmentTask(Map<String, Object> metadata, LanguageDirection language, P[] batch, R[] output, int offset, int length) {
+            this.metadata = metadata;
             this.language = language;
             this.batch = batch;
             this.output = output;
@@ -108,7 +120,7 @@ public class PipelineExecutor<P, R> {
 
             try {
                 for (int i = 0; i < length; i++) {
-                    output[offset + i] = pipeline.call(batch[offset + i]);
+                    output[offset + i] = pipeline.call(batch[offset + i], metadata);
                     batch[offset + i] = null; // free memory
                 }
 
