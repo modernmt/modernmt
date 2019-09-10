@@ -35,7 +35,7 @@ RUN python3 setup.py --skip-pip && cd /tmp/mmt/src && mvn clean install && cd /t
     git log -1 --pretty=oneline > build/modernmt-commit.log
 
 # Cleanup and pack
-RUN find . -name ".?*" | xargs rm -rf &> /dev/null && rm -rf setup.py requirements.txt src test build/include && \
+RUN find . -name ".?*" | xargs rm -rf &> /dev/null && rm -rf src test build/include && \
     mkdir vendor2 && mv vendor/kafka-* vendor/cassandra-* vendor2/ && rm -rf vendor && mv vendor2 vendor && \
     ldd build/bin/* build/lib/* | grep libboost_ | awk '{print $3}' | sort -u | xargs cp -t build/lib/
 
