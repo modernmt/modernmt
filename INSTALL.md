@@ -90,7 +90,8 @@ sudo apt update
 sudo apt install -y cuda
 ```
 
-Next install the **NVIDIA cuDNN library** from: [NVIDIA cuDNN Download](https://developer.nvidia.com/rdp/cudnn-download). Select the option *"Download cuDNN v7.5.1 (April 22, 2019), for CUDA 10.0"* and then *"cuDNN Runtime Library for Ubuntu18.04 (Deb)"*. Finally simply run this command on the downloaded package:
+Next install the **NVIDIA cuDNN library** from: [NVIDIA cuDNN Download](https://developer.nvidia.com/rdp/cudnn-download). Select the option *"Download cuDNN v7.5.1 (April 22, 2019), for CUDA 10.0"* and then *"cuDNN Runtime Library for Ubuntu18.04 (Deb)"*. If this version is not listed in the main page, you can find it in the [archived cuDNN releases](https://developer.nvidia.com/rdp/cudnn-archive).
+Finally simply run this command on the downloaded package:
 ```bash
 sudo dpkg -i libcudnn7_7.5.1.10-1+cuda10.0_amd64.deb
 ```
