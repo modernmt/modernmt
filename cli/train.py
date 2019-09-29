@@ -73,7 +73,7 @@ class TrainActivity(StatefulActivity):
 
         self.state.save_interval_updates = int(argv_valueof(extra_argv, '--save-interval-updates'))
 
-    def _training_should_stop(self):
+    def _training_should_stop(self, threshold=0.0001):
         def _loss_iterator(_events, limit):
             count = 0
             for e in _events:
@@ -106,7 +106,7 @@ class TrainActivity(StatefulActivity):
 
         self._logger.info('Stop criterion: current_loss = %f, previous_loss = %f' % (current_loss, previous_loss))
 
-        return previous_loss - current_loss < 0.0001
+        return previous_loss - current_loss < threshold
 
     @activitystep('Train neural network')
     def train_nn(self):
@@ -170,7 +170,7 @@ class TrainActivity(StatefulActivity):
                     checkpoints = _last_n_checkpoints(self.state.nn_path, 1)
                     checkpoint = checkpoints[0] if len(checkpoints) > 0 else None
 
-                    if last_checkpoint != checkpoint and self._training_should_stop():
+                    if last_checkpoint != checkpoint and self._training_should_stop(self.args.loss_difference_threshold):
                         process.terminate()
                         self._logger.info('Training interrupted by termination policy: '
                                           'validation loss has reached its plateau')
@@ -328,6 +328,9 @@ def parse_args(argv=None):
     parser.add_argument('--train-steps', dest='train_steps', type=int, default=None,
                         help='by default the training stops when the validation loss reaches a plateau, with '
                              'this option instead, the training process stops after the specified amount of steps')
+
+    parser.add_argument('--loss-difference-threshold', dest='loss_difference_threshold', type=float, default=0.0001,
+                        help='threshold for the termination policy')
 
     args, extra_argv = parser.parse_known_args(argv)
     if args.debug and args.wdir is None:
