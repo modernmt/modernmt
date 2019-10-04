@@ -58,7 +58,7 @@ def _get_loss(event_file):
 
             if len(event.summary.value) > 0:
                 value = event.summary.value[0]
-                if value.tag == 'loss':
+                if value.tag == 'best_loss':
                     return event.step, value.simple_value
 
     raise AssertionError('could not find "loss" value in event file: ' + event_file)
@@ -76,7 +76,8 @@ class TrainActivity(StatefulActivity):
     def _training_should_stop(self):
         def _loss_iterator(_events, limit):
             count = 0
-            for e in _events:
+            # the first validation event written (last in list) has no 'best_loss'
+            for e in _events[:-1]:
                 step, loss = _get_loss(e)
                 if step % self.state.save_interval_updates == 0:
                     yield loss
