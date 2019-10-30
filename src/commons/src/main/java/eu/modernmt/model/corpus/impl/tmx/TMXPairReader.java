@@ -27,7 +27,6 @@ class TMXPairReader {
     private final ArrayList<MultilingualCorpus.StringPair> resultCache = new ArrayList<>(8);
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(TMXCorpus.TMX_DATE_FORMAT);
-    private boolean decodeSegments = true;
     private Language headerSourceLanguage = null;
 
     TMXPairReader() {
@@ -55,14 +54,8 @@ class TMXPairReader {
         return null;
     }
 
-    private void readHeader(StartElement header) throws XMLStreamException {
+    private void readHeader(StartElement header) {
         this.headerSourceLanguage = languageCache.get(XMLUtils.getAttributeValue(header, null, "srclang"));
-
-        String datatype = XMLUtils.getAttributeValue(header, null, "datatype");
-        datatype = datatype == null ? "unknown" : datatype.toLowerCase();
-
-        if ("xml".equals(datatype))
-            decodeSegments = false;
     }
 
     private List<MultilingualCorpus.StringPair> readTu(XMLEventReader reader, StartElement tu) throws XMLStreamException {
@@ -133,7 +126,7 @@ class TMXPairReader {
                     StartElement element = event.asStartElement();
 
                     if ("seg".equals(XMLUtils.getLocalName(element))) {
-                        return XMLUtils.getXMLContent(reader, element, decodeSegments)
+                        return XMLUtils.getXMLContent(reader, element, false)
                                 .replace('\n', ' ');
                     }
                     break;

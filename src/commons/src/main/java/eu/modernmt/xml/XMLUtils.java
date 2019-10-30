@@ -82,7 +82,7 @@ public class XMLUtils {
         return attribute == null ? null : attribute.getValue();
     }
 
-    public static String getXMLContent(XMLEventReader reader, StartElement element, boolean decodeCharacters) throws XMLStreamException {
+    public static String getXMLContent(XMLEventReader reader, StartElement element, boolean includeTags) throws XMLStreamException {
         String rootElementName = getLocalName(element);
 
         StringWriter buffer = new StringWriter(1024);
@@ -97,10 +97,12 @@ public class XMLUtils {
                 boolean skip = false;
 
                 if (event.isEndElement() && pendingElementName.equals(getLocalName(event.asEndElement()))) {
-                    writeAsEncodedUnicode(pendingElement, buffer, true); // empty tag
+                    if (includeTags)
+                        writeAsEncodedUnicode(pendingElement, buffer, true); // empty tag
                     skip = true; // skip this end tag
                 } else {
-                    writeAsEncodedUnicode(pendingElement, buffer, false);
+                    if (includeTags)
+                        writeAsEncodedUnicode(pendingElement, buffer, false);
                 }
 
                 pendingElement = null;
@@ -117,14 +119,16 @@ public class XMLUtils {
                 if (rootElementName.equals(name))
                     return buffer.toString();
 
-                writeAsEncodedUnicode(endElement, buffer);
+                if (includeTags)
+                    writeAsEncodedUnicode(endElement, buffer);
             } else if (event.isStartElement()) {
                 pendingElement = event.asStartElement();
                 pendingElementName = getLocalName(pendingElement);
-            } else if (event.isCharacters() && decodeCharacters) {
+            } else if (event.isCharacters() && !includeTags) {
                 buffer.append(event.asCharacters().getData());
             } else {
-                event.writeAsEncodedUnicode(buffer);
+                if (includeTags)
+                    event.writeAsEncodedUnicode(buffer);
             }
         }
 
