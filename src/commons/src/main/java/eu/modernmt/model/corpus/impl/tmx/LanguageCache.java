@@ -12,13 +12,13 @@ class LanguageCache {
 
     private static class SKey {
 
-        private String source;
-        private String target;
+        private Language source;
+        private Language target;
 
         public SKey() {
         }
 
-        public SKey(String source, String target) {
+        public SKey(Language source, Language target) {
             this.source = source;
             this.target = target;
         }
@@ -43,17 +43,31 @@ class LanguageCache {
 
     }
 
-    private final HashMap<SKey, LanguageDirection> cache = new HashMap<>();
+    private final HashMap<SKey, LanguageDirection> directionsCache = new HashMap<>();
+    private final HashMap<String, Language> languagesCache = new HashMap<>();
     private final SKey probe = new SKey();
 
-    public LanguageDirection get(String source, String target) {
+    public LanguageDirection get(Language source, Language target) {
         probe.source = source;
         probe.target = target;
 
-        LanguageDirection language = cache.get(probe);
+        LanguageDirection language = directionsCache.get(probe);
         if (language == null) {
-            language = new LanguageDirection(Language.fromString(source), Language.fromString(target));
-            cache.put(new SKey(source, target), language);
+            language = new LanguageDirection(source, target);
+            directionsCache.put(new SKey(source, target), language);
+        }
+
+        return language;
+    }
+
+    public Language get(String text) {
+        if (text == null)
+            return null;
+
+        Language language = languagesCache.get(text);
+        if (language == null) {
+            language = Language.fromString(text);
+            languagesCache.put(text, language);
         }
 
         return language;

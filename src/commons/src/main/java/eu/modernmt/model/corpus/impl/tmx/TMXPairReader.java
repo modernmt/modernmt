@@ -1,5 +1,6 @@
 package eu.modernmt.model.corpus.impl.tmx;
 
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.xml.XMLUtils;
@@ -27,7 +28,7 @@ class TMXPairReader {
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(TMXCorpus.TMX_DATE_FORMAT);
     private boolean decodeSegments = true;
-    private String headerSourceLanguage = null;
+    private Language headerSourceLanguage = null;
 
     TMXPairReader() {
         dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
@@ -55,7 +56,7 @@ class TMXPairReader {
     }
 
     private void readHeader(StartElement header) throws XMLStreamException {
-        this.headerSourceLanguage = XMLUtils.getAttributeValue(header, null, "srclang");
+        this.headerSourceLanguage = languageCache.get(XMLUtils.getAttributeValue(header, null, "srclang"));
 
         String datatype = XMLUtils.getAttributeValue(header, null, "datatype");
         datatype = datatype == null ? "unknown" : datatype.toLowerCase();
@@ -68,9 +69,9 @@ class TMXPairReader {
         this.resultCache.clear();
 
         Date tuTimestamp = getTimestamp(tu);
-        String tuSourceLanguage = XMLUtils.getAttributeValue(tu, null, "srclang");
+        Language tuSourceLanguage = languageCache.get(XMLUtils.getAttributeValue(tu, null, "srclang"));
 
-        String sourceLanguage = tuSourceLanguage == null ? headerSourceLanguage : tuSourceLanguage;
+        Language sourceLanguage = tuSourceLanguage == null ? headerSourceLanguage : tuSourceLanguage;
         String sourceText = null;
 
         while (reader.hasNext()) {
@@ -81,12 +82,13 @@ class TMXPairReader {
                     StartElement element = event.asStartElement();
 
                     if ("tuv".equals(XMLUtils.getLocalName(element))) {
-                        String lang = XMLUtils.getAttributeValue(element, TMXCorpus.XML_NAMESPACE, "lang");
-                        if (lang == null)
-                            lang = XMLUtils.getAttributeValue(element, null, "lang");
-                        if (lang == null)
+                        String _lang = XMLUtils.getAttributeValue(element, TMXCorpus.XML_NAMESPACE, "lang");
+                        if (_lang == null)
+                            _lang = XMLUtils.getAttributeValue(element, null, "lang");
+                        if (_lang == null)
                             throw new XMLStreamException(format("Missing language for 'tuv'", event));
 
+                        Language lang = languageCache.get(_lang);
                         if (sourceLanguage == null)
                             sourceLanguage = lang; // The first <TUV> element in a <TU> is expected to be the source.
 
@@ -95,7 +97,7 @@ class TMXPairReader {
                         Date timestamp = tuvTimestamp == null ? tuTimestamp : tuvTimestamp;
                         String text = readTuv(reader, element);
 
-                        if (lang.equals(sourceLanguage)) {
+                        if (sourceLanguage.isEqualOrMoreGenericThan(lang)) {
                             sourceText = text;
                         } else {
                             LanguageDirection language = languageCache.get(sourceLanguage, lang);
