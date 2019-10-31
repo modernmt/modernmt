@@ -30,3 +30,9 @@ for pom in $(find ../src -name pom.xml); do
     > ${TEMP}
   mv ${TEMP} ${pom}
 done
+
+# Change <mmt.version> property
+TEMP=$(mktemp)
+
+sed "s/<mmt.version>${EXISTING_VERSION}<\/mmt.version>/<mmt.version>$NEW_VERSION<\/mmt.version>/g" ../src/pom.xml > ${TEMP}
+mv ${TEMP} ../src/pom.xml
