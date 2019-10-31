@@ -1,6 +1,7 @@
 package eu.modernmt.xml;
 
 import eu.modernmt.io.UTF8Charset;
+import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.input.BOMInputStream;
 
 import javax.xml.XMLConstants;
@@ -48,8 +49,19 @@ public class XMLUtils {
     }
 
     public static XMLEventReader createEventReader(InputStream stream) throws XMLStreamException {
+        Charset charset = UTF8Charset.get();
+
+        BOMInputStream bomStream = new BOMInputStream(stream, false,
+                ByteOrderMark.UTF_8, ByteOrderMark.UTF_16BE, ByteOrderMark.UTF_16LE);
+        try {
+            if (bomStream.hasBOM())
+                charset = Charset.forName(bomStream.getBOMCharsetName());
+        } catch (IOException e) {
+            throw new XMLStreamException(e);
+        }
+
         XMLInputFactory factory = XMLInputFactory.newInstance();
-        return factory.createXMLEventReader(new XMLFixInputStreamReader(new BOMInputStream(stream, false), UTF8Charset.get()));
+        return factory.createXMLEventReader(new XMLFixInputStreamReader(bomStream, charset));
     }
 
     public static void closeQuietly(XMLEventReader reader) {
@@ -82,7 +94,7 @@ public class XMLUtils {
         return attribute == null ? null : attribute.getValue();
     }
 
-    public static String getXMLContent(XMLEventReader reader, StartElement element, boolean decodeCharacters) throws XMLStreamException {
+    public static String getXMLContent(XMLEventReader reader, StartElement element, boolean includeTags) throws XMLStreamException {
         String rootElementName = getLocalName(element);
 
         StringWriter buffer = new StringWriter(1024);
@@ -97,10 +109,12 @@ public class XMLUtils {
                 boolean skip = false;
 
                 if (event.isEndElement() && pendingElementName.equals(getLocalName(event.asEndElement()))) {
-                    writeAsEncodedUnicode(pendingElement, buffer, true); // empty tag
+                    if (includeTags)
+                        writeAsEncodedUnicode(pendingElement, buffer, true); // empty tag
                     skip = true; // skip this end tag
                 } else {
-                    writeAsEncodedUnicode(pendingElement, buffer, false);
+                    if (includeTags)
+                        writeAsEncodedUnicode(pendingElement, buffer, false);
                 }
 
                 pendingElement = null;
@@ -117,14 +131,16 @@ public class XMLUtils {
                 if (rootElementName.equals(name))
                     return buffer.toString();
 
-                writeAsEncodedUnicode(endElement, buffer);
+                if (includeTags)
+                    writeAsEncodedUnicode(endElement, buffer);
             } else if (event.isStartElement()) {
                 pendingElement = event.asStartElement();
                 pendingElementName = getLocalName(pendingElement);
-            } else if (event.isCharacters() && decodeCharacters) {
+            } else if (event.isCharacters() && !includeTags) {
                 buffer.append(event.asCharacters().getData());
             } else {
-                event.writeAsEncodedUnicode(buffer);
+                if (includeTags)
+                    event.writeAsEncodedUnicode(buffer);
             }
         }
 
