@@ -8,8 +8,8 @@ from cli import mmt
 from cli.utils import osutils
 from cli.utils.progressbar import Progressbar, UndefinedProgressbar
 
-CASSANDRA_VERSION = '3.11.4'
-CASSANDRA_FILE_SIZE = 41235177
+CASSANDRA_VERSION = '3.11.5'
+CASSANDRA_FILE_SIZE = 41306803
 KAFKA_VERSION = '1.1.0'
 KAFKA_SCALA_VERSION = '2.11'
 KAFKA_FILE_SIZE = 56969154
