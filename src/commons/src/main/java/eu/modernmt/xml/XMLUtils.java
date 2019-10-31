@@ -1,6 +1,7 @@
 package eu.modernmt.xml;
 
 import eu.modernmt.io.UTF8Charset;
+import org.apache.commons.io.ByteOrderMark;
 import org.apache.commons.io.input.BOMInputStream;
 
 import javax.xml.XMLConstants;
@@ -48,8 +49,19 @@ public class XMLUtils {
     }
 
     public static XMLEventReader createEventReader(InputStream stream) throws XMLStreamException {
+        Charset charset = UTF8Charset.get();
+
+        BOMInputStream bomStream = new BOMInputStream(stream, false,
+                ByteOrderMark.UTF_8, ByteOrderMark.UTF_16BE, ByteOrderMark.UTF_16LE);
+        try {
+            if (bomStream.hasBOM())
+                charset = Charset.forName(bomStream.getBOMCharsetName());
+        } catch (IOException e) {
+            throw new XMLStreamException(e);
+        }
+
         XMLInputFactory factory = XMLInputFactory.newInstance();
-        return factory.createXMLEventReader(new XMLFixInputStreamReader(new BOMInputStream(stream, false), UTF8Charset.get()));
+        return factory.createXMLEventReader(new XMLFixInputStreamReader(bomStream, charset));
     }
 
     public static void closeQuietly(XMLEventReader reader) {
