@@ -4,7 +4,7 @@
 
     <groupId>eu.modernmt</groupId>
     <artifactId>mmt-root</artifactId>
-    <version>4.2</version>
+    <version>4.2.1</version>
 
     <modules>
         <module>commons</module>

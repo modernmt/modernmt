@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+if [[ -z "$1" ]]; then
+  >&2 echo "Missing version number. Usage: $0 VERSION"
+  exit 1
+fi
+
+NEW_VERSION="$1"
+
+# Verify existing version
+EXISTING_VERSION=
+for pom in $(find ../src -name pom.xml); do
+  THIS_VERSION=$(head ${pom} | grep "<version>" | head -n 1 | xargs)
+  if [[ ! -z "$EXISTING_VERSION" ]] && [[ "$EXISTING_VERSION" != "$THIS_VERSION" ]]; then
+    >&2 echo "Unexpected version ${THIS_VERSION}"
+    exit 1
+  fi
+
+  EXISTING_VERSION="$THIS_VERSION"
+done
+EXISTING_VERSION=$(echo "$EXISTING_VERSION" | sed 's/<\/*version>//g')
+
+# Change version number
+for pom in $(find ../src -name pom.xml); do
+  TEMP=$(mktemp)
+
+  cat \
+    <(head -n 10 ${pom} | sed "s/<version>${EXISTING_VERSION}<\/version>/<version>$NEW_VERSION<\/version>/g") \
+    <(tail -n +11 ${pom}) \
+    > ${TEMP}
+  mv ${TEMP} ${pom}
+done
