@@ -123,6 +123,8 @@ def parse_args(argv=None):
                         help='number of concurrent translation requests.')
     parser.add_argument('--xliff', dest='is_xliff', action='store_true', default=False,
                         help='if set, the input is a XLIFF file.')
+    parser.add_argument('--split-lines', dest='split_lines', action='store_true', default=False,
+                        help='if set, ModernMT will split input text by carriage-return char')
 
     args = parser.parse_args(argv)
 
@@ -146,7 +148,8 @@ def main(argv=None):
     ensure_node_has_api(node)
 
     mmt = ModernMTTranslate(node, args.source_lang, args.target_lang, context_string=args.context,
-                            context_file=args.context_file, context_vector=args.context_vector)
+                            context_file=args.context_file, context_vector=args.context_vector,
+                            split_lines=args.split_lines)
 
     if args.text is not None:
         print(mmt.translate_text(args.text.strip()))
