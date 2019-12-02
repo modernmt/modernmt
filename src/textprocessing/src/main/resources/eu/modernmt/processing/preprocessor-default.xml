@@ -1,7 +1,9 @@
 <pipeline>
     <!-- Pre EditableString processors -->
     <processor>eu.modernmt.processing.normalizers.ControlCharsRemover</processor>
-    <processor source="en fr it nl">eu.modernmt.processing.normalizers.apos.ApostropheNormalizer</processor>
+    <processor source="en fr it nl">
+        eu.modernmt.processing.normalizers.apos.ApostropheNormalizer
+    </processor>
     <processor>eu.modernmt.processing.string.SentenceConstructor</processor>
 
     <!-- XML preprocessors -->
@@ -11,14 +13,22 @@
     <!-- String normalization -->
     <processor>eu.modernmt.processing.normalizers.RareCharsNormalizer</processor>
     <processor>eu.modernmt.processing.normalizers.WhitespacesNormalizer</processor>
+
     <!-- Best for small training corpora, skip vor large training sets -->
     <!--<processor>eu.modernmt.processing.numbers.NumericPlaceholderNormalizer</processor>-->
-    <processor>eu.modernmt.processing.recaser.UpperCasePreprocessor</processor>
+    <processor source="^ ar he ja ko th zh">
+        eu.modernmt.processing.recaser.UpperCasePreprocessor
+    </processor>
 
     <!-- Fix italian accents like "e'" or "perche'" -->
-    <processor source="it">eu.modernmt.processing.normalizers.ItalianAccentMarkProcessor</processor>
+    <processor source="it">
+        eu.modernmt.processing.normalizers.ItalianAccentMarkProcessor
+    </processor>
+
     <!-- Fix Catalan punt volat -->
-    <processor source="ca">eu.modernmt.processing.normalizers.CatalanPuntVolatNormalizer</processor>
+    <processor source="ca">
+        eu.modernmt.processing.normalizers.CatalanPuntVolatNormalizer
+    </processor>
 
     <!-- Tokenization -->
     <processor>eu.modernmt.processing.tokenizer.Tokenizer</processor>
