@@ -185,10 +185,13 @@ class ModernMTTranslate(TranslateEngine):
             translations = []
 
             for line in lines:
-                line = self._preprocess(line)
-                translation = self._api.translate(self.source_lang, self.target_lang, line,
-                                                  context=self._context, priority=self._priority)
-                translations.append(self._postprocess(translation['translation']))
+                if len(line.strip()) == 0:
+                    translations.append(line)
+                else:
+                    line = self._preprocess(line)
+                    translation = self._api.translate(self.source_lang, self.target_lang, line,
+                                                      context=self._context, priority=self._priority)
+                    translations.append(self._postprocess(translation['translation']))
             return '\n'.join(translations)
         except requests.exceptions.ConnectionError:
             raise TranslateError('Unable to connect to ModernMT. '
