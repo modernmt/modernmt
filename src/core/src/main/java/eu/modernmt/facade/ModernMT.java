@@ -64,7 +64,6 @@ public class ModernMT {
             // Engine is not yet loaded
         }
 
-        Set<LanguageDirection> languages = engine == null ? Collections.emptySet() : engine.getAvailableLanguagePairs();
         Collection<NodeInfo> nodes = localhostOnly ? Collections.singleton(node.getLocalNode()) : node.getClusterNodes();
         String buildVersion = Pom.getProperty("mmt.version");
         long buildNumber = Long.parseLong(Pom.getProperty("mmt.build.number"));
@@ -80,7 +79,7 @@ public class ModernMT {
             }
         }
 
-        return new ServerInfo(new ServerInfo.ClusterInfo(nodes), new ServerInfo.BuildInfo(buildVersion, buildNumber), languages, memorySize);
+        return new ServerInfo(new ServerInfo.ClusterInfo(nodes), new ServerInfo.BuildInfo(buildVersion, buildNumber), memorySize);
     }
 
     public static void test(boolean strict) throws TestFailedException {
