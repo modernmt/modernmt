@@ -81,6 +81,7 @@ public class ClusterNode {
     ArrayList<EmbeddedService> services = new ArrayList<>(2);
 
     private final ShutdownThread shutdownThread = new ShutdownThread(this);
+    private boolean loadBalancing = true;
     private boolean isShuttingDown = false;
 
     public ClusterNode() {
@@ -211,6 +212,8 @@ public class ClusterNode {
     }
 
     public void start(NodeConfig nodeConfig, long joinTimeoutInterval, TimeUnit joinTimeoutUnit) throws FailedToJoinClusterException, BootstrapException {
+        this.loadBalancing = nodeConfig.isLoadBalancingActive();
+
         Timer globalTimer = new Timer();
         Timer timer = new Timer();
 
@@ -451,9 +454,24 @@ public class ClusterNode {
         LanguageDirection language = task.getLanguageDirection();
         LanguageBridge bridge = engine.getLanguageIndex().getLanguageBridge(language);
 
-        Set<Member> members = hazelcast.getCluster().getMembers();
-        ArrayList<Member> candidates = new ArrayList<>();
+        Member member;
+        if (this.loadBalancing) {
+            member = getRandomMember(language, bridge);
+        } else {
+            member = hazelcast.getCluster().getLocalMember();
+            if (!NodeInfo.statusIs(member, Status.RUNNING, Status.DEGRADED))
+                throw new DecoderUnavailableException("Local node is not active");
+            if (!hasTranslationDirection(member, language, bridge))
+                throw new UnsupportedLanguageException(language);
+        }
 
+        return translationService.submit(task, member.getAddress());
+    }
+
+    private Member getRandomMember(LanguageDirection language, LanguageBridge bridge) throws DecoderUnavailableException {
+        Set<Member> members = hazelcast.getCluster().getMembers();
+
+        ArrayList<Member> candidates = new ArrayList<>(members.size());
         int activeNodes = 0;
 
         for (Member member : members) {
@@ -470,13 +488,15 @@ public class ClusterNode {
             if (activeNodes > 0)
                 throw new UnsupportedLanguageException(language);
             else
-                throw new DecoderUnavailableException("No active nodes in the cluster");
+                throw new DecoderUnavailableException("Could not find active node in the cluster");
         }
 
-        int i = new Random().nextInt(candidates.size());
-        Member member = candidates.get(i);
-
-        return translationService.submit(task, member.getAddress());
+        if (candidates.size() == 1) {
+            return candidates.get(0);
+        } else {
+            int i = new Random().nextInt(candidates.size());
+            return candidates.get(i);
+        }
     }
 
     private static boolean hasTranslationDirection(Member member, LanguageDirection language, LanguageBridge bridge) {

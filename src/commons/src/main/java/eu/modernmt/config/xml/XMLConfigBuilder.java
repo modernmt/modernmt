@@ -53,6 +53,9 @@ public class XMLConfigBuilder extends XMLAbstractBuilder {
     }
 
     private NodeConfig build(NodeConfig config) throws ConfigException {
+        if (this.hasAttribute("load-balancing"))
+            config.setLoadBalancing(this.getBooleanAttribute("load-balancing"));
+
         networkConfigBuilder.build(config.getNetworkConfig());
         dataStreamConfigBuilder.build(config.getDataStreamConfig());
         databaseConfigBuilder.build(config.getDatabaseConfig());
