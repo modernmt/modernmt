@@ -28,7 +28,7 @@ class MultipartConfigInjectionHandler extends HandlerWrapper {
     }
 
     private void enableMultipartSupport(HttpServletRequest request) {
-        request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, multipartConfig);
+        request.setAttribute(Request.MULTIPART_CONFIG_ELEMENT, multipartConfig);
     }
 
     private boolean isMultipartRequest(ServletRequest request) {
