@@ -12,9 +12,9 @@ public class EmojiTag extends Tag {
 
     private static final String NAME = "EmojiTag";
 
-    public static Tag fromText(String text) { return fromText(text, false, null, -1); }
+    public static EmojiTag fromText(String text) { return fromText(text, false, null, -1); }
     
-    public static Tag fromText(String text, boolean leftSpace, String rightSpace, int position) {
+    public static EmojiTag fromText(String text, boolean leftSpace, String rightSpace, int position) {
         return new EmojiTag(NAME, text, leftSpace, rightSpace, position, Type.EMPTY_TAG);
     }
 

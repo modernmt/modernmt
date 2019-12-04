@@ -5,7 +5,6 @@ import java.util.regex.Pattern;
 
 
 public class XMLTag extends Tag implements Comparable<Tag> {
-//public class XMLTag extends Tag {
 
     private static final String XML_TAG_NAME = "(\\p{Alpha}|_|:)(\\p{Alpha}|\\p{Digit}|\\.|-|_|:|)*";
 
@@ -16,9 +15,11 @@ public class XMLTag extends Tag implements Comparable<Tag> {
                     "(</(" + XML_TAG_NAME + ")[^>]*>)|" +
                     "(<!--)|(-->)");
 
-    public static Tag fromText(String text) { return fromText(text, false, null, -1); }
+    public static XMLTag fromText(String text) {
+        return fromText(text, false, null, -1);
+    }
 
-    public static Tag fromText(String text, boolean leftSpace, String rightSpace, int position) {
+    public static XMLTag fromText(String text, boolean leftSpace, String rightSpace, int position) {
         if ("<!--".equals(text)) {
             return new XMLTag("--", text, leftSpace, rightSpace, position, Type.OPENING_TAG, false);
         } else if ("-->".equals(text)) {
@@ -67,12 +68,10 @@ public class XMLTag extends Tag implements Comparable<Tag> {
         this.dtd = dtd;
     }
 
-    @Override
     public boolean isDTD() {
         return dtd;
     }
 
-    @Override
     public boolean isComment() {
         return "--".equals(name);
     }

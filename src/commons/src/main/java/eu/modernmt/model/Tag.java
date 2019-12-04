@@ -1,17 +1,12 @@
 package eu.modernmt.model;
 
 abstract public class Tag extends Token implements Comparable<Tag> {
+
     public enum Type {
         OPENING_TAG,
         CLOSING_TAG,
         EMPTY_TAG,
     }
-
-//    public static Tag fromText(String text) { return fromText(text, false, null, -1); }
-//
-//    public static Tag fromText(String text, boolean leftSpace, String rightSpace, int position) {
-//        return null;
-//    }
 
     protected Type type; /* tag type */
     protected final String name; /* tag name */
@@ -68,14 +63,6 @@ abstract public class Tag extends Token implements Comparable<Tag> {
 
     public boolean isClosingTag() {
         return this.type == Type.CLOSING_TAG;
-    }
-
-    public boolean isDTD() {
-        return false;
-    }
-
-    public boolean isComment() {
-        return false;
     }
 
     public boolean closes(Tag other) {

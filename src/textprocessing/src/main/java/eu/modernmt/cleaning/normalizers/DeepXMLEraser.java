@@ -1,7 +1,6 @@
 package eu.modernmt.cleaning.normalizers;
 
 import eu.modernmt.cleaning.CorpusNormalizer;
-import eu.modernmt.model.Tag;
 import eu.modernmt.model.XMLTag;
 import eu.modernmt.processing.xml.XMLCharacterEntity;
 
@@ -33,7 +32,7 @@ public class DeepXMLEraser implements CorpusNormalizer {
         BLACKLIST.addAll(Arrays.asList("g", "x", "bx", "ex", "bpt", "ept", "ph", "it", "mrk"));
     }
 
-    private static boolean isBlacklisted(Tag tag) {
+    private static boolean isBlacklisted(XMLTag tag) {
         if (tag.isComment() || tag.isDTD() || !tag.isOpeningTag())
             return true;
 
@@ -64,7 +63,7 @@ public class DeepXMLEraser implements CorpusNormalizer {
             if (stringIndex < mstart)
                 builder.append(chars, stringIndex, mstart - stringIndex);
 
-            Tag tag = XMLTag.fromText(m.group());
+            XMLTag tag = XMLTag.fromText(m.group());
             if (isBlacklisted(tag))
                 builder.append(' ');
             else
