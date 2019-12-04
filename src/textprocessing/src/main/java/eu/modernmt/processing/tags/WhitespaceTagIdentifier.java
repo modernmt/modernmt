@@ -1,4 +1,4 @@
-package eu.modernmt.processing.normalizers;
+package eu.modernmt.processing.tags;
 
 import eu.modernmt.model.Tag;
 import eu.modernmt.model.WhitespaceTag;

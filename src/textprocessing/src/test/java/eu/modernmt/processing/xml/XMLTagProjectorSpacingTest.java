@@ -4,7 +4,7 @@ import eu.modernmt.model.Tag;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
 import eu.modernmt.model.XMLTag;
-import eu.modernmt.processing.xml.projection.TagProjector;
+import eu.modernmt.processing.tags.projection.TagProjector;
 import org.junit.Ignore;
 import org.junit.Test;
 

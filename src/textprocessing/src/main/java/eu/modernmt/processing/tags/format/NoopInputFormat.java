@@ -1,4 +1,4 @@
-package eu.modernmt.processing.xml.format;
+package eu.modernmt.processing.tags.format;
 
 import eu.modernmt.model.Tag;
 

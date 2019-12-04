@@ -2,7 +2,7 @@ package eu.modernmt.cleaning.normalizers;
 
 import eu.modernmt.cleaning.CorpusNormalizer;
 import eu.modernmt.model.XMLTag;
-import eu.modernmt.processing.xml.XMLCharacterEntity;
+import eu.modernmt.processing.tags.XMLCharacterEntity;
 
 import java.util.regex.Pattern;
 

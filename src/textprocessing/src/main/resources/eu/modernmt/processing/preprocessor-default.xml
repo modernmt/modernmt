@@ -7,10 +7,10 @@
     <processor>eu.modernmt.processing.string.SentenceConstructor</processor>
 
     <!-- Tag preprocessors -->
-    <processor>eu.modernmt.processing.xml.XMLTagIdentifier</processor>
-    <processor>eu.modernmt.processing.xml.XMLEntityEscaper</processor>
-    <processor>eu.modernmt.processing.normalizers.WhitespaceTagIdentifier</processor>
-    <processor>eu.modernmt.processing.normalizers.EmojiTagIdentifier</processor>
+    <processor>eu.modernmt.processing.tags.XMLTagIdentifier</processor>
+    <processor>eu.modernmt.processing.tags.XMLEntityEscaper</processor>
+    <processor>eu.modernmt.processing.tags.WhitespaceTagIdentifier</processor>
+    <processor>eu.modernmt.processing.tags.EmojiTagIdentifier</processor>
 
     <!-- String normalization -->
     <processor>eu.modernmt.processing.normalizers.RareCharsNormalizer</processor>

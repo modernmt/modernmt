@@ -4,7 +4,7 @@ import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Tag;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Word;
-import eu.modernmt.processing.xml.XMLCharacterEntity;
+import eu.modernmt.processing.tags.XMLCharacterEntity;
 
 import java.util.*;
 

@@ -1,4 +1,4 @@
-package eu.modernmt.processing.xml;
+package eu.modernmt.processing.tags;
 
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.SentenceBuilder;
