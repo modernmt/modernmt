@@ -1,7 +1,7 @@
 package eu.modernmt.cleaning.normalizers;
 
 import eu.modernmt.cleaning.CorpusNormalizer;
-import eu.modernmt.model.Tag;
+import eu.modernmt.model.XMLTag;
 import eu.modernmt.processing.xml.XMLCharacterEntity;
 
 import java.util.regex.Pattern;
@@ -14,7 +14,7 @@ public class XMLStripper implements CorpusNormalizer {
     public static final Pattern DoubleEntityPattern = Pattern.compile("&amp;((#[0-9]{1,4})|(#x[0-9a-fA-F]{1,4})|([a-zA-Z]+));");
 
     private static String stripXML(String line) {
-        return Tag.TagRegex.matcher(line).replaceAll(" ");
+        return XMLTag.TagRegex.matcher(line).replaceAll(" ");
     }
 
     private static String stripDoubleEscapedEntities(String line) {

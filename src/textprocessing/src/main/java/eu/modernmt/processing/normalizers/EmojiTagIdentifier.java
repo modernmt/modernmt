@@ -1,6 +1,6 @@
-package eu.modernmt.processing.xml;
+package eu.modernmt.processing.normalizers;
 
-import eu.modernmt.model.XMLTag;
+import eu.modernmt.model.EmojiTag;
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.SentenceBuilder;
 import eu.modernmt.processing.string.TokenFactory;
@@ -9,16 +9,16 @@ import java.util.Map;
 import java.util.regex.Matcher;
 
 /**
- * Created by andrea on 02/03/17.
+ * Created by nicola on 04/12/19.
  * <p>
- * An XMLTagIdentifier is the object that, in the processing pipeline,
- * handles the identification of XML Tags and requests
+ * An EmojiTagIdentifier is the object that, in the processing pipeline,
+ * handles the identification of Emoji Tags and requests
  * to the StringBuider editor their replacement with a single white space.
  */
-public class XMLTagIdentifier extends TextProcessor<SentenceBuilder, SentenceBuilder> {
+public class EmojiTagIdentifier extends TextProcessor<SentenceBuilder, SentenceBuilder> {
 
     /**
-     * This method uses a Matcher to find all XML tags
+     * This method uses a Matcher to find all Emoji tags
      * in the current String of the input SentenceBuilder.
      * For each tag found, it requests the SentenceBuilder editor
      * to set a Tag Token and to replace it in the currentString with " "
@@ -33,8 +33,8 @@ public class XMLTagIdentifier extends TextProcessor<SentenceBuilder, SentenceBui
     @Override
     public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) {
 
-        /*find all substrings matching XML tags in the SentenceBuilder current String*/
-        Matcher m = XMLTag.TagRegex.matcher(builder.toString());
+        /*find all substrings matching Emoji tags in the SentenceBuilder current String*/
+        Matcher m = EmojiTag.TagRegex.matcher(builder.toString());
 
         SentenceBuilder.Editor editor = builder.edit();
 
@@ -45,7 +45,7 @@ public class XMLTagIdentifier extends TextProcessor<SentenceBuilder, SentenceBui
             int start = m.start();
             int end = m.end();
 
-            editor.setTag(start, end - start, " ", TokenFactory.XML_TAG_FACTORY);
+            editor.setTag(start, end - start, " ", TokenFactory.EMOJI_TAG_FACTORY);
 
         }
 

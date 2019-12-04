@@ -338,7 +338,7 @@ public class SentenceBuilder {
                   Therefore, if we are creating a Word Token, unescape the originalText.
                  */
             String originalText;
-            if (tokenFactory == TokenFactory.TAG_FACTORY) {
+            if (tokenFactory != TokenFactory.WORD_FACTORY) {
                 originalText = new String(originalChars, transformation.start, transformation.end - transformation.start);
             } else {
                 //originalText = XMLCharacterEntity.unescapeAll(originalChars, transformation.start, transformation.end - transformation.start);
@@ -435,7 +435,7 @@ public class SentenceBuilder {
          *
          * @return a reference to the Editor itself, now marked as in use.
          */
-        public Editor init() {
+        private Editor init() {
 
             if (this.inUse) {
                 throw new IllegalStateException("this Editor is already in use");
@@ -530,7 +530,7 @@ public class SentenceBuilder {
          * @param replacement string that must substitute the text to edit.
          * @param factory     object that can be employed to create Tokens. It can not be null.
          */
-        public void setToken(int startIndex, int textLength, String replacement, TokenFactory factory) {
+        private void setToken(int startIndex, int textLength, String replacement, TokenFactory factory) {
             if (factory == null)
                 throw new IllegalArgumentException("when invoking setToken, the tokenFactory must not be null");
 
@@ -557,18 +557,19 @@ public class SentenceBuilder {
         /**
          * This method handles the specific request of a TAG Token.
          * It thus requests the setting of a new Token,
-         * passing the specific TokenFactory TAG_FACTORY that is used
+         * passing the specific TokenFactory factory that is used
          * to generate TAG Tokens.
          *
          * @param startIndex  first position of the text to edit in the current string
          * @param length      length of the text to edit
          * @param replacement string that must substitute the text to edit.
+         * @param factory     the tokenFactory use to generate the TAG token of the right type.
          */
-        public void setTag(int startIndex, int length, String replacement) {
+        public void setTag(int startIndex, int length, String replacement, TokenFactory factory) {
             /*create the Transformation, put it in the Editor Transformations list;
-             * as a TokenFactory use a TAG_FACTORY*/
+             *  use the parameter factory as a TokenFactory */
 
-            this.setToken(startIndex, length, replacement, TokenFactory.TAG_FACTORY);
+            this.setToken(startIndex, length, replacement, factory);
         }
 
         /**

@@ -2,6 +2,7 @@ package eu.modernmt.cleaning.normalizers;
 
 import eu.modernmt.cleaning.CorpusNormalizer;
 import eu.modernmt.model.Tag;
+import eu.modernmt.model.XMLTag;
 import eu.modernmt.processing.xml.XMLCharacterEntity;
 
 import java.util.Arrays;
@@ -48,7 +49,7 @@ public class DeepXMLEraser implements CorpusNormalizer {
         char[] chars = null;
         StringBuilder builder = null;
 
-        Matcher m = Tag.TagRegex.matcher(line);
+        Matcher m = XMLTag.TagRegex.matcher(line);
         int stringIndex = 0;
 
         while (m.find()) {
@@ -63,7 +64,7 @@ public class DeepXMLEraser implements CorpusNormalizer {
             if (stringIndex < mstart)
                 builder.append(chars, stringIndex, mstart - stringIndex);
 
-            Tag tag = Tag.fromText(m.group());
+            Tag tag = XMLTag.fromText(m.group());
             if (isBlacklisted(tag))
                 builder.append(' ');
             else

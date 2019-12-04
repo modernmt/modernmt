@@ -1,8 +1,6 @@
 package eu.modernmt.processing.string;
 
-import eu.modernmt.model.Tag;
-import eu.modernmt.model.Token;
-import eu.modernmt.model.Word;
+import eu.modernmt.model.*;
 
 /**
  * Created by andrea on 22/02/17.
@@ -28,17 +26,48 @@ public interface TokenFactory {
     };
 
     /**
-     * A TAG_FACTORY is an implementation of Token Factory that creates Words
+     * A XML_TAG_FACTORY is an implementation of Token Factory that creates XMLTag
      */
-    TokenFactory TAG_FACTORY = new TokenFactory() {
+    TokenFactory XML_TAG_FACTORY = new TokenFactory() {
         @Override
         public Tag build(String text, String placeholder, boolean hasLeftSpace, String rightSpace, int position) {
-            return Tag.fromText(text, hasLeftSpace, rightSpace, position);
+            return XMLTag.fromText(text, hasLeftSpace, rightSpace, position);
         }
 
         @Override
         public String toString() {
-            return "Tag Factory";
+            return "XML Tag Factory";
+        }
+    };
+
+    /**
+     * A EMOJI_TAG_FACTORY is an implementation of Token Factory that creates EmojiTags
+     */
+    TokenFactory EMOJI_TAG_FACTORY = new TokenFactory() {
+        @Override
+        public Tag build(String text, String placeholder, boolean hasLeftSpace, String rightSpace, int position) {
+            return EmojiTag.fromText(text, hasLeftSpace, rightSpace, position);
+        }
+
+        @Override
+        public String toString() {
+            return "Emoji Tag Factory";
+        }
+    };
+
+
+    /**
+     * A WHITESPACE_TAG_FACTORY is an implementation of Token Factory that creates WhitespaceTags
+     */
+    TokenFactory WHITESPACE_TAG_FACTORY = new TokenFactory() {
+        @Override
+        public Tag build(String text, String placeholder, boolean hasLeftSpace, String rightSpace, int position) {
+            return WhitespaceTag.fromText(text, hasLeftSpace, rightSpace, position);
+        }
+
+        @Override
+        public String toString() {
+            return "WhitespaceTag Tag Factory";
         }
     };
 
