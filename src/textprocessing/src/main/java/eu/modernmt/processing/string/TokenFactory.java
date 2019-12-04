@@ -1,8 +1,6 @@
 package eu.modernmt.processing.string;
 
-import eu.modernmt.model.Tag;
-import eu.modernmt.model.Token;
-import eu.modernmt.model.Word;
+import eu.modernmt.model.*;
 
 /**
  * Created by andrea on 22/02/17.
@@ -24,21 +22,6 @@ public interface TokenFactory {
         @Override
         public String toString() {
             return "Word Factory";
-        }
-    };
-
-    /**
-     * A TAG_FACTORY is an implementation of Token Factory that creates Words
-     */
-    TokenFactory TAG_FACTORY = new TokenFactory() {
-        @Override
-        public Tag build(String text, String placeholder, boolean hasLeftSpace, String rightSpace, int position) {
-            return Tag.fromText(text, hasLeftSpace, rightSpace, position);
-        }
-
-        @Override
-        public String toString() {
-            return "Tag Factory";
         }
     };
 

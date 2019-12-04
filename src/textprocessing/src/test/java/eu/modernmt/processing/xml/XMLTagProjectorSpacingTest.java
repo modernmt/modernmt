@@ -3,7 +3,8 @@ package eu.modernmt.processing.xml;
 import eu.modernmt.model.Tag;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
-import eu.modernmt.processing.xml.projection.TagProjector;
+import eu.modernmt.model.XMLTag;
+import eu.modernmt.processing.tags.projection.TagProjector;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -22,8 +23,8 @@ public class XMLTagProjectorSpacingTest {
                 new Word("world", null),
                 new Word("!", null),
         }, new Tag[]{
-                Tag.fromText("<a>", true, null, 1),
-                Tag.fromText("</a>", false, null, 2),
+                XMLTag.fromText("<a>", true, null, 1),
+                XMLTag.fromText("</a>", false, null, 2),
         });
         TagProjector.simpleSpaceAnalysis(translation);
 
@@ -40,8 +41,8 @@ public class XMLTagProjectorSpacingTest {
                 new Word("world", null),
                 new Word("!", null),
         }, new Tag[]{
-                Tag.fromText("<a>", true, null, 1),
-                Tag.fromText("</a>", false, " ", 2),
+                XMLTag.fromText("<a>", true, null, 1),
+                XMLTag.fromText("</a>", false, " ", 2),
         });
         TagProjector.simpleSpaceAnalysis(translation);
 
@@ -57,8 +58,8 @@ public class XMLTagProjectorSpacingTest {
                 new Word("world", " "),
                 new Word("!", null),
         }, new Tag[]{
-                Tag.fromText("<a>", true, null, 1),
-                Tag.fromText("</a>", false, null, 2),
+                XMLTag.fromText("<a>", true, null, 1),
+                XMLTag.fromText("</a>", false, null, 2),
         });
         TagProjector.simpleSpaceAnalysis(translation);
 
@@ -74,10 +75,10 @@ public class XMLTagProjectorSpacingTest {
                 new Word("world", null),
                 new Word("!", null),
         }, new Tag[]{
-                Tag.fromText("<a>", true, " ", 1),
-                Tag.fromText("<b>", true, " ", 1),
-                Tag.fromText("</a>", true, " ", 1),
-                Tag.fromText("</b>", true, " ", 1),
+                XMLTag.fromText("<a>", true, " ", 1),
+                XMLTag.fromText("<b>", true, " ", 1),
+                XMLTag.fromText("</a>", true, " ", 1),
+                XMLTag.fromText("</b>", true, " ", 1),
         });
         TagProjector.simpleSpaceAnalysis(translation);
 
@@ -93,9 +94,9 @@ public class XMLTagProjectorSpacingTest {
                 new Word("world", null),
                 new Word("!", null),
         }, new Tag[]{
-                Tag.fromText("</a>", true, " ", 1),
-                Tag.fromText("<b>", true, " ", 1),
-                Tag.fromText("</b>", true, " ", 1),
+                XMLTag.fromText("</a>", true, " ", 1),
+                XMLTag.fromText("<b>", true, " ", 1),
+                XMLTag.fromText("</b>", true, " ", 1),
         });
         TagProjector.simpleSpaceAnalysis(translation);
 
@@ -113,8 +114,8 @@ public class XMLTagProjectorSpacingTest {
                 new Word("it", null),
                 new Word("!", null),
         }, new Tag[]{
-                Tag.fromText("<b>", true, " ", 1),
-                Tag.fromText("</b>", true, " ", 2),
+                XMLTag.fromText("<b>", true, " ", 1),
+                XMLTag.fromText("</b>", true, " ", 2),
         });
         TagProjector.simpleSpaceAnalysis(translation);
 
@@ -131,8 +132,8 @@ public class XMLTagProjectorSpacingTest {
                 new Word("XML", " "),
                 new Word("comment", null),
         }, new Tag[]{
-                Tag.fromText("<!--", true, " ", 2),
-                Tag.fromText("-->", true, null, 4),
+                XMLTag.fromText("<!--", true, " ", 2),
+                XMLTag.fromText("-->", true, null, 4),
         });
         TagProjector.simpleSpaceAnalysis(translation);
 
@@ -149,8 +150,8 @@ public class XMLTagProjectorSpacingTest {
                 new Word("XML", " "),
                 new Word("comment", null),
         }, new Tag[]{
-                Tag.fromText("<!--", false, " ", 2),
-                Tag.fromText("-->", true, null, 4),
+                XMLTag.fromText("<!--", false, " ", 2),
+                XMLTag.fromText("-->", true, null, 4),
         });
         TagProjector.simpleSpaceAnalysis(translation);
 
@@ -167,8 +168,8 @@ public class XMLTagProjectorSpacingTest {
                 new Word("XML", " "),
                 new Word("comment", null),
         }, new Tag[]{
-                Tag.fromText("<!--", false, " ", 2),
-                Tag.fromText("-->", true, " ", 4),
+                XMLTag.fromText("<!--", false, " ", 2),
+                XMLTag.fromText("-->", true, " ", 4),
         });
         TagProjector.simpleSpaceAnalysis(translation);
 

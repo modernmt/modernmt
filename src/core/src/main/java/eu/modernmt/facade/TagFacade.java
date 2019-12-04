@@ -11,7 +11,7 @@ import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
-import eu.modernmt.processing.xml.projection.TagProjector;
+import eu.modernmt.processing.tags.projection.TagProjector;
 
 /**
  * Created by davide on 20/04/16.

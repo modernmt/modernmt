@@ -1,4 +1,4 @@
-package eu.modernmt.processing.xml;
+package eu.modernmt.processing.tags;
 
 import java.util.HashMap;
 import java.util.regex.Matcher;

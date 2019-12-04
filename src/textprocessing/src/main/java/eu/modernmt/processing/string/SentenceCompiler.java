@@ -4,7 +4,7 @@ import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Tag;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.processing.xml.format.InputFormat;
+import eu.modernmt.processing.tags.format.InputFormat;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

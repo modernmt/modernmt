@@ -1,8 +1,8 @@
-package eu.modernmt.processing.xml;
+package eu.modernmt.processing.tags;
 
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.processing.xml.projection.TagProjector;
+import eu.modernmt.processing.tags.projection.TagProjector;
 
 import java.util.Map;
 

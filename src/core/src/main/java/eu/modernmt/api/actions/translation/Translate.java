@@ -15,7 +15,7 @@ import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Priority;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.processing.ProcessingException;
-import eu.modernmt.processing.xml.format.InputFormat;
+import eu.modernmt.processing.tags.format.InputFormat;
 
 import java.util.UUID;
 

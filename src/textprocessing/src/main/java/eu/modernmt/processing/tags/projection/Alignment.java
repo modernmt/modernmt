@@ -1,4 +1,4 @@
-package eu.modernmt.processing.xml.projection;
+package eu.modernmt.processing.tags.projection;
 
 import java.util.ArrayList;
 import java.util.List;
