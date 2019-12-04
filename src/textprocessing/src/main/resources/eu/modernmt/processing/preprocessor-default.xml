@@ -6,14 +6,10 @@
     </processor>
     <processor>eu.modernmt.processing.string.SentenceConstructor</processor>
 
-    <!-- XML preprocessors -->
+    <!-- Tag preprocessors -->
     <processor>eu.modernmt.processing.xml.XMLTagIdentifier</processor>
     <processor>eu.modernmt.processing.xml.XMLEntityEscaper</processor>
-
-    <!-- Whitespace preprocessors -->
     <processor>eu.modernmt.processing.normalizers.WhitespaceTagIdentifier</processor>
-
-    <!-- Emoji preprocessors -->
     <processor>eu.modernmt.processing.normalizers.EmojiTagIdentifier</processor>
 
     <!-- String normalization -->

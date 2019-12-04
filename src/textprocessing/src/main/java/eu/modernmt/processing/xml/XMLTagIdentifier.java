@@ -1,5 +1,6 @@
 package eu.modernmt.processing.xml;
 
+import eu.modernmt.model.Tag;
 import eu.modernmt.model.XMLTag;
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.SentenceBuilder;
@@ -16,6 +17,21 @@ import java.util.regex.Matcher;
  * to the StringBuider editor their replacement with a single white space.
  */
 public class XMLTagIdentifier extends TextProcessor<SentenceBuilder, SentenceBuilder> {
+
+    /**
+     * A XML_TAG_FACTORY is an implementation of Token Factory that creates XMLTag
+     */
+    public static final TokenFactory TAG_FACTORY = new TokenFactory() {
+        @Override
+        public Tag build(String text, String placeholder, boolean hasLeftSpace, String rightSpace, int position) {
+            return XMLTag.fromText(text, hasLeftSpace, rightSpace, position);
+        }
+
+        @Override
+        public String toString() {
+            return "XML Tag Factory";
+        }
+    };
 
     /**
      * This method uses a Matcher to find all XML tags
@@ -45,7 +61,7 @@ public class XMLTagIdentifier extends TextProcessor<SentenceBuilder, SentenceBui
             int start = m.start();
             int end = m.end();
 
-            editor.setTag(start, end - start, " ", TokenFactory.XML_TAG_FACTORY);
+            editor.setTag(start, end - start, " ", TAG_FACTORY);
 
         }
 

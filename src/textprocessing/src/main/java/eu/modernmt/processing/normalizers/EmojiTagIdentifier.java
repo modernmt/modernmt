@@ -1,6 +1,7 @@
 package eu.modernmt.processing.normalizers;
 
 import eu.modernmt.model.EmojiTag;
+import eu.modernmt.model.Tag;
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.SentenceBuilder;
 import eu.modernmt.processing.string.TokenFactory;
@@ -16,6 +17,21 @@ import java.util.regex.Matcher;
  * to the StringBuider editor their replacement with a single white space.
  */
 public class EmojiTagIdentifier extends TextProcessor<SentenceBuilder, SentenceBuilder> {
+
+    /**
+     * A EMOJI_TAG_FACTORY is an implementation of Token Factory that creates EmojiTags
+     */
+    public static final TokenFactory TAG_FACTORY = new TokenFactory() {
+        @Override
+        public Tag build(String text, String placeholder, boolean hasLeftSpace, String rightSpace, int position) {
+            return EmojiTag.fromText(text, hasLeftSpace, rightSpace, position);
+        }
+
+        @Override
+        public String toString() {
+            return "Emoji Tag Factory";
+        }
+    };
 
     /**
      * This method uses a Matcher to find all Emoji tags
@@ -45,7 +61,7 @@ public class EmojiTagIdentifier extends TextProcessor<SentenceBuilder, SentenceB
             int start = m.start();
             int end = m.end();
 
-            editor.setTag(start, end - start, " ", TokenFactory.EMOJI_TAG_FACTORY);
+            editor.setTag(start, end - start, " ", TAG_FACTORY);
 
         }
 
