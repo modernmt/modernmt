@@ -25,7 +25,7 @@ public class EmojiTagIdentifier extends TagIdentifier {
         }
     };
 
-    protected EmojiTagIdentifier() {
+    public EmojiTagIdentifier() {
         super(EmojiTag.TagRegex, TAG_FACTORY);
     }
 
