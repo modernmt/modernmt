@@ -8,30 +8,48 @@ import eu.modernmt.xml.XMLUtils;
 public class Word extends Token {
 
     protected boolean rightSpaceRequired;
+    protected boolean leftSpaceRequired;
     private String xmlEscapedString = null;
 
     public Word(String placeholder) {
-        super(placeholder);
-        this.rightSpaceRequired = super.rightSpace != null;
+        this(null, placeholder, null,null);
     }
 
+    //TODO: remove after fixing UnitTests
     public Word(String placeholder, String rightSpace) {
-        super(placeholder, rightSpace);
-        this.rightSpaceRequired = super.rightSpace != null;
+        this(null, placeholder, null, rightSpace);
     }
 
     public Word(String text, String placeholder, String rightSpace) {
-        super(text, placeholder, rightSpace);
-        this.rightSpaceRequired = super.rightSpace != null;
+        this(text, placeholder, null, rightSpace);
     }
 
+    public Word(String text, String placeholder, String leftSpace, String rightSpace) {
+        this(text, placeholder, leftSpace, rightSpace, leftSpace != null, rightSpace != null);
+    }
+
+    //TODO: remove after fixing UnitTests
     public Word(String text, String placeholder, String rightSpace, boolean rightSpaceRequired) {
-        super(text, placeholder, rightSpace);
+        this(text, placeholder,null, rightSpace, false, rightSpaceRequired);
+    }
+
+    public Word(String text, String placeholder, String leftSpace, String rightSpace, boolean leftSpaceRequired, boolean rightSpaceRequired) {
+        super(text, placeholder, leftSpace, rightSpace);
+        this.leftSpaceRequired = leftSpaceRequired;
         this.rightSpaceRequired = rightSpaceRequired;
+    }
+
+
+    public boolean isLeftSpaceRequired() {
+        return leftSpaceRequired;
     }
 
     public boolean isRightSpaceRequired() {
         return rightSpaceRequired;
+    }
+
+    public void setLeftSpaceRequired(boolean leftSpaceRequired) {
+        this.leftSpaceRequired = leftSpaceRequired;
     }
 
     public void setRightSpaceRequired(boolean rightSpaceRequired) {

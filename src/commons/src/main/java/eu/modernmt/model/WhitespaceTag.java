@@ -7,13 +7,13 @@ public class WhitespaceTag extends Tag {
 
     private static final String NAME = "WhitespaceTag";
 
-    public static WhitespaceTag fromText(String text) { return fromText(text, false, null, -1); }
+    public static WhitespaceTag fromText(String text) { return fromText(text, null, null, -1); }
 
-    public static WhitespaceTag fromText(String text, boolean leftSpace, String rightSpace, int position) {
+    public static WhitespaceTag fromText(String text, String leftSpace, String rightSpace, int position) {
         return new WhitespaceTag(NAME, text, leftSpace, rightSpace, position, Type.EMPTY_TAG);
     }
 
-    private WhitespaceTag(String name, String text, boolean leftSpace, String rightSpace, int position, Tag.Type type) {
+    private WhitespaceTag(String name, String text, String leftSpace, String rightSpace, int position, Tag.Type type) {
         super(name, text, leftSpace, rightSpace, position, type);
     }
 

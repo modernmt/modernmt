@@ -10,23 +10,25 @@ abstract public class Tag extends Token implements Comparable<Tag> {
 
     protected Type type; /* tag type */
     protected final String name; /* tag name */
-    protected boolean leftSpace; /* true if there is at least one space on the left of the tag*/
+    //TODO: remove boolean leftSpace
+//    protected boolean leftSpace; /* true if there is at least one space on the left of the tag*/
     /* position of the word after which the tag is placed; indexes of words start from 0
     e.g. a tag at the beginning of the sentence has position=0
     e.g. a tag at the end of the sentence (of Length words) has position=Length
     */
     protected int position;
 
-    protected Tag(String name, String text, boolean leftSpace, String rightSpace, int position, Type type) {
-        super(text, text, rightSpace);
-        this.leftSpace = leftSpace;
+    //TODO: remove after fixing UnitTests
+    protected Tag(String placeholder, String rightSpace) {
+        super(placeholder, null, rightSpace);
+        this.name = placeholder;
+    }
+
+    protected Tag(String name, String text, String leftSpace, String rightSpace, int position, Type type) {
+        super(text, text, leftSpace, rightSpace);
         this.position = position;
         this.type = type;
         this.name = name;
-    }
-
-    public boolean hasLeftSpace() {
-        return leftSpace;
     }
 
     public int getPosition() {
@@ -47,10 +49,6 @@ abstract public class Tag extends Token implements Comparable<Tag> {
 
     public String getName() {
         return name;
-    }
-
-    public void setLeftSpace(boolean leftSpace) {
-        this.leftSpace = leftSpace;
     }
 
     public boolean isEmptyTag() {
@@ -93,7 +91,6 @@ abstract public class Tag extends Token implements Comparable<Tag> {
 
         Tag tag = (Tag) o;
 
-        if (leftSpace != tag.leftSpace) return false;
         if (position != tag.position) return false;
         if (type != tag.type) return false;
         return name.equals(tag.name);
@@ -105,7 +102,6 @@ abstract public class Tag extends Token implements Comparable<Tag> {
         int result = super.hashCode();
         result = 31 * result + type.hashCode();
         result = 31 * result + name.hashCode();
-        result = 31 * result + (leftSpace ? 1 : 0);
         result = 31 * result + position;
         return result;
     }

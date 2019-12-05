@@ -80,7 +80,7 @@ public class TagProjector {
                     previousToken.setRightSpace(null);
                 } else if (previousToken == null) {
                     //Remove first whitespace
-                    tag.setLeftSpace(false);
+                    tag.setLeftSpace(null);
                 }
             }
             previousToken = token;

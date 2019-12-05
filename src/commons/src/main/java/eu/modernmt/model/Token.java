@@ -12,22 +12,25 @@ public class Token implements Serializable {
     protected String text;
     // the text version that was identified as a token, it may be partly processed
     protected String placeholder;
+    // the original string between this token and the previous one
+    protected String leftSpace;
     // the original string between this token and the next one
     protected String rightSpace;
     // if true, this token mark an end of sentence
     protected boolean sentenceBreak;
 
     public Token(String placeholder) {
-        this(null, placeholder, null);
+        this(null, placeholder, null,null);
     }
 
-    public Token(String placeholder, String rightSpace) {
-        this(null, placeholder, rightSpace);
+    public Token(String placeholder, String leftSpace, String rightSpace) {
+        this(null, placeholder, leftSpace, rightSpace);
     }
 
-    public Token(String text, String placeholder, String rightSpace) {
+    public Token(String text, String placeholder, String leftSpace, String rightSpace) {
         this.text = text;
         this.placeholder = placeholder;
+        this.leftSpace = leftSpace;
         this.rightSpace = rightSpace;
         this.sentenceBreak = false;
     }
@@ -52,19 +55,34 @@ public class Token implements Serializable {
         this.placeholder = placeholder;
     }
 
+    public String getLeftSpace() {
+        return leftSpace;
+    }
+
     public String getRightSpace() {
         return rightSpace;
+    }
+
+    public boolean hasLeftSpace() {
+        return leftSpace != null;
     }
 
     public boolean hasRightSpace() {
         return rightSpace != null;
     }
 
-    public void setRightSpace(String rightSpace) {
-        if (rightSpace != null && rightSpace.isEmpty())
-            rightSpace = null;
+    public void setLeftSpace(String space) {
+        if (space != null && space.isEmpty())
+            space = null;
 
-        this.rightSpace = rightSpace;
+        this.leftSpace = space;
+    }
+
+    public void setRightSpace(String space) {
+        if (space != null && space.isEmpty())
+            space = null;
+
+        this.rightSpace = space;
     }
 
     public boolean isSentenceBreak() {
@@ -89,7 +107,9 @@ public class Token implements Serializable {
 
         if (!Objects.equals(text, token.text)) return false;
         if (!placeholder.equals(token.placeholder)) return false;
+        //TODO: use the second version after fixing Unit tests
         return Objects.equals(rightSpace, token.rightSpace);
+//        return Objects.equals(leftSpace, token.leftSpace) && Objects.equals(rightSpace, token.rightSpace);
 
     }
 
@@ -97,6 +117,7 @@ public class Token implements Serializable {
     public int hashCode() {
         int result = text != null ? text.hashCode() : 0;
         result = 31 * result + placeholder.hashCode();
+        result = 31 * result + (leftSpace != null ? leftSpace.hashCode() : 0);
         result = 31 * result + (rightSpace != null ? rightSpace.hashCode() : 0);
         return result;
     }

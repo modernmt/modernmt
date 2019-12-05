@@ -15,8 +15,8 @@ public class WhitespaceTagIdentifier extends TagIdentifier {
 
     private static final TokenFactory TAG_FACTORY = new TokenFactory() {
         @Override
-        public Tag build(String text, String placeholder, boolean hasLeftSpace, String rightSpace, int position) {
-            return WhitespaceTag.fromText(text, hasLeftSpace, rightSpace, position);
+        public Tag build(String text, String placeholder, String leftSpace, String rightSpace, int position) {
+            return WhitespaceTag.fromText(text, leftSpace, rightSpace, position);
         }
 
         @Override

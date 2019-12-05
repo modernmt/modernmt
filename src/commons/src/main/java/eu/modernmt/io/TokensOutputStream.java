@@ -78,8 +78,9 @@ public class TokensOutputStream implements Closeable {
         Word[] words = new Word[pieces.length];
 
         for (int i = 0; i < pieces.length; i++) {
+            String leftSpace = i > 0 ? " " : null;
             String rightSpace = i < pieces.length - 1 ? " " : null;
-            words[i] = new Word(pieces[i], rightSpace);
+            words[i] = new Word(pieces[i], leftSpace, rightSpace);
         }
 
         return words;

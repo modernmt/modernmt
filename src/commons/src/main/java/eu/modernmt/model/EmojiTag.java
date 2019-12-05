@@ -12,13 +12,13 @@ public class EmojiTag extends Tag {
 
     private static final String NAME = "EmojiTag";
 
-    public static EmojiTag fromText(String text) { return fromText(text, false, null, -1); }
+    public static EmojiTag fromText(String text) { return fromText(text, null, null, -1); }
     
-    public static EmojiTag fromText(String text, boolean leftSpace, String rightSpace, int position) {
+    public static EmojiTag fromText(String text, String leftSpace, String rightSpace, int position) {
         return new EmojiTag(NAME, text, leftSpace, rightSpace, position, Type.EMPTY_TAG);
     }
 
-    private EmojiTag(String name, String text, boolean leftSpace, String rightSpace, int position, Tag.Type type) {
+    private EmojiTag(String name, String text, String leftSpace, String rightSpace, int position, Tag.Type type) {
         super(name, text, leftSpace, rightSpace, position, type);
     }
 

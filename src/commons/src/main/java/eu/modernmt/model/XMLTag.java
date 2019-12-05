@@ -16,10 +16,17 @@ public class XMLTag extends Tag implements Comparable<Tag> {
                     "(<!--)|(-->)");
 
     public static XMLTag fromText(String text) {
-        return fromText(text, false, null, -1);
+        return fromText(text, null, null, -1);
     }
 
+    //TODO: remove after fixing unit tests
     public static XMLTag fromText(String text, boolean leftSpace, String rightSpace, int position) {
+        if (leftSpace)
+            return fromText(text," ", rightSpace, position);
+        else
+            return fromText(text,null, rightSpace, position);
+    }
+    public static XMLTag fromText(String text, String leftSpace, String rightSpace, int position) {
         if ("<!--".equals(text)) {
             return new XMLTag("--", text, leftSpace, rightSpace, position, Type.OPENING_TAG, false);
         } else if ("-->".equals(text)) {
@@ -63,7 +70,7 @@ public class XMLTag extends Tag implements Comparable<Tag> {
 
     private boolean dtd;
 
-    private XMLTag(String name, String text, boolean leftSpace, String rightSpace, int position, Type type, boolean dtd) {
+    private XMLTag(String name, String text, String leftSpace, String rightSpace, int position, Type type, boolean dtd) {
         super(name, text, leftSpace, rightSpace, position, type);
         this.dtd = dtd;
     }

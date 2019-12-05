@@ -347,7 +347,9 @@ public class SentenceBuilder {
             }
 
             /*generate the Token*/
-            Token token = tokenFactory.build(originalText, placeholderText, hasLeftSpace, rightSpace, tagPosition);
+            //TODO: leftSpace has to be defined correctly
+            String leftSpace = "";
+            Token token = tokenFactory.build(originalText, placeholderText, leftSpace, rightSpace, tagPosition);
 
             /*put the token in the separate list corresponding to its class*/
             if (token instanceof Tag) {

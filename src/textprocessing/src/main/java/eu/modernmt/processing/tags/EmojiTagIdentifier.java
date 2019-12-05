@@ -15,8 +15,8 @@ public class EmojiTagIdentifier extends TagIdentifier {
 
     private static final TokenFactory TAG_FACTORY = new TokenFactory() {
         @Override
-        public Tag build(String text, String placeholder, boolean hasLeftSpace, String rightSpace, int position) {
-            return EmojiTag.fromText(text, hasLeftSpace, rightSpace, position);
+        public Tag build(String text, String placeholder, String leftSpace, String rightSpace, int position) {
+            return EmojiTag.fromText(text, leftSpace, rightSpace, position);
         }
 
         @Override
@@ -25,7 +25,7 @@ public class EmojiTagIdentifier extends TagIdentifier {
         }
     };
 
-    protected EmojiTagIdentifier() {
+    public EmojiTagIdentifier() {
         super(EmojiTag.TagRegex, TAG_FACTORY);
     }
 

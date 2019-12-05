@@ -15,8 +15,8 @@ public interface TokenFactory {
      */
     TokenFactory WORD_FACTORY = new TokenFactory() {
         @Override
-        public Token build(String text, String placeholder, boolean hasLeftSpace, String rightSpace, int position) {
-            return new Word(text, placeholder, rightSpace);
+        public Token build(String text, String placeholder, String leftSpace, String rightSpace, int position) {
+            return new Word(text, placeholder, leftSpace, rightSpace);
         }
 
         @Override
@@ -28,12 +28,12 @@ public interface TokenFactory {
     /**
      * Method that builds a Token object
      *
-     * @param hasLeftSpace boolean that says if there is a space between the new Token and the previous one
+     * @param leftSpace    String conveying the space between the new Token and the previous one
      * @param rightSpace   String conveying the space between the new Token and the next one
      * @param text         String with the text target of the Transformation for this Token
      * @param position     int conveying the amount of WORD tokens already created (it is meaningful only if the token to create is a TAG
      * @return the newly created Token
      */
-    Token build(String text, String placeholder, boolean hasLeftSpace, String rightSpace, int position);
+    Token build(String text, String placeholder, String leftSpace, String rightSpace, int position);
 
 }
