@@ -264,33 +264,19 @@ public class SentenceBuilder {
             /*compute additional information about the way that
              the current transformation is linked to the previous and next ones in the list*/
 
-            /*there is a space between previous transformation text and current one*/
-            boolean hasLeftSpace;
-            /*there is a space between previous transformation text and next one*/
-            boolean hasRightSpace;
+            /*true if previous and current tokens have different type (Tag-Word or Word-Tag)*/
+            boolean virtualLeftSpace = false;
+            /*true if previous and current tokens have different type (Tag-Word or Word-Tag)*/
+            boolean virtualRightSpace = false;
+
+            /*string with the space between previous transformation text and current one*/
+            String leftSpace = null;
             /*string with the space between current transformation text and next one*/
             String rightSpace = null;
             /*amount of WORDS that occur before the current transformation*/
             int tagPosition;
 
-            /*compute hasLeftSpace*/
-            /*if the current transformation is the first one in the list,
-             * it has a leftspace if it doesn't start at position 0 */
-            if (i == 0) {
-                hasLeftSpace = (transformation.start != 0);
-                /*else, if the current transformation is not the first one in the list
-                 * it has a leftspace if it doesn't start at the end of its predecessor*/
-            } else {
-                Transformation previousTransformation = transformations.get(i - 1);
-                hasLeftSpace = (transformation.start - previousTransformation.end != 0);
-            }
-
-            /*compute hasRightSpace and rightSpace*/
-            /*if the current transformation is the last one in the list*/
-            if (i == transformations.size() - 1) {
-                hasRightSpace = transformation.end < originalChars.length;
-
-                /*RightSpace can only be extracted by the original string,
+            /*LeftSapce and RightSpace can only be extracted by the original string,
                 as the transformation indexes refer to positions in the original string.
                 However the original string still has
                     - xml tags
@@ -299,28 +285,65 @@ public class SentenceBuilder {
                     - whitespaces
                     - etc
                 XML tags lead to the creation of new Tag Transformations that are now in the
-                tokenizable transformations list, so an XML tag can't be in a rightspace.
+                tokenizable transformations list, so an XML tag can't be in a leftSpace or a rightSpace
 
                 Xml escaping sequences, rare chars and whitespaces on the contrary
                 generate Replacement Transformations, that are not tokenizable
                 so are not in the tokenizable list.
-                While we are ok with having rarechars and whitespaces in the rightspace,
+                While we are ok with having rarechars and whitespaces in leftSpace or rightSpace,
                 we still don't want XML escaping sequences.
-                Therefore we unescape the rightspace.*/
-                if (hasRightSpace) {
-                    //rightSpace = XMLCharacterEntity.unescapeAll(originalChars, transformation.end, originalChars.length - transformation.end);
-                    rightSpace = XMLCharacterEntity.unescapeAll(new String(originalChars, transformation.end, originalChars.length - transformation.end));
-                }
-                /*if the current transformation is not the last one in the list*/
+                Therefore we unescape the leftSpace or a rightSpace.
+            */
+
+            /*compute leftSpace*/
+            int fromPosition;
+            int length;
+            if (i == 0) {
+                /*if the current transformation is the first one in the list,
+                 * it has a leftspace if it doesn't start at position 0 */
+                fromPosition = 0;
+                length = transformation.start - fromPosition;
             } else {
-                Transformation nextTransformation = transformations.get(i + 1);
-                hasRightSpace = transformation.end < nextTransformation.start;
-
-                if (hasRightSpace) {
-                    /*unescape the rightspace (see comment above to understand why)*/
-                    rightSpace = XMLCharacterEntity.unescapeAll(new String(originalChars, transformation.end, nextTransformation.start - transformation.end));
-
+                /*the current transformation is not the first one in the list
+                 * it has a leftSpace if it doesn't start at the end of its predecessor*/
+                Transformation previousTransformation = transformations.get(i - 1);
+                fromPosition = previousTransformation.end;
+                length = transformation.start - fromPosition;
+                if (length == 0) {
+                    if ((transformation.tokenFactory == TokenFactory.WORD_FACTORY && previousTransformation.tokenFactory != TokenFactory.WORD_FACTORY) ||
+                            (transformation.tokenFactory != TokenFactory.WORD_FACTORY && previousTransformation.tokenFactory == TokenFactory.WORD_FACTORY)) {
+                        virtualLeftSpace = true;
+                    }
                 }
+            }
+
+            if (length > 0) {
+                /*unescape the leftSpace (see comment above to understand why)*/
+                leftSpace = XMLCharacterEntity.unescapeAll(new String(originalChars, fromPosition, length));
+            }
+
+            /*compute hasRightSpace and rightSpace*/
+            if (i == transformations.size() - 1) {
+                /*if the current transformation is the last one in the list*/
+                fromPosition = transformation.end;
+                length = originalChars.length - fromPosition;
+            } else {
+                /*if the current transformation is not the last one in the list*/
+                Transformation nextTransformation = transformations.get(i + 1);
+                fromPosition = transformation.end;
+                length = nextTransformation.start - fromPosition;
+
+                if (length == 0) {
+                    if ((transformation.tokenFactory == TokenFactory.WORD_FACTORY && nextTransformation.tokenFactory != TokenFactory.WORD_FACTORY) ||
+                            (transformation.tokenFactory != TokenFactory.WORD_FACTORY && nextTransformation.tokenFactory == TokenFactory.WORD_FACTORY)) {
+                        virtualRightSpace = true;
+                    }
+                }
+            }
+
+            if (length > 0) {
+                /*unescape the rightSpace (see comment above to understand why)*/
+                rightSpace = XMLCharacterEntity.unescapeAll(new String(originalChars, fromPosition, length));
             }
 
             /*compute tagPosition*/
@@ -338,18 +361,16 @@ public class SentenceBuilder {
                   Therefore, if we are creating a Word Token, unescape the originalText.
                  */
             String originalText;
-            if (tokenFactory != TokenFactory.WORD_FACTORY) {
-                originalText = new String(originalChars, transformation.start, transformation.end - transformation.start);
-            } else {
-                //originalText = XMLCharacterEntity.unescapeAll(originalChars, transformation.start, transformation.end - transformation.start);
+            if (tokenFactory == TokenFactory.WORD_FACTORY) {
                 originalText = XMLCharacterEntity.unescapeAll(new String(originalChars, transformation.start, transformation.end - transformation.start));
-
+            } else {
+                originalText = new String(originalChars, transformation.start, transformation.end - transformation.start);
             }
 
             /*generate the Token*/
-            //TODO: leftSpace has to be defined correctly
-            String leftSpace = "";
             Token token = tokenFactory.build(originalText, placeholderText, leftSpace, rightSpace, tagPosition);
+            token.setVirtualLeftSpace(virtualLeftSpace);
+            token.setVirtualRightSpace(virtualRightSpace);
 
             /*put the token in the separate list corresponding to its class*/
             if (token instanceof Tag) {

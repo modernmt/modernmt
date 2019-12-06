@@ -7,30 +7,24 @@ import eu.modernmt.xml.XMLUtils;
  */
 public class Word extends Token {
 
-    protected boolean rightSpaceRequired;
-    protected boolean leftSpaceRequired;
+    private boolean leftSpaceRequired;
+    private boolean rightSpaceRequired;
     private String xmlEscapedString = null;
 
     public Word(String placeholder) {
         this(null, placeholder, null,null);
     }
 
-    //TODO: remove after fixing UnitTests
-    public Word(String placeholder, String rightSpace) {
-        this(null, placeholder, null, rightSpace);
-    }
-
-    public Word(String text, String placeholder, String rightSpace) {
-        this(text, placeholder, null, rightSpace);
+    public Word(String placeholder,  String leftSpace, String rightSpace) {
+        this(null, placeholder, leftSpace, rightSpace);
     }
 
     public Word(String text, String placeholder, String leftSpace, String rightSpace) {
         this(text, placeholder, leftSpace, rightSpace, leftSpace != null, rightSpace != null);
     }
 
-    //TODO: remove after fixing UnitTests
-    public Word(String text, String placeholder, String rightSpace, boolean rightSpaceRequired) {
-        this(text, placeholder,null, rightSpace, false, rightSpaceRequired);
+    public Word(String placeholder, String leftSpace, String rightSpace, boolean leftSpaceRequired, boolean rightSpaceRequired) {
+        this(null, placeholder, leftSpace, rightSpace,leftSpaceRequired, rightSpaceRequired);
     }
 
     public Word(String text, String placeholder, String leftSpace, String rightSpace, boolean leftSpaceRequired, boolean rightSpaceRequired) {
@@ -38,7 +32,6 @@ public class Word extends Token {
         this.leftSpaceRequired = leftSpaceRequired;
         this.rightSpaceRequired = rightSpaceRequired;
     }
-
 
     public boolean isLeftSpaceRequired() {
         return leftSpaceRequired;

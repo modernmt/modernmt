@@ -16,22 +16,25 @@ public class Token implements Serializable {
     protected String leftSpace;
     // the original string between this token and the next one
     protected String rightSpace;
+
+    //if true, it means that the previous token has different type
+    private boolean virtualLeftSpace;
+    //if true, it means that the next token has different type
+    private boolean virtualRightSpace;
+
     // if true, this token mark an end of sentence
-    protected boolean sentenceBreak;
+    private boolean sentenceBreak;
 
-    public Token(String placeholder) {
-        this(null, placeholder, null,null);
-    }
-
-    public Token(String placeholder, String leftSpace, String rightSpace) {
-        this(null, placeholder, leftSpace, rightSpace);
-    }
 
     public Token(String text, String placeholder, String leftSpace, String rightSpace) {
         this.text = text;
         this.placeholder = placeholder;
         this.leftSpace = leftSpace;
         this.rightSpace = rightSpace;
+
+        this.virtualLeftSpace = false;
+        this.virtualRightSpace = false;
+
         this.sentenceBreak = false;
     }
 
@@ -72,18 +75,37 @@ public class Token implements Serializable {
     }
 
     public void setLeftSpace(String space) {
-        if (space != null && space.isEmpty())
-            space = null;
-
-        this.leftSpace = space;
+        this.leftSpace = (space != null && space.isEmpty()) ? null : space;
     }
 
     public void setRightSpace(String space) {
-        if (space != null && space.isEmpty())
-            space = null;
-
-        this.rightSpace = space;
+        this.rightSpace = (space != null && space.isEmpty()) ? null : space;
     }
+
+    public boolean isVirtualLeftSpace() {
+        return virtualLeftSpace;
+    }
+
+    public boolean isVirtualRightSpace() {
+        return virtualRightSpace;
+    }
+
+    public void setVirtualLeftSpace(boolean virtualLeftSpace) {
+        this.virtualLeftSpace = virtualLeftSpace;
+    }
+
+    public void setVirtualRightSpace(boolean virtualRightSpace) {
+        this.virtualRightSpace = virtualRightSpace;
+    }
+
+    public Token(String placeholder) {
+        this(null, placeholder, null,null);
+    }
+
+    public Token(String placeholder, String leftSpace, String rightSpace) {
+        this(null, placeholder, leftSpace, rightSpace);
+    }
+
 
     public boolean isSentenceBreak() {
         return sentenceBreak;
@@ -107,9 +129,7 @@ public class Token implements Serializable {
 
         if (!Objects.equals(text, token.text)) return false;
         if (!placeholder.equals(token.placeholder)) return false;
-        //TODO: use the second version after fixing Unit tests
-        return Objects.equals(rightSpace, token.rightSpace);
-//        return Objects.equals(leftSpace, token.leftSpace) && Objects.equals(rightSpace, token.rightSpace);
+        return Objects.equals(leftSpace, token.leftSpace) && Objects.equals(rightSpace, token.rightSpace);
 
     }
 

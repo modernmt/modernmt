@@ -47,46 +47,48 @@ public class TagProjector {
         return translation;
     }
 
-    public static void simpleSpaceAnalysis(Translation translation) {
-        if (!translation.hasTags())
-            return;
+    public static void simpleSpaceAnalysis(Sentence sentence) {
 
-        //Add whitespace between the last word and the next tag if the latter has left space
-        Tag[] tags = translation.getTags();
-        Word[] words = translation.getWords();
-        int firstTagAfterLastWord = tags.length - 1;
-        boolean found = false;
-        while (firstTagAfterLastWord >= 0 && tags[firstTagAfterLastWord].getPosition() == words.length) {
-            firstTagAfterLastWord--;
-            found = true;
-        }
-        if (found) {
-            firstTagAfterLastWord++;
-            if (tags[firstTagAfterLastWord].hasLeftSpace() && !words[words.length - 1].hasRightSpace()) {
-                words[words.length - 1].setRightSpace(" ");
-            }
-        }
-
-        //Remove whitespace between word and the next tag, if the first has no right space.
-        //Left trim first token if it is a tag
         Token previousToken = null;
-        for (Token token : translation) {
-            if (token instanceof Tag) {
-                Tag tag = (Tag) token;
-                if (previousToken != null && previousToken.hasRightSpace() && !tag.hasLeftSpace()) {
-                    if (!tag.hasRightSpace()) {
-                        tag.setRightSpace(previousToken.getRightSpace());
-                    }
-                    previousToken.setRightSpace(null);
-                } else if (previousToken == null) {
-                    //Remove first whitespace
-                    tag.setLeftSpace(null);
-                }
-            }
-            previousToken = token;
+        for (Token currentToken : sentence) {
 
+            if (previousToken == null) {
+                if (currentToken instanceof Tag) {
+                    //Remove first whitespace of the tag in the first position, only ig it is a Tag
+                    currentToken.setLeftSpace(null);
+                }
+            } else {
+                String space = Sentence.getSpace(previousToken, currentToken);
+                previousToken.setRightSpace(space);
+                currentToken.setLeftSpace(space);
+            }
+            previousToken = currentToken;
         }
-        //Remove the last whitespace
+        //Remove the last whitespace whatever token is
+        if (previousToken != null) {
+            previousToken.setRightSpace(null);
+        }
+
+    }
+
+    public static void simpleSpaceAnalysis(Translation translation) {
+
+        Token previousToken = null;
+        for (Token currentToken : translation) {
+
+            if (previousToken == null) {
+                if (currentToken instanceof Tag) {
+                    //Remove first whitespace of the tag in the first position, only ig it is a Tag
+                    currentToken.setLeftSpace(null);
+                }
+            } else {
+                String space = Sentence.getSpace(previousToken, currentToken);
+                previousToken.setRightSpace(space);
+                currentToken.setLeftSpace(space);
+            }
+            previousToken = currentToken;
+        }
+        //Remove the last whitespace whatever token is
         if (previousToken != null) {
             previousToken.setRightSpace(null);
         }

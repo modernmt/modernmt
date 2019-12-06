@@ -1,10 +1,7 @@
 package eu.modernmt.processing.detokenizer;
 
 import eu.modernmt.lang.Language;
-import eu.modernmt.model.Alignment;
-import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Translation;
-import eu.modernmt.model.Word;
+import eu.modernmt.model.*;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.detokenizer.jflex.JFlexDetokenizer;
@@ -34,6 +31,15 @@ public class WhitespaceProjector extends TextProcessor<Translation, Translation>
 
         Sentence source = applyAnnotator(translation.getSource());
 
+//        for (Word token : translation.getWords()) {
+//            token.setLeftSpaceRequired(false);
+//            token.setRightSpaceRequired(false);
+//            token.setLeftSpace("");
+//            token.setRightSpace("");
+//        }
+
+//        Sentence target = applyAnnotator(translation);
+
         Word[] sourceWords = source.getWords();
         Word[] targetWords = translation.getWords();
 
@@ -47,20 +53,26 @@ public class WhitespaceProjector extends TextProcessor<Translation, Translation>
             if (!alignment.contains(probe))
                 continue;
 
-            Word sourceWord = sourceWords[point.source];
-            Word targetWord = targetWords[point.target];
+            Word pointSourceWord = sourceWords[point.source];
+            Word pointTargetWord = targetWords[point.target];
+            Word probeSourceWord = sourceWords[probe.source];
+            Word probeTargetWord = targetWords[probe.target];
 
-            boolean project = (sourceWord.isRightSpaceRequired() && targetWord.hasRightSpace()) ||
-                    (sourceWord.hasRightSpace() && !sourceWord.isRightSpaceRequired());
+            boolean project = (pointSourceWord.isRightSpaceRequired() && pointTargetWord.hasRightSpace()) ||
+                    (pointSourceWord.hasRightSpace() && !pointSourceWord.isRightSpaceRequired());
 
-            if (project)
-                targetWord.setRightSpace(sourceWord.getRightSpace());
+            if (project) {
+                pointTargetWord.setVirtualRightSpace(pointSourceWord.isVirtualRightSpace());
+                pointTargetWord.setVirtualLeftSpace(pointSourceWord.isVirtualLeftSpace());
+                pointTargetWord.setRightSpace(pointSourceWord.getRightSpace());
+                probeTargetWord.setLeftSpace(probeSourceWord.getLeftSpace());
+            }
         }
 
         return translation;
     }
 
-    private Sentence applyAnnotator(Sentence sentence) throws ProcessingException {
+    public Sentence applyAnnotator(Sentence sentence) throws ProcessingException {
         SpacesAnnotatedString text = SpacesAnnotatedString.fromSentence(sentence);
 
         annotator.reset(text.getReader());
@@ -70,7 +82,8 @@ public class WhitespaceProjector extends TextProcessor<Translation, Translation>
             annotator.annotate(text, type);
         }
 
-        text.apply(sentence, Word::setRightSpaceRequired);
+        text.applyLeft(sentence, Word::setLeftSpaceRequired);
+        text.applyRight(sentence, Word::setRightSpaceRequired);
         return sentence;
     }
 

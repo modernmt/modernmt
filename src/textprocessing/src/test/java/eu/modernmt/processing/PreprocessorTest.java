@@ -40,9 +40,9 @@ public class PreprocessorTest {
         assertFalse(sentence.hasTags());
 
         assertArrayEquals(new Word[]{
-                new Word("Hello", "Hello", " "),
-                new Word("world", "world", null),
-                new Word("!", "!", null),
+                new Word("Hello", "Hello", null," "),
+                new Word("world", "world", " ",null),
+                new Word("!", "!",  null,null),
         }, sentence.getWords());
     }
 
@@ -56,12 +56,12 @@ public class PreprocessorTest {
         assertTrue(sentence.hasTags());
 
         assertArrayEquals(new Word[]{
-                new Word("Hello", "Hello", " "),
-                new Word("world", "world", null),
-                new Word("!", "!", null),
+                new Word("Hello", "Hello", " "," "),
+                new Word("world", "world", " ", null),
+                new Word("!", "!", null,null),
         }, sentence.getWords());
         assertArrayEquals(new Tag[]{
-                XMLTag.fromText("<a>", false, " ", 0)
+                XMLTag.fromText("<a>", null, " ", 0)
         }, sentence.getTags());
     }
 
@@ -75,12 +75,12 @@ public class PreprocessorTest {
         assertTrue(sentence.hasTags());
 
         assertArrayEquals(new Word[]{
-                new Word("Hello", "Hello", null),
-                new Word("world", "world", null),
-                new Word("!", "!", null),
+                new Word("Hello", "Hello", null,null),
+                new Word("world", "world", " ", null),
+                new Word("!", "!", null, null),
         }, sentence.getWords());
         assertArrayEquals(new Tag[]{
-                XMLTag.fromText("<a>", false, " ", 1)
+                XMLTag.fromText("<a>", null, " ", 1)
         }, sentence.getTags());
     }
 
@@ -94,13 +94,13 @@ public class PreprocessorTest {
         assertTrue(sentence.hasTags());
 
         assertArrayEquals(new Word[]{
-                new Word("Hello", "Hello", null),
-                new Word("world", "world", null),
-                new Word("!", "!", null),
+                new Word("Hello", "Hello", null, null),
+                new Word("world", "world", null, null),
+                new Word("!", "!", null, null),
         }, sentence.getWords());
         assertArrayEquals(new Tag[]{
-                XMLTag.fromText("<a>", false, " ", 1),
-                XMLTag.fromText("<b>", true, null, 1)
+                XMLTag.fromText("<a>", null, " ", 1),
+                XMLTag.fromText("<b>", " ", null, 1)
         }, sentence.getTags());
     }
 

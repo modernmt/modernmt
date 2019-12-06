@@ -12,9 +12,9 @@ import java.util.Set;
  */
 public class Sentence implements Serializable, Iterable<Token> {
 
-    protected final Word[] words;
-    protected Tag[] tags;
-    protected Set<String> annotations;
+    private final Word[] words;
+    private Tag[] tags;
+    private Set<String> annotations;
 
     public Sentence(Word[] words) {
         this(words, null);
@@ -71,6 +71,50 @@ public class Sentence implements Serializable, Iterable<Token> {
         return annotations != null && annotations.contains(annotation);
     }
 
+
+    private static String getSpace(String leftSpace, String rightSpace) {
+        if (leftSpace == null)
+            return rightSpace;
+
+        if (rightSpace == null)
+            return leftSpace;
+
+        if (leftSpace.equals(rightSpace)) {
+            return leftSpace;
+        } else {
+            return leftSpace + rightSpace;
+        }
+    }
+
+    public static String getSpace(Token leftToken, Token rightToken) {
+        return getSpace(null, leftToken, rightToken);
+    }
+
+    public static String getSpace(String previousSpace, Token leftToken, Token rightToken) {
+        String space = getSpace(previousSpace, leftToken.getRightSpace());
+        if (leftToken instanceof Tag) {
+            if (rightToken instanceof Tag) {
+                //Tag-Tag
+                space = getSpace(space, rightToken.getLeftSpace());
+            } else {
+                //Tag-Word
+                space = (((Tag) leftToken).getType() == Tag.Type.CLOSING_TAG) ? rightToken.getLeftSpace() : space;
+            }
+        } else {
+            if (rightToken instanceof Tag) {
+                //Word-Tag
+                space = (((Tag) rightToken).getType() == Tag.Type.OPENING_TAG) ? space : rightToken.getLeftSpace();
+            } else {
+                //Word-Word
+                space = getSpace(space, rightToken.getLeftSpace());
+                if (space == null && (leftToken.isVirtualRightSpace() || rightToken.isVirtualLeftSpace() )) {
+                    space = " ";
+                }
+            }
+        }
+        return space;
+    }
+
     @Override
     public String toString() {
         return toString(true, false);
@@ -83,22 +127,26 @@ public class Sentence implements Serializable, Iterable<Token> {
     private String toXMLStrippedString(boolean printPlaceholders) {
         StringBuilder builder = new StringBuilder();
 
-        boolean foundFirstWord = false;
-        boolean printSpace = false;
+        boolean firstWordFound = false;
+        String space = null;
 
+        Token previousToken = null;
         for (Token token : this) {
-            if (token instanceof Tag) {
-                printSpace = true;
-            } else {
-                if (printSpace && foundFirstWord)
-                    builder.append(' ');
-
-                foundFirstWord = true;
+            if (previousToken != null)
+                space = Sentence.getSpace(space, previousToken, token);
+            if (token instanceof Word) {
+                if (firstWordFound) {
+                    builder.append(space == null ? "" : space);
+                    space = null;
+                }
 
                 String text = printPlaceholders || !token.hasText() ? token.getPlaceholder() : token.getText();
                 builder.append(text);
-                printSpace = token.hasRightSpace();
+
+                firstWordFound = true;
             }
+
+            previousToken = token;
         }
 
         return builder.toString();
@@ -108,6 +156,7 @@ public class Sentence implements Serializable, Iterable<Token> {
         StringBuilder builder = new StringBuilder();
 
         for (Token token : this) {
+
             if (token instanceof Tag) {
                 builder.append(token.getText());
             } else {

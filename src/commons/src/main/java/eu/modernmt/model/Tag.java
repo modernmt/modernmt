@@ -10,19 +10,11 @@ abstract public class Tag extends Token implements Comparable<Tag> {
 
     protected Type type; /* tag type */
     protected final String name; /* tag name */
-    //TODO: remove boolean leftSpace
-//    protected boolean leftSpace; /* true if there is at least one space on the left of the tag*/
     /* position of the word after which the tag is placed; indexes of words start from 0
     e.g. a tag at the beginning of the sentence has position=0
     e.g. a tag at the end of the sentence (of Length words) has position=Length
     */
     protected int position;
-
-    //TODO: remove after fixing UnitTests
-    protected Tag(String placeholder, String rightSpace) {
-        super(placeholder, null, rightSpace);
-        this.name = placeholder;
-    }
 
     protected Tag(String name, String text, String leftSpace, String rightSpace, int position, Type type) {
         super(text, text, leftSpace, rightSpace);
