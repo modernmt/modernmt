@@ -34,7 +34,6 @@ public class XMLTagProjectorSpacingTest {
     }
 
     @Test
-    @Ignore
     public void testTranslationWithDiscordantTagSpacing_FalseTrue() {
         Translation translation = translation(new Word[]{
                 new Word("Hello", null, " "),
@@ -46,7 +45,7 @@ public class XMLTagProjectorSpacingTest {
         });
         TagProjector.simpleSpaceAnalysis(translation);
 
-        assertEquals("Hello world !", translation.toString(false, false));
+        assertEquals("Hello world!", translation.toString(false, false));
         assertEquals("Hello <a>world</a>!", translation.toString());
         Assertions.assertCoherentSpacing(translation);
     }
@@ -106,7 +105,6 @@ public class XMLTagProjectorSpacingTest {
     }
 
     @Test
-    @Ignore
     public void testTranslationWithTagInUnbreakableTokenList() {
         Translation translation = translation(new Word[]{
                 new Word("That", null,null),
@@ -119,7 +117,7 @@ public class XMLTagProjectorSpacingTest {
         });
         TagProjector.simpleSpaceAnalysis(translation);
 
-        assertEquals("That 's it!", translation.toString(false, false));
+        assertEquals("That's it!", translation.toString(false, false));
         assertEquals("That<b>'s</b> it!", translation.toString());
         Assertions.assertCoherentSpacing(translation);
     }

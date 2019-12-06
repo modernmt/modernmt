@@ -138,7 +138,6 @@ public class XMLTagProjectorTest {
     }
 
     @Test
-    @Ignore
     public void testOpeningEmptyNonMonotone() throws Throwable {
         Sentence source = new Sentence(new Word[]{
                 new Word("hello", null," "),
