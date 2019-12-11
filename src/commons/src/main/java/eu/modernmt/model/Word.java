@@ -7,7 +7,9 @@ import eu.modernmt.xml.XMLUtils;
  */
 public class Word extends Token {
 
+    //true if a space is required between the previous Word and this Word, according to the (de)tokenization rules
     private boolean leftSpaceRequired;
+    //true if a space is required between this Word and the next Word, according to the (de)tokenization rules
     private boolean rightSpaceRequired;
     private String xmlEscapedString = null;
 
