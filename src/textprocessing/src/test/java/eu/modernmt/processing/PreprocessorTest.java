@@ -104,4 +104,76 @@ public class PreprocessorTest {
         }, sentence.getTags());
     }
 
+    @Test
+    public void testRequiredSpaceTrue() throws ProcessingException {
+        String text = "Hello<a>guys";
+        Sentence sentence = process(text);
+
+        assertEquals(text, sentence.toString(true, false));
+        assertEquals("Hello guys", sentence.toString(false, false));
+        assertTrue(sentence.hasTags());
+
+        assertArrayEquals(new Word[]{
+                new Word("Hello", "Hello", null, null),
+                new Word("guys", "guys", null, null),
+        }, sentence.getWords());
+        assertArrayEquals(new Tag[]{
+                XMLTag.fromText("<a>", null, null, 1)
+        }, sentence.getTags());
+    }
+
+    @Test
+    public void testRequiredSpaceFalse() throws ProcessingException {
+        String text = "Hello<a>!";
+        Sentence sentence = process(text);
+
+        assertEquals(text, sentence.toString(true, false));
+        assertEquals("Hello!", sentence.toString(false, false));
+        assertTrue(sentence.hasTags());
+
+        assertArrayEquals(new Word[]{
+                new Word("Hello", "Hello", null, null),
+                new Word("!", "!", null, null),
+        }, sentence.getWords());
+        assertArrayEquals(new Tag[]{
+                XMLTag.fromText("<a>", null, null, 1)
+        }, sentence.getTags());
+    }
+
+    @Test
+    public void testRequiredSpaceFalseWithRightSpace() throws ProcessingException {
+        String text = "Hello<a> !";
+        Sentence sentence = process(text);
+
+        assertEquals(text, sentence.toString(true, false));
+        assertEquals("Hello !", sentence.toString(false, false));
+        assertTrue(sentence.hasTags());
+
+        assertArrayEquals(new Word[]{
+                new Word("Hello", "Hello", null, null),
+                new Word("!", "!", " ", null),
+        }, sentence.getWords());
+        assertArrayEquals(new Tag[]{
+                XMLTag.fromText("<a>", null, " ", 1)
+        }, sentence.getTags());
+    }
+
+    @Test
+    public void testRequiredSpaceFalseWithLeftSpace() throws ProcessingException {
+        String text = "Hello <a>!";
+        Sentence sentence = process(text);
+
+        assertEquals(text, sentence.toString(true, false));
+        assertEquals("Hello !", sentence.toString(false, false));
+        assertTrue(sentence.hasTags());
+
+        assertArrayEquals(new Word[]{
+                new Word("Hello", "Hello", null, " "),
+                new Word("!", "!", null, null),
+        }, sentence.getWords());
+        assertArrayEquals(new Tag[]{
+                XMLTag.fromText("<a>", " ", null, 1)
+        }, sentence.getTags());
+    }
+
 }
