@@ -31,15 +31,6 @@ public class WhitespaceProjector extends TextProcessor<Translation, Translation>
 
         Sentence source = applyAnnotator(translation.getSource());
 
-//        for (Word token : translation.getWords()) {
-//            token.setLeftSpaceRequired(false);
-//            token.setRightSpaceRequired(false);
-//            token.setLeftSpace("");
-//            token.setRightSpace("");
-//        }
-
-//        Sentence target = applyAnnotator(translation);
-
         Word[] sourceWords = source.getWords();
         Word[] targetWords = translation.getWords();
 
@@ -72,7 +63,7 @@ public class WhitespaceProjector extends TextProcessor<Translation, Translation>
         return translation;
     }
 
-    public Sentence applyAnnotator(Sentence sentence) throws ProcessingException {
+    private Sentence applyAnnotator(Sentence sentence) throws ProcessingException {
         SpacesAnnotatedString text = SpacesAnnotatedString.fromSentence(sentence);
 
         annotator.reset(text.getReader());
