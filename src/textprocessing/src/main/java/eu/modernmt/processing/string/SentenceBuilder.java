@@ -4,8 +4,13 @@ import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Tag;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Word;
+import eu.modernmt.processing.ProcessingException;
+import eu.modernmt.processing.detokenizer.jflex.JFlexDetokenizer;
+import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
+import eu.modernmt.processing.detokenizer.jflex.SpacesAnnotatedString;
 import eu.modernmt.processing.tags.XMLCharacterEntity;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -165,12 +170,39 @@ public class SentenceBuilder {
             if (!annotations.isEmpty())
                 sentence.addAnnotations(annotations);
 
+            sentence = this.applyAnnotator(sentence);
+
             return sentence;
         } catch (RuntimeException e) {
+            throw new RuntimeException("Failed to build sentence for string: " + originalString, e);
+        } catch (ProcessingException e) {
             throw new RuntimeException("Failed to build sentence for string: " + originalString, e);
         }
     }
 
+    public static Sentence applyAnnotator(Sentence sentence) throws ProcessingException {
+        SpacesAnnotatedString text = SpacesAnnotatedString.fromSentence(sentence);
+
+        JFlexSpaceAnnotator annotator = JFlexDetokenizer.newAnnotator(null);
+        annotator.reset(text.getReader());
+
+        int type;
+        while ((type = next(annotator)) != JFlexSpaceAnnotator.YYEOF) {
+            annotator.annotate(text, type);
+        }
+
+        text.applyLeft(sentence, Word::setLeftSpaceRequired);
+        text.applyRight(sentence, Word::setRightSpaceRequired);
+        return sentence;
+    }
+
+    private static int next(JFlexSpaceAnnotator annotator) throws ProcessingException {
+        try {
+            return annotator.next();
+        } catch (IOException e) {
+            throw new ProcessingException(e);
+        }
+    }
 
     /**
      * Method that scans backwards all the Transformations committed by the editor

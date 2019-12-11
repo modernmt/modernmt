@@ -136,7 +136,10 @@ public class Sentence implements Serializable, Iterable<Token> {
                 space = Sentence.getSpace(space, previousToken, token);
             if (token instanceof Word) {
                 if (firstWordFound) {
-                    builder.append(space == null ? "" : space);
+                    if (space == null) {
+                        space = ((Word) token).isLeftSpaceRequired() ? " " : "";
+                    }
+                    builder.append(space);
                     space = null;
                 }
 
