@@ -77,7 +77,7 @@ public class SpacesAnnotatedString {
         for (int i = 0; i < words.length; i++) {
             Word word = words[i];
 
-            function.apply(word, !(i == words.length - 1 || bits.get(index)));
+            function.apply(word, !(i == 0 || bits.get(index)));
             String placeholder = word.getPlaceholder();
             index += placeholder.length();
             index++;
