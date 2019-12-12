@@ -78,7 +78,7 @@ public class TagProjector {
 
             if (previousToken == null) {
                 if (currentToken instanceof Tag) {
-                    //Remove first whitespace of the tag in the first position, only ig it is a Tag
+                    //Remove first whitespace of the tag in the first position, only if it is a Tag
                     currentToken.setLeftSpace(null);
                 }
             } else {
