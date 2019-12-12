@@ -1,14 +1,12 @@
 package eu.modernmt.processing.detokenizer;
 
-import eu.modernmt.lang.Language;
-import eu.modernmt.model.*;
+import eu.modernmt.model.Alignment;
+import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Translation;
+import eu.modernmt.model.Word;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
-import eu.modernmt.processing.detokenizer.jflex.JFlexDetokenizer;
-import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
-import eu.modernmt.processing.detokenizer.jflex.SpacesAnnotatedString;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
 
@@ -17,19 +15,12 @@ import java.util.Map;
  */
 public class WhitespaceProjector extends TextProcessor<Translation, Translation> {
 
-    private final JFlexSpaceAnnotator annotator;
-
-    public WhitespaceProjector(Language sourceLanguage, Language targetLanguage) {
-        super(sourceLanguage, targetLanguage);
-        this.annotator = JFlexDetokenizer.newAnnotator(sourceLanguage);
-    }
-
     @Override
     public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
         if (!translation.hasAlignment())
             return translation;
 
-        Sentence source = applyAnnotator(translation.getSource());
+        Sentence source = translation.getSource();
 
         Word[] sourceWords = source.getWords();
         Word[] targetWords = translation.getWords();
@@ -61,29 +52,6 @@ public class WhitespaceProjector extends TextProcessor<Translation, Translation>
         }
 
         return translation;
-    }
-
-    private Sentence applyAnnotator(Sentence sentence) throws ProcessingException {
-        SpacesAnnotatedString text = SpacesAnnotatedString.fromSentence(sentence);
-
-        annotator.reset(text.getReader());
-
-        int type;
-        while ((type = next(annotator)) != JFlexSpaceAnnotator.YYEOF) {
-            annotator.annotate(text, type);
-        }
-
-        text.applyLeft(sentence, Word::setLeftSpaceRequired);
-        text.applyRight(sentence, Word::setRightSpaceRequired);
-        return sentence;
-    }
-
-    private static int next(JFlexSpaceAnnotator annotator) throws ProcessingException {
-        try {
-            return annotator.next();
-        } catch (IOException e) {
-            throw new ProcessingException(e);
-        }
     }
 
     private static class AlignmentPoint {
