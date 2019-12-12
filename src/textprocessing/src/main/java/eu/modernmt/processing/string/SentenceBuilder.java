@@ -1,5 +1,6 @@
 package eu.modernmt.processing.string;
 
+import eu.modernmt.lang.Language;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Tag;
 import eu.modernmt.model.Token;
@@ -40,6 +41,8 @@ import java.util.*;
  */
 public class SentenceBuilder {
 
+    private final JFlexSpaceAnnotator annotator;
+
     private final HashSet<String> annotations = new HashSet<>();
     /*original string to tokenize*/
     private String originalString;
@@ -55,6 +58,17 @@ public class SentenceBuilder {
      * It is a singleton and it can never serve by more than one client at a time*/
     private final Editor editor = new Editor();
 
+    /**
+     * This constructor generates an empty SentenceBuilder
+     * and performs initialization for a given string.
+     *
+     * @param language the language of this sentence builder
+     * @param string   the original string that must be processed and tokenized
+     */
+    public SentenceBuilder(Language language, String string) {
+        this(language);
+        this.initialize(string);
+    }
 
     /**
      * This constructor generates an empty SentenceBuilder,
@@ -63,8 +77,12 @@ public class SentenceBuilder {
      * This method should only be called by the Preprocessor object
      * once, at the beginning of its lifecycle, to create
      * the single SentenceBuilder instance that it will employ
+     *
+     * @param language the language of this sentence builder
      */
-    public SentenceBuilder() {
+    public SentenceBuilder(Language language) {
+        this.annotator = JFlexDetokenizer.newAnnotator(language);
+
         this.originalString = null;
         /*at the beginning no transformations have been performed*/
         this.currentString = new StringBuilder();
@@ -73,17 +91,6 @@ public class SentenceBuilder {
         /*initialize indexMap array that maps each position of the current string
          * to a position in the original string*/
         this.indexMap = new IndexMap();
-    }
-
-    /**
-     * This constructor generates an empty SentenceBuilder
-     * and performs initialization for a given string.
-     *
-     * @param string the original string that must be processed and tokenized
-     */
-    public SentenceBuilder(String string) {
-        this();
-        this.initialize(string);
     }
 
     /**
@@ -170,22 +177,16 @@ public class SentenceBuilder {
             if (!annotations.isEmpty())
                 sentence.addAnnotations(annotations);
 
-            sentence = this.applyAnnotator(sentence);
-
-            return sentence;
-        } catch (RuntimeException e) {
-            throw new RuntimeException("Failed to build sentence for string: " + originalString, e);
-        } catch (ProcessingException e) {
+            return computeRequiredSpaces(sentence);
+        } catch (RuntimeException | ProcessingException e) {
             throw new RuntimeException("Failed to build sentence for string: " + originalString, e);
         }
     }
 
-    public static Sentence applyAnnotator(Sentence sentence) throws ProcessingException {
+    private Sentence computeRequiredSpaces(Sentence sentence) throws ProcessingException {
         SpacesAnnotatedString text = SpacesAnnotatedString.fromSentence(sentence);
 
-        JFlexSpaceAnnotator annotator = JFlexDetokenizer.newAnnotator(null);
         annotator.reset(text.getReader());
-
         int type;
         while ((type = next(annotator)) != JFlexSpaceAnnotator.YYEOF) {
             annotator.annotate(text, type);

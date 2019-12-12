@@ -31,8 +31,7 @@ public class JFlexDetokenizer extends TextProcessor<Translation, Translation> {
     private final JFlexSpaceAnnotator annotator;
 
     public static JFlexSpaceAnnotator newAnnotator(Language language) {
-        Class<? extends JFlexSpaceAnnotator> annotatorClass;
-        annotatorClass = (language != null) ? ANNOTATORS.get(language.getLanguage()) : null;
+        Class<? extends JFlexSpaceAnnotator> annotatorClass = ANNOTATORS.get(language.getLanguage());
         if (annotatorClass == null) {
             return new StandardSpaceAnnotator((Reader) null);
         } else {
