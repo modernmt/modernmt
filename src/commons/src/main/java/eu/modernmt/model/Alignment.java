@@ -29,6 +29,18 @@ public class Alignment implements Iterable<int[]>, Serializable {
         return new Alignment(sourceIndexes, targetIndexes, score);
     }
 
+    public static Alignment fromAlignmentPairs(String string) {
+        String[] pairsString = string.split(" ");
+
+        int[][] pairs = new int[pairsString.length][];
+        for (int i = 0; i < pairsString.length; i++) {
+            String[] point = pairsString[i].split("-");
+            pairs[i] = new int[]{Integer.parseInt(point[0]), Integer.parseInt(point[1])};
+        }
+
+        return fromAlignmentPairs(pairs);
+    }
+
     public Alignment(int[] sourceIndexes, int[] targetIndexes) {
         this(sourceIndexes, targetIndexes, 0);
     }
