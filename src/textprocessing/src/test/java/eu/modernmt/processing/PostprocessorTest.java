@@ -13,7 +13,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 public class PostprocessorTest {
@@ -103,6 +102,19 @@ public class PostprocessorTest {
         test(sourceStr, targetStr, alignStr, expectedOutput, expectedOutputNoTag);
     }
 
+    @Test
+    public void testOpeningNotEmptyMonotoneWithoutSpace() throws Throwable {
+
+        String sourceStr = "Hello<b>world</b>!";
+        String targetStr = "ciao mondo !";
+        String alignStr = "0-0 1-1 2-2";
+
+        String expectedOutput = "Ciao<b>mondo</b>!";
+        String expectedOutputNoTag = "Ciao mondo!";
+
+        test(sourceStr, targetStr, alignStr, expectedOutput, expectedOutputNoTag);
+    }
+
 
     @Test
     public void testFrenchEnglishRequiredSpaces() throws Throwable {
@@ -169,6 +181,20 @@ public class PostprocessorTest {
 
         String expectedOutput = "esempio con <a> <b>tag</b> nidificato</a>";
         String expectedOutputNoTag = "esempio con tag nidificato";
+
+        test(sourceStr, targetStr, alignStr, expectedOutput, expectedOutputNoTag);
+    }
+
+
+    @Test
+    public void testTagInsideWord() throws Throwable {
+
+        String sourceStr = "C<T>lear cookies";
+        String targetStr = "E limina i cookies";
+        String alignStr = "0-0 1-1 2-2 2-3";
+
+        String expectedOutput = "E<T>limina i cookies";
+        String expectedOutputNoTag = "E limina i cookies";
 
         test(sourceStr, targetStr, alignStr, expectedOutput, expectedOutputNoTag);
     }
