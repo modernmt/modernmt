@@ -131,7 +131,7 @@ public class PostprocessorTest {
 
 
     @Test
-    public void testFrenchEnglishWithouttags() throws Throwable {
+    public void testFrenchEnglishWithoutTags() throws Throwable {
 
         String sourceStr = "A#A Par nature,";
         String targetStr = "A # A By nature ,";
@@ -144,7 +144,7 @@ public class PostprocessorTest {
     }
 
     @Test
-    public void testFrenchEnglishWithtags() throws Throwable {
+    public void testFrenchEnglishWithTags() throws Throwable {
 
         String sourceStr = "<a>A#A</a> Par nature,";
         String targetStr = "A # A By nature ,";
@@ -206,8 +206,8 @@ public class PostprocessorTest {
         String targetStr = "L' URL";
         String alignStr = "0-0 1-1";
 
-        String expectedOutput = "L' <a>URL</a>";
-        String expectedOutputNoTag = "L' URL";
+        String expectedOutput = "L'<a>URL</a>";
+        String expectedOutputNoTag = "L'URL";
 
         test(sourceStr, targetStr, alignStr, expectedOutput, expectedOutputNoTag);
     }

@@ -146,7 +146,7 @@ public class PreprocessorTest {
         Sentence sentence = process(text);
 
         assertEquals(text, sentence.toString(true, false));
-        assertEquals("Hello !", sentence.toString(false, false));
+        assertEquals("Hello!", sentence.toString(false, false));
         assertTrue(sentence.hasTags());
 
         assertArrayEquals(new Word[]{
@@ -164,7 +164,7 @@ public class PreprocessorTest {
         Sentence sentence = process(text);
 
         assertEquals(text, sentence.toString(true, false));
-        assertEquals("Hello !", sentence.toString(false, false));
+        assertEquals("Hello!", sentence.toString(false, false));
         assertTrue(sentence.hasTags());
 
         assertArrayEquals(new Word[]{
