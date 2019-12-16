@@ -189,11 +189,11 @@ public class PostprocessorTest {
     @Test
     public void testTagInsideWord() throws Throwable {
 
-        String sourceStr = "C<T>lear cookies";
+        String sourceStr = "C<a>lear cookies";
         String targetStr = "E limina i cookies";
         String alignStr = "0-0 1-1 2-2 2-3";
 
-        String expectedOutput = "E<T>limina i cookies";
+        String expectedOutput = "E<a>limina i cookies";
         String expectedOutputNoTag = "E limina i cookies";
 
         test(sourceStr, targetStr, alignStr, expectedOutput, expectedOutputNoTag);
@@ -202,12 +202,38 @@ public class PostprocessorTest {
     @Test
     public void testTagWithApostrophe() throws Throwable {
 
-        String sourceStr = "The <T>URL</T>";
+        String sourceStr = "The <a>URL</a>";
         String targetStr = "L' URL";
         String alignStr = "0-0 1-1";
 
-        String expectedOutput = "L' <T>URL</T>";
+        String expectedOutput = "L' <a>URL</a>";
         String expectedOutputNoTag = "L' URL";
+
+        test(sourceStr, targetStr, alignStr, expectedOutput, expectedOutputNoTag);
+    }
+
+    @Test
+    public void testApostrophe() throws Throwable {
+
+        String sourceStr = "The URL and the email";
+        String targetStr = "L' URL e l' email";
+        String alignStr = "0-0 1-1 2-2 3-3 4-4";
+
+        String expectedOutput = "L'URL e l'email";
+        String expectedOutputNoTag = "L'URL e l'email";
+
+        test(sourceStr, targetStr, alignStr, expectedOutput, expectedOutputNoTag);
+    }
+
+    @Test
+    public void testApostropheAndTag() throws Throwable {
+
+        String sourceStr = "The URL <a>and</a> <b>the email</b>";
+        String targetStr = "L' URL e l' email";
+        String alignStr = "0-0 1-1 2-2 3-3 4-4";
+
+        String expectedOutput = "L'URL <a>e</a> <b>l'email</b>";
+        String expectedOutputNoTag = "L'URL e l'email";
 
         test(sourceStr, targetStr, alignStr, expectedOutput, expectedOutputNoTag);
     }
