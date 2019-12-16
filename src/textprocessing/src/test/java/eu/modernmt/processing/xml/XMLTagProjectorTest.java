@@ -94,7 +94,7 @@ public class XMLTagProjectorTest {
         }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
-                {2, 1},
+                {2, 2},
                 {3, 4},
                 {4, 3},
         }));
@@ -248,8 +248,8 @@ public class XMLTagProjectorTest {
     public void testEmbeddedTags() throws Throwable {
         Sentence source = new Sentence(new Word[]{
                 new Word("Example", null, " ",false,true),
-                new Word("with", null, " ",true,true),
-                new Word("nested", " ", null,true,true),
+                new Word("with", " ", " ",true,true),
+                new Word("nested", null, " ",true,true),
                 new Word("tag", null, null,true,false),
         }, new Tag[]{
                 XMLTag.fromText("<a>", " ", null, 1),
@@ -258,9 +258,9 @@ public class XMLTagProjectorTest {
                 XMLTag.fromText("</a>", null, null, 4),
         });
         Translation translation = new Translation(new Word[]{
-                new Word("Esempio", " ", " ",false,true),
-                new Word("con", " ", " ",true,false),
-                new Word("tag", " ", " ",true,false),
+                new Word("Esempio", null, " ",false,true),
+                new Word("con", " ", " ",true,true),
+                new Word("tag", " ", " ",true,true),
                 new Word("innestati", " ", null,true,false),
         }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
@@ -298,7 +298,7 @@ public class XMLTagProjectorTest {
                 new Word("Esempio", null, " ",false,true),
                 new Word("con", " ", " ",true,true),
                 new Word("commenti", " ", " ",true,true),
-                new Word("XML", " ", " ",true,false),
+                new Word("XML", " ", null,true,false),
         }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
