@@ -122,8 +122,8 @@ public class XMLTagProjectorTest {
 
         Translation translation = new Translation(new Word[]{
                 new Word("ciao", null," ",false,true),
-                new Word("mondo", " ", null,true,false),
-                new Word("!", null,null,false,false),
+                new Word("mondo", " ", " ",true,false),
+                new Word("!", " ",null,false,false),
         }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
@@ -154,8 +154,8 @@ public class XMLTagProjectorTest {
 
         Translation translation = new Translation(new Word[]{
                 new Word("mondo", null, " ",false,true),
-                new Word("ciao", " ", null,true,false),
-                new Word("!", null, null,false,false),
+                new Word("ciao", " ", " ",true,false),
+                new Word("!", " ", null,false,false),
         }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 1},
                 {1, 0},

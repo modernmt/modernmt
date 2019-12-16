@@ -20,7 +20,6 @@ public class WhitespaceProjector extends TextProcessor<Translation, Translation>
         if (!translation.hasAlignment())
             return translation;
 
-        translation.fixWordSpacing();
         Sentence source = translation.getSource();
 
         Word[] sourceWords = source.getWords();
