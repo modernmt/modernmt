@@ -198,4 +198,17 @@ public class PostprocessorTest {
 
         test(sourceStr, targetStr, alignStr, expectedOutput, expectedOutputNoTag);
     }
+
+    @Test
+    public void testTagWithApostrophe() throws Throwable {
+
+        String sourceStr = "The <T>URL</T>";
+        String targetStr = "L' URL";
+        String alignStr = "0-0 1-1";
+
+        String expectedOutput = "L' <T>URL</T>";
+        String expectedOutputNoTag = "L' URL";
+
+        test(sourceStr, targetStr, alignStr, expectedOutput, expectedOutputNoTag);
+    }
 }
