@@ -71,7 +71,7 @@ public class TagProjector {
                         //This Word requires a space on the left,
                         //but no Token between the last Word and this Word has any space (ex. "previousWord<tag1><tag2>thisWord");
                         //hence force a space before this Word
-                        if (spaceAfterPreviousWord == null && ((Word) currentToken).isLeftSpaceRequired()) {
+                        if (spaceAfterPreviousWord == null && ((Word) currentToken).isLeftSpaceRequired() && !currentToken.isVirtualLeftSpace()) {
                             previousToken.setRightSpace(" ");
                             currentToken.setLeftSpace(" ");
                         }
