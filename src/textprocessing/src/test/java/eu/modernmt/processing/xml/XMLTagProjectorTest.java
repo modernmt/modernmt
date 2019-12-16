@@ -12,7 +12,7 @@ public class XMLTagProjectorTest {
     @Test
     public void testOpeningNotEmptyMonotone() throws Throwable {
         Sentence source = new Sentence(new Word[]{
-                new Word("hello", null," "),
+                new Word("hello", null," ", false, true),
                 new Word("world", " ",null, true, true),
                 new Word("!", null,null, true, false),
         }, new Tag[]{
@@ -21,15 +21,16 @@ public class XMLTagProjectorTest {
         });
 
         Translation translation = new Translation(new Word[]{
-                new Word("ciao", null, " "),
-                new Word("mondo", " ", null),
-                new Word("!", null, null),
+                new Word("ciao", null, " ", false, true),
+                new Word("mondo", " ", " ", true, false),
+                new Word("!", " ", null, false,false),
         }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
                 {2, 2},
         }));
 
+        translation.fixWordSpacing();
         new TagProjector().project(translation);
 
         assertEquals("ciao <b>mondo</b>!", translation.toString());
@@ -43,24 +44,25 @@ public class XMLTagProjectorTest {
     @Test
     public void testOpeningNotEmptyNonMonotone() throws Throwable {
         Sentence source = new Sentence(new Word[]{
-                new Word("hello", null," "),
-                new Word("world", null,null),
-                new Word("!", null,null),
+                new Word("hello", null," ", false, true),
+                new Word("world", null,null, true, false),
+                new Word("!", null,null, false, false),
         }, new Tag[]{
                 XMLTag.fromText("<b>", " ", null, 1),
                 XMLTag.fromText("</b>", null, null, 2),
         });
 
         Translation translation = new Translation(new Word[]{
-                new Word("mondo", null," "),
-                new Word("ciao", " ",null),
-                new Word("!", null, null),
+                new Word("mondo", null," ", false, true),
+                new Word("ciao", " "," ", true,false),
+                new Word("!", " ", null,false,false),
         }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 1},
                 {1, 0},
                 {2, 2},
         }));
 
+        translation.fixWordSpacing();
         new TagProjector().project(translation);
 
         assertEquals("<b>mondo</b> ciao!", translation.toString());
@@ -75,20 +77,20 @@ public class XMLTagProjectorTest {
     @Ignore
     public void testEmptyTag() throws Throwable {
         Sentence source = new Sentence(new Word[]{
-                new Word("Example", null," "),
-                new Word("with", " ", " "),
-                new Word("an", " ", " "),
-                new Word("empty", " ", null),
-                new Word("tag", " ", " "),
+                new Word("Example", null," ",false,true),
+                new Word("with", " ", " ", true, true),
+                new Word("an", " ", " ", true, true),
+                new Word("empty", " ", null, true, true),
+                new Word("tag", " ", " ", true, false),
         }, new Tag[]{
                 XMLTag.fromText("<empty/>", " ", null, 3),
         });
         Translation translation = new Translation(new Word[]{
-                new Word("Esempio", " ", " "),
-                new Word("con", " ", " "),
-                new Word("un", " ", " "),
-                new Word("tag", " ", " "),
-                new Word("empty", " ", " "),
+                new Word("Esempio", null, " ",false, true),
+                new Word("con", " ", " ", true, true),
+                new Word("un", " ", " ", true, true),
+                new Word("tag", " ", " ", true, true),
+                new Word("empty", " ", null, true, false),
         }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
@@ -97,6 +99,7 @@ public class XMLTagProjectorTest {
                 {4, 3},
         }));
 
+        translation.fixWordSpacing();
         new TagProjector().project(translation);
 
         assertEquals("Esempio con un tag <empty/>empty", translation.toString());
@@ -109,57 +112,60 @@ public class XMLTagProjectorTest {
     @Test
     public void testOpeningEmptyMonotone() throws Throwable {
         Sentence source = new Sentence(new Word[]{
-                new Word("hello", null, " "),
-                new Word("world",  null, null),
-                new Word("!", null, null),
+                new Word("hello", null, " ", true, true),
+                new Word("world",  null, null, true, false),
+                new Word("!", null, null,false,false),
         }, new Tag[]{
                 XMLTag.fromText("<g>", " ", null, 1),
                 XMLTag.fromText("</g>", null, null, 1),
         });
 
         Translation translation = new Translation(new Word[]{
-                new Word("ciao", null," "),
-                new Word("mondo", " ", null),
-                new Word("!", null,null),
+                new Word("ciao", null," ",false,true),
+                new Word("mondo", " ", null,true,false),
+                new Word("!", null,null,false,false),
         }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
                 {2, 2},
         }));
 
+        translation.fixWordSpacing();
         new TagProjector().project(translation);
 
-        assertEquals("ciao <g></g> mondo!", translation.toString());
+        assertEquals("ciao <g></g>mondo!", translation.toString());
         assertEquals("ciao mondo!", translation.toString(false, false));
         assertArrayEquals(new Tag[]{
                 XMLTag.fromText("<g>", " ", null, 1),
-                XMLTag.fromText("</g>", null, " ", 1),
+                XMLTag.fromText("</g>", null, null, 1),
         }, translation.getTags());
     }
 
     @Test
     public void testOpeningEmptyNonMonotone() throws Throwable {
         Sentence source = new Sentence(new Word[]{
-                new Word("hello", null," "),
-                new Word("world", " ",null),
-                new Word("!", null,null),
+                new Word("hello", null," ",false,true),
+                new Word("world", " ",null,true,false),
+                new Word("!", null,null,false,false),
         }, new Tag[]{
                 XMLTag.fromText("<g>", " ", null, 1),
                 XMLTag.fromText("</g>", null, null, 1),
         });
 
         Translation translation = new Translation(new Word[]{
-                new Word("mondo", null, " "),
-                new Word("ciao", " ", null),
-                new Word("!", null, null),
+                new Word("mondo", null, " ",false,true),
+                new Word("ciao", " ", null,true,false),
+                new Word("!", null, null,false,false),
         }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 1},
                 {1, 0},
                 {2, 2},
         }));
 
+
+        translation.fixWordSpacing();
         new TagProjector().project(translation);
-        //System.out.println(translation.getSource().toString());
+
         assertEquals("<g></g>mondo ciao!", translation.toString());
         assertEquals("mondo ciao!", translation.toString(false, false));
         assertArrayEquals(new Tag[]{
@@ -171,20 +177,20 @@ public class XMLTagProjectorTest {
     @Test
     public void testOpeningNonClosing() throws Throwable {
         Sentence source = new Sentence(new Word[]{
-                new Word("Example", null, " "),
-                new Word("with", " ", " "),
-                new Word("a", null, " "),
-                new Word("malformed", " ", " "),
-                new Word("tag", " ",null),
+                new Word("Example", null, " ",false,true),
+                new Word("with", " ", " ",true,true),
+                new Word("a", null, " ",true,true),
+                new Word("malformed", " ", " ",true,true),
+                new Word("tag", " ",null,true,false),
         }, new Tag[]{
                 XMLTag.fromText("<open>", " ", null, 2),
         });
         Translation translation = new Translation(new Word[]{
-                new Word("Esempio", null, " "),
-                new Word("con", " ", " "),
-                new Word("un", " ", " "),
-                new Word("tag", " ", " "),
-                new Word("malformato", " ",null),
+                new Word("Esempio", null, " ",false,true),
+                new Word("con", " ", " ",true,true),
+                new Word("un", " ", " ",true,true),
+                new Word("tag", " ", " ",true,true),
+                new Word("malformato", " ",null,true,false),
         }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
@@ -193,6 +199,7 @@ public class XMLTagProjectorTest {
                 {4, 3},
         }));
 
+        translation.fixWordSpacing();
         new TagProjector().project(translation);
 
         assertEquals("Esempio con <open>un tag malformato", translation.toString());
@@ -205,20 +212,20 @@ public class XMLTagProjectorTest {
     @Test
     public void testClosingNonOpening() throws Throwable {
         Sentence source = new Sentence(new Word[]{
-                new Word("Example", null, " "),
-                new Word("with", " ", null),
-                new Word("a", " ", " "),
-                new Word("malformed", " ", " "),
-                new Word("tag", " ",null),
+                new Word("Example", null, " ",false,true),
+                new Word("with", " ", null,true,true),
+                new Word("a", " ", " ",true,true),
+                new Word("malformed", " ", " ",true,true),
+                new Word("tag", " ",null,true,false),
         }, new Tag[]{
                 XMLTag.fromText("</close>", null, " ", 2),
         });
         Translation translation = new Translation(new Word[]{
-                new Word("Esempio", null, " "),
-                new Word("con", " ", " "),
-                new Word("un", " ", " "),
-                new Word("tag", " ", " "),
-                new Word("malformato", " ", null),
+                new Word("Esempio", null, " ",false,true),
+                new Word("con", " ", " ",true,true),
+                new Word("un", " ", " ",true,true),
+                new Word("tag", " ", " ",true,true),
+                new Word("malformato", " ", null,true,false),
         }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
@@ -227,6 +234,7 @@ public class XMLTagProjectorTest {
                 {4, 3},
         }));
 
+        translation.fixWordSpacing();
         new TagProjector().project(translation);
 
         assertEquals("Esempio con</close> un tag malformato", translation.toString());
@@ -239,10 +247,10 @@ public class XMLTagProjectorTest {
     @Test
     public void testEmbeddedTags() throws Throwable {
         Sentence source = new Sentence(new Word[]{
-                new Word("Example", null, " "),
-                new Word("with", null, " "),
-                new Word("nested", " ", null),
-                new Word("tag", null, null),
+                new Word("Example", null, " ",false,true),
+                new Word("with", null, " ",true,true),
+                new Word("nested", " ", null,true,true),
+                new Word("tag", null, null,true,false),
         }, new Tag[]{
                 XMLTag.fromText("<a>", " ", null, 1),
                 XMLTag.fromText("<b>", " ", null, 3),
@@ -250,10 +258,10 @@ public class XMLTagProjectorTest {
                 XMLTag.fromText("</a>", null, null, 4),
         });
         Translation translation = new Translation(new Word[]{
-                new Word("Esempio", " ", " "),
-                new Word("con", " ", " "),
-                new Word("tag", " ", " "),
-                new Word("innestati", " ", null),
+                new Word("Esempio", " ", " ",false,true),
+                new Word("con", " ", " ",true,false),
+                new Word("tag", " ", " ",true,false),
+                new Word("innestati", " ", null,true,false),
         }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
@@ -261,6 +269,7 @@ public class XMLTagProjectorTest {
                 {3, 2},
         }));
 
+        translation.fixWordSpacing();
         new TagProjector().project(translation);
 
         assertEquals("Esempio <a>con <b>tag</b> innestati</a>", translation.toString());
@@ -276,20 +285,20 @@ public class XMLTagProjectorTest {
     @Test
     public void testSpacedXMLCommentTags() throws Throwable {
         Sentence source = new Sentence(new Word[]{
-                new Word("Example", null, " "),
-                new Word("with", " "," "),
-                new Word("XML", " "," "),
-                new Word("comment", " ",null),
+                new Word("Example", null, " ",false,true),
+                new Word("with", " "," ",true,true),
+                new Word("XML", " "," ",true,true),
+                new Word("comment", " ",null,true,false),
         }, new Tag[]{
                 XMLTag.fromText("<!--", " ", " ", 2),
                 XMLTag.fromText("-->", " ", null, 4),
         });
 
         Translation translation = new Translation(new Word[]{
-                new Word("Esempio", null, " "),
-                new Word("con", " ", " "),
-                new Word("commenti", " ", " "),
-                new Word("XML", " ", " "),
+                new Word("Esempio", null, " ",false,true),
+                new Word("con", " ", " ",true,true),
+                new Word("commenti", " ", " ",true,true),
+                new Word("XML", " ", " ",true,false),
         }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
@@ -297,6 +306,7 @@ public class XMLTagProjectorTest {
                 {3, 2},
         }));
 
+        translation.fixWordSpacing();
         new TagProjector().project(translation);
 
         assertEquals("Esempio con <!-- commenti XML -->", translation.toString());
@@ -310,20 +320,20 @@ public class XMLTagProjectorTest {
     @Test
     public void testNotSpacedXMLCommentTags() throws Throwable {
         Sentence source = new Sentence(new Word[]{
-                new Word("Example", null, " "),
-                new Word("with", " ", " "),
-                new Word("XML", null, " "),
-                new Word("comment", " ", null),
+                new Word("Example", null, " ",false,true),
+                new Word("with", " ", " ",true,true),
+                new Word("XML", null, " ",true,true),
+                new Word("comment", " ", null,true,true),
         }, new Tag[]{
                 XMLTag.fromText("<!--", " ", null, 2),
                 XMLTag.fromText("-->", null, null, 4),
         });
 
         Translation translation = new Translation(new Word[]{
-                new Word("Esempio", null, " "),
-                new Word("con", " ", " "),
-                new Word("commenti", " ", " "),
-                new Word("XML", " ", null),
+                new Word("Esempio", null, " ",false,true),
+                new Word("con", " ", " ",true,true),
+                new Word("commenti", " ", " ",true,true),
+                new Word("XML", " ", null,true,false),
         }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
@@ -331,6 +341,7 @@ public class XMLTagProjectorTest {
                 {3, 2},
         }));
 
+        translation.fixWordSpacing();
         new TagProjector().project(translation);
 
         assertEquals("Esempio con <!--commenti XML-->", translation.toString());
@@ -344,20 +355,20 @@ public class XMLTagProjectorTest {
     @Test
     public void testSingleXMLComment() throws Throwable {
         Sentence source = new Sentence(new Word[]{
-                new Word("This", null," "),
-                new Word("is", " ", " "),
-                new Word("a", " ", " "),
-                new Word("test", " ",null),
+                new Word("This", null," ",false,true),
+                new Word("is", " ", " ",true,true),
+                new Word("a", " ", " ",true,true),
+                new Word("test", " ",null,true,false),
         }, new Tag[]{
                 XMLTag.fromText("<!--", null, null, 0),
                 XMLTag.fromText("-->", null, null, 4),
         });
 
         Translation translation = new Translation(new Word[]{
-                new Word("Questo", null, " "),
-                new Word("è", " ", " "),
-                new Word("un", " ", " "),
-                new Word("esempio", " ", null),
+                new Word("Questo", null, " ",false,true),
+                new Word("è", " ", " ",true,true),
+                new Word("un", " ", " ",true,true),
+                new Word("esempio", " ", null,true,false),
         }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0},
                 {1, 1},
@@ -365,6 +376,7 @@ public class XMLTagProjectorTest {
                 {3, 3},
         }));
 
+        translation.fixWordSpacing();
         new TagProjector().project(translation);
 
         assertEquals("<!--Questo è un esempio-->", translation.toString());
@@ -378,17 +390,18 @@ public class XMLTagProjectorTest {
     @Test
     public void testDTDTags() throws Throwable {
         Sentence source = new Sentence(new Word[]{
-                new Word("Test", " ",null),
+                new Word("Test", " ",null,false,false),
         }, new Tag[]{
                 XMLTag.fromText("<!ENTITY key=\"value\">", null, " ", 0),
         });
 
         Translation translation = new Translation(new Word[]{
-                new Word("Prova", null, null),
+                new Word("Prova", null, null,false,false),
         }, source, Alignment.fromAlignmentPairs(new int[][]{
                 {0, 0}
         }));
 
+        translation.fixWordSpacing();
         new TagProjector().project(translation);
 
         assertEquals("<!ENTITY key=\"value\"> Prova", translation.toString());
@@ -407,6 +420,7 @@ public class XMLTagProjectorTest {
 
         Translation translation = new Translation(null, source, null);
 
+        translation.fixWordSpacing();
         new TagProjector().project(translation);
 
         assertEquals("<a></a>", translation.toString());
