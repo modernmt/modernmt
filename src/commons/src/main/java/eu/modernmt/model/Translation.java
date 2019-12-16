@@ -134,4 +134,13 @@ public class Translation extends Sentence {
         this.nbest = nbest;
     }
 
+    public void fixWordSpacing() {
+        for (Word word : getWords()){
+            if (! word.isLeftSpaceRequired())
+                word.setLeftSpace("");
+            if (! word.isRightSpaceRequired())
+                word.setRightSpace("");
+        }
+    }
+
 }

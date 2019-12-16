@@ -72,41 +72,48 @@ public class Sentence implements Serializable, Iterable<Token> {
     }
 
 
-    private static String getSpace(String leftSpace, String rightSpace) {
+    private static String combineSpace(String leftSpace, String rightSpace) {
         if (leftSpace == null)
             return rightSpace;
 
         if (rightSpace == null)
             return leftSpace;
 
-        if (leftSpace.equals(rightSpace)) {
+        //both leftSpace and rightSpace are not null
+
+        //leftSpace is equal to rightSpace
+        if (leftSpace.equals(rightSpace))
             return leftSpace;
-        } else {
-            return leftSpace + rightSpace;
-        }
+
+        //leftSpace is different from rightSpace
+        return leftSpace + rightSpace;
     }
 
-    public static String getSpace(Token leftToken, Token rightToken) {
-        return getSpace(null, leftToken, rightToken);
+    /* return the the space obtained as a combination of the previousSpace and the spaces surrounding Token*/
+    public static String combineSpace(String previousSpace, Token token) {
+        String space = combineSpace(previousSpace, token.getRightSpace());
+        space = combineSpace(space, token.getLeftSpace());
+        return space;
     }
 
-    public static String getSpace(String previousSpace, Token leftToken, Token rightToken) {
-        String space = getSpace(previousSpace, leftToken.getRightSpace());
+    public static String getSpaceBetweenTokens(Token leftToken, Token rightToken) {
+        return getSpaceBetweenTokens(null, leftToken, rightToken);
+    }
+
+    public static String getSpaceBetweenTokens(String previousSpace, Token leftToken, Token rightToken) {
+        String space = combineSpace(previousSpace, leftToken.getRightSpace());
         if (leftToken instanceof Tag) {
             if (rightToken instanceof Tag) {
                 //Tag-Tag
-                space = getSpace(space, rightToken.getLeftSpace());
-            } else {
-                //Tag-Word
-                space = (((Tag) leftToken).getType() == Tag.Type.CLOSING_TAG) ? rightToken.getLeftSpace() : space;
+                space = combineSpace(space, rightToken.getLeftSpace());
             }
         } else {
             if (rightToken instanceof Tag) {
                 //Word-Tag
-                space = (((Tag) rightToken).getType() == Tag.Type.OPENING_TAG) ? space : rightToken.getLeftSpace();
+                space = rightToken.getLeftSpace();
             } else {
                 //Word-Word
-                space = getSpace(space, rightToken.getLeftSpace());
+                space = combineSpace(space, rightToken.getLeftSpace());
                 if (space == null && (leftToken.isVirtualRightSpace() || rightToken.isVirtualLeftSpace() )) {
                     space = " ";
                 }
@@ -114,6 +121,7 @@ public class Sentence implements Serializable, Iterable<Token> {
         }
         return space;
     }
+
 
     @Override
     public String toString() {
@@ -133,7 +141,7 @@ public class Sentence implements Serializable, Iterable<Token> {
         Token previousToken = null;
         for (Token token : this) {
             if (previousToken != null)
-                space = Sentence.getSpace(space, previousToken, token);
+                space = Sentence.getSpaceBetweenTokens(space, previousToken, token);
             if (token instanceof Word) {
                 if (firstWordFound) {
                     if (space == null) {
@@ -159,7 +167,6 @@ public class Sentence implements Serializable, Iterable<Token> {
         StringBuilder builder = new StringBuilder();
 
         for (Token token : this) {
-
             if (token instanceof Tag) {
                 builder.append(token.getText());
             } else {

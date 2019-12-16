@@ -1,6 +1,7 @@
 package eu.modernmt.processing.tags.projection;
 
 import eu.modernmt.model.*;
+import eu.modernmt.xml.XMLUtils;
 
 import java.util.Arrays;
 
@@ -49,32 +50,9 @@ public class TagProjector {
 
     public static void simpleSpaceAnalysis(Sentence sentence) {
 
+        String spaceAfterPreviousWord = null;
         Token previousToken = null;
         for (Token currentToken : sentence) {
-
-            if (previousToken == null) {
-                if (currentToken instanceof Tag) {
-                    //Remove first whitespace of the tag in the first position, only ig it is a Tag
-                    currentToken.setLeftSpace(null);
-                }
-            } else {
-                String space = Sentence.getSpace(previousToken, currentToken);
-                previousToken.setRightSpace(space);
-                currentToken.setLeftSpace(space);
-            }
-            previousToken = currentToken;
-        }
-        //Remove the last whitespace whatever token is
-        if (previousToken != null) {
-            previousToken.setRightSpace(null);
-        }
-
-    }
-
-    public static void simpleSpaceAnalysis(Translation translation) {
-
-        Token previousToken = null;
-        for (Token currentToken : translation) {
 
             if (previousToken == null) {
                 if (currentToken instanceof Tag) {
@@ -82,9 +60,26 @@ public class TagProjector {
                     currentToken.setLeftSpace(null);
                 }
             } else {
-                String space = Sentence.getSpace(previousToken, currentToken);
+                String space = Sentence.getSpaceBetweenTokens(previousToken, currentToken);
                 previousToken.setRightSpace(space);
                 currentToken.setLeftSpace(space);
+
+                if (currentToken instanceof Tag) { // X-Tag
+                    spaceAfterPreviousWord = Sentence.combineSpace(spaceAfterPreviousWord, currentToken);
+                } else { // X-Word
+                    if (previousToken instanceof Tag) {// Tag-Word
+                        //This Word requires a space on the left,
+                        //but no Token between the last Word and this Word has any space (ex. "previousWord<tag1><tag2>thisWord");
+                        //hence force a space before this Word
+                        if (spaceAfterPreviousWord == null && ((Word) currentToken).isLeftSpaceRequired()) {
+                            previousToken.setRightSpace(" ");
+                            currentToken.setLeftSpace(" ");
+                        }
+                    }
+                    spaceAfterPreviousWord = null;
+
+                }
+
             }
             previousToken = currentToken;
         }
