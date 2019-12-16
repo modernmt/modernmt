@@ -106,11 +106,18 @@ public class Sentence implements Serializable, Iterable<Token> {
             if (rightToken instanceof Tag) {
                 //Tag-Tag
                 space = combineSpace(space, rightToken.getLeftSpace());
+            } else {
+                //Tag-Word
+                if (!((Word) rightToken).isLeftSpaceRequired())
+                    space = null;
             }
         } else {
             if (rightToken instanceof Tag) {
                 //Word-Tag
-                space = rightToken.getLeftSpace();
+                if (!((Word) leftToken).isRightSpaceRequired())
+                    space = null;
+                else
+                    space = rightToken.getLeftSpace();
             } else {
                 //Word-Word
                 space = combineSpace(space, rightToken.getLeftSpace());

@@ -50,8 +50,15 @@ public class TagProjector {
 
     public static void simpleSpaceAnalysis(Sentence sentence) {
 
+        int wordN = sentence.getWords().length;
+        int tagN = sentence.getTags().length;
+        int wordIdx = 0;
+        int tagIdx = 0;
+        boolean lastWord = false;
+
         String spaceAfterPreviousWord = null;
         Token previousToken = null;
+        String space;
         for (Token currentToken : sentence) {
 
             if (previousToken == null) {
@@ -60,9 +67,17 @@ public class TagProjector {
                     currentToken.setLeftSpace(null);
                 }
             } else {
-                String space = Sentence.getSpaceBetweenTokens(previousToken, currentToken);
+                if (wordIdx == 0) { //first Word
+                    space = previousToken.getRightSpace();
+                } else if (lastWord && previousToken instanceof Word) { //last Word
+                    space = currentToken.getLeftSpace();
+                } else {
+                    space = Sentence.getSpaceBetweenTokens(previousToken, currentToken);
+                }
+
                 previousToken.setRightSpace(space);
                 currentToken.setLeftSpace(space);
+
 
                 if (currentToken instanceof Tag) { // X-Tag
                     spaceAfterPreviousWord = Sentence.combineSpace(spaceAfterPreviousWord, currentToken);
@@ -80,6 +95,12 @@ public class TagProjector {
 
                 }
 
+                if (currentToken instanceof Tag)
+                    tagIdx++;
+                else
+                    wordIdx++;
+                if (wordIdx == wordN -1)
+                    lastWord = true;
             }
             previousToken = currentToken;
         }
