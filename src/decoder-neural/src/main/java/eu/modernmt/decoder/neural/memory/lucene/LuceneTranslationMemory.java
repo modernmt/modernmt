@@ -45,24 +45,24 @@ import static org.apache.lucene.analysis.Analyzer.PER_FIELD_REUSE_STRATEGY;
  */
 public class LuceneTranslationMemory implements TranslationMemory {
 
-    private final Logger logger = LogManager.getLogger(LuceneTranslationMemory.class);
+    protected final Logger logger = LogManager.getLogger(LuceneTranslationMemory.class);
 
-    private final int minQuerySize;
-    private final Directory indexDirectory;
-    private final QueryBuilder queryBuilder;
-    private final Rescorer rescorer;
-    private final AnalyzerFactory analyzerFactory;
-    private final Analyzer shortQueryAnalyzer;
-    private final Analyzer longQueryAnalyzer;
-    private final IndexWriter indexWriter;
+    protected final int minQuerySize;
+    protected final Directory indexDirectory;
+    protected final QueryBuilder queryBuilder;
+    protected final Rescorer rescorer;
+    protected final AnalyzerFactory analyzerFactory;
+    protected final Analyzer shortQueryAnalyzer;
+    protected final Analyzer longQueryAnalyzer;
+    protected final IndexWriter indexWriter;
 
-    private DirectoryReader _indexReader;
-    private IndexSearcher _indexSearcher;
-    private final Map<Short, Long> channels;
+    protected DirectoryReader _indexReader;
+    protected IndexSearcher _indexSearcher;
+    protected final Map<Short, Long> channels;
 
-    private boolean closed = false;
+    protected boolean closed = false;
 
-    private static File forceMkdir(File directory) throws IOException {
+    protected static File forceMkdir(File directory) throws IOException {
         if (!directory.isDirectory())
             FileUtils.forceMkdir(directory);
         return directory;
