@@ -15,6 +15,7 @@ import org.apache.kafka.common.errors.WakeupException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -131,7 +132,7 @@ class DataPollingThread extends Thread {
     public void run() {
         while (!interrupted) {
             try {
-                ConsumerRecords<Integer, KafkaPacket> records = consumer.poll(Long.MAX_VALUE);
+                ConsumerRecords<Integer, KafkaPacket> records = consumer.poll(Duration.ofMillis(Long.MAX_VALUE));
                 if (records.isEmpty())
                     continue;
 
