@@ -12,6 +12,7 @@ import eu.modernmt.facade.ModernMT;
 import eu.modernmt.io.UTF8Charset;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -241,7 +242,7 @@ public class ClusterNodeMain {
             if (streamConfig.isEnabled()) {
                 JsonObject stream = new JsonObject();
                 stream.addProperty("port", streamConfig.getPort());
-                stream.addProperty("host", streamConfig.getHost());
+                stream.addProperty("host", StringUtils.join(streamConfig.getHosts(), ','));
                 this.properties.add("datastream", stream);
             }
 

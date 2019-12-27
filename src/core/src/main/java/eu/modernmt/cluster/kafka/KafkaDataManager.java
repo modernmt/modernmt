@@ -11,6 +11,7 @@ import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.processing.Preprocessor;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -43,9 +44,9 @@ public class KafkaDataManager implements DataManager {
 
     private static final Logger logger = LogManager.getLogger(KafkaDataManager.class);
 
-    private final String host;  //the host of the kafka server
-    private final int port;     //the port of the kafka server
-    private final String name;  //the base name of the kafka topics
+    private final String[] hosts;
+    private final int port;
+    private final String name;  // the base name of the kafka topics
 
     private final String uuid;
     private final DataPollingThread pollingThread;
@@ -71,7 +72,7 @@ public class KafkaDataManager implements DataManager {
     public KafkaDataManager(LanguageIndex languages, Preprocessor preprocessor, Aligner aligner, String uuid, DataStreamConfig config) {
         this.uuid = uuid;
 
-        this.host = config.getHost();
+        this.hosts = config.getHosts();
         this.port = config.getPort();
         this.name = config.getName();
 
@@ -140,7 +141,7 @@ public class KafkaDataManager implements DataManager {
         return topicNames;
     }
 
-    public static Properties loadProperties(String filename, String host, int port) {
+    public static Properties loadProperties(String filename, String[] hosts, int port) {
         InputStream stream = null;
 
         try {
@@ -148,7 +149,11 @@ public class KafkaDataManager implements DataManager {
             stream = KafkaDataManager.class.getClassLoader().getResourceAsStream(filename);
             properties.load(stream);
 
-            properties.put("bootstrap.servers", host + ":" + port);
+            String[] servers = new String[hosts.length];
+            for (int i = 0; i < servers.length; i++)
+                servers[i] = hosts[i] + ':' + port;
+
+            properties.put("bootstrap.servers", StringUtils.join(servers, ','));
             properties.put("key.serializer", IntegerSerializer.class.getName());
             properties.put("value.serializer", KafkaPacketSerializer.class.getName());
             properties.put("key.deserializer", IntegerDeserializer.class.getName());
@@ -219,14 +224,14 @@ public class KafkaDataManager implements DataManager {
 
         // Create Kafka producer
         if (enableProducer) {
-            Properties producerProperties = loadProperties("kafka-producer.properties", host, port);
+            Properties producerProperties = loadProperties("kafka-producer.properties", hosts, port);
             this.producer = new KafkaProducer<>(producerProperties);    //write in the given partitions
         }
 
         // Create Kafka consumer and connect to the Kafka remote server to get the latest positions for each channel
         if (enableConsumer) {
             // load consumer properties and build kafka consumer for reading messages from the server from the given partitions
-            Properties consumerProperties = loadProperties("kafka-consumer.properties", host, port);
+            Properties consumerProperties = loadProperties("kafka-consumer.properties", hosts, port);
             consumerProperties.put("group.id", uuid);
             KafkaConsumer<Integer, KafkaPacket> consumer = new KafkaConsumer<>(consumerProperties);
             consumer.assign(partitions);
@@ -241,7 +246,7 @@ public class KafkaDataManager implements DataManager {
             }
 
             if (connectThread.isAlive())    // if the thread is still alive could not connect to the Kafka server
-                throw new HostUnreachableException(host + ':' + port);
+                throw new HostUnreachableException(hosts, port);
 
             this.pollingThread.start(consumer);
 

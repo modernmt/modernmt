@@ -1,5 +1,7 @@
 package eu.modernmt.config;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * Created by davide on 04/01/17.
  * Updated by andrearossi on 03/04/17
@@ -13,7 +15,7 @@ public class DataStreamConfig {
     private final NodeConfig parent;
     private boolean enabled = true;
     private boolean embedded = true;
-    private String host = "localhost";
+    private String[] hosts = new String[]{"localhost"};
     private int port = 9092;
     private String name = null;
 
@@ -52,12 +54,17 @@ public class DataStreamConfig {
         return this;
     }
 
-    public String getHost() {
-        return this.host;
+    public String[] getHosts() {
+        return this.hosts;
     }
 
     public DataStreamConfig setHost(String host) {
-        this.host = host;
+        this.hosts = new String[]{host};
+        return this;
+    }
+
+    public DataStreamConfig setHosts(String[] hosts) {
+        this.hosts = hosts;
         return this;
     }
 
@@ -66,7 +73,7 @@ public class DataStreamConfig {
         return "[DataStream]\n" +
                 "  enabled = " + this.enabled + "\n" +
                 "  embedded = " + this.embedded + "\n" +
-                "  host = " + this.host + "\n" +
+                "  hosts = " + StringUtils.join(this.hosts, ',') + "\n" +
                 "  port = " + this.port;
     }
 

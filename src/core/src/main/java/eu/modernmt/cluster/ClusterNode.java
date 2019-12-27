@@ -292,7 +292,8 @@ public class ClusterNode {
 
         DataStreamConfig dataStreamConfig = nodeConfig.getDataStreamConfig();
         if (dataStreamConfig.isEnabled()) {
-            boolean localDatastream = NetworkUtils.isLocalhost(dataStreamConfig.getHost());
+            String[] hosts = dataStreamConfig.getHosts();
+            boolean localDatastream = hosts.length == 1 && NetworkUtils.isLocalhost(hosts[0]);
             boolean embeddedDatastream = dataStreamConfig.isEmbedded();
 
             // if datastream is 'embedded' and datastream host is localhost,
@@ -306,7 +307,7 @@ public class ClusterNode {
                 String host = hazelcast.getCluster().getLocalMember().getAddress().getHost();
                 dataStreamConfig.setHost(host);
 
-                EmbeddedKafka kafka = EmbeddedKafka.start(this.engine, dataStreamConfig.getHost(), dataStreamConfig.getPort());
+                EmbeddedKafka kafka = EmbeddedKafka.start(this.engine, host, dataStreamConfig.getPort());
                 logger.info("Embedded Kafka started in " + (timer.time() / 1000.) + "s");
 
                 this.services.add(kafka);

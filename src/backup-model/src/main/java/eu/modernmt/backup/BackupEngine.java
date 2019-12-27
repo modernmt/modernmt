@@ -44,7 +44,8 @@ public class BackupEngine {
 
         DataStreamConfig dataStreamConfig = config.getDataStreamConfig();
 
-        boolean localDatastream = NetworkUtils.isLocalhost(dataStreamConfig.getHost());
+        String[] hosts = dataStreamConfig.getHosts();
+        boolean localDatastream = hosts.length == 1 && NetworkUtils.isLocalhost(hosts[0]);
         boolean embeddedDatastream = dataStreamConfig.isEmbedded();
 
         if (embeddedDatastream && localDatastream) {
