@@ -95,26 +95,6 @@ class TranslateEngine(object):
 
 
 class ModernMTTranslate(TranslateEngine):
-    RE_EMOJI = re.compile('[\U00002712\U00002714\U00002716\U0000271d\U00002721\U00002728\U00002733-\U00002734'
-                          '\U00002744\U00002747\U0000274c\U0000274e\U00002753-\U00002755\U00002757\U00002763-\U00002764'
-                          '\U00002795-\U00002797\U000027a1\U000027b0\U000027bf\U00002934-\U00002935'
-                          '\U00002b05-\U00002b07\U00002b1b-\U00002b1c\U00002b50\U00002b55\U00003030\U0000303d\U00003297'
-                          '\U00003299\U0001f004\U0001f0cf\U0001f170-\U0001f171\U0001f17e-\U0001f17f\U0001f18e'
-                          '\U0001f191-\U0001f19a\U0001f1e6-\U0001f1ff\U0001f201-\U0001f202\U0001f21a\U0001f22f'
-                          '\U0001f232-\U0001f23a\U0001f250-\U0001f251\U0001f300-\U0001f321\U0001f324-\U0001f393'
-                          '\U0001f396-\U0001f397\U0001f399-\U0001f39b\U0001f39e-\U0001f3f0\U0001f3f3-\U0001f3f5'
-                          '\U0001f3f7-\U0001f4fd\U0001f4ff-\U0001f53d\U0001f549-\U0001f54e\U0001f550-\U0001f567'
-                          '\U0001f56f-\U0001f570\U0001f573-\U0001f57a\U0001f587\U0001f58a-\U0001f58d\U0001f590'
-                          '\U0001f595-\U0001f596\U0001f5a4-\U0001f5a5\U0001f5a8\U0001f5b1-\U0001f5b2\U0001f5bc'
-                          '\U0001f5c2-\U0001f5c4\U0001f5d1-\U0001f5d3\U0001f5dc-\U0001f5de\U0001f5e1\U0001f5e3'
-                          '\U0001f5e8\U0001f5ef\U0001f5f3\U0001f5fa-\U0001f64f\U0001f680-\U0001f6c5'
-                          '\U0001f6cb-\U0001f6d2\U0001f6d5\U0001f6e0-\U0001f6e5\U0001f6e9\U0001f6eb-\U0001f6ec'
-                          '\U0001f6f0\U0001f6f3-\U0001f6fa\U0001f7e0-\U0001f7eb\U0001f90d-\U0001f93a'
-                          '\U0001f93c-\U0001f945\U0001f947-\U0001f971\U0001f973-\U0001f976\U0001f97a-\U0001f9a2'
-                          '\U0001f9a5-\U0001f9aa\U0001f9ae-\U0001f9ca\U0001f9cd-\U0001f9ff\U0001fa70-\U0001fa73'
-                          '\U0001fa78-\U0001fa7a\U0001fa80-\U0001fa81\U0001fa90-\U0001fa95]+')
-    RE_EMOJI_TAG = re.compile(r'<re:emoji v="[^"]+" />')
-
     def __init__(self, node, source_lang, target_lang, priority=None,
                  context_vector=None, context_file=None, context_string=None, split_lines=False):
         TranslateEngine.__init__(self, source_lang, target_lang)
@@ -164,21 +144,6 @@ class ModernMTTranslate(TranslateEngine):
     def name(self):
         return 'ModernMT'
 
-    @staticmethod
-    def _preprocess(text):
-        def repl_emoji(match):
-            return '<re:emoji v="%s" />' % match.group()
-
-        return ModernMTTranslate.RE_EMOJI.sub(repl_emoji, text)
-
-    @staticmethod
-    def _postprocess(text):
-        def repl_emoji_tag(match):
-            string = match.group()
-            return string[string.index('"') + 1:string.rindex('"')]
-
-        return ModernMTTranslate.RE_EMOJI_TAG.sub(repl_emoji_tag, text)
-
     def translate_text(self, text):
         try:
             lines = text.split('\n') if self._split_lines else [text]
@@ -188,10 +153,9 @@ class ModernMTTranslate(TranslateEngine):
                 if len(line.strip()) == 0:
                     translations.append(line)
                 else:
-                    line = self._preprocess(line)
                     translation = self._api.translate(self.source_lang, self.target_lang, line,
                                                       context=self._context, priority=self._priority)
-                    translations.append(self._postprocess(translation['translation']))
+                    translations.append(translation['translation'])
             return '\n'.join(translations)
         except requests.exceptions.ConnectionError:
             raise TranslateError('Unable to connect to ModernMT. '

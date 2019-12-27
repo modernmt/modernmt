@@ -71,7 +71,6 @@ class ShutdownThread extends Thread {
         try {
             logger.info("Halting API interface...");
             api.stop();
-            api.join();
             logger.info("API interface halted");
         } catch (Throwable e) {
             logger.error("Failed to halt API interface", e);
