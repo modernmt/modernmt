@@ -93,7 +93,7 @@ sudo apt install -y cuda
 Next install the **NVIDIA cuDNN library** from: [NVIDIA cuDNN Download](https://developer.nvidia.com/rdp/cudnn-download). Select the option *"Download cuDNN v7.6.5 (November 5th, 2019), for CUDA 10.1"* and then *"cuDNN Runtime Library for Ubuntu18.04 (Deb)"*. If this version is not listed in the main page, you can find it in the [archived cuDNN releases](https://developer.nvidia.com/rdp/cudnn-archive).
 Finally simply run this command on the downloaded package:
 ```bash
-sudo dpkg -i libcudnn7_7.6.5.32-1__cuda10.1_amd64.deb
+sudo dpkg -i libcudnn7_7.6.5.32-1+cuda10.1_amd64.deb
 ```
 
 ### Install Java 8 and Python 3
