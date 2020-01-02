@@ -78,7 +78,7 @@ sudo apt install -y nvidia-driver-430
 
 In order to finalize the installation you need to **reboot your machine**.
 
-Then you need to install the **CUDA Toolkit 10**, on Ubuntu 18.04 follow these steps:
+Then you need to install the **CUDA Toolkit 10.1**, on Ubuntu 18.04 follow these steps:
 ```bash
 # Download .deb package locally
 wget https://developer.nvidia.com/compute/cuda/10.1/Prod/local_installers/cuda-repo-ubuntu1804-10-1-local-10.1.105-418.39_1.0-1_amd64.deb
