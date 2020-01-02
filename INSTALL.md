@@ -33,7 +33,7 @@ The first step is **NVIDIA drivers** installation:
 ```bash
 sudo add-apt-repository -y ppa:graphics-drivers
 sudo apt update
-sudo apt install -y nvidia-driver-440
+sudo apt install -y nvidia-driver-430
 ```
 
 In order to finalize the installation you need to **reboot your machine**.
@@ -73,7 +73,7 @@ First you need to install the **NVIDIA drivers**:
 ```bash
 sudo add-apt-repository -y ppa:graphics-drivers
 sudo apt update
-sudo apt install -y nvidia-driver-440
+sudo apt install -y nvidia-driver-430
 ```
 
 In order to finalize the installation you need to **reboot your machine**.
