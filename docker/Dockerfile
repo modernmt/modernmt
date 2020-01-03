@@ -1,7 +1,7 @@
 # ===================================================================================================
 # STAGE: Base stage with CUDA/cuDNN libraries, Java and python
 # ===================================================================================================
-FROM nvidia/cuda:10.0-cudnn7-runtime-ubuntu18.04 AS modernmt-base
+FROM nvidia/cuda:10.1-cudnn7-runtime-ubuntu18.04 AS modernmt-base
 
 ARG MMT_VERSION
 RUN : "${MMT_VERSION:?Build argument needs to be set and non-empty.}"
