@@ -2,6 +2,8 @@ package eu.modernmt.config;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Arrays;
+
 /**
  * Created by davide on 04/01/17.
  * Updated by andrearossi on 03/04/17
@@ -68,15 +70,6 @@ public class DataStreamConfig {
         return this;
     }
 
-    @Override
-    public String toString() {
-        return "[DataStream]\n" +
-                "  enabled = " + this.enabled + "\n" +
-                "  embedded = " + this.embedded + "\n" +
-                "  hosts = " + StringUtils.join(this.hosts, ',') + "\n" +
-                "  port = " + this.port;
-    }
-
     public String getName() {
         return name;
     }
@@ -84,5 +77,15 @@ public class DataStreamConfig {
     public DataStreamConfig setName(String name) {
         this.name = name;
         return this;
+    }
+
+    @Override
+    public String toString() {
+        return "Datastream: " +
+                "enabled=" + enabled +
+                ", embedded=" + embedded +
+                ", hosts=" + StringUtils.join(hosts, ',') +
+                ", port=" + port +
+                ", name='" + name + '\'';
     }
 }

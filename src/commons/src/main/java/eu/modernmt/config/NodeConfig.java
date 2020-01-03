@@ -37,11 +37,11 @@ public class NodeConfig {
 
     @Override
     public String toString() {
-        return "[Node]\n" +
-                "  load-balancing = " + this.loadBalancing + "\n" +
-                "  " + networkConfig.toString().replace("\n", "\n  ") + "\n" +
-                "  " + dataStreamConfig.toString().replace("\n", "\n  ") + "\n" +
-                "  " + databaseConfig.toString().replace("\n", "\n  ") + "\n" +
-                "  " + engineConfig.toString().replace("\n", "\n  ");
+        return "Node: " +
+                "load-balancing=" + loadBalancing +
+                "\n  " + networkConfig.toString().replace("\n", "\n  ") +
+                "\n  " + dataStreamConfig.toString().replace("\n", "\n  ") +
+                "\n  " + databaseConfig.toString().replace("\n", "\n  ") +
+                "\n  " + engineConfig.toString().replace("\n", "\n  ");
     }
 }

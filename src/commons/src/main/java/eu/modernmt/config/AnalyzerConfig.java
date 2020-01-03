@@ -86,13 +86,12 @@ public class AnalyzerConfig {
 
     @Override
     public String toString() {
-        return "[AnalyzerConfig]\n" +
-                "  enabled = " + this.enabled + '\n' +
-                "  analyze = " + this.analyze + '\n' +
-                "  batchSize = " + this.batchSize + '\n' +
-                "  threads = " + this.threads + '\n' +
-                "  timeout = " + this.timeout + '\n' +
-                "  maxToleratedMisalignment = " + this.maxToleratedMisalignment;
+        return "Analyzer: " +
+                "enabled=" + enabled +
+                ", analyze=" + analyze +
+                ", batch=" + batchSize +
+                ", threads=" + threads +
+                ", timeout=" + timeout +
+                ", misalignment=" + maxToleratedMisalignment;
     }
-
 }

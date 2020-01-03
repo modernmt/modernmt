@@ -212,6 +212,8 @@ public class ClusterNode {
     }
 
     public void start(NodeConfig nodeConfig, long joinTimeoutInterval, TimeUnit joinTimeoutUnit) throws FailedToJoinClusterException, BootstrapException {
+        logger.info("Starting node with config:\n" + nodeConfig.toString());
+
         this.loadBalancing = nodeConfig.isLoadBalancingActive();
 
         Timer globalTimer = new Timer();

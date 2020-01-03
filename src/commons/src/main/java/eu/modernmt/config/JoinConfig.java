@@ -25,11 +25,10 @@ public class JoinConfig {
 
         @Override
         public String toString() {
-            return "[Member]\n" +
-                    "  host = " + host + "\n" +
-                    "  port = " + port;
+            return "Member: " +
+                    "host='" + host + '\'' +
+                    ", port=" + port;
         }
-
     }
 
     private final NetworkConfig parent;
@@ -62,16 +61,13 @@ public class JoinConfig {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder("[Join]\n");
-        builder.append("  timeout = ").append(timeout).append('\n');
+        StringBuilder builder = new StringBuilder("Join: ");
+        builder.append("timeout=").append(timeout);
         if (members != null) {
-            for (Member member : members) {
-                builder.append("  ")
-                        .append(member.toString().replace("\n", "\n  "))
-                        .append("\n");
-            }
+            for (Member member : members)
+                builder.append("\n  ").append(member.toString());
         }
 
-        return builder.toString().trim();
+        return builder.toString();
     }
 }

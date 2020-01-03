@@ -44,9 +44,9 @@ public class ApiConfig {
 
     @Override
     public String toString() {
-        return "[Api]\n" +
-                "  enabled = " + enabled + "\n" +
-                "  port = " + port + "\n" +
-                "  root = " + apiRoot;
+        return "Api: " +
+                "enabled=" + enabled +
+                ", port=" + port +
+                ", root='" + apiRoot + '\'';
     }
 }

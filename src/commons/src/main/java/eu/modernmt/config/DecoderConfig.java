@@ -2,6 +2,7 @@ package eu.modernmt.config;
 
 import eu.modernmt.hw.Graphics;
 import eu.modernmt.io.RuntimeIOException;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -110,12 +111,11 @@ public class DecoderConfig {
 
     @Override
     public String toString() {
-        return "[Neural decoder]\n" +
-                "  queue = " + queueSize + "\n" +
-                "  threads = " + threads + "\n" +
-                "  gpus = " + Arrays.toString(gpus) + "\n" +
-                "  class = " + decoderClass + "\n" +
-                "  enabled = " + enabled;
+        return "Decoder: " +
+                "queue=" + queueSize +
+                ", threads=" + threads +
+                ", gpus=" + StringUtils.join(gpus, ',') +
+                ", class='" + decoderClass + '\'' +
+                ", enabled=" + enabled;
     }
-
 }

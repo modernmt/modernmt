@@ -51,13 +51,23 @@ public class EngineConfig {
         return analyzerConfig;
     }
 
+//    @Override
+//    public String toString() {
+//        return "[Engine]\n" +
+//                "  name = " + name + "\n" +
+//                "  languages = " + languageIndex.size() + "\n" +
+//                "  " + decoderConfig.toString().replace("\n", "\n  ") +
+//                "  " + alignerConfig.toString().replace("\n", "\n  ") +
+//                "  " + analyzerConfig.toString().replace("\n", "\n  ");
+//    }
+
     @Override
     public String toString() {
-        return "[Engine]\n" +
-                "  name = " + name + "\n" +
-                "  languages = " + languageIndex + "\n" +
-                "  " + decoderConfig.toString().replace("\n", "\n  ") +
-                "  " + alignerConfig.toString().replace("\n", "\n  ") +
-                "  " + analyzerConfig.toString().replace("\n", "\n  ");
+        return "Engine: " +
+                "name='" + name + '\'' +
+                ", languages=" + languageIndex.size() +
+                "\n  " + decoderConfig.toString().replace("\n", "\n  ") +
+                "\n  " + alignerConfig.toString().replace("\n", "\n  ") +
+                "\n  " + analyzerConfig.toString().replace("\n", "\n  ");
     }
 }
