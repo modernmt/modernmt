@@ -7,7 +7,6 @@ public class ApiConfig {
 
     private final NetworkConfig parent;
     private boolean enabled = true;
-    private String listeningInterface = null;
     private int port = 8045;
     private String apiRoot = null;
 
@@ -25,10 +24,6 @@ public class ApiConfig {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
-    }
-
-    public void setListeningInterface(String listeningInterface) {
-        this.listeningInterface = listeningInterface;
     }
 
     public int getPort() {
@@ -51,7 +46,6 @@ public class ApiConfig {
     public String toString() {
         return "[Api]\n" +
                 "  enabled = " + enabled + "\n" +
-                "  interface = " + listeningInterface + "\n" +
                 "  port = " + port + "\n" +
                 "  root = " + apiRoot;
     }
