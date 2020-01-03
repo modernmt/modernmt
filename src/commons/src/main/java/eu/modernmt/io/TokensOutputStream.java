@@ -74,13 +74,19 @@ public class TokensOutputStream implements Closeable {
         if (text.isEmpty())
             return new Word[0];
 
-        String[] pieces = deserialize(text);
-        Word[] words = new Word[pieces.length];
+        return deserializeWords(deserialize(text));
+    }
 
-        for (int i = 0; i < pieces.length; i++) {
+    public static Word[] deserializeWords(String[] tokens) {
+        if (tokens.length == 0)
+            return new Word[0];
+
+        Word[] words = new Word[tokens.length];
+
+        for (int i = 0; i < tokens.length; i++) {
             String leftSpace = i > 0 ? " " : null;
-            String rightSpace = i < pieces.length - 1 ? " " : null;
-            words[i] = new Word(pieces[i], pieces[i], leftSpace, rightSpace);
+            String rightSpace = i < tokens.length - 1 ? " " : null;
+            words[i] = new Word(tokens[i], leftSpace, rightSpace);
         }
 
         return words;

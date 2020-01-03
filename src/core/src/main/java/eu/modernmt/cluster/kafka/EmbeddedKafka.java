@@ -86,6 +86,9 @@ public class EmbeddedKafka extends EmbeddedService {
     }
 
     private void deleteClusterId() throws IOException {
+        if (!this.meta.isFile())
+            return;
+        
         Properties properties = new Properties();
 
         // Read existing metadata
