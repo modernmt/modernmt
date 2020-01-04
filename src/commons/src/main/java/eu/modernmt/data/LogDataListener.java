@@ -5,7 +5,7 @@ import java.util.Map;
 /**
  * Created by davide on 06/09/16.
  */
-public interface DataListener {
+public interface LogDataListener {
 
     void onDataReceived(DataBatch batch) throws Exception;
 

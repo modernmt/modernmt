@@ -1,6 +1,6 @@
 package eu.modernmt.memory;
 
-import eu.modernmt.data.DataListener;
+import eu.modernmt.data.LogDataListener;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
@@ -12,7 +12,7 @@ import java.util.UUID;
 /**
  * Created by davide on 23/05/17.
  */
-public interface TranslationMemory extends Closeable, DataListener {
+public interface TranslationMemory extends Closeable, LogDataListener {
 
     ScoreEntry[] search(UUID user, LanguageDirection direction, Sentence source, ContextVector contextVector, int limit) throws IOException;
 

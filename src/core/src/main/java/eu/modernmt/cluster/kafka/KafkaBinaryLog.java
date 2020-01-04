@@ -1,7 +1,7 @@
 package eu.modernmt.cluster.kafka;
 
 import eu.modernmt.aligner.Aligner;
-import eu.modernmt.config.DataStreamConfig;
+import eu.modernmt.config.BinaryLogConfig;
 import eu.modernmt.data.*;
 import eu.modernmt.engine.Engine;
 import eu.modernmt.lang.LanguageDirection;
@@ -40,16 +40,16 @@ import java.util.concurrent.TimeUnit;
  * and starts separate threads to connect to the Apache Kafka server
  * to perform polling in order to find the proper positions on the topics
  */
-public class KafkaDataManager implements DataManager {
+public class KafkaBinaryLog implements BinaryLog {
 
-    private static final Logger logger = LogManager.getLogger(KafkaDataManager.class);
+    private static final Logger logger = LogManager.getLogger(KafkaBinaryLog.class);
 
     private final String[] hosts;
     private final int port;
     private final String name;  // the base name of the kafka topics
 
     private final String uuid;
-    private final DataPollingThread pollingThread;
+    private final LogDataPollingThread pollingThread;
 
     private KafkaProducer<Integer, KafkaPacket> producer;
 
@@ -65,18 +65,18 @@ public class KafkaDataManager implements DataManager {
         }
     }
 
-    public KafkaDataManager(Engine engine, String uuid, DataStreamConfig config) {
+    public KafkaBinaryLog(Engine engine, String uuid, BinaryLogConfig config) {
         this(engine.getLanguageIndex(), engine.getPreprocessor(), getAligner(engine), uuid, config);
     }
 
-    public KafkaDataManager(LanguageIndex languages, Preprocessor preprocessor, Aligner aligner, String uuid, DataStreamConfig config) {
+    public KafkaBinaryLog(LanguageIndex languages, Preprocessor preprocessor, Aligner aligner, String uuid, BinaryLogConfig config) {
         this.uuid = uuid;
 
         this.hosts = config.getHosts();
         this.port = config.getPort();
         this.name = config.getName();
 
-        this.pollingThread = new DataPollingThread(languages, preprocessor, aligner, this);
+        this.pollingThread = new LogDataPollingThread(languages, preprocessor, aligner, this);
 
         // initialize the two required kafkaChannels with proper names
         // and put them in an array "channels"
@@ -84,10 +84,10 @@ public class KafkaDataManager implements DataManager {
 
         String[] topicNames = getDefaultTopicNames(this.name);
 
-        this.channels[0] = new KafkaChannel(DataManager.MEMORY_UPLOAD_CHANNEL_ID,
-                topicNames[DataManager.MEMORY_UPLOAD_CHANNEL_ID]);
-        this.channels[1] = new KafkaChannel(DataManager.CONTRIBUTIONS_CHANNEL_ID,
-                topicNames[DataManager.CONTRIBUTIONS_CHANNEL_ID]);
+        this.channels[0] = new KafkaChannel(BinaryLog.MEMORY_UPLOAD_CHANNEL_ID,
+                topicNames[BinaryLog.MEMORY_UPLOAD_CHANNEL_ID]);
+        this.channels[1] = new KafkaChannel(BinaryLog.CONTRIBUTIONS_CHANNEL_ID,
+                topicNames[BinaryLog.CONTRIBUTIONS_CHANNEL_ID]);
 
         /*initialize and populate the partitions list and the name-to-channel map*/
         this.partitions = new ArrayList<>(channels.length);
@@ -136,8 +136,8 @@ public class KafkaDataManager implements DataManager {
 
         /*create, populate and return the topics map*/
         String[] topicNames = new String[2];
-        topicNames[DataManager.MEMORY_UPLOAD_CHANNEL_ID] = memoriesTopicName;
-        topicNames[DataManager.CONTRIBUTIONS_CHANNEL_ID] = contributionsTopicName;
+        topicNames[BinaryLog.MEMORY_UPLOAD_CHANNEL_ID] = memoriesTopicName;
+        topicNames[BinaryLog.CONTRIBUTIONS_CHANNEL_ID] = contributionsTopicName;
         return topicNames;
     }
 
@@ -146,7 +146,7 @@ public class KafkaDataManager implements DataManager {
 
         try {
             Properties properties = new Properties();
-            stream = KafkaDataManager.class.getClassLoader().getResourceAsStream(filename);
+            stream = KafkaBinaryLog.class.getClassLoader().getResourceAsStream(filename);
             properties.load(stream);
 
             String[] servers = new String[hosts.length];
@@ -168,7 +168,7 @@ public class KafkaDataManager implements DataManager {
     }
 
     /**
-     * This method makes this KafkaDataManager connect to the Kafka server specified in its initial DataStreamConfiguration.
+     * This method makes this KafkaBinaryLog connect to the Kafka server specified in its initial BinaryLogConfig.
      * To connect, a default timeout of 60 seconds is employed.
      * If the connection succeeded, this method returns a map that associates to the (short) ID of each kafka topic
      * the corresponding (long) last written position.
@@ -183,7 +183,7 @@ public class KafkaDataManager implements DataManager {
 
 
     /**
-     * This method makes this KafkaDataManager connect to the Kafka server specified in its initial DataStreamConfiguration.
+     * This method makes this KafkaBinaryLog connect to the Kafka server specified in its initial BinaryLogConfig.
      * It launches both a kafka consumer and a kafka producer to interact with the Kafka server.
      * <p>
      * The connection process will use the passed timeout and timeunit values.
@@ -202,7 +202,7 @@ public class KafkaDataManager implements DataManager {
     }
 
     /**
-     * This method makes this KafkaDataManager connect to the Kafka server specified in its initial DataStreamConfiguration.
+     * This method makes this KafkaBinaryLog connect to the Kafka server specified in its initial BinaryLogConfig.
      * <p>
      * A kafka consumer and/or a kafka producer will be launched depending on the passed "enable" params.
      * If both the "enable" params are false, this method will do nothing.
@@ -256,22 +256,22 @@ public class KafkaDataManager implements DataManager {
     }
 
     @Override
-    public void setDataManagerListener(Listener listener) {
-        pollingThread.setDataManagerListener(listener);
+    public void setBinaryLogListener(Listener listener) {
+        pollingThread.setBinaryLogListener(listener);
     }
 
     @Override
-    public void addDataListener(DataListener listener) {
+    public void addLogDataListener(LogDataListener listener) {
         pollingThread.addListener(listener);
     }
 
     @Override
-    public ImportJob upload(Memory memory, MultilingualCorpus corpus, short channel) throws DataManagerException {
-        return upload(memory, corpus, getDataChannel(channel));
+    public ImportJob upload(Memory memory, MultilingualCorpus corpus, short channel) throws BinaryLogException {
+        return upload(memory, corpus, getLogChannel(channel));
     }
 
     @Override
-    public ImportJob upload(Memory memory, MultilingualCorpus corpus, DataChannel channel) throws DataManagerException {
+    public ImportJob upload(Memory memory, MultilingualCorpus corpus, LogChannel channel) throws BinaryLogException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 
@@ -307,7 +307,7 @@ public class KafkaDataManager implements DataManager {
                 size++;
             }
         } catch (IOException e) {
-            throw new DataManagerException("Failed to read corpus for memory " + memory, e);
+            throw new BinaryLogException("Failed to read corpus for memory " + memory, e);
         } finally {
             IOUtils.closeQuietly(reader);
         }
@@ -326,12 +326,12 @@ public class KafkaDataManager implements DataManager {
     }
 
     @Override
-    public ImportJob upload(LanguageDirection direction, Memory memory, String sentence, String translation, Date timestamp, short channel) throws DataManagerException {
-        return upload(direction, memory, sentence, translation, timestamp, getDataChannel(channel));
+    public ImportJob upload(LanguageDirection direction, Memory memory, String sentence, String translation, Date timestamp, short channel) throws BinaryLogException {
+        return upload(direction, memory, sentence, translation, timestamp, getLogChannel(channel));
     }
 
     @Override
-    public ImportJob upload(LanguageDirection direction, Memory memory, String sentence, String translation, Date timestamp, DataChannel channel) throws DataManagerException {
+    public ImportJob upload(LanguageDirection direction, Memory memory, String sentence, String translation, Date timestamp, LogChannel channel) throws BinaryLogException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
         long offset = sendElement(KafkaPacket.createAddition(direction, memory.getOwner(), memory.getId(), sentence, translation, timestamp), true, channel);
@@ -339,12 +339,12 @@ public class KafkaDataManager implements DataManager {
     }
 
     @Override
-    public ImportJob replace(LanguageDirection direction, Memory memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, short channel) throws DataManagerException {
-        return replace(direction, memory, sentence, translation, previousSentence, previousTranslation, timestamp, getDataChannel(channel));
+    public ImportJob replace(LanguageDirection direction, Memory memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, short channel) throws BinaryLogException {
+        return replace(direction, memory, sentence, translation, previousSentence, previousTranslation, timestamp, getLogChannel(channel));
     }
 
     @Override
-    public ImportJob replace(LanguageDirection direction, Memory memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, DataChannel channel) throws DataManagerException {
+    public ImportJob replace(LanguageDirection direction, Memory memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, LogChannel channel) throws BinaryLogException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 
@@ -353,15 +353,15 @@ public class KafkaDataManager implements DataManager {
     }
 
     @Override
-    public void delete(long memory) throws DataManagerException {
+    public void delete(long memory) throws BinaryLogException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 
-        DataChannel channel = getDataChannel(DataManager.MEMORY_UPLOAD_CHANNEL_ID);
+        LogChannel channel = getLogChannel(BinaryLog.MEMORY_UPLOAD_CHANNEL_ID);
         sendElement(KafkaPacket.createDeletion(memory), true, channel);
     }
 
-    private long sendElement(KafkaPacket packet, boolean sync, DataChannel channel) throws DataManagerException {
+    private long sendElement(KafkaPacket packet, boolean sync, LogChannel channel) throws BinaryLogException {
         pollingThread.ensureRunning();
 
         Future<RecordMetadata> future = producer.send(new ProducerRecord<>(channel.getName(), 0, packet));
@@ -372,13 +372,13 @@ public class KafkaDataManager implements DataManager {
             try {
                 offset = future.get().offset();
             } catch (InterruptedException e) {
-                throw new DataManagerException("Interrupted upload for packet " + packet, e);
+                throw new BinaryLogException("Interrupted upload for packet " + packet, e);
             } catch (ExecutionException e) {
                 Throwable cause = e.getCause();
                 if (cause instanceof RuntimeException)
                     throw (RuntimeException) cause;
                 else
-                    throw new DataManagerException("Unexpected exception while uploading", cause);
+                    throw new BinaryLogException("Unexpected exception while uploading", cause);
             }
         }
 
@@ -386,7 +386,7 @@ public class KafkaDataManager implements DataManager {
     }
 
     @Override
-    public KafkaChannel getDataChannel(short id) {
+    public KafkaChannel getLogChannel(short id) {
         return this.channels[id];
     }
 
@@ -478,7 +478,7 @@ public class KafkaDataManager implements DataManager {
 
                 for (Map.Entry<Short, Long> entry : pollingThread.getCurrentPositions().entrySet()) {
 
-                    KafkaChannel channel = getDataChannel(entry.getKey());
+                    KafkaChannel channel = getLogChannel(entry.getKey());
                     long position = entry.getValue();
 
                     logger.info("Channel '" + channel.getName() + "' seek to position " + position);

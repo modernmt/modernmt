@@ -54,7 +54,7 @@ public class ClusterNodeMain {
 
             Option apiPort = Option.builder("a").longOpt("api-port").hasArg().type(Integer.class).required(false).build();
             Option clusterPort = Option.builder("p").longOpt("cluster-port").hasArg().type(Integer.class).required(false).build();
-            Option datastreamPort = Option.builder().longOpt("datastream-port").hasArg().required(false).build();
+            Option binlogPort = Option.builder().longOpt("binlog-port").hasArg().required(false).build();
             Option databasePort = Option.builder().longOpt("db-port").hasArg().required(false).build();
 
             Option leader = Option.builder().longOpt("leader").hasArg().required(false).build();
@@ -69,7 +69,7 @@ public class ClusterNodeMain {
             cliOptions.addOption(verbosity);
             cliOptions.addOption(leader);
             cliOptions.addOption(logFile);
-            cliOptions.addOption(datastreamPort);
+            cliOptions.addOption(binlogPort);
             cliOptions.addOption(databasePort);
         }
 
@@ -106,13 +106,13 @@ public class ClusterNodeMain {
             this.verbosity = verbosity == null ? 1 : Integer.parseInt(verbosity);
 
             /* read the engine.xconf file and build the engineConfig, with its:
-               network config, datastream config, database config, net-api config and net-join config */
+               network config, binary-log config, database config, net-api config and net-join config */
             this.config = XMLConfigBuilder.build(Engine.getConfigFile(this.engine));
             this.config.getEngineConfig().setName(this.engine);
 
             // Create the config objects based on the engine.xconf file
             NetworkConfig netConfig = this.config.getNetworkConfig();
-            DataStreamConfig streamConfig = this.config.getDataStreamConfig();
+            BinaryLogConfig binlogConfig = this.config.getBinaryLogConfig();
             DatabaseConfig dbConfig = this.config.getDatabaseConfig();
             ApiConfig apiConfig = netConfig.getApiConfig();
             JoinConfig joinConfig = netConfig.getJoinConfig();
@@ -128,9 +128,9 @@ public class ClusterNodeMain {
             String apiPort = cli.getOptionValue("api-port");
             if (apiPort != null)
                 apiConfig.setPort(Integer.parseInt(apiPort));
-            String datastreamPort = cli.getOptionValue("datastream-port");
-            if (datastreamPort != null)
-                streamConfig.setPort(Integer.parseInt(datastreamPort));
+            String binlogPort = cli.getOptionValue("binlog-port");
+            if (binlogPort != null)
+                binlogConfig.setPort(Integer.parseInt(binlogPort));
             String databasePort = cli.getOptionValue("db-port");
             if (databasePort != null)
                 dbConfig.setPort(Integer.parseInt(databasePort));
@@ -141,21 +141,21 @@ public class ClusterNodeMain {
 
             If a leader was passed by command line with option --join-leader:
                 - create a Member with its host and port try to use this Member only to join the cluster
-                - the leader hosts the database and datastream, so set it as the host in datastreamconfig and databaseconfig
+                - the leader hosts the database and binlog, so set it as the host in binaryLogConfig and databaseConfig
 
-            Assume that all the ports that the leader uses (cluster, datastream and cassandra ports) are the same as this node.
+            Assume that all the ports that the leader uses (cluster, binlog and cassandra ports) are the same as this node.
             If they are not, then the configuration is wrong.
 
             If no leader is passed by command line, do nothing.
                 - The config object will use the list of members parsed from engine.xconf and try to join them in order.
-                - use the database and datastream hosts and ports in engine.xconf for datastreamconfig and databaseconfig */
+                - use the database and binlog hosts and ports in engine.xconf for binaryLogConfig and databaseConfig */
             String leader = cli.getOptionValue("leader");
 
             if (leader != null) {
                 JoinConfig.Member[] members = new JoinConfig.Member[1];
                 members[0] = new JoinConfig.Member(leader, netConfig.getPort());
                 joinConfig.setMembers(members);
-                streamConfig.setHost(leader);
+                binlogConfig.setHost(leader);
                 dbConfig.setHost(leader);
             }
         }
@@ -207,7 +207,7 @@ public class ClusterNodeMain {
          * - cluster port
          * - api config (root and port),
          * - database (host and port)
-         * - datastream (host and port)
+         * - binlog (host and port)
          *
          * @param file   the node.properties JSON file
          *               in which to store the definitive configuration
@@ -219,7 +219,7 @@ public class ClusterNodeMain {
             NetworkConfig netConfig = config.getNetworkConfig();
             ApiConfig apiConfig = netConfig.getApiConfig();
             DatabaseConfig dbConfig = config.getDatabaseConfig();
-            DataStreamConfig streamConfig = config.getDataStreamConfig();
+            BinaryLogConfig binlogConfig = config.getBinaryLogConfig();
 
             this.properties = new JsonObject();
 
@@ -239,11 +239,11 @@ public class ClusterNodeMain {
                 this.properties.add("database", db);
             }
 
-            if (streamConfig.isEnabled()) {
-                JsonObject stream = new JsonObject();
-                stream.addProperty("port", streamConfig.getPort());
-                stream.addProperty("host", StringUtils.join(streamConfig.getHosts(), ','));
-                this.properties.add("datastream", stream);
+            if (binlogConfig.isEnabled()) {
+                JsonObject binlog = new JsonObject();
+                binlog.addProperty("port", binlogConfig.getPort());
+                binlog.addProperty("host", StringUtils.join(binlogConfig.getHosts(), ','));
+                this.properties.add("binlog", binlog);
             }
 
             this.properties.addProperty("cluster_port", netConfig.getPort());

@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class BackupMemory implements Closeable, DataListener {
+public class BackupMemory implements Closeable, LogDataListener {
 
     private final Logger logger = LogManager.getLogger(BackupMemory.class);
 

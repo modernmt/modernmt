@@ -35,6 +35,14 @@ abstract class XMLAbstractBuilder {
         return getChild(element, childName);
     }
 
+    protected static boolean hasChild(Element element, String childName) {
+        return getChild(element, childName) != null;
+    }
+
+    protected boolean hasChild(String childName) {
+        return hasChild(element, childName);
+    }
+
     protected static Element[] getChildren(Element element, String name) {
         if (element == null)
             return null;

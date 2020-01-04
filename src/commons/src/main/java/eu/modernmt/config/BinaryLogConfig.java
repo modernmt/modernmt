@@ -6,11 +6,11 @@ import org.apache.commons.lang3.StringUtils;
  * Created by davide on 04/01/17.
  * Updated by andrearossi on 03/04/17
  * <p>
- * This class embodies a configuration for a DataStream.
+ * This class embodies a configuration for a BinaryLog.
  * It may be read from a configuration file (e.g. engineConf.xml)
  * (or obtained in some different way)
  */
-public class DataStreamConfig {
+public class BinaryLogConfig {
 
     private final NodeConfig parent;
     private boolean enabled = true;
@@ -19,7 +19,7 @@ public class DataStreamConfig {
     private int port = 9092;
     private String name = null;
 
-    public DataStreamConfig(NodeConfig parent) {
+    public BinaryLogConfig(NodeConfig parent) {
         this.parent = parent;
     }
 
@@ -31,7 +31,7 @@ public class DataStreamConfig {
         return enabled;
     }
 
-    public DataStreamConfig setEnabled(boolean enabled) {
+    public BinaryLogConfig setEnabled(boolean enabled) {
         this.enabled = enabled;
         return this;
     }
@@ -40,7 +40,7 @@ public class DataStreamConfig {
         return this.embedded;
     }
 
-    public DataStreamConfig setEmbedded(boolean embedded) {
+    public BinaryLogConfig setEmbedded(boolean embedded) {
         this.embedded = embedded;
         return this;
     }
@@ -49,7 +49,7 @@ public class DataStreamConfig {
         return this.port;
     }
 
-    public DataStreamConfig setPort(int port) {
+    public BinaryLogConfig setPort(int port) {
         this.port = port;
         return this;
     }
@@ -58,12 +58,12 @@ public class DataStreamConfig {
         return this.hosts;
     }
 
-    public DataStreamConfig setHost(String host) {
+    public BinaryLogConfig setHost(String host) {
         this.hosts = new String[]{host};
         return this;
     }
 
-    public DataStreamConfig setHosts(String[] hosts) {
+    public BinaryLogConfig setHosts(String[] hosts) {
         this.hosts = hosts;
         return this;
     }
@@ -72,14 +72,14 @@ public class DataStreamConfig {
         return name;
     }
 
-    public DataStreamConfig setName(String name) {
+    public BinaryLogConfig setName(String name) {
         this.name = name;
         return this;
     }
 
     @Override
     public String toString() {
-        return "Datastream: " +
+        return "Binlog: " +
                 "enabled=" + enabled +
                 ", embedded=" + embedded +
                 ", hosts=" + StringUtils.join(hosts, ',') +

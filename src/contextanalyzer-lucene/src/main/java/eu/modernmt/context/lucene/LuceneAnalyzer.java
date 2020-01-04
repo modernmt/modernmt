@@ -7,7 +7,7 @@ import eu.modernmt.context.lucene.analysis.ContextAnalyzerIndex;
 import eu.modernmt.context.lucene.analysis.DocumentBuilder;
 import eu.modernmt.context.lucene.storage.Bucket;
 import eu.modernmt.context.lucene.storage.CorporaStorage;
-import eu.modernmt.data.DataListener;
+import eu.modernmt.data.LogDataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.LanguageDirection;
@@ -146,7 +146,7 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
     }
 
     @Override
-    public Collection<DataListener> getDataListeners() {
+    public Collection<LogDataListener> getDataListeners() {
         return Collections.singleton(storage);
     }
 

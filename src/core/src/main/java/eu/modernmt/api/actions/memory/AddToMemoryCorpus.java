@@ -4,7 +4,7 @@ import eu.modernmt.api.framework.*;
 import eu.modernmt.api.framework.actions.ObjectAction;
 import eu.modernmt.api.framework.routing.Route;
 import eu.modernmt.api.framework.routing.TemplateException;
-import eu.modernmt.data.DataManagerException;
+import eu.modernmt.data.BinaryLogException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.io.FileProxy;
 import eu.modernmt.lang.Language;
@@ -25,7 +25,7 @@ import java.io.File;
 public class AddToMemoryCorpus extends ObjectAction<ImportJob> {
 
     @Override
-    protected ImportJob execute(RESTRequest req, Parameters _params) throws DataManagerException, PersistenceException {
+    protected ImportJob execute(RESTRequest req, Parameters _params) throws BinaryLogException, PersistenceException {
         Params params = (Params) _params;
 
         if (params.corpus == null)

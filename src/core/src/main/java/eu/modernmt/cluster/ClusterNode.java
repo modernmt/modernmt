@@ -10,13 +10,13 @@ import eu.modernmt.api.ApiServer;
 import eu.modernmt.cluster.cassandra.EmbeddedCassandra;
 import eu.modernmt.cluster.error.FailedToJoinClusterException;
 import eu.modernmt.cluster.kafka.EmbeddedKafka;
-import eu.modernmt.cluster.kafka.KafkaDataManager;
+import eu.modernmt.cluster.kafka.KafkaBinaryLog;
 import eu.modernmt.cluster.services.TranslationService;
 import eu.modernmt.cluster.services.TranslationServiceProxy;
 import eu.modernmt.config.*;
-import eu.modernmt.data.DataListener;
+import eu.modernmt.data.LogDataListener;
 import eu.modernmt.data.DataListenerProvider;
-import eu.modernmt.data.DataManager;
+import eu.modernmt.data.BinaryLog;
 import eu.modernmt.data.HostUnreachableException;
 import eu.modernmt.decoder.DecoderListener;
 import eu.modernmt.decoder.DecoderUnavailableException;
@@ -74,7 +74,7 @@ public class ClusterNode {
     private ArrayList<StatusListener> statusListeners = new ArrayList<>();
 
     HazelcastInstance hazelcast;
-    DataManager dataManager;
+    BinaryLog binaryLog;
     Database database;
     ApiServer api;
     TranslationServiceProxy translationService;
@@ -94,10 +94,10 @@ public class ClusterNode {
         return engine;
     }
 
-    public DataManager getDataManager() {
-        if (dataManager == null)
-            throw new UnsupportedOperationException("DataStream unavailable");
-        return dataManager;
+    public BinaryLog getBinaryLog() {
+        if (binaryLog == null)
+            throw new UnsupportedOperationException("BinaryLog unavailable");
+        return binaryLog;
     }
 
     public Database getDatabase() {
@@ -157,15 +157,15 @@ public class ClusterNode {
 
     // Cluster startup
 
-    private static void addToDataManager(DataListener listener, DataManager manager) {
+    private static void addToBinaryLog(LogDataListener listener, BinaryLog binlog) {
         if (listener != null)
-            manager.addDataListener(listener);
+            binlog.addLogDataListener(listener);
     }
 
-    private static void addToDataManager(DataListenerProvider provider, DataManager manager) {
+    private static void addToBinaryLog(DataListenerProvider provider, BinaryLog binlog) {
         if (provider != null) {
-            for (DataListener listener : provider.getDataListeners())
-                manager.addDataListener(listener);
+            for (LogDataListener listener : provider.getDataListeners())
+                binlog.addLogDataListener(listener);
         }
     }
 
@@ -292,63 +292,63 @@ public class ClusterNode {
 
         // ===========  Data stream bootstrap  =============
 
-        DataStreamConfig dataStreamConfig = nodeConfig.getDataStreamConfig();
-        if (dataStreamConfig.isEnabled()) {
-            String[] hosts = dataStreamConfig.getHosts();
-            boolean localDatastream = hosts.length == 1 && NetworkUtils.isLocalhost(hosts[0]);
-            boolean embeddedDatastream = dataStreamConfig.isEmbedded();
+        BinaryLogConfig binaryLogConfig = nodeConfig.getBinaryLogConfig();
+        if (binaryLogConfig.isEnabled()) {
+            String[] hosts = binaryLogConfig.getHosts();
+            boolean localBinaryLog = hosts.length == 1 && NetworkUtils.isLocalhost(hosts[0]);
+            boolean embeddedBinaryLog = binaryLogConfig.isEmbedded();
 
-            // if datastream is 'embedded' and datastream host is localhost,
+            // if binlog is 'embedded' and binlog host is localhost,
             // start an instance of kafka process
-            // else do nothing - will connect to a remote datastream
-            // or to a local standalone datastream
-            if (embeddedDatastream && localDatastream) {
+            // else do nothing - will connect to a remote binlog
+            // or to a local standalone binlog
+            if (embeddedBinaryLog && localBinaryLog) {
                 logger.info("Starting embedded Kafka process");
                 timer.reset();
 
                 String host = hazelcast.getCluster().getLocalMember().getAddress().getHost();
-                dataStreamConfig.setHost(host);
+                binaryLogConfig.setHost(host);
 
-                EmbeddedKafka kafka = EmbeddedKafka.start(this.engine, host, dataStreamConfig.getPort());
+                EmbeddedKafka kafka = EmbeddedKafka.start(this.engine, host, binaryLogConfig.getPort());
                 logger.info("Embedded Kafka started in " + (timer.time() / 1000.) + "s");
 
                 this.services.add(kafka);
             }
 
-            if (!embeddedDatastream && dataStreamConfig.getName() == null)
-                throw new BootstrapException("Datastream name is mandatory if datastream is not embedded");
+            if (!embeddedBinaryLog && binaryLogConfig.getName() == null)
+                throw new BootstrapException("BinaryLog name is mandatory if binlog is not embedded");
 
-            this.dataManager = new KafkaDataManager(this.engine, uuid, dataStreamConfig);
-            this.dataManager.setDataManagerListener(this::updateChannelsPositions);
+            this.binaryLog = new KafkaBinaryLog(this.engine, uuid, binaryLogConfig);
+            this.binaryLog.setBinaryLogListener(this::updateChannelsPositions);
 
-            addToDataManager(this.engine, this.dataManager);
-            updateChannelsPositions(this.dataManager.getChannelsPositions());
+            addToBinaryLog(this.engine, this.binaryLog);
+            updateChannelsPositions(this.binaryLog.getChannelsPositions());
 
             try {
                 timer.reset();
 
-                logger.info("Connecting to dataManager...");
-                Map<Short, Long> positions = dataManager.connect();
-                logger.info("Connected to the dataManager in " + (timer.time() / 1000.) + "s");
+                logger.info("Connecting to binary log server...");
+                Map<Short, Long> positions = binaryLog.connect();
+                logger.info("Connected to the binary log server in " + (timer.time() / 1000.) + "s");
 
                 setStatus(Status.UPDATING);
 
                 if (countClusterMembers(true) > 0) {
                     timer.reset();
                     try {
-                        logger.info("Starting sync from data stream");
-                        this.dataManager.waitChannelPositions(positions);
-                        logger.info("Data stream sync completed in " + (timer.time() / 1000.) + "s");
+                        logger.info("Starting sync from binary log");
+                        this.binaryLog.waitChannelPositions(positions);
+                        logger.info("Binary log sync completed in " + (timer.time() / 1000.) + "s");
                     } catch (InterruptedException e) {
-                        throw new BootstrapException("Data stream sync interrupted", e);
+                        throw new BootstrapException("Binary log sync interrupted", e);
                     }
                 } else {
-                    logger.info("Data stream sync running in background, force single running node cluster start");
+                    logger.info("Binary log sync running in background, force single running node cluster start");
                 }
 
                 setStatus(Status.UPDATED);
             } catch (HostUnreachableException e) {
-                throw new BootstrapException("Unable to connect to DataManager", e);
+                throw new BootstrapException("Unable to connect to BinaryLog", e);
             }
         }
 

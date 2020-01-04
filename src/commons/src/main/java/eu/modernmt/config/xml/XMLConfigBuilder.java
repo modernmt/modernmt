@@ -19,7 +19,7 @@ import java.io.File;
 public class XMLConfigBuilder extends XMLAbstractBuilder {
 
     private final XMLNetworkConfigBuilder networkConfigBuilder;
-    private final XMLDataStreamConfigBuilder dataStreamConfigBuilder;
+    private final XMLBinaryLogConfigBuilder binaryLogConfigBuilder;
     private final XMLDatabaseConfigBuilder databaseConfigBuilder;
     private final XMLEngineConfigBuilder engineConfigBuilder;
 
@@ -27,7 +27,10 @@ public class XMLConfigBuilder extends XMLAbstractBuilder {
         super(element);
 
         networkConfigBuilder = new XMLNetworkConfigBuilder(getChild("network"));
-        dataStreamConfigBuilder = new XMLDataStreamConfigBuilder(getChild("datastream"));
+        if (hasChild("binlog"))
+            binaryLogConfigBuilder = new XMLBinaryLogConfigBuilder(getChild("binlog"));
+        else
+            binaryLogConfigBuilder = new XMLBinaryLogConfigBuilder(getChild("datastream"));
         databaseConfigBuilder = new XMLDatabaseConfigBuilder(getChild("db"));
         engineConfigBuilder = new XMLEngineConfigBuilder(getChild("engine"));
     }
@@ -57,7 +60,7 @@ public class XMLConfigBuilder extends XMLAbstractBuilder {
             config.setLoadBalancing(this.getBooleanAttribute("load-balancing"));
 
         networkConfigBuilder.build(config.getNetworkConfig());
-        dataStreamConfigBuilder.build(config.getDataStreamConfig());
+        binaryLogConfigBuilder.build(config.getBinaryLogConfig());
         databaseConfigBuilder.build(config.getDatabaseConfig());
         engineConfigBuilder.build(config.getEngineConfig());
 

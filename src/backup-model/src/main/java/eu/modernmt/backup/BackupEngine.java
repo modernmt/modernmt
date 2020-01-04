@@ -1,13 +1,12 @@
 package eu.modernmt.backup;
 
 import eu.modernmt.backup.model.BackupMemory;
-import eu.modernmt.cluster.kafka.KafkaDataManager;
-import eu.modernmt.config.AnalyzerConfig;
-import eu.modernmt.config.DataStreamConfig;
+import eu.modernmt.cluster.kafka.KafkaBinaryLog;
+import eu.modernmt.config.BinaryLogConfig;
 import eu.modernmt.config.NodeConfig;
 import eu.modernmt.context.lucene.LuceneAnalyzer;
-import eu.modernmt.data.DataListener;
-import eu.modernmt.data.DataManager;
+import eu.modernmt.data.LogDataListener;
+import eu.modernmt.data.BinaryLog;
 import eu.modernmt.data.HostUnreachableException;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.hw.NetworkUtils;
@@ -34,7 +33,7 @@ public class BackupEngine {
 
     private LuceneAnalyzer contextAnalyzer = null;
     private LuceneTranslationMemory memory = null;
-    private DataManager dataManager = null;
+    private BinaryLog binlog = null;
     private BackupMemory backupMemory = null;
 
     public BackupEngine(NodeConfig config, File models) {
@@ -42,15 +41,15 @@ public class BackupEngine {
         this.config = config;
         this.models = models;
 
-        DataStreamConfig dataStreamConfig = config.getDataStreamConfig();
+        BinaryLogConfig binaryLogConfig = config.getBinaryLogConfig();
 
-        String[] hosts = dataStreamConfig.getHosts();
-        boolean localDatastream = hosts.length == 1 && NetworkUtils.isLocalhost(hosts[0]);
-        boolean embeddedDatastream = dataStreamConfig.isEmbedded();
+        String[] hosts = binaryLogConfig.getHosts();
+        boolean localBinaryLog = hosts.length == 1 && NetworkUtils.isLocalhost(hosts[0]);
+        boolean embeddedBinaryLog = binaryLogConfig.isEmbedded();
 
-        if (embeddedDatastream && localDatastream) {
+        if (embeddedBinaryLog && localBinaryLog) {
             String host = NetworkUtils.getMyIpv4Address();
-            dataStreamConfig.setHost(host);
+            binaryLogConfig.setHost(host);
         }
     }
 
@@ -68,15 +67,15 @@ public class BackupEngine {
         memory = new LuceneTranslationMemory(Paths.join(models, "memory"), 1);
         backupMemory = new BackupMemory(Paths.join(models, "backup"));
 
-        dataManager = new KafkaDataManager(config.getEngineConfig().getLanguageIndex(), new Preprocessor(), null, uuid, config.getDataStreamConfig());
-        for (DataListener listener : contextAnalyzer.getDataListeners())
-            dataManager.addDataListener(listener);
-        dataManager.addDataListener(memory);
-        dataManager.addDataListener(backupMemory);
+        binlog = new KafkaBinaryLog(config.getEngineConfig().getLanguageIndex(), new Preprocessor(), null, uuid, config.getBinaryLogConfig());
+        for (LogDataListener listener : contextAnalyzer.getDataListeners())
+            binlog.addLogDataListener(listener);
+        binlog.addLogDataListener(memory);
+        binlog.addLogDataListener(backupMemory);
 
         Map<Short, Long> positions;
         try {
-            positions = dataManager.connect(60, TimeUnit.SECONDS, true, false);
+            positions = binlog.connect(60, TimeUnit.SECONDS, true, false);
         } catch (HostUnreachableException e) {
             throw new IOException(e);
         }
@@ -90,7 +89,7 @@ public class BackupEngine {
     }
 
     public void stop(boolean optimize) throws IOException {
-        IOException dmError = close(dataManager);
+        IOException dmError = close(binlog);
         IOException caError;
         IOException mError;
         IOException sError;
@@ -132,7 +131,7 @@ public class BackupEngine {
         if (sError != null)
             throw sError;
 
-        dataManager = null;
+        binlog = null;
         contextAnalyzer = null;
         memory = null;
         backupMemory = null;

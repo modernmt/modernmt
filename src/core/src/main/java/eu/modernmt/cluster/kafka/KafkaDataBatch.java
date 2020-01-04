@@ -29,12 +29,12 @@ class KafkaDataBatch implements DataBatch {
     private final LanguageIndex languageIndex;
     private final Preprocessor preprocessor;
     private final Aligner aligner;
-    private final KafkaDataManager manager;
+    private final KafkaBinaryLog manager;
 
     private final Stack<DataPartition> cachedPartitions = new Stack<>();
     private final HashMap<LanguageDirection, DataPartition> cachedDataSet = new HashMap<>();
 
-    public KafkaDataBatch(LanguageIndex languageIndex, Preprocessor preprocessor, Aligner aligner, KafkaDataManager manager) {
+    public KafkaDataBatch(LanguageIndex languageIndex, Preprocessor preprocessor, Aligner aligner, KafkaBinaryLog manager) {
         this.languageIndex = languageIndex;
         this.preprocessor = preprocessor;
         this.aligner = aligner;

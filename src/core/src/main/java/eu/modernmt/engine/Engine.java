@@ -8,7 +8,7 @@ import eu.modernmt.config.DecoderConfig;
 import eu.modernmt.config.EngineConfig;
 import eu.modernmt.context.ContextAnalyzer;
 import eu.modernmt.context.lucene.LuceneAnalyzer;
-import eu.modernmt.data.DataListener;
+import eu.modernmt.data.LogDataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderException;
@@ -210,20 +210,20 @@ public class Engine implements Closeable, DataListenerProvider {
     }
 
     @Override
-    public Collection<DataListener> getDataListeners() {
-        ArrayList<DataListener> listeners = new ArrayList<>();
+    public Collection<LogDataListener> getDataListeners() {
+        ArrayList<LogDataListener> listeners = new ArrayList<>();
         addDataListener(contextAnalyzer, listeners);
         addDataListener(decoder, listeners);
 
         return listeners;
     }
 
-    private static void addDataListener(Object object, ArrayList<DataListener> listeners) {
+    private static void addDataListener(Object object, ArrayList<LogDataListener> listeners) {
         if (object == null)
             return;
 
-        if (object instanceof DataListener)
-            listeners.add((DataListener) object);
+        if (object instanceof LogDataListener)
+            listeners.add((LogDataListener) object);
         if (object instanceof DataListenerProvider)
             listeners.addAll(((DataListenerProvider) object).getDataListeners());
     }

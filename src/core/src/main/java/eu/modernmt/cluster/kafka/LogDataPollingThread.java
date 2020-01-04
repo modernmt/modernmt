@@ -2,9 +2,9 @@ package eu.modernmt.cluster.kafka;
 
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
-import eu.modernmt.data.DataListener;
-import eu.modernmt.data.DataManager;
-import eu.modernmt.data.DataManagerException;
+import eu.modernmt.data.LogDataListener;
+import eu.modernmt.data.BinaryLog;
+import eu.modernmt.data.BinaryLogException;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
@@ -24,39 +24,39 @@ import java.util.concurrent.*;
 /**
  * Created by davide on 06/09/16.
  */
-class DataPollingThread extends Thread {
+class LogDataPollingThread extends Thread {
 
-    private final Logger logger = LogManager.getLogger(KafkaDataManager.class);
+    private final Logger logger = LogManager.getLogger(KafkaBinaryLog.class);
 
     private final KafkaDataBatch batch;
 
-    private DataManagerException exception;
+    private BinaryLogException exception;
     private KafkaConsumer<Integer, KafkaPacket> consumer;
     private boolean interrupted;
-    private final ArrayList<DataListener> listeners = new ArrayList<>(10);
-    private DataManager.Listener dataManagerListener = null;
-    private KafkaDataManager manager;
+    private final ArrayList<LogDataListener> listeners = new ArrayList<>(10);
+    private BinaryLog.Listener binaryLogListener = null;
+    private KafkaBinaryLog manager;
 
     private final ExecutorService executor = Executors.newCachedThreadPool();
 
-    public DataPollingThread(LanguageIndex languages, Preprocessor preprocessor, Aligner aligner, KafkaDataManager manager) {
+    public LogDataPollingThread(LanguageIndex languages, Preprocessor preprocessor, Aligner aligner, KafkaBinaryLog manager) {
         super("DataPollingThread");
         this.manager = manager;
         this.batch = new KafkaDataBatch(languages, preprocessor, aligner, manager);
     }
 
-    public void ensureRunning() throws DataManagerException {
-        DataManagerException e = exception;
+    public void ensureRunning() throws BinaryLogException {
+        BinaryLogException e = exception;
 
         if (e != null)
             throw e;
     }
 
-    public void setDataManagerListener(DataManager.Listener dataManagerListener) {
-        this.dataManagerListener = dataManagerListener;
+    public void setBinaryLogListener(BinaryLog.Listener binaryLogListener) {
+        this.binaryLogListener = binaryLogListener;
     }
 
-    public void addListener(DataListener listener) {
+    public void addListener(LogDataListener listener) {
         this.listeners.add(listener);
     }
 
@@ -87,7 +87,7 @@ class DataPollingThread extends Thread {
 
         HashMap<Short, Long> result = null;
 
-        for (DataListener listener : listeners) {
+        for (LogDataListener listener : listeners) {
             Map<Short, Long> latestPositions = listener.getLatestChannelPositions();
 
             logger.debug("DataListener[" + listener.getClass().getSimpleName() + "]: channel positions = " + latestPositions);
@@ -139,7 +139,7 @@ class DataPollingThread extends Thread {
                 boolean process = false;
                 boolean align = false;
                 boolean includeDiscarded = false;
-                for (DataListener listener : listeners) {
+                for (LogDataListener listener : listeners) {
                     if (process && align && includeDiscarded)
                         break;
 
@@ -162,19 +162,19 @@ class DataPollingThread extends Thread {
                     logger.error("Failed to delivery updates", e);
                 }
 
-                if (dataManagerListener != null)
-                    dataManagerListener.onDataBatchProcessed(batch.getChannelPositions());
+                if (binaryLogListener != null)
+                    binaryLogListener.onLogDataBatchProcessed(batch.getChannelPositions());
 
                 batch.clear();
             } catch (WakeupException e) {
                 // Shutdown request
                 break;
             } catch (RuntimeException e) {
-                exception = new DataManagerException("Unexpected exception while data-stream polling", e);
+                exception = new BinaryLogException("Unexpected exception while data-stream polling", e);
                 logger.error(exception.getMessage(), e);
                 break;
             } catch (AlignerException | ProcessingException e) {
-                exception = new DataManagerException("Failed to parse update batch", e);
+                exception = new BinaryLogException("Failed to parse update batch", e);
                 logger.error(exception.getMessage(), e);
                 break;
             }
@@ -193,7 +193,7 @@ class DataPollingThread extends Thread {
         int index = 0;
         Future[] results = new Future[listeners.size()];
 
-        for (final DataListener listener : listeners)
+        for (final LogDataListener listener : listeners)
             results[index++] = executor.submit(new DeliveryTask(batch, listener));
 
         for (Future<?> future : results) {
@@ -216,9 +216,9 @@ class DataPollingThread extends Thread {
     private static final class DeliveryTask implements Callable<Void> {
 
         private final KafkaDataBatch batch;
-        private final DataListener listener;
+        private final LogDataListener listener;
 
-        public DeliveryTask(KafkaDataBatch batch, DataListener listener) {
+        public DeliveryTask(KafkaDataBatch batch, LogDataListener listener) {
             this.batch = batch;
             this.listener = listener;
         }

@@ -1,7 +1,7 @@
 package eu.modernmt.decoder.neural;
 
 import eu.modernmt.config.DecoderConfig;
-import eu.modernmt.data.DataListener;
+import eu.modernmt.data.LogDataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderException;
@@ -229,7 +229,7 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
     // DataListenerProvider
 
     @Override
-    public Collection<DataListener> getDataListeners() {
+    public Collection<LogDataListener> getDataListeners() {
         return Collections.singleton(memory);
     }
 

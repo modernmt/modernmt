@@ -64,7 +64,7 @@ $ ./mmt status
 [Engine: "default"]
     REST API:   running - 8045/translate
     Cluster:    running - port 5016
-    Datastream: running - localhost:9092
+    Binary log: running - localhost:9092
     Database:   running - localhost:9042
 ```
 

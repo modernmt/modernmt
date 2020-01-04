@@ -30,7 +30,7 @@ class ShutdownThread extends Thread {
         // Close internal services
         halt(this.node.translationService); // wait for all translations to be fulfilled
         halt(this.node.database);
-        halt(this.node.dataManager);
+        halt(this.node.binaryLog);
 
         // Stop all engine components
         halt(this.node.getEngine());
