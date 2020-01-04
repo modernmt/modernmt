@@ -2,8 +2,6 @@ package eu.modernmt.config;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Arrays;
-
 /**
  * Created by davide on 04/01/17.
  * Updated by andrearossi on 03/04/17

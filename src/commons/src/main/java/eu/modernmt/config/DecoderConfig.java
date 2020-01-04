@@ -5,7 +5,6 @@ import eu.modernmt.io.RuntimeIOException;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 /**
  * Created by davide on 04/01/17.
