@@ -52,12 +52,9 @@ public class TranslationSplit {
         this.translationBegin = timestamp;
     }
 
-    public void onTranslationEnd(long timestamp) {
-        this.translationEnd = timestamp;
-    }
-
     public void setTranslation(Translation translation) {
         this.translation = translation;
+        this.translationEnd = System.currentTimeMillis();
 
         if (this.lock != null)
             this.lock.translationSplitCompleted(this);

@@ -53,10 +53,6 @@ public class DecoderExecutorThread extends Thread {
                         executor.align(decoder, language, splits);
                     else
                         executor.translate(decoder, language, splits, job.getSuggestions());
-
-                    timestamp = System.currentTimeMillis();
-                    for (TranslationSplit split : splits)
-                        split.onTranslationEnd(timestamp);
                 } catch (Throwable e) {
                     for (TranslationSplit split : job.getTranslationSplits())
                         split.setException(e);
