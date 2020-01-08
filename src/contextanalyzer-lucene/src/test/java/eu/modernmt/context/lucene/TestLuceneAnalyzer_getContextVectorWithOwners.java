@@ -17,7 +17,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by davide on 07/08/17.
  */
-public class LuceneAnalyzerTest_getContextVectorWithOwners {
+public class TestLuceneAnalyzer_getContextVectorWithOwners {
 
     private static final UUID owner1 = new UUID(0, 1);
     private static final UUID owner2 = new UUID(0, 2);

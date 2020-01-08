@@ -15,7 +15,7 @@ import static org.junit.Assert.assertNull;
 /**
  * Created by davide on 06/08/17.
  */
-public class LuceneAnalyzerTest_onDataReceived {
+public class TestLuceneAnalyzer_onDataReceived {
 
     private TLuceneAnalyzer analyzer;
 

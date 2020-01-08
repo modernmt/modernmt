@@ -18,7 +18,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by davide on 03/08/17.
  */
-public class LuceneTranslationMemoryTest_onDataReceived {
+public class TestLuceneTranslationMemory_onDataReceived {
 
     private TLuceneTranslationMemory memory;
 

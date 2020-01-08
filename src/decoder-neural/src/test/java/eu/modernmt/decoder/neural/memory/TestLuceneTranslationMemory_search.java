@@ -17,7 +17,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by davide on 03/08/17.
  */
-public class LuceneTranslationMemoryTest_search {
+public class TestLuceneTranslationMemory_search {
 
     private TLuceneTranslationMemory memory;
     private final ContextVector context = ContextVector.fromString("1:1,2:1");

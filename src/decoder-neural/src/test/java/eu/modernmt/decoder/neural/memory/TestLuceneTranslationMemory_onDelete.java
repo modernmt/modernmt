@@ -19,7 +19,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by davide on 03/08/17.
  */
-public class LuceneTranslationMemoryTest_onDelete {
+public class TestLuceneTranslationMemory_onDelete {
 
     private TLuceneTranslationMemory memory;
 

@@ -16,7 +16,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by davide on 07/08/17.
  */
-public class LuceneAnalyzerTest_getContextVector {
+public class TestLuceneAnalyzer_getContextVector {
 
     private TLuceneAnalyzer analyzer;
 

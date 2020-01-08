@@ -17,7 +17,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by davide on 03/08/17.
  */
-public class LuceneTranslationMemoryTest_searchPrivacy {
+public class TestLuceneTranslationMemory_searchPrivacy {
 
     private TLuceneTranslationMemory memory;
 
