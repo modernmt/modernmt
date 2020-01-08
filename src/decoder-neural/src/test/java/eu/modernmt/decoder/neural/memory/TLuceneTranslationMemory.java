@@ -54,10 +54,10 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
 
             ScoreEntry entry;
             if (source.compareTo(target) < 0)
-                entry = new ScoreEntry(unit.memory, unit.language,
+                entry = new ScoreEntry(unit.memory, unit.language, unit.rawSentence, unit.rawTranslation,
                         unit.rawSentence.split("\\s+"), unit.rawTranslation.split("\\s+"));
             else
-                entry = new ScoreEntry(unit.memory, unit.language.reversed(),
+                entry = new ScoreEntry(unit.memory, unit.language.reversed(), unit.rawTranslation, unit.rawSentence,
                         unit.rawTranslation.split("\\s+"), unit.rawSentence.split("\\s+"));
 
             result.add(entry);

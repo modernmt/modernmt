@@ -25,7 +25,7 @@ public class F1BleuRescorer implements Rescorer {
         // Set negative score for suggestions too different in length
         for (ScoreEntry entry : entries) {
             float l1 = inputWords.length;
-            float l2 = entry.sentence.length;
+            float l2 = entry.sentenceTokens.length;
 
             float expansion = Math.max(l1, l2) / Math.min(l1, l2);
 
@@ -36,7 +36,7 @@ public class F1BleuRescorer implements Rescorer {
         // Compute F1-BLEU score
         for (ScoreEntry entry : entries) {
             if (entry.score >= 0)
-                entry.score = calculator.calc(entry.sentence);
+                entry.score = calculator.calc(entry.sentenceTokens);
         }
 
         // Apply context scores

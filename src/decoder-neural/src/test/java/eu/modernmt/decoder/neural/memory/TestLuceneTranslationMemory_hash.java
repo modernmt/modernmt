@@ -1,12 +1,12 @@
 package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.decoder.neural.memory.lucene.DefaultDocumentBuilder;
 import eu.modernmt.decoder.neural.memory.lucene.DocumentBuilder;
 import eu.modernmt.decoder.neural.memory.lucene.query.QueryBuilder;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.memory.ScoreEntry;
-import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
@@ -19,7 +19,6 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Set;
 
 import static eu.modernmt.decoder.neural.memory.TestData.*;
@@ -40,7 +39,8 @@ public class TestLuceneTranslationMemory_hash {
                 new Sentence(TokensOutputStream.deserializeWords(translation)),
                 null);
 
-        return this.memory.getDocumentBuilder().create(unit);
+        DefaultDocumentBuilder builder = (DefaultDocumentBuilder)this.memory.getDocumentBuilder();
+        return builder.create(unit, hash);
     }
 
     @Before
@@ -78,11 +78,11 @@ public class TestLuceneTranslationMemory_hash {
         ScoreEntry e2 = documentBuilder.asEntry(searcher.doc(result[1].doc));
 
         if ("fr".equals(e1.language.target.getLanguage())) {
-            assertArrayEquals(new String[]{"1-1F"}, e1.sentence);
-            assertArrayEquals(new String[]{"1-1"}, e2.sentence);
+            assertArrayEquals(new String[]{"1-1F"}, e1.sentenceTokens);
+            assertArrayEquals(new String[]{"1-1"}, e2.sentenceTokens);
         } else {
-            assertArrayEquals(new String[]{"1-1F"}, e2.sentence);
-            assertArrayEquals(new String[]{"1-1"}, e1.sentence);
+            assertArrayEquals(new String[]{"1-1F"}, e2.sentenceTokens);
+            assertArrayEquals(new String[]{"1-1"}, e1.sentenceTokens);
         }
     }
 

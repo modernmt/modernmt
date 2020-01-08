@@ -27,24 +27,31 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
     private static final String HASH_FIELD = "hash";
     private static final String LANGUAGE_PREFIX_FIELD = "lang_";
     private static final String CONTENT_PREFIX_FIELD = "content_";
+    private static final String RAW_CONTENT_PREFIX_FIELD = "raw_content_";
 
     // Factory methods
 
     @Override
     public Document create(TranslationUnit unit) {
+        String hash = HashGenerator.hash(unit.rawLanguage, unit.rawSentence, unit.rawTranslation);
+        return create(unit, hash);
+    }
+
+    public Document create(TranslationUnit unit, String hash) {
         LanguageDirection language = unit.language;
-        long memory = unit.memory;
         String sentence = TokensOutputStream.serialize(unit.sentence, false, true);
         String translation = TokensOutputStream.serialize(unit.translation, false, true);
-        String hash = HashGenerator.hash(unit.rawLanguage, unit.rawSentence, unit.rawTranslation);
 
         Document document = new Document();
-        document.add(new LongField(MEMORY_FIELD, memory, Field.Store.YES));
+        document.add(new LongField(MEMORY_FIELD, unit.memory, Field.Store.YES));
         document.add(new HashField(HASH_FIELD, hash, Field.Store.NO));
         document.add(new StringField(makeLanguageFieldName(language.source), language.source.toLanguageTag(), Field.Store.YES));
         document.add(new StringField(makeLanguageFieldName(language.target), language.target.toLanguageTag(), Field.Store.YES));
+
         document.add(new TextField(makeContentFieldName(language), sentence, Field.Store.YES));
         document.add(new TextField(makeContentFieldName(language.reversed()), translation, Field.Store.YES));
+        document.add(new StoredField(makeRawContentFieldName(language), unit.rawSentence));
+        document.add(new StoredField(makeRawContentFieldName(language.reversed()), unit.rawTranslation));
 
         return document;
     }
@@ -124,8 +131,10 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
     @Override
     public ScoreEntry asEntry(Document self, LanguageDirection direction) {
         long memory = Long.parseLong(self.get(MEMORY_FIELD));
-        String[] sentence = self.get(makeContentFieldName(direction)).split(" ");
-        String[] translation = self.get(makeContentFieldName(direction.reversed())).split(" ");
+        String sentence = self.get(makeRawContentFieldName(direction));
+        String translation = self.get(makeRawContentFieldName(direction.reversed()));
+        String[] sentenceTokens = TokensOutputStream.deserialize(self.get(makeContentFieldName(direction)));
+        String[] translationTokens = TokensOutputStream.deserialize(self.get(makeContentFieldName(direction.reversed())));
 
         String _source = self.get(makeLanguageFieldName(direction.source));
         String _target = self.get(makeLanguageFieldName(direction.target));
@@ -147,7 +156,7 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
         if (differ)
             direction = new LanguageDirection(source, target);
 
-        return new ScoreEntry(memory, direction, sentence, translation);
+        return new ScoreEntry(memory, direction, sentence, translation, sentenceTokens, translationTokens);
     }
 
     @Override
@@ -203,6 +212,10 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
     @Override
     public String makeContentFieldName(LanguageDirection direction) {
         return CONTENT_PREFIX_FIELD + direction.source.getLanguage() + '_' + direction.target.getLanguage();
+    }
+
+    private String makeRawContentFieldName(LanguageDirection direction) {
+        return RAW_CONTENT_PREFIX_FIELD + direction.source.getLanguage() + '_' + direction.target.getLanguage();
     }
 
     // Utils

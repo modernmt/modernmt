@@ -4,7 +4,6 @@ import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
-import java.util.Collections;
 
 /**
  * Created by davide on 12/02/18.
@@ -21,8 +20,8 @@ public class Dump {
                     Long.toString(entry.memory),
                     entry.language.source.toLanguageTag(),
                     entry.language.target.toLanguageTag(),
-                    StringUtils.join(entry.sentence, ' ').replace('\t', ' '),
-                    StringUtils.join(entry.translation, ' ').replace('\t', ' ')
+                    entry.sentence.replace('\t', ' '),
+                    entry.translation.replace('\t', ' ')
             }, '\t');
 
             System.out.println(str);

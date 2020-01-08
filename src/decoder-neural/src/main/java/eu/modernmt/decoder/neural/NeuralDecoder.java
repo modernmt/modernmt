@@ -128,7 +128,7 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
         TranslationSplit[] splits;
 
         if (suggestions != null && suggestions[0].score == 1.f) {  // align
-            TranslationSplit split = new TranslationSplit(priority, text, suggestions[0].translation, timeout);
+            TranslationSplit split = new TranslationSplit(priority, text, suggestions[0].translationTokens, timeout);
             splits = new TranslationSplit[]{split};
             lock = scheduler.schedule(direction, split);
         } else {

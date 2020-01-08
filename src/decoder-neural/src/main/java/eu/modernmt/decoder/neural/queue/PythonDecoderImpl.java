@@ -221,8 +221,8 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
                 JsonObject obj = new JsonObject();
                 obj.addProperty("sl", entry.language.source.toLanguageTag());
                 obj.addProperty("tl", entry.language.target.toLanguageTag());
-                obj.addProperty("seg", StringUtils.join(entry.sentence, ' '));
-                obj.addProperty("tra", StringUtils.join(entry.translation, ' '));
+                obj.addProperty("seg", StringUtils.join(entry.sentenceTokens, ' '));
+                obj.addProperty("tra", StringUtils.join(entry.translationTokens, ' '));
                 obj.addProperty("scr", entry.score);
 
                 array.add(obj);
