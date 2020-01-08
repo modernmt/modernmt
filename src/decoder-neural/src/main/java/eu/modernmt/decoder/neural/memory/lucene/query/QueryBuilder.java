@@ -1,5 +1,6 @@
 package eu.modernmt.decoder.neural.memory.lucene.query;
 
+import eu.modernmt.decoder.neural.memory.lucene.DocumentBuilder;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Sentence;
@@ -15,8 +16,10 @@ public interface QueryBuilder {
 
     boolean isLongQuery(int queryLength);
 
-    Query getByHash(long memory, String hash);
+    Query getByHash(DocumentBuilder builder, long memory, String hash);
 
-    Query bestMatchingSuggestion(Analyzer analyzer, UUID user, LanguageDirection direction, Sentence sentence, ContextVector context);
+    Query getChannels(DocumentBuilder builder);
+
+    Query bestMatchingSuggestion(DocumentBuilder builder, Analyzer analyzer, UUID user, LanguageDirection direction, Sentence sentence, ContextVector context);
 
 }

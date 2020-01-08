@@ -2,8 +2,13 @@ package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.decoder.neural.memory.lucene.DocumentBuilder;
-import eu.modernmt.decoder.neural.memory.lucene.query.DefaultQueryBuilder;
+import eu.modernmt.decoder.neural.memory.lucene.query.QueryBuilder;
+import eu.modernmt.io.TokensOutputStream;
+import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.memory.ScoreEntry;
+import eu.modernmt.model.Alignment;
+import eu.modernmt.model.Sentence;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -14,6 +19,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Set;
 
 import static eu.modernmt.decoder.neural.memory.TestData.*;
@@ -26,6 +32,16 @@ import static org.junit.Assert.assertEquals;
 public class LuceneTranslationMemoryTest_hash {
 
     private TLuceneTranslationMemory memory;
+
+    private Document create(LanguageDirection language, int memory, String sentence, String translation, String hash) {
+        TranslationUnit unit = new TranslationUnit((short) 0, 0, null, language, language, memory,
+                sentence, sentence, null, null, null,
+                new Sentence(TokensOutputStream.deserializeWords(sentence)),
+                new Sentence(TokensOutputStream.deserializeWords(translation)),
+                null);
+
+        return this.memory.getDocumentBuilder().create(unit);
+    }
 
     @Before
     public void setup() throws Throwable {
@@ -41,22 +57,25 @@ public class LuceneTranslationMemoryTest_hash {
     @Test
     public void queryWithMisleadingHashes() throws Throwable {
         IndexWriter indexWriter = memory.getIndexWriter();
-        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 2, "2-1", "2-1", "A B C D"));
-        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 1, "1-1", "1-1", "A B C D"));
-        indexWriter.addDocument(DocumentBuilder.newInstance(EN__FR, 1, "1-1F", "1-1F", "A B C D"));
-        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 1, "1-2", "1-2", "D C B A"));
-        indexWriter.addDocument(DocumentBuilder.newInstance(EN__IT, 1, "1-3", "1-3", "D C B Z"));
+        DocumentBuilder documentBuilder = memory.getDocumentBuilder();
+        QueryBuilder queryBuilder = memory.getQueryBuilder();
+
+        indexWriter.addDocument(create(EN__IT, 2, "2-1", "2-1", "A B C D"));
+        indexWriter.addDocument(create(EN__IT, 1, "1-1", "1-1", "A B C D"));
+        indexWriter.addDocument(create(EN__FR, 1, "1-1F", "1-1F", "A B C D"));
+        indexWriter.addDocument(create(EN__IT, 1, "1-2", "1-2", "D C B A"));
+        indexWriter.addDocument(create(EN__IT, 1, "1-3", "1-3", "D C B Z"));
         indexWriter.commit();
 
-        Query query = new DefaultQueryBuilder().getByHash(1, "A B C D");
+        Query query = queryBuilder.getByHash(documentBuilder, 1, "A B C D");
 
         IndexSearcher searcher = memory.getIndexSearcher();
         ScoreDoc[] result = searcher.search(query, 10).scoreDocs;
 
         assertEquals(2, result.length);
 
-        ScoreEntry e1 = DocumentBuilder.asEntry(searcher.doc(result[0].doc));
-        ScoreEntry e2 = DocumentBuilder.asEntry(searcher.doc(result[1].doc));
+        ScoreEntry e1 = documentBuilder.asEntry(searcher.doc(result[0].doc));
+        ScoreEntry e2 = documentBuilder.asEntry(searcher.doc(result[1].doc));
 
         if ("fr".equals(e1.language.target.getLanguage())) {
             assertArrayEquals(new String[]{"1-1F"}, e1.sentence);

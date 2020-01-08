@@ -3,7 +3,9 @@ package eu.modernmt.decoder.neural.memory;
 import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.decoder.neural.memory.lucene.DocumentBuilder;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
+import eu.modernmt.decoder.neural.memory.lucene.query.QueryBuilder;
 import eu.modernmt.io.RuntimeIOException;
 import eu.modernmt.memory.ScoreEntry;
 import org.apache.lucene.store.RAMDirectory;
@@ -18,6 +20,14 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
 
     public TLuceneTranslationMemory() throws IOException {
         super(new RAMDirectory(), 10);
+    }
+
+    public DocumentBuilder getDocumentBuilder() {
+        return super.documentBuilder;
+    }
+
+    public QueryBuilder getQueryBuilder() {
+        return super.queryBuilder;
     }
 
     @Override
