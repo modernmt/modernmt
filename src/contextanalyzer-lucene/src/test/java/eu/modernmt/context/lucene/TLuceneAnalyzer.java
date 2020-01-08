@@ -183,11 +183,6 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
         getStorage().onDataReceived(new DataBatch() {
 
             @Override
-            public Collection<TranslationUnit> getDiscardedTranslationUnits() {
-                return new ArrayList<>();
-            }
-
-            @Override
             public Collection<TranslationUnit> getTranslationUnits() {
                 return Collections.emptyList();
             }
@@ -217,11 +212,6 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
         }
 
         getStorage().onDataReceived(new DataBatch() {
-            @Override
-            public Collection<TranslationUnit> getDiscardedTranslationUnits() {
-                return new ArrayList<>();
-            }
-
             @Override
             public Collection<TranslationUnit> getTranslationUnits() {
                 return units;

@@ -8,11 +8,6 @@ import java.util.Map;
  */
 public interface DataBatch {
 
-    /**
-     * @return a collection of TranslationUnits not accepted by current LanguageIndex
-     */
-    Collection<TranslationUnit> getDiscardedTranslationUnits();
-
     Collection<TranslationUnit> getTranslationUnits();
 
     Collection<Deletion> getDeletions();

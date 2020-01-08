@@ -15,6 +15,4 @@ public interface LogDataListener {
 
     boolean needsAlignment();
 
-    boolean includeDiscardedTranslationUnits();
-
 }

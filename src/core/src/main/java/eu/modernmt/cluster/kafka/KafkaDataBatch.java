@@ -5,6 +5,7 @@ import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.model.Alignment;
@@ -21,7 +22,6 @@ import java.util.*;
  */
 class KafkaDataBatch implements DataBatch {
 
-    private final ArrayList<TranslationUnit> discardedTranslationUnits = new ArrayList<>();
     private final ArrayList<TranslationUnit> translationUnits = new ArrayList<>();
     private final ArrayList<Deletion> deletions = new ArrayList<>();
     private final HashMap<Short, Long> currentPositions = new HashMap<>();
@@ -42,7 +42,6 @@ class KafkaDataBatch implements DataBatch {
     }
 
     public void clear() {
-        discardedTranslationUnits.clear();
         translationUnits.clear();
         deletions.clear();
         currentPositions.clear();
@@ -59,7 +58,7 @@ class KafkaDataBatch implements DataBatch {
         cachedPartitions.push(partition.clear());
     }
 
-    public void load(ConsumerRecords<Integer, KafkaPacket> records, boolean process, boolean align, boolean includeDiscarded) throws ProcessingException, AlignerException {
+    public void load(ConsumerRecords<Integer, KafkaPacket> records, boolean process, boolean align) throws ProcessingException, AlignerException {
         // Load records
 
         this.clear();
@@ -83,13 +82,11 @@ class KafkaDataBatch implements DataBatch {
                 deletions.add(packet.asDeletion());
             } else {
                 LanguageDirection direction = languageIndex.mapIgnoringDirection(packet.getDirection());
-                if (direction == null) {
-                    if (includeDiscarded)
-                        discardedTranslationUnits.add(packet.asTranslationUnit(null));
-                } else {
-                    DataPartition partition = cachedDataSet.computeIfAbsent(direction, key -> getDataPartition(key, size));
-                    partition.add(packet);
-                }
+                if (direction == null)
+                    direction = LanguageCache.defaultMapping(packet.getDirection()); // No specific rule in languageIndex
+
+                DataPartition partition = cachedDataSet.computeIfAbsent(direction, key -> getDataPartition(key, size));
+                partition.add(packet);
             }
         }
 
@@ -104,11 +101,6 @@ class KafkaDataBatch implements DataBatch {
 
     public int size() {
         return translationUnits.size() + deletions.size();
-    }
-
-    @Override
-    public Collection<TranslationUnit> getDiscardedTranslationUnits() {
-        return discardedTranslationUnits;
     }
 
     @Override

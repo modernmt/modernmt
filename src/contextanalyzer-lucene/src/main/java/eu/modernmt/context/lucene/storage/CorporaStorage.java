@@ -127,11 +127,6 @@ public class CorporaStorage implements LogDataListener, Closeable {
     }
 
     @Override
-    public boolean includeDiscardedTranslationUnits() {
-        return false;
-    }
-
-    @Override
     public synchronized void close() throws IOException {
         closed = true;
         buckets.close();
