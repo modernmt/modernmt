@@ -4,6 +4,7 @@ import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.memory.ScoreEntry;
+import eu.modernmt.memory.TranslationMemory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 
@@ -30,9 +31,11 @@ public interface DocumentBuilder {
 
     // Parsing
 
-    ScoreEntry asEntry(Document self);
+    ScoreEntry asScoreEntry(Document self);
 
-    ScoreEntry asEntry(Document self, LanguageDirection direction);
+    ScoreEntry asScoreEntry(Document self, LanguageDirection direction);
+
+    TranslationMemory.Entry asEntry(Document self);
 
     Map<Short, Long> asChannels(Document self);
 

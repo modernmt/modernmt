@@ -74,8 +74,8 @@ public class TestLuceneTranslationMemory_hash {
 
         assertEquals(2, result.length);
 
-        ScoreEntry e1 = documentBuilder.asEntry(searcher.doc(result[0].doc));
-        ScoreEntry e2 = documentBuilder.asEntry(searcher.doc(result[1].doc));
+        ScoreEntry e1 = documentBuilder.asScoreEntry(searcher.doc(result[0].doc));
+        ScoreEntry e2 = documentBuilder.asScoreEntry(searcher.doc(result[1].doc));
 
         if ("fr".equals(e1.language.target.getLanguage())) {
             assertArrayEquals(new String[]{"1-1F"}, e1.sentenceTokens);

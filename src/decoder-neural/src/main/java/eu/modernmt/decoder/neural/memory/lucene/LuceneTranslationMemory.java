@@ -174,7 +174,29 @@ public class LuceneTranslationMemory implements TranslationMemory {
         }
     }
 
-    public void dump(Consumer<ScoreEntry> consumer) throws IOException {
+    @Override
+    public void dump(long memory, Consumer<Entry> consumer) throws IOException {
+        IndexSearcher searcher = getIndexSearcher();
+        IndexReader reader = getIndexReader();
+
+        int size = reader.numDocs();
+        if (size == 0)
+            return;
+
+        Query memoryQuery = new TermQuery(documentBuilder.makeMemoryTerm(memory));
+        TopDocs docs = searcher.search(memoryQuery, size);
+
+        for (ScoreDoc scoreDoc : docs.scoreDocs) {
+            Document document = reader.document(scoreDoc.doc);
+            if (documentBuilder.getMemory(document) > 0) {
+                TranslationMemory.Entry entry = documentBuilder.asEntry(document);
+                consumer.accept(entry);
+            }
+        }
+    }
+
+    @Override
+    public void dumpAll(Consumer<Entry> consumer) throws IOException {
         IndexSearcher searcher = getIndexSearcher();
         IndexReader reader = getIndexReader();
 
@@ -187,7 +209,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         for (ScoreDoc scoreDoc : docs.scoreDocs) {
             Document document = reader.document(scoreDoc.doc);
             if (documentBuilder.getMemory(document) > 0) {
-                ScoreEntry entry = documentBuilder.asEntry(document);
+                TranslationMemory.Entry entry = documentBuilder.asEntry(document);
                 consumer.accept(entry);
             }
         }
@@ -211,7 +233,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
         ScoreEntry[] entries = new ScoreEntry[docs.length];
         for (int i = 0; i < docs.length; i++) {
-            entries[i] = documentBuilder.asEntry(searcher.doc(docs[i].doc), direction);
+            entries[i] = documentBuilder.asScoreEntry(searcher.doc(docs[i].doc), direction);
             entries[i].score = docs[i].score;
         }
 

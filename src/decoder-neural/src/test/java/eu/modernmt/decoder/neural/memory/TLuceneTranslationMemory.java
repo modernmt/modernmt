@@ -8,6 +8,7 @@ import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.decoder.neural.memory.lucene.query.QueryBuilder;
 import eu.modernmt.io.RuntimeIOException;
 import eu.modernmt.memory.ScoreEntry;
+import eu.modernmt.memory.TranslationMemory;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
@@ -39,9 +40,9 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
         }
     }
 
-    public Set<ScoreEntry> entrySet() throws IOException {
-        HashSet<ScoreEntry> result = new HashSet<>();
-        super.dump(result::add);
+    public Set<TranslationMemory.Entry> entrySet() throws IOException {
+        HashSet<TranslationMemory.Entry> result = new HashSet<>();
+        super.dumpAll(result::add);
         return result;
     }
 

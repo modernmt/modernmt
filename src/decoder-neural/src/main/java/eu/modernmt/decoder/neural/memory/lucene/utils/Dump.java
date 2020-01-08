@@ -15,7 +15,7 @@ public class Dump {
             throw new IllegalArgumentException("Wrong number of arguments, usage: <model-path>");
 
         LuceneTranslationMemory memory = new LuceneTranslationMemory(new File(args[0]), 1);
-        memory.dump(entry -> {
+        memory.dumpAll(entry -> {
             String str = StringUtils.join(new String[]{
                     Long.toString(entry.memory),
                     entry.language.source.toLanguageTag(),
