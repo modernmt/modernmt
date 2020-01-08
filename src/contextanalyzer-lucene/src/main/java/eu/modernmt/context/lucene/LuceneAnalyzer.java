@@ -80,10 +80,15 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
         }
     }
 
-    public synchronized void optimize() throws IOException {
+    @Override
+    public synchronized void optimize() throws ContextAnalyzerException {
         logger.info("Starting memory forced merge");
         long begin = System.currentTimeMillis();
-        this.index.forceMerge();
+        try {
+            this.index.forceMerge();
+        } catch (IOException e) {
+            throw new ContextAnalyzerException(e);
+        }
         long elapsed = System.currentTimeMillis() - begin;
         logger.info("Memory forced merge completed in " + (elapsed / 1000.) + "s");
     }

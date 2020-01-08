@@ -1,17 +1,17 @@
 package eu.modernmt.backup;
 
-import eu.modernmt.backup.model.BackupMemory;
 import eu.modernmt.cluster.kafka.KafkaBinaryLog;
 import eu.modernmt.config.BinaryLogConfig;
 import eu.modernmt.config.NodeConfig;
-import eu.modernmt.context.lucene.LuceneAnalyzer;
-import eu.modernmt.data.LogDataListener;
+import eu.modernmt.context.ContextAnalyzer;
+import eu.modernmt.context.ContextAnalyzerException;
 import eu.modernmt.data.BinaryLog;
 import eu.modernmt.data.HostUnreachableException;
-import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
+import eu.modernmt.data.LogDataListener;
+import eu.modernmt.engine.BootstrapException;
+import eu.modernmt.engine.Engine;
 import eu.modernmt.hw.NetworkUtils;
-import eu.modernmt.io.Paths;
-import eu.modernmt.processing.Preprocessor;
+import eu.modernmt.memory.TranslationMemory;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -31,10 +31,8 @@ public class BackupEngine {
     private final NodeConfig config;
     private final File models;
 
-    private LuceneAnalyzer contextAnalyzer = null;
-    private LuceneTranslationMemory memory = null;
+    private Engine engine = null;
     private BinaryLog binlog = null;
-    private BackupMemory backupMemory = null;
 
     public BackupEngine(NodeConfig config, File models) {
         this.uuid = UUID.randomUUID().toString();
@@ -57,27 +55,27 @@ public class BackupEngine {
         return models;
     }
 
-    public void start() throws IOException {
-        FileUtils.forceMkdir(this.models);
+    public void start() throws BootstrapException {
+        try {
+            FileUtils.forceMkdir(this.models);
+        } catch (IOException e) {
+            throw new BootstrapException(e);
+        }
 
         logger.info("Starting backup engine...");
         long begin = System.currentTimeMillis();
 
-        contextAnalyzer = new LuceneAnalyzer(Paths.join(models, "context"), config.getEngineConfig().getAnalyzerConfig());
-        memory = new LuceneTranslationMemory(Paths.join(models, "memory"), 1);
-        backupMemory = new BackupMemory(Paths.join(models, "backup"));
+        engine = Engine.load(config.getEngineConfig());
+        binlog = new KafkaBinaryLog(engine, uuid, config.getBinaryLogConfig());
 
-        binlog = new KafkaBinaryLog(config.getEngineConfig().getLanguageIndex(), new Preprocessor(), null, uuid, config.getBinaryLogConfig());
-        for (LogDataListener listener : contextAnalyzer.getDataListeners())
+        for (LogDataListener listener : engine.getDataListeners())
             binlog.addLogDataListener(listener);
-        binlog.addLogDataListener(memory);
-        binlog.addLogDataListener(backupMemory);
 
         Map<Short, Long> positions;
         try {
             positions = binlog.connect(60, TimeUnit.SECONDS, true, false);
         } catch (HostUnreachableException e) {
-            throw new IOException(e);
+            throw new BootstrapException(e);
         }
 
         long elapsed = System.currentTimeMillis() - begin;
@@ -89,13 +87,14 @@ public class BackupEngine {
     }
 
     public void stop(boolean optimize) throws IOException {
-        IOException dmError = close(binlog);
-        IOException caError;
-        IOException mError;
-        IOException sError;
+        IOException binlogError = close(binlog);
+        IOException engineError;
 
         try {
             if (optimize) {
+                ContextAnalyzer contextAnalyzer = this.engine.getContextAnalyzer();
+                TranslationMemory memory = this.engine.getDecoder().getTranslationMemory();
+
                 long begin, elapsed;
 
                 logger.info("Running optimization for Context Analyzer...");
@@ -109,32 +108,24 @@ public class BackupEngine {
                 memory.optimize();
                 elapsed = System.currentTimeMillis() - begin;
                 logger.info("Optimization for Memory completed in " + (elapsed / 1000.) + "s");
-
-                logger.info("Running optimization for Backup...");
-                begin = System.currentTimeMillis();
-                backupMemory.optimize();
-                elapsed = System.currentTimeMillis() - begin;
-                logger.info("Optimization for Backup completed in " + (elapsed / 1000.) + "s");
             }
+        } catch (ContextAnalyzerException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof IOException)
+                throw (IOException) cause;
+            else
+                throw new IOException(e);
         } finally {
-            caError = close(contextAnalyzer);
-            mError = close(memory);
-            sError = close(backupMemory);
+            engineError = close(engine);
         }
 
-        if (dmError != null)
-            throw dmError;
-        if (caError != null)
-            throw caError;
-        if (mError != null)
-            throw mError;
-        if (sError != null)
-            throw sError;
+        if (binlogError != null)
+            throw binlogError;
+        if (engineError != null)
+            throw engineError;
 
         binlog = null;
-        contextAnalyzer = null;
-        memory = null;
-        backupMemory = null;
+        engine = null;
 
         logger.info("BackupFile engine stopped");
     }

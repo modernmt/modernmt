@@ -227,6 +227,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         return entries;
     }
 
+    @Override
     public synchronized void optimize() throws IOException {
         IndexReader reader = getIndexReader();
         logger.info("Starting memory forced merge " +

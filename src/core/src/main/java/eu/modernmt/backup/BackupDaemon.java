@@ -1,6 +1,7 @@
 package eu.modernmt.backup;
 
 import eu.modernmt.config.NodeConfig;
+import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.io.FileConst;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.LogManager;
@@ -33,7 +34,7 @@ public class BackupDaemon implements Closeable {
         this.backups = new File(engineRoot, "backups");
     }
 
-    public void runForever() throws IOException {
+    public void runForever() throws IOException, BootstrapException {
         Runtime.getRuntime().addShutdownHook(new Thread(this::interrupt));
 
         long nextBackup = System.currentTimeMillis();

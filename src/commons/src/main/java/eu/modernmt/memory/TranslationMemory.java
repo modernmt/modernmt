@@ -16,6 +16,8 @@ public interface TranslationMemory extends Closeable, LogDataListener {
 
     ScoreEntry[] search(UUID user, LanguageDirection direction, Sentence source, ContextVector contextVector, int limit) throws IOException;
 
+    void optimize() throws IOException;
+
     int size();
 
 }
