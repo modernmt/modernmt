@@ -1,15 +1,12 @@
 import os
-import tarfile
 import time
 
 from cli.mmt.fileformats import CompactFileFormat
 from testcases import ModernMTTestCase, TEST_RESOURCES
-from testcases.utils.connectors import BackupDaemonConnector
 
 
-class __BackupTest(ModernMTTestCase):
+class BackupTest(ModernMTTestCase):
     mmt_engine_archive = os.path.join(TEST_RESOURCES, 'multilingual_echo_engine.tar.gz')
-    backup_daemon_archive = os.path.join(TEST_RESOURCES, 'backup_daemon.tar.gz')
 
     CORPUS_DE = CompactFileFormat('en', 'de', os.path.join(TEST_RESOURCES, 'onlinelearning', 'Memory.en__de.cfc'))
     CORPUS_ES = CompactFileFormat('en', 'es', os.path.join(TEST_RESOURCES, 'onlinelearning', 'Memory.en__es.cfc'))
@@ -19,60 +16,6 @@ class __BackupTest(ModernMTTestCase):
 
     ALL_CORPORA = [CORPUS_DE, CORPUS_ES, CORPUS_FR, CORPUS_IT, CORPUS_ZH]
     BACKUP_CORPORA = [CORPUS_DE, CORPUS_ES, CORPUS_IT, CORPUS_ZH]
-    MEMORY_CORPORA = [CORPUS_ES, CORPUS_IT, CORPUS_ZH]
-
-    @staticmethod
-    def map_lang(lang):
-        if lang.startswith('es'):
-            if lang == 'es' or lang == 'es-ES':
-                return 'es-ES'
-            else:
-                return 'es-MX'
-        elif lang.startswith('zh'):
-            if lang == 'zh-HK' or lang == 'zh-TW':
-                return 'zh-TW'
-            else:
-                return 'zh-CN'
-        else:
-            return lang.split('-')[0]
-
-    def setUp(self):
-        super().setUp()
-
-        self.backup_daemon = BackupDaemonConnector(self.__class__.__name__ + '_backup')
-
-        if self.backup_daemon_archive is not None:
-            self.backup_daemon.delete()
-
-            os.makedirs(self.backup_daemon.engine.path)
-
-            tar = tarfile.open(self.backup_daemon_archive, 'r:gz')
-            tar.extractall(self.backup_daemon.engine.path)
-            tar.close()
-
-            self.backup_daemon.start()
-
-    def tearDown(self):
-        super().tearDown()
-        self.backup_daemon.stop()
-        self.backup_daemon.delete()
-
-    # Assertion
-
-    def assertInContent(self, content, element):
-        element = ''.join(element.split())
-        content = [''.join(line.split()) for line in content]
-
-        self.assertIn(element, content)
-
-    def assertInParallelContent(self, content, sentence, translation):
-        sentence = ''.join(sentence.split())
-        translation = ''.join(translation.split())
-        content = [(''.join(s.split()), ''.join(t.split())) for s, t in content]
-
-        self.assertIn((sentence, translation), content)
-
-    # Utils
 
     @staticmethod
     def _update_of(tgt_line):
@@ -81,8 +24,6 @@ class __BackupTest(ModernMTTestCase):
         else:
             return None
 
-
-class BackupTest(__BackupTest):
     def _send_updates(self, memories):
         for corpus in self.ALL_CORPORA:
             memory = memories[corpus.name]
@@ -137,40 +78,22 @@ class BackupTest(__BackupTest):
         self._verify_index_integrity(memories)
 
     def _verify_index_integrity(self, memories):
-        time.sleep(10)  # wait to ensure backup engine has completed
+        time.sleep(5)  # wait to ensure backup engine has completed
 
         # Dump engine content
         self.mmt.stop()
-        self.backup_daemon.stop()
 
-        translation_memory = self.backup_daemon.dump_translation_memory()
-        backup_memory = self.backup_daemon.dump_backup_translation_memory()
+        translation_memory = self.mmt.dump_translation_memory()
 
         # Verify translation memory
-        self.assertEqual(3, len(translation_memory))
-
-        for corpus in self.MEMORY_CORPORA:
-            memory = memories[corpus.name]
-            memory_id = int(memory['id'])
-
-            self.assertIn(memory_id, translation_memory)
-            content = translation_memory[memory_id]
-
-            with corpus.reader_with_languages() as reader:
-                for src_lang, tgt_lang, src_line, tgt_line in reader:
-                    src_lang, tgt_lang = self.map_lang(src_lang), self.map_lang(tgt_lang)
-                    updated_tgt_line = self._update_of(tgt_line)
-                    self.assertIn((src_lang, tgt_lang, src_line, updated_tgt_line or tgt_line), content)
-
-        # Verify backup memory
-        self.assertEqual(4, len(backup_memory))
+        self.assertEqual(4, len(translation_memory))
 
         for corpus in self.BACKUP_CORPORA:
             memory = memories[corpus.name]
             memory_id = int(memory['id'])
 
-            self.assertIn(memory_id, backup_memory)
-            content = backup_memory[memory_id]
+            self.assertIn(memory_id, translation_memory)
+            content = translation_memory[memory_id]
 
             with corpus.reader_with_languages() as reader:
                 for src_lang, tgt_lang, src_line, tgt_line in reader:
