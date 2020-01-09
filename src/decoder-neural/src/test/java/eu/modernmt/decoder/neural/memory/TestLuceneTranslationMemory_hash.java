@@ -7,6 +7,7 @@ import eu.modernmt.decoder.neural.memory.lucene.query.QueryBuilder;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.memory.ScoreEntry;
+import eu.modernmt.memory.TranslationMemory;
 import eu.modernmt.model.Sentence;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
@@ -95,7 +96,7 @@ public class TestLuceneTranslationMemory_hash {
                 "hello world __", "ciao mondo __", null);
         memory.onDataReceived(Collections.singletonList(overwrite));
 
-        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(Arrays.asList(original, overwrite));
+        Set<TranslationMemory.Entry> expectedEntries = TLuceneTranslationMemory.asEntrySet(Arrays.asList(original, overwrite));
 
         assertEquals(expectedEntries, memory.entrySet());
     }
@@ -109,7 +110,7 @@ public class TestLuceneTranslationMemory_hash {
                 "hello world", "ciao mondo", null);
         memory.onDataReceived(Collections.singletonList(overwrite));
 
-        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(Collections.singletonList(overwrite));
+        Set<TranslationMemory.Entry> expectedEntries = TLuceneTranslationMemory.asEntrySet(Collections.singletonList(overwrite));
 
         assertEquals(expectedEntries, memory.entrySet());
     }

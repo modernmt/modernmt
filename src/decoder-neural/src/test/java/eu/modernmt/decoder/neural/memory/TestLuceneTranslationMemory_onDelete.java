@@ -2,6 +2,7 @@ package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.memory.ScoreEntry;
+import eu.modernmt.memory.TranslationMemory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,7 +40,7 @@ public class TestLuceneTranslationMemory_onDelete {
         List<TranslationUnit> units1 = TestData.tuList(0, 0, 1, EN__IT, 10);
         List<TranslationUnit> units2 = TestData.tuList(0, 10, 2, EN__IT, 10);
 
-        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(units2);
+        Set<TranslationMemory.Entry> expectedEntries = TLuceneTranslationMemory.asEntrySet(units2);
 
         memory.onDataReceived(units1);
         memory.onDataReceived(units2);
@@ -62,7 +63,7 @@ public class TestLuceneTranslationMemory_onDelete {
         );
         List<TranslationUnit> units2 = TestData.tuList(0, 4, 2, EN__IT, 10);
 
-        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(units2);
+        Set<TranslationMemory.Entry> expectedEntries = TLuceneTranslationMemory.asEntrySet(units2);
 
         memory.onDataReceived(units1);
         memory.onDataReceived(units2);
@@ -97,7 +98,7 @@ public class TestLuceneTranslationMemory_onDelete {
         List<TranslationUnit> units1 = TestData.tuList(0, 0, 1, EN__IT, 10);
         List<TranslationUnit> units2 = TestData.tuList(0, 10, 2, EN__IT, 10);
 
-        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(units2);
+        Set<TranslationMemory.Entry> expectedEntries = TLuceneTranslationMemory.asEntrySet(units2);
 
         memory.onDataReceived(units1);
         memory.onDataReceived(units2);
@@ -116,7 +117,7 @@ public class TestLuceneTranslationMemory_onDelete {
         List<TranslationUnit> units1 = TestData.tuList(1, 0, 1, EN__IT, 10);
         List<TranslationUnit> units2 = TestData.tuList(1, 10, 2, EN__IT, 10);
 
-        Set<ScoreEntry> expectedEntries = new HashSet<>();
+        Set<TranslationMemory.Entry> expectedEntries = new HashSet<>();
         expectedEntries.addAll(TLuceneTranslationMemory.asEntrySet(units1));
         expectedEntries.addAll(TLuceneTranslationMemory.asEntrySet(units2));
 

@@ -46,21 +46,11 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
         return result;
     }
 
-    public static Set<ScoreEntry> asEntrySet(Collection<TranslationUnit> units) {
-        HashSet<ScoreEntry> result = new HashSet<>(units.size());
+    public static Set<TranslationMemory.Entry> asEntrySet(Collection<TranslationUnit> units) {
+        HashSet<TranslationMemory.Entry> result = new HashSet<>(units.size());
 
         for (TranslationUnit unit : units) {
-            String source = unit.language.source.toLanguageTag();
-            String target = unit.language.target.toLanguageTag();
-
-            ScoreEntry entry;
-            if (source.compareTo(target) < 0)
-                entry = new ScoreEntry(unit.memory, unit.language, unit.rawSentence, unit.rawTranslation,
-                        unit.rawSentence.split("\\s+"), unit.rawTranslation.split("\\s+"));
-            else
-                entry = new ScoreEntry(unit.memory, unit.language.reversed(), unit.rawTranslation, unit.rawSentence,
-                        unit.rawTranslation.split("\\s+"), unit.rawSentence.split("\\s+"));
-
+            TranslationMemory.Entry entry = new TranslationMemory.Entry(unit.memory, unit.language, unit.rawSentence, unit.rawTranslation);
             result.add(entry);
         }
 

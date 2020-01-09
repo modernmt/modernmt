@@ -3,6 +3,7 @@ package eu.modernmt.decoder.neural.memory.lucene;
 import eu.modernmt.data.HashGenerator;
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.io.TokensOutputStream;
+import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.memory.ScoreEntry;
@@ -26,10 +27,13 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
     private static final String CHANNELS_FIELD = "channels";
     private static final String MEMORY_FIELD = "memory";
     private static final String HASH_FIELD = "hash";
-    private static final String RAW_LANGUAGE_FIELD = "raw_lang";
     private static final String LANGUAGE_PREFIX_FIELD = "lang_";
     private static final String CONTENT_PREFIX_FIELD = "content_";
-    private static final String RAW_CONTENT_PREFIX_FIELD = "raw_content_";
+
+    private static final String SOURCE_LANGUAGE_FIELD = "src_lang";
+    private static final String TARGET_LANGUAGE_FIELD = "tgt_lang";
+    private static final String SENTENCE_FIELD = "sentence";
+    private static final String TRANSLATION_FIELD = "translation";
 
     // Factory methods
 
@@ -50,12 +54,13 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
 
         document.add(new StringField(makeLanguageFieldName(language.source), language.source.toLanguageTag(), Field.Store.YES));
         document.add(new StringField(makeLanguageFieldName(language.target), language.target.toLanguageTag(), Field.Store.YES));
-        document.add(new StoredField(RAW_LANGUAGE_FIELD, serialize(unit.rawLanguage)));
-
         document.add(new TextField(makeContentFieldName(language), sentence, Field.Store.YES));
         document.add(new TextField(makeContentFieldName(language.reversed()), translation, Field.Store.YES));
-        document.add(new StoredField(makeRawContentFieldName(language), unit.rawSentence));
-        document.add(new StoredField(makeRawContentFieldName(language.reversed()), unit.rawTranslation));
+
+        document.add(new StoredField(SOURCE_LANGUAGE_FIELD, unit.rawLanguage.source.toLanguageTag()));
+        document.add(new StoredField(TARGET_LANGUAGE_FIELD, unit.rawLanguage.target.toLanguageTag()));
+        document.add(new StoredField(SENTENCE_FIELD, unit.rawSentence.getBytes(UTF8Charset.get())));
+        document.add(new StoredField(TRANSLATION_FIELD, unit.rawTranslation.getBytes(UTF8Charset.get())));
 
         return document;
     }
@@ -101,19 +106,38 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
         return fieldName.substring(lastUnderscore + 1);
     }
 
-    public LanguageDirection getRawLanguage(Document self) {
-        String[] value = self.get(RAW_LANGUAGE_FIELD).split(" ");
-        if (value.length != 2)
-            throw new IllegalArgumentException("Invalid language field: " + self.get(RAW_LANGUAGE_FIELD));
-
-        return new LanguageDirection(Language.fromString(value[0]), Language.fromString(value[1]));
-    }
-
     // Parsing
 
     @Override
     public ScoreEntry asScoreEntry(Document self) {
-        return asScoreEntry(self, guessLanguageDirection(self));
+        Language source = null;
+        Language target = null;
+
+        for (IndexableField field : self.getFields()) {
+            String name = field.name();
+
+            if (name.startsWith(LANGUAGE_PREFIX_FIELD)) {
+                Language l = Language.fromString(name.substring(LANGUAGE_PREFIX_FIELD.length()));
+
+                if (source == null) {
+                    source = l;
+                } else {
+                    target = l;
+                    break;
+                }
+            }
+        }
+
+        if (source == null || target == null)
+            throw new IllegalArgumentException("Invalid document: missing language info.");
+
+        LanguageDirection language;
+        if (source.toLanguageTag().compareTo(target.toLanguageTag()) < 0)
+            language = new LanguageDirection(source, target);
+        else
+            language = new LanguageDirection(target, source);
+
+        return asScoreEntry(self, language);
     }
 
     @Override
@@ -148,11 +172,12 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
     @Override
     public TranslationMemory.Entry asEntry(Document self) {
         long memory = Long.parseLong(self.get(MEMORY_FIELD));
-        LanguageDirection language = getRawLanguage(self);
-        String sentence = self.get(makeRawContentFieldName(language));
-        String translation = self.get(makeRawContentFieldName(language.reversed()));
+        Language source = Language.fromString(self.get(SOURCE_LANGUAGE_FIELD));
+        Language target = Language.fromString(self.get(TARGET_LANGUAGE_FIELD));
+        String sentence = self.getBinaryValue(SENTENCE_FIELD).utf8ToString();
+        String translation = self.getBinaryValue(TRANSLATION_FIELD).utf8ToString();
 
-        return new TranslationMemory.Entry(memory, language, sentence, translation);
+        return new TranslationMemory.Entry(memory, new LanguageDirection(source, target), sentence, translation);
     }
 
     @Override
@@ -210,49 +235,13 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
         return CONTENT_PREFIX_FIELD + direction.source.getLanguage() + '_' + direction.target.getLanguage();
     }
 
-    private String makeRawContentFieldName(LanguageDirection direction) {
-        return RAW_CONTENT_PREFIX_FIELD + direction.source.getLanguage() + '_' + direction.target.getLanguage();
-    }
-
     // Utils
-
-    private static String serialize(LanguageDirection language) {
-        return language.source.toLanguageTag() + ' ' + language.target.toLanguageTag();
-    }
 
     private static Term makeLongTerm(long value, String field) {
         BytesRefBuilder builder = new BytesRefBuilder();
         NumericUtils.longToPrefixCoded(value, 0, builder);
 
         return new Term(field, builder.toBytesRef());
-    }
-
-    private static LanguageDirection guessLanguageDirection(Document self) {
-        Language source = null;
-        Language target = null;
-
-        for (IndexableField field : self.getFields()) {
-            String name = field.name();
-
-            if (name.startsWith(LANGUAGE_PREFIX_FIELD)) {
-                Language l = Language.fromString(name.substring(LANGUAGE_PREFIX_FIELD.length()));
-
-                if (source == null) {
-                    source = l;
-                } else {
-                    target = l;
-                    break;
-                }
-            }
-        }
-
-        if (source == null || target == null)
-            throw new IllegalArgumentException("Invalid document: missing language info.");
-
-        if (source.toLanguageTag().compareTo(target.toLanguageTag()) < 0)
-            return new LanguageDirection(source, target);
-        else
-            return new LanguageDirection(target, source);
     }
 
 }

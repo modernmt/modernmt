@@ -7,6 +7,7 @@ import eu.modernmt.model.Sentence;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -29,6 +30,31 @@ public interface TranslationMemory extends Closeable, LogDataListener {
             this.translation = translation;
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Entry entry = (Entry) o;
+            return memory == entry.memory &&
+                    language.equals(entry.language) &&
+                    sentence.equals(entry.sentence) &&
+                    translation.equals(entry.translation);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(memory, language, sentence, translation);
+        }
+
+        @Override
+        public String toString() {
+            return "Entry{" +
+                    "memory=" + memory +
+                    ", language=" + language +
+                    ", sentence='" + sentence + '\'' +
+                    ", translation='" + translation + '\'' +
+                    '}';
+        }
     }
 
     ScoreEntry[] search(UUID user, LanguageDirection direction, Sentence source, ContextVector contextVector, int limit) throws IOException;

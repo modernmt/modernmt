@@ -36,7 +36,7 @@ public class TestLuceneTranslationMemory_searchPrivacy {
     }
 
     private static boolean contains(ScoreEntry[] entries, long memory, LanguageDirection direction, String sentence, String translation) {
-        ScoreEntry target = new ScoreEntry(memory, direction, sentence, translation, sentence.split(" "), translation.split(" "));
+        ScoreEntry target = new ScoreEntry(memory, direction, sentence.split(" "), translation.split(" "));
 
         for (ScoreEntry entry : entries) {
             if (entry.equals(target))

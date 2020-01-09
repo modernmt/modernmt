@@ -2,6 +2,7 @@ package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.TranslationUnit;
 import eu.modernmt.memory.ScoreEntry;
+import eu.modernmt.memory.TranslationMemory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,7 +37,7 @@ public class TestLuceneTranslationMemory_onDataReceived {
     private void test(List<TranslationUnit> units) throws IOException {
         int size = units.size();
         Map<Short, Long> expectedChannels = TestData.channels(0, size - 1);
-        Set<ScoreEntry> expectedEntries = TLuceneTranslationMemory.asEntrySet(units);
+        Set<TranslationMemory.Entry> expectedEntries = TLuceneTranslationMemory.asEntrySet(units);
 
         memory.onDataReceived(units);
 
