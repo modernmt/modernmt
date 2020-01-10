@@ -92,11 +92,6 @@
             <artifactId>mmt-core</artifactId>
             <version>${mmt.version}</version>
         </dependency>
-        <dependency>
-            <groupId>eu.modernmt</groupId>
-            <artifactId>mmt-backup-model</artifactId>
-            <version>${mmt.version}</version>
-        </dependency>
     </dependencies>
 
 </project>
