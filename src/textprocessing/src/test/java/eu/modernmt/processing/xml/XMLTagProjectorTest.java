@@ -74,7 +74,6 @@ public class XMLTagProjectorTest {
     }
 
     @Test
-    @Ignore
     public void testEmptyTag() {
         Sentence source = new Sentence(new Word[]{
                 new Word("Example", null," ",false,true),
