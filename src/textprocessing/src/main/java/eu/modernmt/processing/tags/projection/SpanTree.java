@@ -218,17 +218,13 @@ class SpanTree {
         if (targetSpan.getAnchor() == -1) {
             targetSpan.setAnchor(computeAnchor(node, alignment, targetWords));
         }
-        //overwrite anchors of empty tags
-        if ((targetSpan.getBeginTag() != null) && (targetSpan.getBeginTag().getType() == Type.EMPTY_TAG)) {
-            targetSpan.setAnchor(computeAnchorForSelfClosing(targetSpan.getBeginTag().getPosition(), alignment, targetWords));
-        }
+
         for (Node child : node.getChildren()) {
             fixAnchors(child, alignment, targetWords);
         }
     }
 
     static private void fixUndefinedAnchors(Node node) {
-//        System.out.println("fixUndefinedAnchors on node:" + node);
         if (node.getChildren().size() >= 2) {
             //fix anchor of children having beginTag == null; it assign the anchor of the closest right span with anchors ~= -1
             for (int i = 0; i < node.getChildren().size(); i++) {
@@ -368,9 +364,11 @@ class SpanTree {
                 sourceRightToken.addAll(alignment.get(sourceP));
             }
         }
+        sourceLeftToken = Coverage.contiguous(sourceLeftToken);
+        sourceRightToken = Coverage.contiguous(sourceRightToken);
 
         //Find the mapped position that respects most of the left-right word-tag relationship as possible.
-        for (int i = 0; i < targetWords; i++) {
+        for (int i = 0; i <= targetWords; i++) {
             targetRightToken.add(i);
         }
         rightTokenIntersection.addAll(sourceRightToken);
@@ -380,8 +378,9 @@ class SpanTree {
         int actualPosition = 0;
         for (int i = 0; i < targetWords; i++) {
             actualPosition++;
+            if (!targetLeftToken.contains(i))
+                targetLeftToken.add(i);
 
-            targetLeftToken.add(i);
             targetRightToken.remove(i);
             leftTokenIntersection.clear();
             rightTokenIntersection.clear();
@@ -457,9 +456,9 @@ class SpanTree {
                             Iterator<Integer> iterator = positionsToRemove.iterator();
                             while (!modifiedI && !modifiedJ && iterator.hasNext()) {
                                 Integer pos = iterator.next();
-                                modifiedI = modifiedI | posI.remove(pos);
+                                modifiedI = modifiedI || posI.remove(pos);
                                 if (!modifiedI) {
-                                    modifiedJ = modifiedJ | posJ.remove(pos);
+                                    modifiedJ = modifiedJ || posJ.remove(pos);
                                 }
                             }
                         }
