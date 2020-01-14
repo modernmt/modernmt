@@ -10,7 +10,7 @@ import static org.junit.Assert.*;
 public class XMLTagProjectorTest {
 
     @Test
-    public void testOpeningNotEmptyMonotone() throws Throwable {
+    public void testOpeningNotEmptyMonotone() {
         Sentence source = new Sentence(new Word[]{
                 new Word("hello", null," ", false, true),
                 new Word("world", " ",null, true, true),
@@ -42,7 +42,7 @@ public class XMLTagProjectorTest {
     }
 
     @Test
-    public void testOpeningNotEmptyNonMonotone() throws Throwable {
+    public void testOpeningNotEmptyNonMonotone() {
         Sentence source = new Sentence(new Word[]{
                 new Word("hello", null," ", false, true),
                 new Word("world", null,null, true, false),
@@ -75,7 +75,7 @@ public class XMLTagProjectorTest {
 
     @Test
     @Ignore
-    public void testEmptyTag() throws Throwable {
+    public void testEmptyTag() {
         Sentence source = new Sentence(new Word[]{
                 new Word("Example", null," ",false,true),
                 new Word("with", " ", " ", true, true),
@@ -110,7 +110,7 @@ public class XMLTagProjectorTest {
     }
 
     @Test
-    public void testOpeningEmptyMonotone() throws Throwable {
+    public void testOpeningEmptyMonotone() {
         Sentence source = new Sentence(new Word[]{
                 new Word("hello", null, " ", true, true),
                 new Word("world",  null, null, true, false),
@@ -142,7 +142,7 @@ public class XMLTagProjectorTest {
     }
 
     @Test
-    public void testOpeningEmptyNonMonotone() throws Throwable {
+    public void testOpeningEmptyNonMonotone() {
         Sentence source = new Sentence(new Word[]{
                 new Word("hello", null," ",false,true),
                 new Word("world", " ",null,true,false),
@@ -175,7 +175,7 @@ public class XMLTagProjectorTest {
     }
 
     @Test
-    public void testOpeningNonClosing() throws Throwable {
+    public void testOpeningNonClosing() {
         Sentence source = new Sentence(new Word[]{
                 new Word("Example", null, " ",false,true),
                 new Word("with", " ", " ",true,true),
@@ -210,7 +210,7 @@ public class XMLTagProjectorTest {
     }
 
     @Test
-    public void testClosingNonOpening() throws Throwable {
+    public void testClosingNonOpening() {
         Sentence source = new Sentence(new Word[]{
                 new Word("Example", null, " ",false,true),
                 new Word("with", " ", null,true,true),
@@ -245,7 +245,7 @@ public class XMLTagProjectorTest {
     }
 
     @Test
-    public void testEmbeddedTags() throws Throwable {
+    public void testEmbeddedTags() {
         Sentence source = new Sentence(new Word[]{
                 new Word("Example", null, " ",false,true),
                 new Word("with", " ", " ",true,true),
@@ -283,7 +283,7 @@ public class XMLTagProjectorTest {
     }
 
     @Test
-    public void testSpacedXMLCommentTags() throws Throwable {
+    public void testSpacedXMLCommentTags() {
         Sentence source = new Sentence(new Word[]{
                 new Word("Example", null, " ",false,true),
                 new Word("with", " "," ",true,true),
@@ -318,7 +318,7 @@ public class XMLTagProjectorTest {
     }
 
     @Test
-    public void testNotSpacedXMLCommentTags() throws Throwable {
+    public void testNotSpacedXMLCommentTags() {
         Sentence source = new Sentence(new Word[]{
                 new Word("Example", null, " ",false,true),
                 new Word("with", " ", " ",true,true),
@@ -353,7 +353,7 @@ public class XMLTagProjectorTest {
     }
 
     @Test
-    public void testSingleXMLComment() throws Throwable {
+    public void testSingleXMLComment() {
         Sentence source = new Sentence(new Word[]{
                 new Word("This", null," ",false,true),
                 new Word("is", " ", " ",true,true),
@@ -388,7 +388,7 @@ public class XMLTagProjectorTest {
     }
 
     @Test
-    public void testDTDTags() throws Throwable {
+    public void testDTDTags() {
         Sentence source = new Sentence(new Word[]{
                 new Word("Test", " ",null,false,false),
         }, new Tag[]{
@@ -412,7 +412,7 @@ public class XMLTagProjectorTest {
     }
 
     @Test
-    public void testOnlyTags() throws Throwable {
+    public void testOnlyTags() {
         Sentence source = new Sentence(null, new Tag[]{
                 XMLTag.fromText("<a>", null, null, 0),
                 XMLTag.fromText("</a>", null, null, 0),
