@@ -6,9 +6,7 @@ import eu.modernmt.decoder.neural.queue.PythonDecoder;
 import eu.modernmt.decoder.neural.scheduler.Scheduler;
 import eu.modernmt.decoder.neural.scheduler.TranslationSplit;
 import eu.modernmt.lang.LanguageDirection;
-import eu.modernmt.model.Translation;
-import eu.modernmt.model.Alignment;
-import eu.modernmt.model.Word;
+import eu.modernmt.model.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,24 +71,12 @@ public class DecoderExecutorThread extends Thread {
             try {
                 split.ensureValid();
 
-                if (!split.sentence.hasWords())
-                    split.setTranslation(Translation.emptyTranslation(split.sentence));
-                else if (!split.sentence.hasAnyLetter()) {
+                if (!split.sentence.hasWords() || !SentenceUtils.hasAnyLetter(split.sentence)) {
                     split.onTranslationBegin(System.currentTimeMillis());
-
-                    String[] strings = new String[split.sentence.length()];
-                    int[] positions = new int[split.sentence.length()];
-                    Word[] words = split.sentence.getWords();
-                    for (int i = 0; i < words.length; i++) {
-                        strings[i] = words[i].getText();
-                        positions[i] = i;
-                    }
-                    Translation translation = Translation.fromTokens(split.sentence, strings);
-                    translation.setWordAlignment(new Alignment(positions, positions));
-                    split.setTranslation(translation);
-                }
-                else
+                    split.setTranslation(SentenceUtils.verbatimTranslation(split.sentence));
+                } else {
                     result.add(split);
+                }
             } catch (TranslationTimeoutException e) {
                 split.setException(e);
             }

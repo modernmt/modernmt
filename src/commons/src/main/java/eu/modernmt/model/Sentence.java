@@ -45,32 +45,6 @@ public class Sentence implements Serializable, Iterable<Token> {
         return words.length > 0;
     }
 
-    //return true if any word has at least one letter
-    public boolean hasAnyLetter() {
-        for (Word word : words) {
-            if (hasAnyLetter(word.getText()))
-                return true;
-        }
-        return false;
-    }
-
-    //return true if the string has at least one letter
-    private static boolean hasAnyLetter(String s) {
-        //TODO: should apply only when the language can handle the concept of letter
-
-        if (s == null) // checks if the String is null {
-            return false;
-
-        for (char c : s.toCharArray()) {
-            // checks whether the character is not a letter
-            // if it is not a letter, it will return false
-            if ((Character.isLetter(c))) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     /**
      * Sets tags of the sentence
      *
