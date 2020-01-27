@@ -76,6 +76,8 @@ public class DecoderExecutorThread extends Thread {
                 if (!split.sentence.hasWords())
                     split.setTranslation(Translation.emptyTranslation(split.sentence));
                 else if (!split.sentence.hasAnyLetter()) {
+                    split.onTranslationBegin(System.currentTimeMillis());
+
                     String[] strings = new String[split.sentence.length()];
                     int[] positions = new int[split.sentence.length()];
                     Word[] words = split.sentence.getWords();
