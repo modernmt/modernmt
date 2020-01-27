@@ -176,7 +176,12 @@ class MMTDecoder(object):
         # (3) Translate and compute word alignment
         begin = time.time()
         if forced_translation is not None:
-            result = [self._force_decode(target_lang, batch[0], forced_translation)]
+            result = []
+            for (sentence, single_forced_translation) in zip(batch, forced_translation):
+                if single_forced_translation != "":
+                    result.append(self._force_decode(target_lang, sentence, single_forced_translation))
+                else:
+                    result.append(self._decode(source_lang, target_lang, [sentence])[0])
         else:
             result = self._decode(source_lang, target_lang, batch)
 

@@ -68,7 +68,11 @@ class TranslationRequest(object):
         batch = obj['q'].split('\n')
         source_lang = obj['sl']
         target_lang = obj['tl']
-        forced_translation = obj['f'] if 'f' in obj else None
+        forced_translation = None
+        if 'f' in obj:
+            forced_translation = obj['f'].split('\n')
+            if (len(batch) != len(forced_translation)):
+                raise ValueError("Number of inputs ans forced translations differs ({} vs {}".format(len(batch), len(forced_translation)))
 
         suggestions = []
 
