@@ -161,7 +161,7 @@ class MMTDecoder(object):
         self._logger.info('test_time = %.3f' % test_time)
 
     def translate(self, source_lang, target_lang, batch, suggestions=None,
-                  tuning_epochs=None, tuning_learning_rate=None, forced_translation=None):
+                  tuning_epochs=None, tuning_learning_rate=None, batch_forced_translation=None):
         # (1) Reset model (if necessary)
         begin = time.time()
         self._reset_model(source_lang, target_lang)
@@ -175,9 +175,9 @@ class MMTDecoder(object):
 
         # (3) Translate and compute word alignment
         begin = time.time()
-        if forced_translation is not None:
+        if batch_forced_translation is not None:
             result = []
-            for (sentence, single_forced_translation) in zip(batch, forced_translation):
+            for (sentence, single_forced_translation) in zip(batch, batch_forced_translation):
                 if single_forced_translation != "":
                     result.append(self._force_decode(target_lang, sentence, single_forced_translation))
                 else:
