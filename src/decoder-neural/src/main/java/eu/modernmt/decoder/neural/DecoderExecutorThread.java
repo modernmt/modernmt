@@ -71,7 +71,7 @@ public class DecoderExecutorThread extends Thread {
             try {
                 split.ensureValid();
 
-                if (!split.sentence.hasWords() || !SentenceUtils.hasAnyLetter(split.sentence)) {
+                if (!split.sentence.hasWords() || !SentenceUtils.hasAnyLetterOrDigit(split.sentence)) {
                     split.onTranslationBegin(System.currentTimeMillis());
                     split.setTranslation(SentenceUtils.verbatimTranslation(split.sentence));
                 } else {

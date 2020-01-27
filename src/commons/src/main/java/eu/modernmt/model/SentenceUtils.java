@@ -3,29 +3,29 @@ package eu.modernmt.model;
 public class SentenceUtils {
 
     /**
-     * Check if there is at least one UTF-8 letter in the sentence
+     * Check if there is at least one UTF-8 letter or digit in the sentence
      *
      * @param sentence the sentence
-     * @return true if at least one word has at least one letter
+     * @return true if at least one word has at least one letter or digit
      */
-    public static boolean hasAnyLetter(Sentence sentence) {
+    public static boolean hasAnyLetterOrDigit(Sentence sentence) {
         for (Word word : sentence.getWords()) {
-            if (hasAnyLetter(word))
+            if (hasAnyLetterOrDigit(word))
                 return true;
         }
         return false;
     }
 
     /**
-     * Check if there is at least one UTF-8 letter in the word
+     * Check if there is at least one UTF-8 letter or digit in the word
      *
      * @param word the word
-     * @return true if word has at least one letter
+     * @return true if word has at least one letter or digit
      */
-    public static boolean hasAnyLetter(Word word) {
+    public static boolean hasAnyLetterOrDigit(Word word) {
         return word.toString(false)
                 .codePoints()
-                .anyMatch(Character::isLetter);
+                .anyMatch(Character::isLetterOrDigit);
     }
 
     public static Translation verbatimTranslation(Sentence sentence) {
