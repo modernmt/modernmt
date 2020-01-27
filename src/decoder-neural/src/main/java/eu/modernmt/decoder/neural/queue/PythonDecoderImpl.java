@@ -211,8 +211,10 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
         if (forcedTranslations != null) {
             if (serialized.length != forcedTranslations.length)
                 throw new RuntimeException("the amount of forced translations (" + forcedTranslations.length + ") differ from the number of input sentences  (" + sentences.length + ")");
-
-            json.addProperty("f", StringUtils.join(forcedTranslations, '\n'));
+            String[] serialized_forcedTranslations = new String[forcedTranslations.length];
+            for (int i = 0; i < serialized_forcedTranslations.length; i++)
+                serialized_forcedTranslations[i] = StringUtils.join(forcedTranslations[i], ' ');
+            json.addProperty("f", StringUtils.join(serialized_forcedTranslations, '\n'));
         }
 
         if (suggestions != null && suggestions.length > 0) {
