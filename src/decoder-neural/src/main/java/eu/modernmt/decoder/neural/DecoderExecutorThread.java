@@ -78,7 +78,7 @@ public class DecoderExecutorThread extends Thread {
                 else if (!split.sentence.hasAnyLetter()) {
                     String[] strings = new String[split.sentence.length()];
                     int[] positions = new int[split.sentence.length()];
-                    Word[] words = split.sentence.getWords()
+                    Word[] words = split.sentence.getWords();
                     for (int i = 0; i < words.length; i++) {
                         strings[i] = words[i].getText();
                         positions[i] = i;
