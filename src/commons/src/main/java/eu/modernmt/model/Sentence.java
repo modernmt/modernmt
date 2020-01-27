@@ -56,6 +56,7 @@ public class Sentence implements Serializable, Iterable<Token> {
 
     //return true if the string has at least one letter
     private static boolean hasAnyLetter(String s) {
+        //TODO: should apply only when the language can handle the concept of letter
 
         if (s == null) // checks if the String is null {
             return false;
