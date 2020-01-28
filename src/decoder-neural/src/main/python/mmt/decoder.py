@@ -237,9 +237,7 @@ class MMTDecoder(object):
             hypo_tokens = hypo['tokens']
             hypo_indexes = sub_dict.indexes_of(hypo_tokens)
             hypo_str = sub_dict.string(hypo_tokens)
-            hypo_attention = hypo['attention'].data.cpu()
-
-            hypo_attention = np.asarray(hypo_attention)
+            hypo_attention = np.asarray(hypo['attention'].data.cpu())
 
             # Make alignment
             if len(hypo_indexes) > 0:
@@ -306,7 +304,7 @@ class MMTDecoder(object):
         else:
             input_indexes = [[]]
             tokens = torch.LongTensor([[textencoder.EOS_ID]])
-            lengths = torch
+            lengths = torch.LongTensor([1])
 
         max_length = torch.max(lengths)
 
