@@ -251,8 +251,6 @@ class MMTDecoder(object):
         return results
 
     def _force_decode(self, target_lang, segments, translations):
-        # ASSUMPTION: here we assume that there is a forced_translation for each input of the batch
-
         prefix_lang = target_lang if self._checkpoint.multilingual_target else None
 
         batch = self._make_batch_forced_translation(segments, translations, prefix_lang=prefix_lang)
@@ -276,7 +274,8 @@ class MMTDecoder(object):
         results = []
         for i, hypo_attention in enumerate(attn):  # for each entry of the original batch
             hypo_attention = hypo_attention.transpose(0, 1).cpu()
-            hypo_attention = hypo_attention[hypo_attention.size(0) - (len(src_indexes[i])+1):, hypo_attention.size(1) - (len(tgt_indexes[i])+1):]
+            hypo_attention = hypo_attention[hypo_attention.size(0) - (len(src_indexes[i]) + 1):,
+                             hypo_attention.size(1) - (len(tgt_indexes[i]) + 1):]
 
             # Make alignment
             hypo_alignment = make_alignment(src_indexes[i], tgt_indexes[i], hypo_attention.data.numpy(),
@@ -353,7 +352,6 @@ class MMTDecoder(object):
             trg_indexes = [sub_dict.indexes_of(el) for el in trg_tokens]
             trg_tokens = [torch.cat((text[-1:], text[:-1])) for text in trg_tokens]
 
-
             trg_lengths = torch.LongTensor([t.numel() for t in trg_tokens])
         else:
             src_tokens = torch.LongTensor([[textencoder.EOS_ID]])
@@ -363,14 +361,15 @@ class MMTDecoder(object):
             trg_indexes = [[]]
             trg_lengths = torch.LongTensor([1])
 
-
         max_src_length = torch.max(src_lengths)
         max_trg_length = torch.max(trg_lengths)
 
         # Apply padding
         if len(segments) > 1:
-            src_tokens = [torch.nn.functional.pad(el, (max_src_length - el.size(0), 0), value=sub_dict.pad()) for el in src_tokens]
-            trg_tokens = [torch.nn.functional.pad(el, (max_trg_length - el.size(0), 0), value=sub_dict.pad()) for el in trg_tokens]
+            src_tokens = [torch.nn.functional.pad(el, (max_src_length - el.size(0), 0), value=sub_dict.pad())
+                          for el in src_tokens]
+            trg_tokens = [torch.nn.functional.pad(el, (max_trg_length - el.size(0), 0), value=sub_dict.pad())
+                          for el in trg_tokens]
 
         # Reshape tokens tensor
         if len(segments) > 1:
