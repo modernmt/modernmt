@@ -161,16 +161,13 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
     @Override
     public Translation align(LanguageDirection direction, Sentence sentence, String[] translation) throws DecoderException {
         Sentence[] sentences = new Sentence[]{sentence};
-        return this.translate(sentences, serialize(direction, sentences, null, translation))[0];
+        String[][] translations = new String[][]{translation};
+        return this.translate(sentences, serialize(direction, new Sentence[]{sentence}, null, translations))[0];
     }
 
     @Override
     public Translation[] align(LanguageDirection direction, Sentence[] sentences, String[][] translations) throws DecoderException {
-        // TODO: should be implemented natively
-        Translation[] result = new Translation[sentences.length];
-        for (int i = 0; i < result.length; i++)
-            result[i] = align(direction, sentences[i], translations[i]);
-        return result;
+        return this.translate(sentences, serialize(direction, sentences, null, translations));
     }
 
     private synchronized Translation[] translate(Sentence[] sentences, String payload) throws DecoderException {
@@ -200,7 +197,7 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
         }
     }
 
-    private String serialize(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, String[] forcedTranslation) {
+    private String serialize(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, String[][] forcedTranslations) {
         String[] serialized = new String[sentences.length];
         for (int i = 0; i < serialized.length; i++)
             serialized[i] = TokensOutputStream.serialize(sentences[i], false, true);
@@ -211,8 +208,12 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
         json.addProperty("sl", direction.source.toLanguageTag());
         json.addProperty("tl", direction.target.toLanguageTag());
 
-        if (forcedTranslation != null)
-            json.addProperty("f", StringUtils.join(forcedTranslation, ' '));
+        if (forcedTranslations != null) {
+            String[] serializedForcedTranslations = new String[forcedTranslations.length];
+            for (int i = 0; i < serializedForcedTranslations.length; i++)
+                serializedForcedTranslations[i] = StringUtils.join(forcedTranslations[i], ' ');
+            json.addProperty("f", StringUtils.join(serializedForcedTranslations, '\n'));
+        }
 
         if (suggestions != null && suggestions.length > 0) {
             JsonArray array = new JsonArray();

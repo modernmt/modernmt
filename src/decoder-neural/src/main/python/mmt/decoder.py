@@ -176,7 +176,7 @@ class MMTDecoder(object):
         # (3) Translate and compute word alignment
         begin = time.time()
         if forced_translation is not None:
-            result = [self._force_decode(target_lang, batch[0], forced_translation)]
+            result = self._force_decode(target_lang, batch, forced_translation)
         else:
             result = self._decode(source_lang, target_lang, batch)
 
@@ -231,7 +231,6 @@ class MMTDecoder(object):
         sub_dict = self._checkpoint.subword_dictionary
 
         results = []
-
         for i, hypo in enumerate(translations):
             hypo = hypo[0]  # (top-1 best nbest)
             hypo_score = math.exp(hypo['score'])
@@ -251,22 +250,16 @@ class MMTDecoder(object):
 
         return results
 
-    def _force_decode(self, target_lang, segment, translation):
-        sub_dict = self._checkpoint.subword_dictionary
+    def _force_decode(self, target_lang, segments, translations):
+        prefix_lang = target_lang if self._checkpoint.multilingual_target else None
 
-        if self._checkpoint.multilingual_target:
-            segment = sub_dict.language_tag(target_lang) + ' ' + segment
+        batch = self._make_batch_forced_translation(segments, translations, prefix_lang=prefix_lang)
 
-        dataset = self._tuner.dataset([segment], [translation], sub_dict)
-
-        src_tokens = dataset.src.tokens[0]
-        src_indexes = sub_dict.indexes_of(src_tokens)
-        src_tokens = src_tokens.reshape((1, -1))
-        src_lengths = torch.tensor(dataset.src.sizes)
-        tgt_tokens = dataset.tgt.tokens[0]
-        tgt_indexes = sub_dict.indexes_of(tgt_tokens)
-        tgt_tokens = torch.cat((tgt_tokens[-1:], tgt_tokens[:-1]))
-        tgt_tokens = tgt_tokens.reshape((1, -1))
+        src_tokens = batch['src_tokens']
+        tgt_tokens = batch['trg_tokens']
+        src_indexes = batch['src_indexes']
+        tgt_indexes = batch['trg_indexes']
+        src_lengths = batch['src_lengths']
 
         if self._device is not None:
             src_tokens = src_tokens.cuda(self._device)
@@ -277,21 +270,30 @@ class MMTDecoder(object):
         _, attn = self._model(src_tokens, src_lengths, tgt_tokens)
         if type(attn) is dict:
             attn = attn['attn']
-        attn = attn[0]
-        attn = attn.transpose(0, 1).cpu()
 
-        hypo_alignment = make_alignment(src_indexes, tgt_indexes, attn.data.numpy(),
-                                        prefix_lang=self._checkpoint.multilingual_target)
-        return Translation(translation, alignment=hypo_alignment)
+        results = []
+        for i, hypo_attention in enumerate(attn):  # for each entry of the original batch
+            hypo_attention = hypo_attention.transpose(0, 1).cpu()
+            hypo_attention = hypo_attention[hypo_attention.size(0) - (len(src_indexes[i]) + 1):,
+                             hypo_attention.size(1) - (len(tgt_indexes[i]) + 1):]
+
+            # Make alignment
+            hypo_alignment = make_alignment(src_indexes[i], tgt_indexes[i], hypo_attention.data.numpy(),
+                                            prefix_lang=prefix_lang is not None)
+
+            results.append(Translation(translations[i], alignment=hypo_alignment))
+
+        return results
 
     def _make_batch(self, lines, prefix_lang=None):
+        sub_dict = self._checkpoint.subword_dictionary
+
         # Add language prefix if multilingual target
         if prefix_lang is not None:
-            lines = [self._checkpoint.subword_dictionary.language_tag(prefix_lang) + ' ' + text for text in lines]
+            lines = [sub_dict.language_tag(prefix_lang) + ' ' + text for text in lines]
 
         # Prepare batch
         if len(lines) > 0:
-            sub_dict = self._checkpoint.subword_dictionary
             tokens = [
                 sub_dict.encode_line(text, line_tokenizer=sub_dict.tokenize, add_if_not_exist=False).long()
                 for text in lines
@@ -327,3 +329,69 @@ class MMTDecoder(object):
         }}
 
         return batch, input_indexes, max_length
+
+    def _make_batch_forced_translation(self, segments, translations, prefix_lang=None):
+        sub_dict = self._checkpoint.subword_dictionary
+
+        # Add language prefix if multilingual target
+        if prefix_lang is not None:
+            segments = [sub_dict.language_tag(prefix_lang) + ' ' + text for text in segments]
+
+        # Prepare batch
+        if len(segments) > 0:
+            src_tokens = [
+                sub_dict.encode_line(text, line_tokenizer=sub_dict.tokenize, add_if_not_exist=False).long()
+                for text in segments
+            ]
+            src_indexes = [sub_dict.indexes_of(el) for el in src_tokens]
+            src_lengths = torch.LongTensor([t.numel() for t in src_tokens])
+            trg_tokens = [
+                sub_dict.encode_line(text, line_tokenizer=sub_dict.tokenize, add_if_not_exist=False).long()
+                for text in translations
+            ]
+            trg_indexes = [sub_dict.indexes_of(el) for el in trg_tokens]
+            trg_tokens = [torch.cat((text[-1:], text[:-1])) for text in trg_tokens]
+
+            trg_lengths = torch.LongTensor([t.numel() for t in trg_tokens])
+        else:
+            src_tokens = torch.LongTensor([[textencoder.EOS_ID]])
+            src_indexes = [[]]
+            src_lengths = torch.LongTensor([1])
+            trg_tokens = torch.LongTensor([[textencoder.EOS_ID]])
+            trg_indexes = [[]]
+            trg_lengths = torch.LongTensor([1])
+
+        max_src_length = torch.max(src_lengths)
+        max_trg_length = torch.max(trg_lengths)
+
+        # Apply padding
+        if len(segments) > 1:
+            src_tokens = [torch.nn.functional.pad(el, (max_src_length - el.size(0), 0), value=sub_dict.pad())
+                          for el in src_tokens]
+            trg_tokens = [torch.nn.functional.pad(el, (max_trg_length - el.size(0), 0), value=sub_dict.pad())
+                          for el in trg_tokens]
+
+        # Reshape tokens tensor
+        if len(segments) > 1:
+            src_tokens = torch.cat(src_tokens)
+            trg_tokens = torch.cat(trg_tokens)
+        else:
+            src_tokens = src_tokens[0]
+            trg_tokens = trg_tokens[0]
+
+        src_tokens = src_tokens.reshape([max(1, len(segments)), max_src_length])
+        trg_tokens = trg_tokens.reshape([max(1, len(translations)), max_trg_length])
+
+        if self._device is not None:
+            src_tokens = src_tokens.cuda(self._device)
+            trg_tokens = trg_tokens.cuda(self._device)
+
+        batch = {
+            'src_tokens': src_tokens,
+            'trg_tokens': trg_tokens,
+            'src_indexes': src_indexes,
+            'trg_indexes': trg_indexes,
+            'src_lengths': src_lengths
+        }
+
+        return batch
