@@ -1,6 +1,6 @@
 package eu.modernmt.model;
 
-abstract public class Tag extends Token implements Comparable<Tag> {
+abstract public class Tag extends Token implements Comparable<Tag>, Cloneable {
 
     public enum Type {
         OPENING_TAG,
@@ -97,5 +97,9 @@ abstract public class Tag extends Token implements Comparable<Tag> {
         result = 31 * result + position;
         return result;
     }
+
+    @Override
+    public abstract Tag clone();
+
 }
 

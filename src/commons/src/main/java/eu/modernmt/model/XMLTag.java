@@ -100,5 +100,11 @@ public class XMLTag extends Tag implements Comparable<Tag> {
         result = 31 * result + (dtd ? 1 : 0);
         return result;
     }
+
+    @Override
+    public XMLTag clone() {
+        return new XMLTag(name, text, leftSpace, rightSpace, position, type, dtd);
+    }
+
 }
 
