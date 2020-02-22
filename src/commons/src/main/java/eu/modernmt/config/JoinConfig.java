@@ -1,5 +1,8 @@
 package eu.modernmt.config;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 /**
  * Created by davide on 04/01/17.
  */
@@ -10,8 +13,9 @@ public class JoinConfig {
         private final String host;
         private final int port;
 
-        public Member(String host, int port) {
-            this.host = host;
+        public Member(String host, int port) throws UnknownHostException {
+            InetAddress address = InetAddress.getByName(host);
+            this.host = address.getHostAddress();
             this.port = port;
         }
 
@@ -70,4 +74,5 @@ public class JoinConfig {
 
         return builder.toString();
     }
+
 }
