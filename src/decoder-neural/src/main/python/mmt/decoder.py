@@ -152,7 +152,7 @@ class MMTDecoder(object):
     # - High level functions -------------------------------------------------------------------------------------------
 
     def test(self):
-        test_batch, _, _ = self._make_batch([])
+        test_batch, _, _ = self._make_decode_batch([])
 
         begin = time.time()
         self._translator.max_len_b = 1
@@ -222,7 +222,7 @@ class MMTDecoder(object):
 
     def _decode(self, source_lang, target_lang, batch):
         prefix_lang = target_lang if self._checkpoint.multilingual_target else None
-        batch, input_indexes, sentence_len = self._make_batch(batch, prefix_lang=prefix_lang)
+        batch, input_indexes, sentence_len = self._make_decode_batch(batch, prefix_lang=prefix_lang)
 
         # Compute translation
         self._translator.max_len_b = self._checkpoint.decode_length(source_lang, target_lang, sentence_len)
@@ -254,7 +254,7 @@ class MMTDecoder(object):
     def _force_decode(self, target_lang, segments, translations):
         prefix_lang = target_lang if self._checkpoint.multilingual_target else None
 
-        batch = self._make_batch_forced_translation(segments, translations, prefix_lang=prefix_lang)
+        batch = self._make_force_decode_batch(segments, translations, prefix_lang=prefix_lang)
 
         src_tokens = batch['src_tokens']
         tgt_tokens = batch['trg_tokens']
@@ -286,107 +286,21 @@ class MMTDecoder(object):
 
         return results
 
-    def _make_batch(self, lines, prefix_lang=None):
-        # Add language prefix if multilingual target
-        if prefix_lang is not None:
-            lines = [self._checkpoint.subword_dictionary.language_tag(prefix_lang) + ' ' + text for text in lines]
-
-        # Prepare batch
-        if len(lines) > 0:
-            sub_dict = self._checkpoint.subword_dictionary
-            tokens = [
-                sub_dict.encode_line(text, line_tokenizer=sub_dict.tokenize, add_if_not_exist=False).long()
-                for text in lines
-            ]
-            input_indexes = [sub_dict.indexes_of(el) for el in tokens]
-            lengths = torch.LongTensor([t.numel() for t in tokens])
-        else:
-            input_indexes = [[]]
-            tokens = torch.LongTensor([[textencoder.EOS_ID]])
-            lengths = torch.LongTensor([1])
-
-        max_length = torch.max(lengths)
-
-        # Apply padding
-        if len(lines) > 1:
-            tokens = [torch.nn.functional.pad(el, (max_length - el.size(0), 0), value=sub_dict.pad()) for el in tokens]
-
-        # Reshape tokens tensor
-        if len(lines) > 1:
-            tokens = torch.cat(tokens)
-        else:
-            tokens = tokens[0]
-
-        tokens = tokens.reshape([max(1, len(lines)), max_length])
-
-        if self._device is not None:
-            tokens = tokens.cuda(self._device)
-            lengths = lengths.cuda(self._device)
+    def _make_decode_batch(self, segments, prefix_lang=None):
+        src_tokens, src_indexes, src_lengths, src_max_length = self._make_batch(segments, prefix_lang=prefix_lang)
 
         batch = {'net_input': {
-            'src_tokens': tokens,
-            'src_lengths': lengths
+            'src_tokens': src_tokens,
+            'src_lengths': src_lengths
         }}
 
-        return batch, input_indexes, max_length
+        return batch, src_indexes, src_max_length
 
-    def _make_batch_forced_translation(self, segments, translations, prefix_lang=None):
-        # Add language prefix if multilingual target
-        if prefix_lang is not None:
-            segments = [self._checkpoint.subword_dictionary.language_tag(prefix_lang) + ' ' + text for text in segments]
+    def _make_force_decode_batch(self, segments, translations, prefix_lang=None):
+        src_tokens, src_indexes, src_lengths, _ = self._make_batch(segments, prefix_lang=prefix_lang)
+        trg_tokens, trg_indexes, _, _ = self._make_batch(translations, reverse_last_word=True)
 
-        # Prepare batch
-        if len(segments) > 0:
-            sub_dict = self._checkpoint.subword_dictionary
-
-            src_tokens = [
-                sub_dict.encode_line(text, line_tokenizer=sub_dict.tokenize, add_if_not_exist=False).long()
-                for text in segments
-            ]
-            src_indexes = [sub_dict.indexes_of(el) for el in src_tokens]
-            src_lengths = torch.LongTensor([t.numel() for t in src_tokens])
-            trg_tokens = [
-                sub_dict.encode_line(text, line_tokenizer=sub_dict.tokenize, add_if_not_exist=False).long()
-                for text in translations
-            ]
-            trg_indexes = [sub_dict.indexes_of(el) for el in trg_tokens]
-            trg_tokens = [torch.cat((text[-1:], text[:-1])) for text in trg_tokens]
-
-            trg_lengths = torch.LongTensor([t.numel() for t in trg_tokens])
-        else:
-            src_tokens = torch.LongTensor([[textencoder.EOS_ID]])
-            src_indexes = [[]]
-            src_lengths = torch.LongTensor([1])
-            trg_tokens = torch.LongTensor([[textencoder.EOS_ID]])
-            trg_indexes = [[]]
-            trg_lengths = torch.LongTensor([1])
-
-        max_src_length = torch.max(src_lengths)
-        max_trg_length = torch.max(trg_lengths)
-
-        # Apply padding
-        if len(segments) > 1:
-            src_tokens = [torch.nn.functional.pad(el, (max_src_length - el.size(0), 0), value=sub_dict.pad())
-                          for el in src_tokens]
-            trg_tokens = [torch.nn.functional.pad(el, (max_trg_length - el.size(0), 0), value=sub_dict.pad())
-                          for el in trg_tokens]
-
-        # Reshape tokens tensor
-        if len(segments) > 1:
-            src_tokens = torch.cat(src_tokens)
-            trg_tokens = torch.cat(trg_tokens)
-        else:
-            src_tokens = src_tokens[0]
-            trg_tokens = trg_tokens[0]
-
-        src_tokens = src_tokens.reshape([max(1, len(segments)), max_src_length])
-        trg_tokens = trg_tokens.reshape([max(1, len(translations)), max_trg_length])
-
-        if self._device is not None:
-            src_tokens = src_tokens.cuda(self._device)
-            trg_tokens = trg_tokens.cuda(self._device)
-
-        batch = {
+        return {
             'src_tokens': src_tokens,
             'trg_tokens': trg_tokens,
             'src_indexes': src_indexes,
@@ -394,4 +308,45 @@ class MMTDecoder(object):
             'src_lengths': src_lengths
         }
 
-        return batch
+    def _make_batch(self, entries, prefix_lang=None, reverse_last_word=False):
+        # Add language prefix if multilingual target
+        if prefix_lang is not None:
+            entries = [self._checkpoint.subword_dictionary.language_tag(prefix_lang) + ' ' + text for text in entries]
+
+        # Prepare batch
+        if len(entries) > 0:
+            sub_dict = self._checkpoint.subword_dictionary
+
+            tokens = [
+                sub_dict.encode_line(text, line_tokenizer=sub_dict.tokenize, add_if_not_exist=False).long()
+                for text in entries
+            ]
+            indexes = [sub_dict.indexes_of(el) for el in tokens]
+            lengths = torch.LongTensor([t.numel() for t in tokens])
+
+            if reverse_last_word:
+                tokens = [torch.cat((text[-1:], text[:-1])) for text in tokens]
+        else:
+            tokens = torch.LongTensor([[textencoder.EOS_ID]])
+            indexes = [[]]
+            lengths = torch.LongTensor([1])
+
+        max_length = torch.max(lengths)
+
+        # Apply padding
+        if len(entries) > 1:
+            tokens = [torch.nn.functional.pad(el, (max_length - el.size(0), 0), value=sub_dict.pad()) for el in tokens]
+
+        # Reshape tokens tensor
+        if len(entries) > 1:
+            tokens = torch.cat(tokens)
+        else:
+            tokens = tokens[0]
+
+        tokens = tokens.reshape([max(1, len(entries)), max_length])
+
+        if self._device is not None:
+            tokens = tokens.cuda(self._device)
+            lengths = lengths.cuda(self._device)
+
+        return tokens, indexes, lengths, max_length
