@@ -9,6 +9,7 @@ import numpy as np
 import torch
 from fairseq.models.transformer import TransformerModel
 from fairseq.sequence_generator import SequenceGenerator
+
 from mmt import textencoder
 from mmt.alignment import make_alignment
 from mmt.tuning import Tuner, TuningOptions
@@ -286,14 +287,13 @@ class MMTDecoder(object):
         return results
 
     def _make_batch(self, lines, prefix_lang=None):
-        sub_dict = self._checkpoint.subword_dictionary
-
         # Add language prefix if multilingual target
         if prefix_lang is not None:
-            lines = [sub_dict.language_tag(prefix_lang) + ' ' + text for text in lines]
+            lines = [self._checkpoint.subword_dictionary.language_tag(prefix_lang) + ' ' + text for text in lines]
 
         # Prepare batch
         if len(lines) > 0:
+            sub_dict = self._checkpoint.subword_dictionary
             tokens = [
                 sub_dict.encode_line(text, line_tokenizer=sub_dict.tokenize, add_if_not_exist=False).long()
                 for text in lines
@@ -331,14 +331,14 @@ class MMTDecoder(object):
         return batch, input_indexes, max_length
 
     def _make_batch_forced_translation(self, segments, translations, prefix_lang=None):
-        sub_dict = self._checkpoint.subword_dictionary
-
         # Add language prefix if multilingual target
         if prefix_lang is not None:
-            segments = [sub_dict.language_tag(prefix_lang) + ' ' + text for text in segments]
+            segments = [self._checkpoint.subword_dictionary.language_tag(prefix_lang) + ' ' + text for text in segments]
 
         # Prepare batch
         if len(segments) > 0:
+            sub_dict = self._checkpoint.subword_dictionary
+
             src_tokens = [
                 sub_dict.encode_line(text, line_tokenizer=sub_dict.tokenize, add_if_not_exist=False).long()
                 for text in segments
