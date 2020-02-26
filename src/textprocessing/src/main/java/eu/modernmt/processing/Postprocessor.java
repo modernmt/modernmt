@@ -29,7 +29,11 @@ public class Postprocessor implements Closeable {
         this(threads, getDefaultBuilder());
     }
 
-    public Postprocessor(int threads, XMLPipelineBuilder<Translation, Void> builder) throws IOException {
+    public Postprocessor(XMLPipelineBuilder<Translation, Void> builder) {
+        this(DEFAULT_THREADS, builder);
+    }
+
+    public Postprocessor(int threads, XMLPipelineBuilder<Translation, Void> builder) {
         this.executor = new PipelineExecutor<>(builder, threads);
     }
 
