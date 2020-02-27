@@ -1,16 +1,21 @@
 package eu.modernmt.cli;
 
+import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.io.*;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
+import eu.modernmt.processing.builder.XMLPipelineBuilder;
 import eu.modernmt.processing.splitter.SentenceSplitter;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -31,6 +36,7 @@ public class PreprocessorMain {
             Option skipPlaceholders = Option.builder().longOpt("print-placeholders").hasArg(false).required(false).build();
             Option keepSpaces = Option.builder().longOpt("original-spacing").hasArg(false).required(false).build();
             Option sentenceSplit = Option.builder().longOpt("sentence-split").hasArg(false).required(false).build();
+            Option configFile = Option.builder("pre").longOpt("preConfig").hasArg().required(false).build();
 
             cliOptions = new Options();
             cliOptions.addOption(sourceLanguage);
@@ -40,6 +46,7 @@ public class PreprocessorMain {
             cliOptions.addOption(skipPlaceholders);
             cliOptions.addOption(keepSpaces);
             cliOptions.addOption(sentenceSplit);
+            cliOptions.addOption(configFile);
         }
 
         public final LanguageDirection language;
@@ -48,6 +55,7 @@ public class PreprocessorMain {
         public final boolean keepSpaces;
         public final boolean batch;
         public final boolean split;
+        public final File configFile;
 
         public Args(String[] args) throws ParseException {
             CommandLineParser parser = new DefaultParser();
@@ -61,11 +69,14 @@ public class PreprocessorMain {
             keepSpaces = cli.hasOption("original-spacing");
             batch = cli.hasOption("batch");
             split = cli.hasOption("sentence-split");
+            configFile = (cli.hasOption("preConfig")) ? new File(cli.getOptionValue("preConfig")) : null;
+
         }
 
     }
 
     public static void main(String[] _args) throws Throwable {
+        Logger logger = LogManager.getLogger(PreprocessorMain.class);
         Args args = new Args(_args);
 
         Preprocessor preprocessor = null;
@@ -74,7 +85,14 @@ public class PreprocessorMain {
         LineReader input = new UnixLineReader(System.in, UTF8Charset.get());
 
         try {
-            preprocessor = new Preprocessor();
+            if (args.configFile != null) {
+                logger.info("Loading pre-processing configuration from " + args.configFile);
+                XMLPipelineBuilder<String, Sentence> builder = XMLPipelineBuilder.loadFromXML(args.configFile);
+                preprocessor = new Preprocessor(builder);
+            } else {
+                logger.info("Loading default pre-processing configuration");
+                preprocessor = new Preprocessor();
+            }
 
             if (args.keepSpaces)
                 output = new SentenceOutputter(args.printTags, args.printPlaceholders);
@@ -85,6 +103,8 @@ public class PreprocessorMain {
                 batchPreprocess(preprocessor, args.language, input, output, args.split);
             else
                 interactivePreprocess(preprocessor, args.language, input, output, args.split);
+        } catch (IOException | ProcessingException e) {
+            throw new BootstrapException("Failed to load pre-processor", e);
         } finally {
             IOUtils.closeQuietly(preprocessor);
             IOUtils.closeQuietly(output);
