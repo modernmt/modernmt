@@ -29,12 +29,12 @@ public class DefaultQueryBuilder implements QueryBuilder {
     }
 
     @Override
-    public Query getByHash(long memory, String hash) {
+    public Query getByHash(DocumentBuilder builder, long memory, String hash) {
         PhraseQuery hashQuery = new PhraseQuery();
         for (String h : hash.split(" "))
-            hashQuery.add(DocumentBuilder.makeHashTerm(h));
+            hashQuery.add(builder.makeHashTerm(h));
 
-        TermQuery memoryQuery = new TermQuery(DocumentBuilder.makeMemoryTerm(memory));
+        TermQuery memoryQuery = new TermQuery(builder.makeMemoryTerm(memory));
 
         BooleanQuery query = new BooleanQuery();
         query.add(hashQuery, BooleanClause.Occur.MUST);
@@ -44,31 +44,36 @@ public class DefaultQueryBuilder implements QueryBuilder {
     }
 
     @Override
-    public Query bestMatchingSuggestion(Analyzer analyzer, UUID user, LanguageDirection direction, Sentence sentence, ContextVector context) {
+    public Query getChannels(DocumentBuilder builder) {
+        return new TermQuery(builder.makeChannelsTerm());
+    }
+
+    @Override
+    public Query bestMatchingSuggestion(DocumentBuilder builder, Analyzer analyzer, UUID user, LanguageDirection direction, Sentence sentence, ContextVector context) {
         int length = sentence.getWords().length;
         int minMatches = length > SHORT_QUERY_SIZE ? Math.max(1, (int) (length * .5)) : length;
 
         // Content query
-        BooleanQuery termsQuery = makeTermsQuery(direction, sentence, analyzer);
+        BooleanQuery termsQuery = makeTermsQuery(builder, direction, sentence, analyzer);
         termsQuery.setMinimumNumberShouldMatch(minMatches);
 
         // Context filter
-        TermsFilter contextFilter = makeContextFilter(context);
+        TermsFilter contextFilter = makeContextFilter(builder, context);
 
         // Result
         return new FilteredQuery(termsQuery, contextFilter);
     }
 
-    protected static TermsFilter makeContextFilter(ContextVector context) {
+    protected static TermsFilter makeContextFilter(DocumentBuilder builder, ContextVector context) {
         ArrayList<Term> terms = new ArrayList<>(context.size());
         for (ContextVector.Entry entry : context)
-            terms.add(DocumentBuilder.makeMemoryTerm(entry.memory.getId()));
+            terms.add(builder.makeMemoryTerm(entry.memory.getId()));
         return new TermsFilter(terms);
     }
 
-    protected static BooleanQuery makeTermsQuery(LanguageDirection direction, Sentence sentence, Analyzer analyzer) {
+    protected static BooleanQuery makeTermsQuery(DocumentBuilder builder, LanguageDirection direction, Sentence sentence, Analyzer analyzer) {
         BooleanQuery termsQuery = new BooleanQuery();
-        loadTerms(DocumentBuilder.makeContentFieldName(direction), sentence, analyzer, termsQuery);
+        loadTerms(builder.makeContentFieldName(direction), sentence, analyzer, termsQuery);
         return termsQuery;
     }
 

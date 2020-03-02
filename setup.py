@@ -8,12 +8,12 @@ from cli import mmt
 from cli.utils import osutils
 from cli.utils.progressbar import Progressbar, UndefinedProgressbar
 
-CASSANDRA_VERSION = '3.11.4'
-CASSANDRA_FILE_SIZE = 41235177
-KAFKA_VERSION = '1.1.0'
-KAFKA_SCALA_VERSION = '2.11'
-KAFKA_FILE_SIZE = 56969154
-KAFKA_DOWNLOAD_URL = 'https://archive.apache.org/dist/kafka/1.1.0/kafka_2.11-1.1.0.tgz'
+CASSANDRA_VERSION = '3.11.6'
+CASSANDRA_FILE_SIZE = 37488049
+KAFKA_VERSION = '2.4.0'
+KAFKA_SCALA_VERSION = '2.12'
+KAFKA_FILE_SIZE = 62283588
+KAFKA_DOWNLOAD_URL = 'https://archive.apache.org/dist/kafka/2.4.0/kafka_2.12-2.4.0.tgz'
 
 
 def chown(folder, uid, gid):

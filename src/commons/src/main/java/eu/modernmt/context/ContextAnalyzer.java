@@ -6,6 +6,7 @@ import eu.modernmt.model.corpus.Corpus;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
 import java.util.UUID;
 
 /**
@@ -18,5 +19,7 @@ public interface ContextAnalyzer extends Closeable {
     ContextVector getContextVector(UUID user, LanguageDirection direction, File source, int limit) throws ContextAnalyzerException;
 
     ContextVector getContextVector(UUID user, LanguageDirection direction, Corpus query, int limit) throws ContextAnalyzerException;
+
+    void optimize() throws ContextAnalyzerException;
 
 }

@@ -5,7 +5,7 @@ import eu.modernmt.model.Sentence;
 import eu.modernmt.processing.builder.XMLPipelineBuilder;
 import eu.modernmt.processing.concurrent.PipelineExecutor;
 import eu.modernmt.processing.string.SentenceCompiler;
-import eu.modernmt.processing.xml.format.InputFormat;
+import eu.modernmt.processing.tags.format.InputFormat;
 import org.apache.commons.io.IOUtils;
 
 import java.io.Closeable;
@@ -33,6 +33,10 @@ public class Preprocessor implements Closeable {
 
     public Preprocessor(int threads) throws IOException {
         this(threads, getDefaultBuilder());
+    }
+
+    public Preprocessor(XMLPipelineBuilder<String, Sentence> builder) {
+        this(DEFAULT_THREADS, builder);
     }
 
     public Preprocessor(int threads, XMLPipelineBuilder<String, Sentence> builder) {

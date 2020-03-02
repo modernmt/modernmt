@@ -28,6 +28,9 @@ import java.util.concurrent.TimeUnit;
  */
 public class ModernMT {
 
+    private static final String BUILD_VERSION = Pom.getProperty("mmt.version");
+    private static final long BUILD_NUMBER = Long.parseLong(Pom.getProperty("mmt.build.number"));
+
     private static final Logger logger = LogManager.getLogger(ModernMT.class);
     private static ClusterNode node = null;
 
@@ -48,7 +51,7 @@ public class ModernMT {
                 (t, e) -> logger.fatal("Unexpected exception thrown by thread [" + t.getName() + "]", e)
         );
 
-        node = new ClusterNode();
+        node = new ClusterNode("mmt-" + BUILD_VERSION + "-" + BUILD_NUMBER);
         if (listener != null)
             node.addStatusListener(listener);
 
@@ -64,10 +67,7 @@ public class ModernMT {
             // Engine is not yet loaded
         }
 
-        Set<LanguageDirection> languages = engine == null ? Collections.emptySet() : engine.getAvailableLanguagePairs();
         Collection<NodeInfo> nodes = localhostOnly ? Collections.singleton(node.getLocalNode()) : node.getClusterNodes();
-        String buildVersion = Pom.getProperty("mmt.version");
-        long buildNumber = Long.parseLong(Pom.getProperty("mmt.build.number"));
 
         int memorySize = 0;
         if (engine != null) {
@@ -80,7 +80,7 @@ public class ModernMT {
             }
         }
 
-        return new ServerInfo(new ServerInfo.ClusterInfo(nodes), new ServerInfo.BuildInfo(buildVersion, buildNumber), languages, memorySize);
+        return new ServerInfo(new ServerInfo.ClusterInfo(nodes), new ServerInfo.BuildInfo(BUILD_VERSION, BUILD_NUMBER), memorySize);
     }
 
     public static void test(boolean strict) throws TestFailedException {

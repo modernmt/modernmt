@@ -1,5 +1,7 @@
 package eu.modernmt.processing.string;
 
+import eu.modernmt.lang.Language;
+import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 
@@ -25,7 +27,12 @@ import java.util.Map;
  */
 public class SentenceConstructor extends TextProcessor<String, SentenceBuilder> {
 
-    private final SentenceBuilder builder = new SentenceBuilder();
+    private final SentenceBuilder builder;
+
+    public SentenceConstructor(Language sourceLanguage, Language targetLanguage) throws UnsupportedLanguageException {
+        super(sourceLanguage, targetLanguage);
+        this.builder = new SentenceBuilder(sourceLanguage);
+    }
 
     /**
      * This method asks the SentenceBuilder to generate a Sentence object,

@@ -5,12 +5,7 @@ import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.tokenizer.BaseTokenizer;
 import eu.modernmt.processing.tokenizer.TokenizedString;
-import org.languagetool.language.tokenizers.TagalogWordTokenizer;
-import org.languagetool.tokenizers.br.BretonWordTokenizer;
-import org.languagetool.tokenizers.eo.EsperantoWordTokenizer;
-import org.languagetool.tokenizers.gl.GalicianWordTokenizer;
-import org.languagetool.tokenizers.km.KhmerWordTokenizer;
-import org.languagetool.tokenizers.ml.MalayalamWordTokenizer;
+import eu.modernmt.processing.tokenizer.languagetool.tiny.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -18,7 +13,7 @@ import java.util.Map;
 
 public class LanguageToolTokenAnnotator implements BaseTokenizer.Annotator {
 
-    private static final Map<Language, Class<? extends org.languagetool.tokenizers.Tokenizer>> TOKENIZERS = new HashMap<>();
+    private static final Map<Language, Class<? extends LanguageToolTokenizer>> TOKENIZERS = new HashMap<>();
 
     static {
         TOKENIZERS.put(Language.BRETON, BretonWordTokenizer.class);
@@ -28,22 +23,12 @@ public class LanguageToolTokenAnnotator implements BaseTokenizer.Annotator {
         TOKENIZERS.put(Language.MALAYALAM, MalayalamWordTokenizer.class);
         TOKENIZERS.put(Language.TAGALOG, TagalogWordTokenizer.class);
 
-        /* Excluded tokenizers */
-//        TOKENIZERS.put(Language.CATALAN, CatalanWordTokenizer.class);
-//        TOKENIZERS.put(Language.GREEK, GreekWordTokenizer.class);
-//        TOKENIZERS.put(Language.ENGLISH, EnglishWordTokenizer.class);
-//        TOKENIZERS.put(Language.SPANISH, SpanishWordTokenizer.class);
-//        TOKENIZERS.put(Language.JAPANESE, JapaneseWordTokenizer.class);
-//        TOKENIZERS.put(Language.DUTCH, DutchWordTokenizer.class);
-//        TOKENIZERS.put(Language.POLISH, PolishWordTokenizer.class);
-//        TOKENIZERS.put(Language.ROMANIAN, RomanianWordTokenizer.class);
-//        TOKENIZERS.put(Language.UKRAINIAN, UkrainianWordTokenizer.class); " 6228.05.55954 "
     }
 
-    private final org.languagetool.tokenizers.Tokenizer tokenizer;
+    private final LanguageToolTokenizer tokenizer;
 
     public static LanguageToolTokenAnnotator forLanguage(Language language) throws UnsupportedLanguageException {
-        Class<? extends org.languagetool.tokenizers.Tokenizer> tokenizerClass = TOKENIZERS.get(language);
+        Class<? extends LanguageToolTokenizer> tokenizerClass = TOKENIZERS.get(language);
         if (tokenizerClass == null)
             throw new UnsupportedLanguageException(language);
 
@@ -54,7 +39,7 @@ public class LanguageToolTokenAnnotator implements BaseTokenizer.Annotator {
         }
     }
 
-    private LanguageToolTokenAnnotator(org.languagetool.tokenizers.Tokenizer tokenizer) {
+    private LanguageToolTokenAnnotator(LanguageToolTokenizer tokenizer) {
         this.tokenizer = tokenizer;
     }
 

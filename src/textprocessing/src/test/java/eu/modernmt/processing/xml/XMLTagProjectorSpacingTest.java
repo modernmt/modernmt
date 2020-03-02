@@ -1,9 +1,9 @@
 package eu.modernmt.processing.xml;
 
-import eu.modernmt.model.Tag;
-import eu.modernmt.model.Translation;
-import eu.modernmt.model.Word;
-import eu.modernmt.processing.xml.projection.TagProjector;
+import eu.modernmt.lang.Language;
+import eu.modernmt.model.*;
+import eu.modernmt.processing.string.SentenceBuilder;
+import eu.modernmt.processing.tags.projection.TagProjector;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -18,34 +18,37 @@ public class XMLTagProjectorSpacingTest {
     @Test
     public void testTranslationWithTags() {
         Translation translation = translation(new Word[]{
-                new Word("Hello", " "),
-                new Word("world", null),
-                new Word("!", null),
+                new Word("Hello", null, " ", false, true),
+                new Word("world", " ", " ", true, false),
+                new Word("!", " ", null, false, false),
         }, new Tag[]{
-                Tag.fromText("<a>", true, null, 1),
-                Tag.fromText("</a>", false, null, 2),
+                XMLTag.fromText("<a>", " ", null, 1),
+                XMLTag.fromText("</a>", null, null, 2),
         });
+
+        translation.fixWordSpacing();
         TagProjector.simpleSpaceAnalysis(translation);
 
-        assertEquals("Hello world !", translation.toString(false, false));
+        assertEquals("Hello world!", translation.toString(false, false));
         assertEquals("Hello <a>world</a>!", translation.toString());
         Assertions.assertCoherentSpacing(translation);
     }
 
     @Test
-    @Ignore
     public void testTranslationWithDiscordantTagSpacing_FalseTrue() {
         Translation translation = translation(new Word[]{
-                new Word("Hello", " "),
-                new Word("world", null),
-                new Word("!", null),
+                new Word("Hello", null, " ", true, true),
+                new Word("world", " ", " ", true,false),
+                new Word("!", " ", null, false, false),
         }, new Tag[]{
-                Tag.fromText("<a>", true, null, 1),
-                Tag.fromText("</a>", false, " ", 2),
+                XMLTag.fromText("<a>", " ", null, 1),
+                XMLTag.fromText("</a>", null, null, 2),
         });
+
+        translation.fixWordSpacing();
         TagProjector.simpleSpaceAnalysis(translation);
 
-        assertEquals("Hello world !", translation.toString(false, false));
+        assertEquals("Hello world!", translation.toString(false, false));
         assertEquals("Hello <a>world</a>!", translation.toString());
         Assertions.assertCoherentSpacing(translation);
     }
@@ -53,50 +56,57 @@ public class XMLTagProjectorSpacingTest {
     @Test
     public void testTranslationWithDiscordantTagSpacing_TrueFalse() {
         Translation translation = translation(new Word[]{
-                new Word("Hello", " "),
-                new Word("world", " "),
-                new Word("!", null),
+                new Word("Hello", null, " ", true, true),
+                new Word("world", " "," ",true, false),
+                new Word("!", " ", null, false, true),
         }, new Tag[]{
-                Tag.fromText("<a>", true, null, 1),
-                Tag.fromText("</a>", false, null, 2),
+                XMLTag.fromText("<a>", " ", null, 1),
+                XMLTag.fromText("</a>", null, null, 2),
         });
+
+        translation.fixWordSpacing();
         TagProjector.simpleSpaceAnalysis(translation);
 
-        assertEquals("Hello world !", translation.toString(false, false));
-        assertEquals("Hello <a>world</a> !", translation.toString());
+        assertEquals("Hello world!", translation.toString(false, false));
+        assertEquals("Hello <a>world</a>!", translation.toString());
         Assertions.assertCoherentSpacing(translation);
     }
 
     @Test
     public void testTranslationWithSpacedTagList() {
         Translation translation = translation(new Word[]{
-                new Word("Hello", " "),
-                new Word("world", null),
-                new Word("!", null),
+                new Word("Hello", null," ", false, true),
+                new Word("world", " ", " ", true, false),
+                new Word("!", " ", null, false, false),
         }, new Tag[]{
-                Tag.fromText("<a>", true, " ", 1),
-                Tag.fromText("<b>", true, " ", 1),
-                Tag.fromText("</a>", true, " ", 1),
-                Tag.fromText("</b>", true, " ", 1),
+                XMLTag.fromText("<a>", " ", " ", 1),
+                XMLTag.fromText("<b>", " ", " ", 1),
+                XMLTag.fromText("</a>", " ", " ", 1),
+                XMLTag.fromText("</b>", " ", " ", 1),
         });
+
+        translation.fixWordSpacing();
         TagProjector.simpleSpaceAnalysis(translation);
 
-        assertEquals("Hello world!", translation.toString(false, false));
         assertEquals("Hello <a> <b> </a> </b> world!", translation.toString());
+        assertEquals("Hello world!", translation.toString(false, false));
         Assertions.assertCoherentSpacing(translation);
     }
+
 
     @Test
     public void testTranslationWithTagListSpaceInMiddle() {
         Translation translation = translation(new Word[]{
-                new Word("Hello", " "),
-                new Word("world", null),
-                new Word("!", null),
+                new Word("Hello", null, " ", false, true),
+                new Word("world", " ", " ", true, false),
+                new Word("!", " ", null, false, false),
         }, new Tag[]{
-                Tag.fromText("</a>", true, " ", 1),
-                Tag.fromText("<b>", true, " ", 1),
-                Tag.fromText("</b>", true, " ", 1),
+                XMLTag.fromText("</a>", " ", " ", 1),
+                XMLTag.fromText("<b>", " ", " ", 1),
+                XMLTag.fromText("</b>", " ", " ", 1),
         });
+
+        translation.fixWordSpacing();
         TagProjector.simpleSpaceAnalysis(translation);
 
         assertEquals("Hello world!", translation.toString(false, false));
@@ -105,35 +115,38 @@ public class XMLTagProjectorSpacingTest {
     }
 
     @Test
-    @Ignore
     public void testTranslationWithTagInUnbreakableTokenList() {
         Translation translation = translation(new Word[]{
-                new Word("That", null),
-                new Word("'s", " "),
-                new Word("it", null),
-                new Word("!", null),
+                new Word("That", null," ", false, false),
+                new Word("'s", " "," ", false, true),
+                new Word("it", " ", " ", true, false),
+                new Word("!", " ", null, false, false),
         }, new Tag[]{
-                Tag.fromText("<b>", true, " ", 1),
-                Tag.fromText("</b>", true, " ", 2),
+                XMLTag.fromText("<b>", null, null, 1),
+                XMLTag.fromText("</b>", null, " ", 2),
         });
+
+        translation.fixWordSpacing();
         TagProjector.simpleSpaceAnalysis(translation);
 
-        assertEquals("That 's it!", translation.toString(false, false));
-        assertEquals("That<b>&apos;s</b> it!", translation.toString());
+        assertEquals("That's it!", translation.toString(false, false));
+        assertEquals("That<b>'s</b> it!", translation.toString());
         Assertions.assertCoherentSpacing(translation);
     }
 
     @Test
     public void testTranslationWithSpacedCommentTag() {
         Translation translation = translation(new Word[]{
-                new Word("This", " "),
-                new Word("is", " "),
-                new Word("XML", " "),
-                new Word("comment", null),
+                new Word("This", null, " ", false, true),
+                new Word("is", " ", " ", true, true),
+                new Word("XML", " ", " ", true, true),
+                new Word("comment", " ", null, true, false),
         }, new Tag[]{
-                Tag.fromText("<!--", true, " ", 2),
-                Tag.fromText("-->", true, null, 4),
+                XMLTag.fromText("<!--", " ", " ", 2),
+                XMLTag.fromText("-->", " ", null, 4),
         });
+
+        translation.fixWordSpacing();
         TagProjector.simpleSpaceAnalysis(translation);
 
         assertEquals("This is XML comment", translation.toString(false, false));
@@ -144,14 +157,16 @@ public class XMLTagProjectorSpacingTest {
     @Test
     public void testTranslationWithSpacedCommentTag_NoLeadingSpace() {
         Translation translation = translation(new Word[]{
-                new Word("This", " "),
-                new Word("is", " "),
-                new Word("XML", " "),
-                new Word("comment", null),
+                new Word("This", null, " ", false, true),
+                new Word("is", " ", " ", true, true),
+                new Word("XML", " ", " ", true, true),
+                new Word("comment", " ", null, true, false),
         }, new Tag[]{
-                Tag.fromText("<!--", false, " ", 2),
-                Tag.fromText("-->", true, null, 4),
+                XMLTag.fromText("<!--", null, " ", 2),
+                XMLTag.fromText("-->", " ", null, 4),
         });
+
+        translation.fixWordSpacing();
         TagProjector.simpleSpaceAnalysis(translation);
 
         assertEquals("This is XML comment", translation.toString(false, false));
@@ -162,14 +177,16 @@ public class XMLTagProjectorSpacingTest {
     @Test
     public void testTranslationWithSpacedCommentTag_TrailingSpace() {
         Translation translation = translation(new Word[]{
-                new Word("This", " "),
-                new Word("is", " "),
-                new Word("XML", " "),
-                new Word("comment", null),
+                new Word("This", null, " ", false, true),
+                new Word("is", " ", " ", true, true),
+                new Word("XML", " ", " ", true, true),
+                new Word("comment", " ", null, true, false),
         }, new Tag[]{
-                Tag.fromText("<!--", false, " ", 2),
-                Tag.fromText("-->", true, " ", 4),
+                XMLTag.fromText("<!--", null, " ", 2),
+                XMLTag.fromText("-->", " ", " ", 4),
         });
+
+        translation.fixWordSpacing();
         TagProjector.simpleSpaceAnalysis(translation);
 
         assertEquals("This is XML comment", translation.toString(false, false));

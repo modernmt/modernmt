@@ -1,6 +1,6 @@
 package eu.modernmt.api.actions.memory;
 
-import eu.modernmt.data.DataManagerException;
+import eu.modernmt.data.BinaryLogException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.api.framework.HttpMethod;
@@ -17,7 +17,7 @@ import eu.modernmt.api.framework.routing.TemplateException;
 public class DeleteMemory extends VoidAction {
 
     @Override
-    protected void execute(RESTRequest req, Parameters _params) throws PersistenceException, NotFoundException, DataManagerException {
+    protected void execute(RESTRequest req, Parameters _params) throws PersistenceException, NotFoundException, BinaryLogException {
         Params params = (Params) _params;
         if (!ModernMT.memory.delete(params.id))
             throw new NotFoundException();

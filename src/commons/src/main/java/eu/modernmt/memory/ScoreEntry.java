@@ -12,17 +12,17 @@ public class ScoreEntry implements Comparable<ScoreEntry> {
 
     public final long memory;
     public final LanguageDirection language;
-    public final String[] sentence;
-    public final String[] translation;
+    public final String[] sentenceTokens;
+    public final String[] translationTokens;
 
     public float auxiliaryScore = 0.f;
     public float score = 0.f;
 
-    public ScoreEntry(long memory, LanguageDirection language, String[] sentence, String[] translation) {
+    public ScoreEntry(long memory, LanguageDirection language, String[] sentenceTokens, String[] translationTokens) {
         this.memory = memory;
         this.language = language;
-        this.sentence = sentence;
-        this.translation = translation;
+        this.sentenceTokens = sentenceTokens;
+        this.translationTokens = translationTokens;
     }
 
     @Override
@@ -37,15 +37,15 @@ public class ScoreEntry implements Comparable<ScoreEntry> {
         ScoreEntry that = (ScoreEntry) o;
         return memory == that.memory &&
                 Objects.equals(language, that.language) &&
-                Arrays.equals(sentence, that.sentence) &&
-                Arrays.equals(translation, that.translation);
+                Arrays.equals(sentenceTokens, that.sentenceTokens) &&
+                Arrays.equals(translationTokens, that.translationTokens);
     }
 
     @Override
     public int hashCode() {
         int result = Objects.hash(memory, language);
-        result = 31 * result + Arrays.hashCode(sentence);
-        result = 31 * result + Arrays.hashCode(translation);
+        result = 31 * result + Arrays.hashCode(sentenceTokens);
+        result = 31 * result + Arrays.hashCode(translationTokens);
         return result;
     }
 
@@ -54,8 +54,8 @@ public class ScoreEntry implements Comparable<ScoreEntry> {
         return "ScoreEntry{" +
                 "memory=" + memory +
                 ", language=" + language +
-                ", sentence=" + Arrays.toString(sentence) +
-                ", translation=" + Arrays.toString(translation) +
+                ", sentence=" + Arrays.toString(sentenceTokens) +
+                ", translation=" + Arrays.toString(translationTokens) +
                 ", score=" + score +
                 '}';
     }

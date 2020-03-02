@@ -3,7 +3,7 @@
     <parent>
         <artifactId>mmt-root</artifactId>
         <groupId>eu.modernmt</groupId>
-        <version>4.2</version>
+        <version>4.4.1</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -151,49 +151,6 @@
             <artifactId>kuromoji-ipadic</artifactId>
             <version>0.9.0</version>
         </dependency>
-
-        <!-- LanguageTool -->
-        <!-- https://github.com/languagetool-org/languagetool -->
-        <dependency>
-            <groupId>org.languagetool</groupId>
-            <artifactId>language-br</artifactId>
-            <version>3.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.languagetool</groupId>
-            <artifactId>language-eo</artifactId>
-            <version>3.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.languagetool</groupId>
-            <artifactId>language-km</artifactId>
-            <version>3.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.languagetool</groupId>
-            <artifactId>language-ml</artifactId>
-            <version>3.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.languagetool</groupId>
-            <artifactId>language-uk</artifactId>
-            <version>3.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.languagetool</groupId>
-            <artifactId>language-gl</artifactId>
-            <version>3.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.languagetool</groupId>
-            <artifactId>language-tl</artifactId>
-            <version>3.1</version>
-        </dependency>
-        <!--<dependency>-->
-        <!--<groupId>org.languagetool</groupId>-->
-        <!--<artifactId>language-all</artifactId>-->
-        <!--<version>3.1</version>-->
-        <!--</dependency>-->
 
         <!-- OpenNLP -->
         <!-- http://opennlp.apache.org/ -->

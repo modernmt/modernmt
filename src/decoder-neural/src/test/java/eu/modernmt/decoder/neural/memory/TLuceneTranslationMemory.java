@@ -3,9 +3,12 @@ package eu.modernmt.decoder.neural.memory;
 import eu.modernmt.data.DataBatch;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.decoder.neural.memory.lucene.DocumentBuilder;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
+import eu.modernmt.decoder.neural.memory.lucene.query.QueryBuilder;
 import eu.modernmt.io.RuntimeIOException;
 import eu.modernmt.memory.ScoreEntry;
+import eu.modernmt.memory.TranslationMemory;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
@@ -20,6 +23,14 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
         super(new RAMDirectory(), 10);
     }
 
+    public DocumentBuilder getDocumentBuilder() {
+        return super.documentBuilder;
+    }
+
+    public QueryBuilder getQueryBuilder() {
+        return super.queryBuilder;
+    }
+
     @Override
     public int size() {
         try {
@@ -29,27 +40,17 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
         }
     }
 
-    public Set<ScoreEntry> entrySet() throws IOException {
-        HashSet<ScoreEntry> result = new HashSet<>();
-        super.dump(result::add);
+    public Set<TranslationMemory.Entry> entrySet() throws IOException {
+        HashSet<TranslationMemory.Entry> result = new HashSet<>();
+        super.dumpAll(result::add);
         return result;
     }
 
-    public static Set<ScoreEntry> asEntrySet(Collection<TranslationUnit> units) {
-        HashSet<ScoreEntry> result = new HashSet<>(units.size());
+    public static Set<TranslationMemory.Entry> asEntrySet(Collection<TranslationUnit> units) {
+        HashSet<TranslationMemory.Entry> result = new HashSet<>(units.size());
 
         for (TranslationUnit unit : units) {
-            String source = unit.language.source.toLanguageTag();
-            String target = unit.language.target.toLanguageTag();
-
-            ScoreEntry entry;
-            if (source.compareTo(target) < 0)
-                entry = new ScoreEntry(unit.memory, unit.language,
-                        unit.rawSentence.split("\\s+"), unit.rawTranslation.split("\\s+"));
-            else
-                entry = new ScoreEntry(unit.memory, unit.language.reversed(),
-                        unit.rawTranslation.split("\\s+"), unit.rawSentence.split("\\s+"));
-
+            TranslationMemory.Entry entry = new TranslationMemory.Entry(unit.memory, unit.language, unit.rawSentence, unit.rawTranslation);
             result.add(entry);
         }
 
@@ -60,11 +61,6 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
 
     public void onDelete(final Deletion deletion) throws IOException {
         super.onDataReceived(new DataBatch() {
-
-            @Override
-            public Collection<TranslationUnit> getDiscardedTranslationUnits() {
-                return new ArrayList<>();
-            }
 
             @Override
             public Collection<TranslationUnit> getTranslationUnits() {
@@ -94,10 +90,6 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
         }
 
         super.onDataReceived(new DataBatch() {
-            @Override
-            public Collection<TranslationUnit> getDiscardedTranslationUnits() {
-                return new ArrayList<>();
-            }
 
             @Override
             public Collection<TranslationUnit> getTranslationUnits() {

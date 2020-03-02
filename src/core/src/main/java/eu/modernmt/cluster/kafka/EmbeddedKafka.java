@@ -12,9 +12,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Arrays;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +36,7 @@ public class EmbeddedKafka extends EmbeddedService {
     }
 
     private final File data;
+    private final File meta;
     private final File runtime;
     private final File logFile;
     private final File kafkaBin;
@@ -45,6 +44,7 @@ public class EmbeddedKafka extends EmbeddedService {
 
     private EmbeddedKafka(Engine engine) throws IOException {
         this.data = new File(engine.getModelsPath(), "kafka");
+        this.meta = new File(this.data, "meta.properties");
         this.runtime = engine.createRuntimeFolder("kafka", true);
         this.logFile = new File(engine.getLogsPath(), "embedded-kafka.log");
 
@@ -60,6 +60,7 @@ public class EmbeddedKafka extends EmbeddedService {
 
         FileUtils.deleteDirectory(this.runtime);
         FileUtils.forceMkdir(this.runtime);
+        deleteClusterId();  // we want to delete saved cluster-id because we reset Zookeeper at every startup
 
         FileUtils.deleteQuietly(this.logFile);
         FileUtils.touch(this.logFile);
@@ -84,6 +85,34 @@ public class EmbeddedKafka extends EmbeddedService {
         this.subprocesses = Arrays.asList(kafka, zookeeper);
     }
 
+    private void deleteClusterId() throws IOException {
+        if (!this.meta.isFile())
+            return;
+        
+        Properties properties = new Properties();
+
+        // Read existing metadata
+        InputStream reader = null;
+        try {
+            reader = new FileInputStream(this.meta);
+            properties.load(reader);
+        } finally {
+            IOUtils.closeQuietly(reader);
+        }
+
+        // Delete cluster info
+        properties.remove("cluster.id");
+
+        // Save metadata
+        OutputStream writer = null;
+        try {
+            writer = new FileOutputStream(this.meta);
+            properties.store(writer, null);
+        } finally {
+            IOUtils.closeQuietly(writer);
+        }
+    }
+
     private Process startZookeeper(int port) throws IOException {
         File zdata = new File(this.runtime, "zookeeper_data");
         FileUtils.forceMkdir(zdata);
@@ -92,6 +121,8 @@ public class EmbeddedKafka extends EmbeddedService {
         properties.setProperty("dataDir", zdata.getAbsolutePath());
         properties.setProperty("clientPort", Integer.toString(port));
         properties.setProperty("maxClientCnxns", "0");
+        properties.setProperty("admin.enableServer", "false");
+        properties.setProperty("4lw.commands.whitelist", "ruok");
 
         File config = new File(this.runtime, "zookeeper.properties");
         write(properties, config);

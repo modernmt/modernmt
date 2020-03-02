@@ -4,8 +4,8 @@ import eu.modernmt.cleaning.ChainedMultilingualCorpusFilter;
 import eu.modernmt.cleaning.CorporaCleaning;
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.NodeInfo;
-import eu.modernmt.data.DataManager;
-import eu.modernmt.data.DataManagerException;
+import eu.modernmt.data.BinaryLog;
+import eu.modernmt.data.BinaryLogException;
 import eu.modernmt.data.EmptyCorpusException;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ImportJob;
@@ -93,7 +93,7 @@ public class MemoryFacade {
         }
     }
 
-    public boolean delete(long id) throws PersistenceException, DataManagerException {
+    public boolean delete(long id) throws PersistenceException, BinaryLogException {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
@@ -109,20 +109,20 @@ public class MemoryFacade {
             IOUtils.closeQuietly(connection);
         }
 
-        DataManager dataManager = ModernMT.getNode().getDataManager();
-        dataManager.delete(id);
+        BinaryLog binlog = ModernMT.getNode().getBinaryLog();
+        binlog.delete(id);
 
         return true;
     }
 
-    public ImportJob add(LanguageDirection direction, long memoryId, String source, String target) throws DataManagerException, PersistenceException {
+    public ImportJob add(LanguageDirection direction, long memoryId, String source, String target) throws BinaryLogException, PersistenceException {
         // Normalizing
         MultilingualCorpus.StringPair pair = new MultilingualCorpus.StringPair(direction, source, target);
         contributionFilter.normalize(pair);
 
         // Filtering
         if (!contributionFilter.accept(pair, 0))
-            return ImportJob.createEphemeralJob(memoryId, 0, DataManager.CONTRIBUTIONS_CHANNEL_ID);
+            return ImportJob.createEphemeralJob(memoryId, 0, BinaryLog.CONTRIBUTIONS_CHANNEL_ID);
 
         direction = pair.language;
         source = pair.source;
@@ -141,8 +141,8 @@ public class MemoryFacade {
             if (memory == null)
                 return null;
 
-            DataManager dataManager = ModernMT.getNode().getDataManager();
-            ImportJob job = dataManager.upload(direction, memory, source, target, new Date(), DataManager.CONTRIBUTIONS_CHANNEL_ID);
+            BinaryLog binlog = ModernMT.getNode().getBinaryLog();
+            ImportJob job = binlog.upload(direction, memory, source, target, new Date(), BinaryLog.CONTRIBUTIONS_CHANNEL_ID);
 
             if (job == null)
                 return null;
@@ -157,7 +157,7 @@ public class MemoryFacade {
 
     public ImportJob replace(LanguageDirection direction, long memoryId, String sentence, String translation,
                              String previousSentence, String previousTranslation)
-            throws DataManagerException, PersistenceException {
+            throws BinaryLogException, PersistenceException {
         // Normalizing
         MultilingualCorpus.StringPair previous = new MultilingualCorpus.StringPair(direction, previousSentence, previousTranslation);
         MultilingualCorpus.StringPair current = new MultilingualCorpus.StringPair(direction, sentence, translation);
@@ -166,7 +166,7 @@ public class MemoryFacade {
 
         // Filtering
         if (!contributionFilter.accept(current, 0))
-            return ImportJob.createEphemeralJob(memoryId, 0, DataManager.CONTRIBUTIONS_CHANNEL_ID);
+            return ImportJob.createEphemeralJob(memoryId, 0, BinaryLog.CONTRIBUTIONS_CHANNEL_ID);
 
         direction = current.language;
         sentence = current.source;
@@ -187,9 +187,9 @@ public class MemoryFacade {
             if (memory == null)
                 return null;
 
-            DataManager dataManager = ModernMT.getNode().getDataManager();
-            ImportJob job = dataManager.replace(direction, memory, sentence, translation,
-                    previousSentence, previousTranslation, new Date(), DataManager.CONTRIBUTIONS_CHANNEL_ID);
+            BinaryLog binlog = ModernMT.getNode().getBinaryLog();
+            ImportJob job = binlog.replace(direction, memory, sentence, translation,
+                    previousSentence, previousTranslation, new Date(), BinaryLog.CONTRIBUTIONS_CHANNEL_ID);
 
             if (job == null)
                 return null;
@@ -202,7 +202,7 @@ public class MemoryFacade {
         }
     }
 
-    public ImportJob add(long memoryId, MultilingualCorpus corpus) throws PersistenceException, DataManagerException {
+    public ImportJob add(long memoryId, MultilingualCorpus corpus) throws PersistenceException, BinaryLogException {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
@@ -217,8 +217,8 @@ public class MemoryFacade {
 
             corpus = CorporaCleaning.wrap(corpus, CorporaCleaning.Options.defaultOptionsForMemoryImport());
 
-            DataManager dataManager = ModernMT.getNode().getDataManager();
-            ImportJob job = dataManager.upload(memory, corpus, DataManager.MEMORY_UPLOAD_CHANNEL_ID);
+            BinaryLog binlog = ModernMT.getNode().getBinaryLog();
+            ImportJob job = binlog.upload(memory, corpus, BinaryLog.MEMORY_UPLOAD_CHANNEL_ID);
 
             if (job == null)
                 throw new EmptyCorpusException();

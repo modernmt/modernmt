@@ -14,7 +14,7 @@ public class Translation extends Sentence {
     public static Translation fromTokens(Sentence source, String[] tokens) {
         Word[] words = new Word[tokens.length];
         for (int i = 0; i < words.length; i++)
-            words[i] = new Word(tokens[i], " ");
+            words[i] = new Word(tokens[i], " ", " ");
 
         return new Translation(words, source, null);
     }
@@ -132,6 +132,15 @@ public class Translation extends Sentence {
 
     public void setNbest(List<Translation> nbest) {
         this.nbest = nbest;
+    }
+
+    public void fixWordSpacing() {
+        for (Word word : getWords()){
+            if (! word.isLeftSpaceRequired())
+                word.setLeftSpace("");
+            if (! word.isRightSpaceRequired())
+                word.setRightSpace("");
+        }
     }
 
 }

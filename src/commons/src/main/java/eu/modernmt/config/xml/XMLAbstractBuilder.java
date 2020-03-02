@@ -35,6 +35,14 @@ abstract class XMLAbstractBuilder {
         return getChild(element, childName);
     }
 
+    protected static boolean hasChild(Element element, String childName) {
+        return getChild(element, childName) != null;
+    }
+
+    protected boolean hasChild(String childName) {
+        return hasChild(element, childName);
+    }
+
     protected static Element[] getChildren(Element element, String name) {
         if (element == null)
             return null;
@@ -146,7 +154,7 @@ abstract class XMLAbstractBuilder {
         return getLanguageAttribute(element, attr);
     }
 
-    protected static int[] getIntArrayAttribute(Element element, String attr) {
+    protected static String[] getStringArrayAttribute(Element element, String attr) {
         String value = getAttribute(element, attr);
         if (value == null)
             return null;
@@ -154,8 +162,20 @@ abstract class XMLAbstractBuilder {
         if (value.equalsIgnoreCase("none"))
             return null;
 
-        String[] parts = value.split("[,\\s]+");
-        if (parts.length == 0)
+        String[] array = value.split("[,\\s]+");
+        if (array.length == 0)
+            return null;
+
+        return array;
+    }
+
+    protected String[] getStringArrayAttribute(String attr) {
+        return getStringArrayAttribute(element, attr);
+    }
+
+    protected static int[] getIntArrayAttribute(Element element, String attr) {
+        String[] parts = getStringArrayAttribute(element, attr);
+        if (parts == null)
             return null;
 
         int[] array = new int[parts.length];

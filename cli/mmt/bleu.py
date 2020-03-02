@@ -58,12 +58,12 @@ def sentence_bleu(reference, hypothesis, tokenize=True):
     return bleu.score
 
 
-def corpus_bleu(reference, hypothesis, tokenize=True):
+def corpus_bleu(reference, hypothesis, tokenize=True, lowercase=False):
     if tokenize:
         hypothesis = [_tokenize(x) for x in hypothesis]
         reference = [_tokenize(x) for x in reference]
 
-    bleu = sacrebleu.corpus_bleu(hypothesis, [reference], tokenize='none', smooth_method='add-k')
+    bleu = sacrebleu.corpus_bleu(hypothesis, [reference], tokenize='none', smooth_method='add-k', lowercase=lowercase)
     return bleu.score
 
 
@@ -72,11 +72,12 @@ def _main():
     parser.add_argument('reference', help='the reference file')
     parser.add_argument('hypothesis', help='the hypothesis file')
     parser.add_argument('--raw', dest='tokenize', action='store_false', default=True, help='skip text tokenization')
+    parser.add_argument('--lc', dest='lowercase', action='store_true', default=False, help='use case-insensitive BLEU (default: actual case)')
 
     args = parser.parse_args()
 
     with open(args.reference, 'r', encoding='utf-8') as ref, open(args.hypothesis, 'r', encoding='utf-8') as hyp:
-        bleu = corpus_bleu(ref, hyp, tokenize=args.tokenize)
+        bleu = corpus_bleu(ref, hyp, tokenize=args.tokenize, lowercase=args.lowercase)
 
     print(bleu)
 

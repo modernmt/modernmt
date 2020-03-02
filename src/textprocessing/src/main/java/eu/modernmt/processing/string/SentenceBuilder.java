@@ -1,11 +1,17 @@
 package eu.modernmt.processing.string;
 
+import eu.modernmt.lang.Language;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Tag;
 import eu.modernmt.model.Token;
 import eu.modernmt.model.Word;
-import eu.modernmt.processing.xml.XMLCharacterEntity;
+import eu.modernmt.processing.ProcessingException;
+import eu.modernmt.processing.detokenizer.jflex.JFlexDetokenizer;
+import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
+import eu.modernmt.processing.detokenizer.jflex.SpacesAnnotatedString;
+import eu.modernmt.processing.tags.XMLCharacterEntity;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -35,6 +41,8 @@ import java.util.*;
  */
 public class SentenceBuilder {
 
+    private final JFlexSpaceAnnotator annotator;
+
     private final HashSet<String> annotations = new HashSet<>();
     /*original string to tokenize*/
     private String originalString;
@@ -50,6 +58,17 @@ public class SentenceBuilder {
      * It is a singleton and it can never serve by more than one client at a time*/
     private final Editor editor = new Editor();
 
+    /**
+     * This constructor generates an empty SentenceBuilder
+     * and performs initialization for a given string.
+     *
+     * @param language the language of this sentence builder
+     * @param string   the original string that must be processed and tokenized
+     */
+    public SentenceBuilder(Language language, String string) {
+        this(language);
+        this.initialize(string);
+    }
 
     /**
      * This constructor generates an empty SentenceBuilder,
@@ -58,8 +77,12 @@ public class SentenceBuilder {
      * This method should only be called by the Preprocessor object
      * once, at the beginning of its lifecycle, to create
      * the single SentenceBuilder instance that it will employ
+     *
+     * @param language the language of this sentence builder
      */
-    public SentenceBuilder() {
+    public SentenceBuilder(Language language) {
+        this.annotator = JFlexDetokenizer.newAnnotator(language);
+
         this.originalString = null;
         /*at the beginning no transformations have been performed*/
         this.currentString = new StringBuilder();
@@ -68,17 +91,6 @@ public class SentenceBuilder {
         /*initialize indexMap array that maps each position of the current string
          * to a position in the original string*/
         this.indexMap = new IndexMap();
-    }
-
-    /**
-     * This constructor generates an empty SentenceBuilder
-     * and performs initialization for a given string.
-     *
-     * @param string the original string that must be processed and tokenized
-     */
-    public SentenceBuilder(String string) {
-        this();
-        this.initialize(string);
     }
 
     /**
@@ -165,12 +177,33 @@ public class SentenceBuilder {
             if (!annotations.isEmpty())
                 sentence.addAnnotations(annotations);
 
-            return sentence;
-        } catch (RuntimeException e) {
+            return computeRequiredSpaces(sentence);
+        } catch (RuntimeException | ProcessingException e) {
             throw new RuntimeException("Failed to build sentence for string: " + originalString, e);
         }
     }
 
+    private Sentence computeRequiredSpaces(Sentence sentence) throws ProcessingException {
+        SpacesAnnotatedString text = SpacesAnnotatedString.fromSentence(sentence);
+
+        annotator.reset(text.getReader());
+        int type;
+        while ((type = next(annotator)) != JFlexSpaceAnnotator.YYEOF) {
+            annotator.annotate(text, type);
+        }
+
+        text.applyLeft(sentence, Word::setLeftSpaceRequired);
+        text.applyRight(sentence, Word::setRightSpaceRequired);
+        return sentence;
+    }
+
+    private static int next(JFlexSpaceAnnotator annotator) throws ProcessingException {
+        try {
+            return annotator.next();
+        } catch (IOException e) {
+            throw new ProcessingException(e);
+        }
+    }
 
     /**
      * Method that scans backwards all the Transformations committed by the editor
@@ -264,33 +297,19 @@ public class SentenceBuilder {
             /*compute additional information about the way that
              the current transformation is linked to the previous and next ones in the list*/
 
-            /*there is a space between previous transformation text and current one*/
-            boolean hasLeftSpace;
-            /*there is a space between previous transformation text and next one*/
-            boolean hasRightSpace;
+            /*true if previous and current tokens have different type (Tag-Word or Word-Tag)*/
+            boolean virtualLeftSpace = false;
+            /*true if previous and current tokens have different type (Tag-Word or Word-Tag)*/
+            boolean virtualRightSpace = false;
+
+            /*string with the space between previous transformation text and current one*/
+            String leftSpace = null;
             /*string with the space between current transformation text and next one*/
             String rightSpace = null;
             /*amount of WORDS that occur before the current transformation*/
             int tagPosition;
 
-            /*compute hasLeftSpace*/
-            /*if the current transformation is the first one in the list,
-             * it has a leftspace if it doesn't start at position 0 */
-            if (i == 0) {
-                hasLeftSpace = (transformation.start != 0);
-                /*else, if the current transformation is not the first one in the list
-                 * it has a leftspace if it doesn't start at the end of its predecessor*/
-            } else {
-                Transformation previousTransformation = transformations.get(i - 1);
-                hasLeftSpace = (transformation.start - previousTransformation.end != 0);
-            }
-
-            /*compute hasRightSpace and rightSpace*/
-            /*if the current transformation is the last one in the list*/
-            if (i == transformations.size() - 1) {
-                hasRightSpace = transformation.end < originalChars.length;
-
-                /*RightSpace can only be extracted by the original string,
+            /*LeftSapce and RightSpace can only be extracted by the original string,
                 as the transformation indexes refer to positions in the original string.
                 However the original string still has
                     - xml tags
@@ -299,28 +318,65 @@ public class SentenceBuilder {
                     - whitespaces
                     - etc
                 XML tags lead to the creation of new Tag Transformations that are now in the
-                tokenizable transformations list, so an XML tag can't be in a rightspace.
+                tokenizable transformations list, so an XML tag can't be in a leftSpace or a rightSpace
 
                 Xml escaping sequences, rare chars and whitespaces on the contrary
                 generate Replacement Transformations, that are not tokenizable
                 so are not in the tokenizable list.
-                While we are ok with having rarechars and whitespaces in the rightspace,
+                While we are ok with having rarechars and whitespaces in leftSpace or rightSpace,
                 we still don't want XML escaping sequences.
-                Therefore we unescape the rightspace.*/
-                if (hasRightSpace) {
-                    //rightSpace = XMLCharacterEntity.unescapeAll(originalChars, transformation.end, originalChars.length - transformation.end);
-                    rightSpace = XMLCharacterEntity.unescapeAll(new String(originalChars, transformation.end, originalChars.length - transformation.end));
-                }
-                /*if the current transformation is not the last one in the list*/
+                Therefore we unescape the leftSpace or a rightSpace.
+            */
+
+            /*compute leftSpace*/
+            int fromPosition;
+            int length;
+            if (i == 0) {
+                /*if the current transformation is the first one in the list,
+                 * it has a leftspace if it doesn't start at position 0 */
+                fromPosition = 0;
+                length = transformation.start - fromPosition;
             } else {
-                Transformation nextTransformation = transformations.get(i + 1);
-                hasRightSpace = transformation.end < nextTransformation.start;
-
-                if (hasRightSpace) {
-                    /*unescape the rightspace (see comment above to understand why)*/
-                    rightSpace = XMLCharacterEntity.unescapeAll(new String(originalChars, transformation.end, nextTransformation.start - transformation.end));
-
+                /*the current transformation is not the first one in the list
+                 * it has a leftSpace if it doesn't start at the end of its predecessor*/
+                Transformation previousTransformation = transformations.get(i - 1);
+                fromPosition = previousTransformation.end;
+                length = transformation.start - fromPosition;
+                if (length == 0) {
+                    if ((transformation.tokenFactory == TokenFactory.WORD_FACTORY && previousTransformation.tokenFactory != TokenFactory.WORD_FACTORY) ||
+                            (transformation.tokenFactory != TokenFactory.WORD_FACTORY && previousTransformation.tokenFactory == TokenFactory.WORD_FACTORY)) {
+                        virtualLeftSpace = true;
+                    }
                 }
+            }
+
+            if (length > 0) {
+                /*unescape the leftSpace (see comment above to understand why)*/
+                leftSpace = XMLCharacterEntity.unescapeAll(new String(originalChars, fromPosition, length));
+            }
+
+            /*compute hasRightSpace and rightSpace*/
+            if (i == transformations.size() - 1) {
+                /*if the current transformation is the last one in the list*/
+                fromPosition = transformation.end;
+                length = originalChars.length - fromPosition;
+            } else {
+                /*if the current transformation is not the last one in the list*/
+                Transformation nextTransformation = transformations.get(i + 1);
+                fromPosition = transformation.end;
+                length = nextTransformation.start - fromPosition;
+
+                if (length == 0) {
+                    if ((transformation.tokenFactory == TokenFactory.WORD_FACTORY && nextTransformation.tokenFactory != TokenFactory.WORD_FACTORY) ||
+                            (transformation.tokenFactory != TokenFactory.WORD_FACTORY && nextTransformation.tokenFactory == TokenFactory.WORD_FACTORY)) {
+                        virtualRightSpace = true;
+                    }
+                }
+            }
+
+            if (length > 0) {
+                /*unescape the rightSpace (see comment above to understand why)*/
+                rightSpace = XMLCharacterEntity.unescapeAll(new String(originalChars, fromPosition, length));
             }
 
             /*compute tagPosition*/
@@ -338,16 +394,16 @@ public class SentenceBuilder {
                   Therefore, if we are creating a Word Token, unescape the originalText.
                  */
             String originalText;
-            if (tokenFactory == TokenFactory.TAG_FACTORY) {
-                originalText = new String(originalChars, transformation.start, transformation.end - transformation.start);
-            } else {
-                //originalText = XMLCharacterEntity.unescapeAll(originalChars, transformation.start, transformation.end - transformation.start);
+            if (tokenFactory == TokenFactory.WORD_FACTORY) {
                 originalText = XMLCharacterEntity.unescapeAll(new String(originalChars, transformation.start, transformation.end - transformation.start));
-
+            } else {
+                originalText = new String(originalChars, transformation.start, transformation.end - transformation.start);
             }
 
             /*generate the Token*/
-            Token token = tokenFactory.build(originalText, placeholderText, hasLeftSpace, rightSpace, tagPosition);
+            Token token = tokenFactory.build(originalText, placeholderText, leftSpace, rightSpace, tagPosition);
+            token.setVirtualLeftSpace(virtualLeftSpace);
+            token.setVirtualRightSpace(virtualRightSpace);
 
             /*put the token in the separate list corresponding to its class*/
             if (token instanceof Tag) {
@@ -435,7 +491,7 @@ public class SentenceBuilder {
          *
          * @return a reference to the Editor itself, now marked as in use.
          */
-        public Editor init() {
+        private Editor init() {
 
             if (this.inUse) {
                 throw new IllegalStateException("this Editor is already in use");
@@ -530,7 +586,7 @@ public class SentenceBuilder {
          * @param replacement string that must substitute the text to edit.
          * @param factory     object that can be employed to create Tokens. It can not be null.
          */
-        public void setToken(int startIndex, int textLength, String replacement, TokenFactory factory) {
+        private void setToken(int startIndex, int textLength, String replacement, TokenFactory factory) {
             if (factory == null)
                 throw new IllegalArgumentException("when invoking setToken, the tokenFactory must not be null");
 
@@ -557,18 +613,19 @@ public class SentenceBuilder {
         /**
          * This method handles the specific request of a TAG Token.
          * It thus requests the setting of a new Token,
-         * passing the specific TokenFactory TAG_FACTORY that is used
+         * passing the specific TokenFactory factory that is used
          * to generate TAG Tokens.
          *
          * @param startIndex  first position of the text to edit in the current string
          * @param length      length of the text to edit
          * @param replacement string that must substitute the text to edit.
+         * @param factory     the tokenFactory use to generate the TAG token of the right type.
          */
-        public void setTag(int startIndex, int length, String replacement) {
+        public void setTag(int startIndex, int length, String replacement, TokenFactory factory) {
             /*create the Transformation, put it in the Editor Transformations list;
-             * as a TokenFactory use a TAG_FACTORY*/
+             *  use the parameter factory as a TokenFactory */
 
-            this.setToken(startIndex, length, replacement, TokenFactory.TAG_FACTORY);
+            this.setToken(startIndex, length, replacement, factory);
         }
 
         /**

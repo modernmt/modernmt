@@ -1,7 +1,7 @@
 package eu.modernmt.decoder.neural;
 
 import eu.modernmt.config.DecoderConfig;
-import eu.modernmt.data.DataListener;
+import eu.modernmt.data.LogDataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderException;
@@ -128,7 +128,7 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
         TranslationSplit[] splits;
 
         if (suggestions != null && suggestions[0].score == 1.f) {  // align
-            TranslationSplit split = new TranslationSplit(priority, text, suggestions[0].translation, timeout);
+            TranslationSplit split = new TranslationSplit(priority, text, suggestions[0].translationTokens, timeout);
             splits = new TranslationSplit[]{split};
             lock = scheduler.schedule(direction, split);
         } else {
@@ -229,7 +229,7 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
     // DataListenerProvider
 
     @Override
-    public Collection<DataListener> getDataListeners() {
+    public Collection<LogDataListener> getDataListeners() {
         return Collections.singleton(memory);
     }
 

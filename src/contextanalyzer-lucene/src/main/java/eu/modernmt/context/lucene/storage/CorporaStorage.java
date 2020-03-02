@@ -1,7 +1,7 @@
 package eu.modernmt.context.lucene.storage;
 
 import eu.modernmt.data.DataBatch;
-import eu.modernmt.data.DataListener;
+import eu.modernmt.data.LogDataListener;
 import eu.modernmt.data.Deletion;
 import eu.modernmt.data.TranslationUnit;
 import org.apache.commons.io.FileUtils;
@@ -11,7 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-public class CorporaStorage implements DataListener, Closeable {
+public class CorporaStorage implements LogDataListener, Closeable {
 
     protected final File path;
     protected final BucketRegistry buckets;
@@ -123,11 +123,6 @@ public class CorporaStorage implements DataListener, Closeable {
 
     @Override
     public boolean needsAlignment() {
-        return false;
-    }
-
-    @Override
-    public boolean includeDiscardedTranslationUnits() {
         return false;
     }
 

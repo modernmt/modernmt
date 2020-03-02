@@ -43,7 +43,7 @@ public class PreprocessSpecialEntitiesTest {
 
     @Test
     public void testPipesDelimiter() throws ProcessingException {
-        test("That's | a || very ||| long |||| example. |||||",
+        test("That's | a || very ||| long |||| example . |||||",
                 "That 's | a || very ||| long |||| example . |||||");
     }
 

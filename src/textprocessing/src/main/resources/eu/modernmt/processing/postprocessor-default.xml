@@ -32,6 +32,6 @@
 
     <processor target="zh">eu.modernmt.processing.normalizers.ChineseCharacterConverter</processor>
 
-    <processor>eu.modernmt.processing.xml.XMLTagProcessor</processor>
+    <processor>eu.modernmt.processing.tags.XMLTagProcessor</processor>
 
 </pipeline>

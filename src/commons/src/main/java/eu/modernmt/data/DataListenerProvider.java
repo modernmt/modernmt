@@ -7,6 +7,6 @@ import java.util.Collection;
  */
 public interface DataListenerProvider {
 
-    Collection<DataListener> getDataListeners();
+    Collection<LogDataListener> getDataListeners();
 
 }

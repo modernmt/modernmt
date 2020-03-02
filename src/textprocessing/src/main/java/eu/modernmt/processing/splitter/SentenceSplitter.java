@@ -1,6 +1,8 @@
 package eu.modernmt.processing.splitter;
 
 import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Tag;
+import eu.modernmt.model.Token;
 import eu.modernmt.model.Word;
 
 import java.util.ArrayList;
@@ -21,36 +23,82 @@ public class SentenceSplitter {
     }
 
     public static List<Sentence> split(Sentence sentence) {
-        return split(sentence, 4);
+        return split(sentence, false);
     }
 
-    public static List<Sentence> split(Sentence sentence, int minLength) {
-        ArrayList<Sentence> result = new ArrayList<>(count(sentence));
-        Word[] words = sentence.getWords();
+    public static List<Sentence> split(Sentence sentence, boolean includeTags) {
+        return split(sentence, includeTags, 4);
+    }
 
-        int splitBegin = 0;
-        int splitLength = 0;
+    public static List<Sentence> split(Sentence sentence, boolean includeTags, int minLength) {
+        ArrayList<Sentence> output = new ArrayList<>(count(sentence));
 
-        for (int i = 0; i < words.length; i++) {
-            splitLength++;
+        boolean pendingSentenceBreak = false;
+        Builder builder = new Builder(includeTags);
 
-            if ((words[i].isSentenceBreak() || i == words.length - 1) && splitLength >= minLength) {
-                result.add(split(words, splitBegin, splitLength));
-                splitBegin = i + 1;
-                splitLength = 0;
+        for (Token token : sentence) {
+            if (!includeTags && (token instanceof Tag)) continue;
+
+            if (pendingSentenceBreak) {
+                if ((token instanceof Tag) && !((Tag) token).isOpeningTag()) {
+                    builder.append(token);
+                    continue;
+                } else {
+                    output.add(builder.toSentence());
+                    builder.clear();
+                }
+            }
+
+            builder.append(token);
+            pendingSentenceBreak = token.isSentenceBreak() && builder.wordcount() >= minLength;
+        }
+
+        if (builder.size() > 0)
+            output.add(builder.toSentence());
+
+        return output;
+    }
+
+    private static class Builder {
+
+        private final boolean includeTags;
+        private final ArrayList<Word> words = new ArrayList<>();
+        private final ArrayList<Tag> tags = new ArrayList<>();
+
+        public Builder(boolean includeTags) {
+            this.includeTags = includeTags;
+        }
+
+        public void append(Token token) {
+            if (token instanceof Tag) {
+                if (includeTags) {
+                    Tag tag = ((Tag) token).clone();
+                    tag.setPosition(words.size());
+                    tags.add(tag);
+                }
+            } else {
+                this.words.add((Word) token);
             }
         }
 
-        if (splitLength > 0)
-            result.add(split(words, splitBegin, splitLength));
+        public Sentence toSentence() {
+            Word[] words = this.words.toArray(new Word[0]);
+            Tag[] tags = this.tags.toArray(new Tag[0]);
+            return new Sentence(words, tags);
+        }
 
-        return result;
-    }
+        public int wordcount() {
+            return words.size();
+        }
 
-    private static Sentence split(Word[] words, int begin, int size) {
-        Word[] subWords = new Word[size];
-        System.arraycopy(words, begin, subWords, 0, size);
-        return new Sentence(subWords);
+        public int size() {
+            return words.size() + tags.size();
+        }
+
+        public void clear() {
+            words.clear();
+            tags.clear();
+        }
     }
 
 }

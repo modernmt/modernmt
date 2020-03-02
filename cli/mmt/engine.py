@@ -304,8 +304,8 @@ class _State(object):
         self.api_port = props['api']['port'] if 'api' in props else None
         self.api_root = props['api']['root'] if 'api' in props and 'root' in props['api'] else None
         self.cluster_port = props['cluster_port']
-        self.datastream_host = props['datastream']['host'] if 'datastream' in props else None
-        self.datastream_port = props['datastream']['port'] if 'datastream' in props else None
+        self.binlog_host = props['binlog']['host'] if 'binlog' in props else None
+        self.binlog_port = props['binlog']['port'] if 'binlog' in props else None
         self.database_host = props['database']['host'] if 'database' in props else None
         self.database_port = props['database']['port'] if 'database' in props else None
         self.embedded_services = [p for p in props['embedded_services']] if 'embedded_services' in props else None
@@ -342,7 +342,7 @@ class EngineNode(Daemon):
         self._log_file = engine.get_logfile('node', ensure=False)
         self._api = None
 
-    def start(self, api_port=None, cluster_port=None, datastream_port=None,
+    def start(self, api_port=None, cluster_port=None, binlog_port=None,
               db_port=None, leader=None, verbosity=None, remote_debug=False, log_file=None):
         if log_file is not None:
             self._log_file = log_file
@@ -360,9 +360,9 @@ class EngineNode(Daemon):
             args.append('--api-port')
             args.append(str(api_port))
 
-        if datastream_port is not None:
-            args.append('--datastream-port')
-            args.append(str(datastream_port))
+        if binlog_port is not None:
+            args.append('--binlog-port')
+            args.append(str(binlog_port))
 
         if db_port is not None:
             args.append('--db-port')

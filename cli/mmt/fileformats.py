@@ -387,7 +387,7 @@ class XLIFFFileFormat(FileFormat):
                 trailing_match = re.search(r'\s*$', source_text)
                 trailing_space = trailing_match.group() if trailing_match is not None else ''
 
-                content = u'<content xmlns="%s">%s</content>' % (self._xlf_ns, content + trailing_space)
+                content = u'<content xmlns="%s">%s</content>' % (self._xlf_ns, content.rstrip() + trailing_space)
                 content = ElementTree.fromstring(content)
 
                 # Replace placeholders

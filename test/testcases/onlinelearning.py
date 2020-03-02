@@ -2,6 +2,7 @@ import os
 import shutil
 import time
 
+from cli.mmt.engine import ApiException
 from cli.mmt.fileformats import CompactFileFormat
 from testcases import ModernMTTestCase, TEST_RESOURCES
 
@@ -17,21 +18,6 @@ class __OnlineLearningTest(ModernMTTestCase):
 
     ALL_CORPORA = [CORPUS_DE, CORPUS_ES, CORPUS_FR, CORPUS_IT, CORPUS_ZH]
     ACCEPTED_CORPORA = [CORPUS_ES, CORPUS_FR, CORPUS_IT, CORPUS_ZH]
-
-    @staticmethod
-    def map_lang(lang):
-        if lang.startswith('es'):
-            if lang == 'es' or lang == 'es-ES':
-                return 'es-ES'
-            else:
-                return 'es-MX'
-        elif lang.startswith('zh'):
-            if lang == 'zh-HK' or lang == 'zh-TW':
-                return 'zh-TW'
-            else:
-                return 'zh-CN'
-        else:
-            return lang.split('-')[0]
 
     # Assertion
 
@@ -100,6 +86,9 @@ class OnlineLearningLanguageTest(__OnlineLearningTest):
             self.assertEqual(1, len(context))
             self.assertIn(memory['id'], context)
 
+        context = self._get_context('de')
+        self.assertIsNone(context)  # 'de' is not supported but added to the model
+
         # Verify Memory index
         es_translation = self._translate(memories, 'es')
         fr_translation = self._translate(memories, 'fr')
@@ -111,6 +100,12 @@ class OnlineLearningLanguageTest(__OnlineLearningTest):
         self.assertIn('Questo è un esempio', it_translation)
         self.assertIn('这是', zh_translation)
 
+        try:
+            self._translate(memories, 'de')
+            self.fail('German should not be enabled for this engine')
+        except ApiException as e:
+            self.assertIn('UnsupportedLanguageException', e.cause)
+
         # Dump engine content
         self.mmt.stop()
 
@@ -118,9 +113,9 @@ class OnlineLearningLanguageTest(__OnlineLearningTest):
         translation_memory = self.mmt.dump_translation_memory()
 
         # Verify Context Analyzer content
-        self.assertEqual(4, len(context_analyzer))
+        self.assertEqual(5, len(context_analyzer))
 
-        for corpus in self.ACCEPTED_CORPORA:
+        for corpus in self.ALL_CORPORA:
             memory = memories[corpus.name]
             memory_id = int(memory['id'])
 
@@ -133,9 +128,9 @@ class OnlineLearningLanguageTest(__OnlineLearningTest):
                     self.assertIn((tgt_lang, src_lang, tgt_line), content)
 
         # Verify Memory content
-        self.assertEqual(4, len(translation_memory))
+        self.assertEqual(5, len(translation_memory))
 
-        for corpus in self.ACCEPTED_CORPORA:
+        for corpus in self.ALL_CORPORA:
             memory = memories[corpus.name]
             memory_id = int(memory['id'])
 
@@ -144,7 +139,6 @@ class OnlineLearningLanguageTest(__OnlineLearningTest):
 
             with corpus.reader_with_languages() as reader:
                 for src_lang, tgt_lang, src_line, tgt_line in reader:
-                    src_lang, tgt_lang = self.map_lang(src_lang), self.map_lang(tgt_lang)
                     self.assertIn((src_lang, tgt_lang, src_line, tgt_line), content)
 
 

@@ -28,11 +28,11 @@ public class NumericWordTest {
 
         Word[] sourceWords = new Word[sourceTokens.length];
         for (int i = 0; i < sourceTokens.length; i++)
-            sourceWords[i] = new Word(sourceTokens[i], sourceTokens[i].replaceAll("[0-9]", "0"), " ");
+            sourceWords[i] = new Word(sourceTokens[i], sourceTokens[i].replaceAll("[0-9]", "0")," ", " ");
 
         Word[] targetWords = new Word[targetTokens.length];
         for (int i = 0; i < targetTokens.length; i++)
-            targetWords[i] = new Word(targetTokens[i].replaceAll("[0-9]", "0"), " ");
+            targetWords[i] = new Word(targetTokens[i].replaceAll("[0-9]", "0"), " ", " ");
 
         return new Translation(targetWords, new Sentence(sourceWords), Alignment.fromAlignmentPairs(alignment));
     }

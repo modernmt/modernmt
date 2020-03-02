@@ -28,7 +28,7 @@ public class EchoPythonDecoder implements PythonDecoder {
     @Override
     public Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) {
         if (suggestions != null && suggestions.length > 0)
-            return Translation.fromTokens(sentence, suggestions[0].translation);
+            return Translation.fromTokens(sentence, suggestions[0].translationTokens);
         else
             return Translation.fromTokens(sentence, TokensOutputStream.tokens(sentence, false, true));
     }

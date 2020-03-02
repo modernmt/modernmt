@@ -45,16 +45,17 @@ import static org.apache.lucene.analysis.Analyzer.PER_FIELD_REUSE_STRATEGY;
  */
 public class LuceneTranslationMemory implements TranslationMemory {
 
-    private final Logger logger = LogManager.getLogger(LuceneTranslationMemory.class);
+    protected final Logger logger = LogManager.getLogger(LuceneTranslationMemory.class);
 
-    private final int minQuerySize;
-    private final Directory indexDirectory;
-    private final QueryBuilder queryBuilder;
-    private final Rescorer rescorer;
-    private final AnalyzerFactory analyzerFactory;
-    private final Analyzer shortQueryAnalyzer;
-    private final Analyzer longQueryAnalyzer;
-    private final IndexWriter indexWriter;
+    protected final int minQuerySize;
+    protected final Directory indexDirectory;
+    protected final QueryBuilder queryBuilder;
+    protected final Rescorer rescorer;
+    protected final AnalyzerFactory analyzerFactory;
+    protected final DocumentBuilder documentBuilder;
+    protected final Analyzer shortQueryAnalyzer;
+    protected final Analyzer longQueryAnalyzer;
+    protected final IndexWriter indexWriter;
 
     private DirectoryReader _indexReader;
     private IndexSearcher _indexSearcher;
@@ -62,7 +63,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
     private boolean closed = false;
 
-    private static File forceMkdir(File directory) throws IOException {
+    protected static File forceMkdir(File directory) throws IOException {
         if (!directory.isDirectory())
             FileUtils.forceMkdir(directory);
         return directory;
@@ -81,17 +82,18 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     public LuceneTranslationMemory(Directory directory, Rescorer rescorer, int minQuerySize) throws IOException {
-        this(directory, new DefaultQueryBuilder(), rescorer, new DefaultAnalyzerFactory(), minQuerySize);
+        this(directory, new DefaultDocumentBuilder(), new DefaultQueryBuilder(), rescorer, new DefaultAnalyzerFactory(), minQuerySize);
     }
 
-    public LuceneTranslationMemory(File indexPath, QueryBuilder queryBuilder, Rescorer rescorer, AnalyzerFactory analyzerFactory, int minQuerySize) throws IOException {
-        this(FSDirectory.open(forceMkdir(indexPath)), queryBuilder, rescorer, analyzerFactory, minQuerySize);
+    public LuceneTranslationMemory(File indexPath, DocumentBuilder documentBuilder, QueryBuilder queryBuilder, Rescorer rescorer, AnalyzerFactory analyzerFactory, int minQuerySize) throws IOException {
+        this(FSDirectory.open(forceMkdir(indexPath)), documentBuilder, queryBuilder, rescorer, analyzerFactory, minQuerySize);
     }
 
-    public LuceneTranslationMemory(Directory directory, QueryBuilder queryBuilder, Rescorer rescorer, AnalyzerFactory analyzerFactory, int minQuerySize) throws IOException {
+    public LuceneTranslationMemory(Directory directory, DocumentBuilder documentBuilder, QueryBuilder queryBuilder, Rescorer rescorer, AnalyzerFactory analyzerFactory, int minQuerySize) throws IOException {
         this.indexDirectory = directory;
         this.queryBuilder = queryBuilder;
         this.rescorer = rescorer;
+        this.documentBuilder = documentBuilder;
         this.analyzerFactory = analyzerFactory;
         this.shortQueryAnalyzer = analyzerFactory.createShortQueryAnalyzer();
         this.longQueryAnalyzer = analyzerFactory.createLongQueryAnalyzer();
@@ -101,7 +103,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         IndexWriterConfig indexConfig = new IndexWriterConfig(Version.LUCENE_4_10_4, new DelegatingAnalyzerWrapper(PER_FIELD_REUSE_STRATEGY) {
             @Override
             protected Analyzer getWrappedAnalyzer(String fieldName) {
-                if (DocumentBuilder.isHashField(fieldName))
+                if (documentBuilder.isHashField(fieldName))
                     return analyzerFactory.createHashAnalyzer();
                 else
                     return analyzerFactory.createContentAnalyzer();
@@ -120,12 +122,12 @@ public class LuceneTranslationMemory implements TranslationMemory {
         // Read channels status
         IndexSearcher searcher = this.getIndexSearcher();
 
-        Query query = new TermQuery(DocumentBuilder.makeChannelsTerm());
+        Query query = this.queryBuilder.getChannels(this.documentBuilder);
         TopDocs docs = searcher.search(query, 1);
 
         if (docs.scoreDocs.length > 0) {
             Document channelsDocument = searcher.doc(docs.scoreDocs[0].doc);
-            this.channels = DocumentBuilder.asChannels(channelsDocument);
+            this.channels = this.documentBuilder.asChannels(channelsDocument);
         } else {
             this.channels = new HashMap<>();
         }
@@ -172,7 +174,29 @@ public class LuceneTranslationMemory implements TranslationMemory {
         }
     }
 
-    public void dump(Consumer<ScoreEntry> consumer) throws IOException {
+    @Override
+    public void dump(long memory, Consumer<Entry> consumer) throws IOException {
+        IndexSearcher searcher = getIndexSearcher();
+        IndexReader reader = getIndexReader();
+
+        int size = reader.numDocs();
+        if (size == 0)
+            return;
+
+        Query memoryQuery = new TermQuery(documentBuilder.makeMemoryTerm(memory));
+        TopDocs docs = searcher.search(memoryQuery, size);
+
+        for (ScoreDoc scoreDoc : docs.scoreDocs) {
+            Document document = reader.document(scoreDoc.doc);
+            if (documentBuilder.getMemory(document) > 0) {
+                TranslationMemory.Entry entry = documentBuilder.asEntry(document);
+                consumer.accept(entry);
+            }
+        }
+    }
+
+    @Override
+    public void dumpAll(Consumer<Entry> consumer) throws IOException {
         IndexSearcher searcher = getIndexSearcher();
         IndexReader reader = getIndexReader();
 
@@ -184,8 +208,8 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
         for (ScoreDoc scoreDoc : docs.scoreDocs) {
             Document document = reader.document(scoreDoc.doc);
-            if (DocumentBuilder.getMemory(document) > 0) {
-                ScoreEntry entry = DocumentBuilder.asEntry(document);
+            if (documentBuilder.getMemory(document) > 0) {
+                TranslationMemory.Entry entry = documentBuilder.asEntry(document);
                 consumer.accept(entry);
             }
         }
@@ -200,7 +224,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
     public ScoreEntry[] search(UUID user, LanguageDirection direction, Sentence source, ContextVector contextVector, Rescorer rescorer, int limit) throws IOException {
         Analyzer analyzer = this.queryBuilder.isLongQuery(source.getWords().length) ? longQueryAnalyzer : shortQueryAnalyzer;
-        Query query = this.queryBuilder.bestMatchingSuggestion(analyzer, user, direction, source, contextVector);
+        Query query = this.queryBuilder.bestMatchingSuggestion(documentBuilder, analyzer, user, direction, source, contextVector);
 
         IndexSearcher searcher = getIndexSearcher();
 
@@ -209,7 +233,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
 
         ScoreEntry[] entries = new ScoreEntry[docs.length];
         for (int i = 0; i < docs.length; i++) {
-            entries[i] = DocumentBuilder.asEntry(searcher.doc(docs[i].doc), direction);
+            entries[i] = documentBuilder.asScoreEntry(searcher.doc(docs[i].doc), direction);
             entries[i].score = docs[i].score;
         }
 
@@ -225,6 +249,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
         return entries;
     }
 
+    @Override
     public synchronized void optimize() throws IOException {
         IndexReader reader = getIndexReader();
         logger.info("Starting memory forced merge " +
@@ -263,8 +288,8 @@ public class LuceneTranslationMemory implements TranslationMemory {
                     newChannels.put(entry.getKey(), position);
             }
 
-            Document channelsDocument = DocumentBuilder.newChannelsInstance(newChannels);
-            this.indexWriter.updateDocument(DocumentBuilder.makeChannelsTerm(), channelsDocument);
+            Document channelsDocument = documentBuilder.create(newChannels);
+            this.indexWriter.updateDocument(documentBuilder.makeChannelsTerm(), channelsDocument);
             this.indexWriter.commit();
 
             this.channels.putAll(newChannels);
@@ -286,11 +311,6 @@ public class LuceneTranslationMemory implements TranslationMemory {
         return false;
     }
 
-    @Override
-    public boolean includeDiscardedTranslationUnits() {
-        return false;
-    }
-
     private void onTranslationUnitsReceived(Collection<TranslationUnit> units) throws IOException {
         for (TranslationUnit unit : units) {
             Long currentPosition = this.channels.get(unit.channel);
@@ -298,12 +318,12 @@ public class LuceneTranslationMemory implements TranslationMemory {
             if (currentPosition == null || currentPosition < unit.channelPosition) {
                 if (unit.rawPreviousSentence != null && unit.rawPreviousTranslation != null) {
                     String hash = HashGenerator.hash(unit.rawLanguage, unit.rawPreviousSentence, unit.rawPreviousTranslation);
-                    Query hashQuery = this.queryBuilder.getByHash(unit.memory, hash);
+                    Query hashQuery = this.queryBuilder.getByHash(documentBuilder, unit.memory, hash);
 
                     this.indexWriter.deleteDocuments(hashQuery);
                 }
 
-                Document document = DocumentBuilder.newInstance(unit);
+                Document document = documentBuilder.create(unit);
                 this.indexWriter.addDocument(document);
             }
         }
@@ -314,7 +334,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
             Long currentPosition = this.channels.get(deletion.channel);
 
             if (currentPosition == null || currentPosition < deletion.channelPosition)
-                this.indexWriter.deleteDocuments(DocumentBuilder.makeMemoryTerm(deletion.memory));
+                this.indexWriter.deleteDocuments(documentBuilder.makeMemoryTerm(deletion.memory));
         }
     }
 

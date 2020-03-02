@@ -6,7 +6,7 @@ import eu.modernmt.api.framework.RESTRequest;
 import eu.modernmt.api.framework.actions.ObjectAction;
 import eu.modernmt.api.framework.routing.Route;
 import eu.modernmt.api.framework.routing.TemplateException;
-import eu.modernmt.data.DataManagerException;
+import eu.modernmt.data.BinaryLogException;
 import eu.modernmt.facade.ModernMT;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
@@ -20,7 +20,7 @@ import eu.modernmt.persistence.PersistenceException;
 public class UpdateMemoryContribution extends ObjectAction<ImportJob> {
 
     @Override
-    protected ImportJob execute(RESTRequest req, Parameters _params) throws DataManagerException, PersistenceException {
+    protected ImportJob execute(RESTRequest req, Parameters _params) throws BinaryLogException, PersistenceException {
         Params params = (Params) _params;
         return ModernMT.memory.replace(params.direction, params.memory, params.sentence, params.translation,
                 params.previousSentence, params.previousTranslation);

@@ -1,3 +1,4 @@
+import re
 import threading
 import time
 from multiprocessing.dummy import Pool
@@ -95,11 +96,12 @@ class TranslateEngine(object):
 
 class ModernMTTranslate(TranslateEngine):
     def __init__(self, node, source_lang, target_lang, priority=None,
-                 context_vector=None, context_file=None, context_string=None):
+                 context_vector=None, context_file=None, context_string=None, split_lines=False):
         TranslateEngine.__init__(self, source_lang, target_lang)
         self._api = node.api
         self._priority = EngineNode.RestApi.PRIORITY_BACKGROUND if priority is None else priority
         self._context = None
+        self._split_lines = split_lines
 
         if context_vector is None:
             if context_file is not None:
@@ -144,18 +146,22 @@ class ModernMTTranslate(TranslateEngine):
 
     def translate_text(self, text):
         try:
-            if len(text) > 4096:
-                text = text[:4096]
+            lines = text.split('\n') if self._split_lines else [text]
+            translations = []
 
-            translation = self._api.translate(self.source_lang, self.target_lang, text,
-                                              context=self._context, priority=self._priority)
+            for line in lines:
+                if len(line.strip()) == 0:
+                    translations.append(line)
+                else:
+                    translation = self._api.translate(self.source_lang, self.target_lang, line,
+                                                      context=self._context, priority=self._priority)
+                    translations.append(translation['translation'])
+            return '\n'.join(translations)
         except requests.exceptions.ConnectionError:
             raise TranslateError('Unable to connect to ModernMT. '
                                  'Please check if engine is running on port %d.' % self._api.port)
         except ApiException as e:
             raise TranslateError(e.cause)
-
-        return translation['translation']
 
     def translate_file(self, input_file, output_file, threads=None):
         reset_context = False

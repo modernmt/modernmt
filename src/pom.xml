@@ -4,7 +4,7 @@
 
     <groupId>eu.modernmt</groupId>
     <artifactId>mmt-root</artifactId>
-    <version>4.2</version>
+    <version>4.4.1</version>
 
     <modules>
         <module>commons</module>
@@ -17,7 +17,6 @@
         <module>persistence-mysql</module>
         <module>core</module>
         <module>command-line</module>
-        <module>backup-model</module>
     </modules>
 
     <packaging>pom</packaging>
@@ -31,10 +30,10 @@
         <maven.build.timestamp.format>yyyyMMddHHmm</maven.build.timestamp.format>
 
         <lucene.version>4.10.4</lucene.version>
-        <kafka.version>1.1.0</kafka.version>
-        <cassandra.version>3.11.4</cassandra.version>
+        <kafka.version>2.4.0</kafka.version>
+        <cassandra.version>3.11.6</cassandra.version>
 
-        <mmt.version>4.2</mmt.version>
+        <mmt.version>4.4.1</mmt.version>
         <mmt.build.number>${maven.build.timestamp}</mmt.build.number>
 
         <!-- Native project definitions -->

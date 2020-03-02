@@ -40,7 +40,7 @@ public class CorporaCleaning {
             options.filterDrafts = true;
             options.filterBySentenceLength = true;
             options.filterNumericSentences = true;
-            options.filterVerbatimTranslations = true;
+            options.filterVerbatimTranslations = false;
             options.filterByLanguage = true;
             return options;
         }
@@ -51,7 +51,7 @@ public class CorporaCleaning {
             options.filterBrokenUTF8 = true;
             options.filterByPunctuation = true;
             options.filterNumericSentences = true;
-            options.filterVerbatimTranslations = true;
+            options.filterVerbatimTranslations = false;
             options.filterOddSentences = false;
             options.filterDrafts = false;
             options.filterBySentenceLength = false;

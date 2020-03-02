@@ -15,12 +15,12 @@ def parse_args_start(argv=None):
     parser.add_argument('--cluster-port', dest='cluster_port', metavar='CLUSTER_PORT',
                         help='the network port used internally by the cluster for communication between '
                              'Cluster nodes. (default is 5016)', default=None, type=int)
-    parser.add_argument('--datastream-port', dest='datastream_port', metavar='DATASTREAM_PORT',
-                        help='the network port used by Datastream, currently implemented with Kafka '
-                             '(default is 9092', default=None, type=int)
+    parser.add_argument('--binlog-port', '--datastream-port', dest='binlog_port', metavar='BINLOG_PORT',
+                        help='the network port used by BinaryLog, currently implemented with Kafka '
+                             '(default is 9092)', default=None, type=int)
     parser.add_argument('--db-port', dest='db_port', metavar='DB_PORT',
                         help='the network port used by the DB, currently implemented with Cassandra '
-                             '(default is 9042', default=None, type=int)
+                             '(default is 9042)', default=None, type=int)
     parser.add_argument('--join-leader', dest='leader', metavar='NODE_IP', default=None,
                         help='use this option to join this node to an existent cluster. '
                              'NODE is the IP of the remote host to connect to.')
@@ -66,7 +66,7 @@ def main_start(argv=None):
         print('Starting engine "%s"...' % engine.name, end='', flush=True)
         node.start(api_port=args.api_port,
                    cluster_port=args.cluster_port,
-                   datastream_port=args.datastream_port,
+                   binlog_port=args.binlog_port,
                    db_port=args.db_port,
                    leader=args.leader,
                    verbosity=args.verbosity,
@@ -135,7 +135,7 @@ def main_status(argv=None):
             if node_running else 'stopped'
         cluster_s = ('running - port %d' % node_state.cluster_port) \
             if node_running else 'stopped'
-        datastream_s = ('running - %s:%d' % (node_state.datastream_host, node_state.datastream_port)) \
+        binlog_s = ('running - %s:%d' % (node_state.binlog_host, node_state.binlog_port)) \
             if node_running else 'stopped'
         database_s = ('running - %s:%d' % (node_state.database_host, node_state.database_port)) \
             if node_running else 'stopped'
@@ -143,5 +143,5 @@ def main_status(argv=None):
         print('[Engine: "%s"]' % engine.name)
         print('    REST API:   %s' % rest_api_s)
         print('    Cluster:    %s' % cluster_s)
-        print('    Datastream: %s' % datastream_s)
+        print('    Binary log: %s' % binlog_s)
         print('    Database:   %s' % database_s)

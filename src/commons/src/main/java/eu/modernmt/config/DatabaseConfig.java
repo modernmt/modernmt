@@ -110,18 +110,17 @@ public class DatabaseConfig {
         this.type = type;
     }
 
-
     @Override
     public String toString() {
-        return "[Database]\n{" +
+        return "Database: " +
                 "embedded=" + embedded +
                 ", enabled=" + enabled +
-                ", host='" + host + '\'' +
-                ", port=" + port +
                 ", type=" + type +
+                ", port=" + port +
+                ", host='" + host + '\'' +
                 ", name='" + name + '\'' +
                 ", user='" + user + '\'' +
-                ", password='" + password + '\'' +
-                '}';
+                ", password='****'";
     }
+
 }

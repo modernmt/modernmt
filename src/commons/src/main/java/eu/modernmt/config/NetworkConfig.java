@@ -8,7 +8,7 @@ import eu.modernmt.hw.NetworkUtils;
 public class NetworkConfig {
 
     private final NodeConfig parent;
-    private String listeningInterface = null;
+    private String listeningInterface = NetworkUtils.getMyIpv4Address();
     private int port = 5016;
     private String host = NetworkUtils.getMyIpv4Address();
     private final ApiConfig apiConfig = new ApiConfig(this);
@@ -56,11 +56,11 @@ public class NetworkConfig {
 
     @Override
     public String toString() {
-        return "[Network]\n" +
-                "  host = " + host + "\n" +
-                "  interface = " + listeningInterface + "\n" +
-                "  port = " + port + "\n" +
-                "  " + apiConfig.toString().replace("\n", "\n  ") + "\n" +
-                "  " + joinConfig.toString().replace("\n", "\n  ");
+        return "Network: " +
+                "interface='" + listeningInterface + '\'' +
+                ", port=" + port +
+                ", host='" + host + '\'' +
+                "\n  " + apiConfig.toString().replace("\n", "\n  ") +
+                "\n  " + joinConfig.toString().replace("\n", "\n  ");
     }
 }

@@ -1,5 +1,8 @@
 package eu.modernmt.config;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 /**
  * Created by davide on 04/01/17.
  */
@@ -10,8 +13,9 @@ public class JoinConfig {
         private final String host;
         private final int port;
 
-        public Member(String host, int port) {
-            this.host = host;
+        public Member(String host, int port) throws UnknownHostException {
+            InetAddress address = InetAddress.getByName(host);
+            this.host = address.getHostAddress();
             this.port = port;
         }
 
@@ -25,11 +29,10 @@ public class JoinConfig {
 
         @Override
         public String toString() {
-            return "[Member]\n" +
-                    "  host = " + host + "\n" +
-                    "  port = " + port;
+            return "Member: " +
+                    "host='" + host + '\'' +
+                    ", port=" + port;
         }
-
     }
 
     private final NetworkConfig parent;
@@ -62,16 +65,14 @@ public class JoinConfig {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder("[Join]\n");
-        builder.append("  timeout = ").append(timeout).append('\n');
+        StringBuilder builder = new StringBuilder("Join: ");
+        builder.append("timeout=").append(timeout);
         if (members != null) {
-            for (Member member : members) {
-                builder.append("  ")
-                        .append(member.toString().replace("\n", "\n  "))
-                        .append("\n");
-            }
+            for (Member member : members)
+                builder.append("\n  ").append(member.toString());
         }
 
-        return builder.toString().trim();
+        return builder.toString();
     }
+
 }

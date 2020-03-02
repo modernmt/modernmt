@@ -20,7 +20,7 @@ public class LevenshteinRescorer implements Rescorer {
         String[] words = TokensOutputStream.tokens(input, false, true);
 
         for (ScoreEntry entry : entries)
-            entry.score = 1.f - getLevenshteinDistance(words, entry.sentence);
+            entry.score = 1.f - getLevenshteinDistance(words, entry.sentenceTokens);
 
         if (context != null && context.size() > 0) {
             HashMap<Long, Float> contextScores = new HashMap<>(context.size());

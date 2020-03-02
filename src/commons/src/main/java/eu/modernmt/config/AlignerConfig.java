@@ -26,8 +26,8 @@ public class AlignerConfig {
 
     @Override
     public String toString() {
-        return "[AlignerConfig]\n" +
-                "  enabled = " + this.enabled;
+        return "Aligner: " +
+                "enabled=" + enabled;
     }
 
 }

@@ -7,7 +7,7 @@ import eu.modernmt.context.lucene.analysis.ContextAnalyzerIndex;
 import eu.modernmt.context.lucene.analysis.DocumentBuilder;
 import eu.modernmt.context.lucene.storage.Bucket;
 import eu.modernmt.context.lucene.storage.CorporaStorage;
-import eu.modernmt.data.DataListener;
+import eu.modernmt.data.LogDataListener;
 import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.LanguageDirection;
@@ -80,10 +80,15 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
         }
     }
 
-    public synchronized void optimize() throws IOException {
+    @Override
+    public synchronized void optimize() throws ContextAnalyzerException {
         logger.info("Starting memory forced merge");
         long begin = System.currentTimeMillis();
-        this.index.forceMerge();
+        try {
+            this.index.forceMerge();
+        } catch (IOException e) {
+            throw new ContextAnalyzerException(e);
+        }
         long elapsed = System.currentTimeMillis() - begin;
         logger.info("Memory forced merge completed in " + (elapsed / 1000.) + "s");
     }
@@ -146,7 +151,7 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
     }
 
     @Override
-    public Collection<DataListener> getDataListeners() {
+    public Collection<LogDataListener> getDataListeners() {
         return Collections.singleton(storage);
     }
 

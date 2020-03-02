@@ -1,6 +1,6 @@
 package eu.modernmt.cluster.kafka;
 
-import eu.modernmt.data.DataChannel;
+import eu.modernmt.data.LogChannel;
 import org.apache.kafka.common.TopicPartition;
 
 /**
@@ -8,7 +8,7 @@ import org.apache.kafka.common.TopicPartition;
  * Updated by andrearossi on 29/03/17
  * Wrapper for TopicPartition: it is used to assign an id to a TopicPartition
  */
-public class KafkaChannel implements DataChannel {
+public class KafkaChannel implements LogChannel {
 
     private final short id;
     private final TopicPartition partition;

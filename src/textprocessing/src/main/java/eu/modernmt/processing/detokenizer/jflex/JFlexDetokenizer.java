@@ -63,7 +63,14 @@ public class JFlexDetokenizer extends TextProcessor<Translation, Translation> {
             annotator.annotate(text, type);
         }
 
-        text.apply(translation, (word, hasSpace) -> {
+        text.applyLeft(translation, (word, hasSpace) -> {
+            word.setLeftSpaceRequired(hasSpace);
+            if (word.hasLeftSpace())
+                word.setLeftSpace(hasSpace ? " " : null);
+        });
+
+        text.applyRight(translation, (word, hasSpace) -> {
+            word.setRightSpaceRequired(hasSpace);
             if (word.hasRightSpace())
                 word.setRightSpace(hasSpace ? " " : null);
         });
