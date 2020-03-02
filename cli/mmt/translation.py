@@ -314,3 +314,46 @@ class GoogleTranslate(TranslateEngine):
             translation = XMLEncoder.escape(translation)
 
         return translation
+
+
+class ModernMTEnterpriseTranslate(TranslateEngine):
+    def __init__(self, source_lang, target_lang, api_key, priority=None, context_vector=None):
+        TranslateEngine.__init__(self, source_lang, target_lang)
+        self._api_key = api_key
+        self._priority = EngineNode.RestApi.PRIORITY_BACKGROUND if priority is None else priority
+        self._context_vector = context_vector
+
+    def _get_default_threads(self):
+        return 8
+
+    @property
+    def name(self):
+        return 'ModernMT Enterprise'
+
+    def translate_text(self, text):
+        try:
+            params = {'source': self.source_lang, 'target': self.target_lang, 'q': text, 'priority': self._priority}
+            if self._context_vector is not None:
+                params['context_vector'] = self._context_vector
+
+            r = requests.post('https://api.modernmt.com/translate', data=params, headers={
+                'X-HTTP-Method-Override': 'GET',
+                'MMT-ApiKey': self._api_key
+            })
+
+            if r.status_code != requests.codes.ok:
+                msg = r.text
+                try:
+                    error = r.json()['error']
+                    msg = '(%s) %s' % (error['type'], error['message'])
+                except KeyError:
+                    pass
+                except ValueError:
+                    pass
+
+                raise TranslateError('HTTP request "%s" failed with code %d: %s' % (r.url, r.status_code, msg))
+
+            content = r.json()
+            return content['data']['translation']
+        except requests.exceptions.ConnectionError as e:
+            raise TranslateError('Unable to connect to ModernMT Enterprise: %s' % str(e))

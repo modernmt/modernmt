@@ -6,7 +6,7 @@ import tempfile
 from cli import ensure_node_running, ensure_node_has_api, CLIArgsException
 from cli.mmt.engine import EngineNode, Engine
 from cli.mmt.fileformats import XLIFFFileFormat
-from cli.mmt.translation import ModernMTTranslate, EchoTranslate
+from cli.mmt.translation import ModernMTTranslate, EchoTranslate, ModernMTEnterpriseTranslate
 
 
 class Translator(object):
@@ -129,6 +129,8 @@ def parse_args(argv=None):
                         help='if set, outputs a fake translation coming from an echo server. '
                              'This is useful if you want to test input format validity before '
                              'running the actual translation.')
+    parser.add_argument('--api-key', dest='api_key', default=None, help='Use ModernMT Enterprise service instead of '
+                                                                        'local engine using the provided API Key')
 
     args = parser.parse_args(argv)
 
@@ -148,6 +150,9 @@ def main(argv=None):
 
     if args.echo:
         engine = EchoTranslate(args.source_lang, args.target_lang)
+    elif args.api_key is not None:
+        engine = ModernMTEnterpriseTranslate(args.source_lang, args.target_lang, args.api_key,
+                                             context_vector=args.context_vector)
     else:  # local ModernMT engine
         node = EngineNode(Engine(args.engine))
         ensure_node_running(node)
