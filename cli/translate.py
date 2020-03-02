@@ -6,7 +6,7 @@ import tempfile
 from cli import ensure_node_running, ensure_node_has_api, CLIArgsException
 from cli.mmt.engine import EngineNode, Engine
 from cli.mmt.fileformats import XLIFFFileFormat
-from cli.mmt.translation import ModernMTTranslate
+from cli.mmt.translation import ModernMTTranslate, EchoTranslate
 
 
 class Translator(object):
@@ -125,6 +125,10 @@ def parse_args(argv=None):
                         help='if set, the input is a XLIFF file.')
     parser.add_argument('--split-lines', dest='split_lines', action='store_true', default=False,
                         help='if set, ModernMT will split input text by carriage-return char')
+    parser.add_argument('--echo', dest='echo', action='store_true', default=False,
+                        help='if set, outputs a fake translation coming from an echo server. '
+                             'This is useful if you want to test input format validity before '
+                             'running the actual translation.')
 
     args = parser.parse_args(argv)
 
@@ -142,24 +146,26 @@ def parse_args(argv=None):
 def main(argv=None):
     args = parse_args(argv)
 
-    engine = Engine(args.engine)
-    node = EngineNode(engine)
-    ensure_node_running(node)
-    ensure_node_has_api(node)
+    if args.echo:
+        engine = EchoTranslate(args.source_lang, args.target_lang)
+    else:  # local ModernMT engine
+        node = EngineNode(Engine(args.engine))
+        ensure_node_running(node)
+        ensure_node_has_api(node)
 
-    mmt = ModernMTTranslate(node, args.source_lang, args.target_lang, context_string=args.context,
-                            context_file=args.context_file, context_vector=args.context_vector,
-                            split_lines=args.split_lines)
+        engine = ModernMTTranslate(node, args.source_lang, args.target_lang, context_string=args.context,
+                                   context_file=args.context_file, context_vector=args.context_vector,
+                                   split_lines=args.split_lines)
 
     if args.text is not None:
-        print(mmt.translate_text(args.text.strip()))
+        print(engine.translate_text(args.text.strip()))
     else:
         if args.is_xliff:
-            translator = XLIFFTranslator(mmt)
+            translator = XLIFFTranslator(engine)
         elif args.batch:
-            translator = BatchTranslator(mmt)
+            translator = BatchTranslator(engine)
         else:
-            translator = InteractiveTranslator(mmt)
+            translator = InteractiveTranslator(engine)
 
         try:
             translator.run(sys.stdin, sys.stdout, threads=args.threads)

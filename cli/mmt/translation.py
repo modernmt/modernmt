@@ -1,9 +1,8 @@
-import re
+import random
 import threading
 import time
 from multiprocessing.dummy import Pool
 from queue import Queue
-import random
 
 import requests
 
@@ -92,6 +91,21 @@ class TranslateEngine(object):
         with open(input_file, 'r', encoding='utf-8') as input_stream:
             with open(output_file, 'w', encoding='utf-8') as output_stream:
                 return self.translate_stream(input_stream, output_stream, threads=threads)
+
+
+class EchoTranslate(TranslateEngine):
+    def __init__(self, source_lang, target_lang):
+        super().__init__(source_lang, target_lang)
+
+    @property
+    def name(self):
+        return 'Echo Translate'
+
+    def _get_default_threads(self):
+        return 16
+
+    def translate_text(self, text):
+        return text
 
 
 class ModernMTTranslate(TranslateEngine):
