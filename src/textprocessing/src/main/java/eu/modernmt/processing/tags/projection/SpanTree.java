@@ -360,14 +360,18 @@ class SpanTree {
                 //Remember that it should be at the left also in the translation
                 sourceLeftToken.addAll(alignment.get(sourceP));
             } else {
+                //otherwise, i.e. if the word is at the right of the current tag
                 //Remember that it should be at the right also in the translation
                 sourceRightToken.addAll(alignment.get(sourceP));
             }
         }
+        //create a contiguous span of left and right positions
         sourceLeftToken = Coverage.contiguous(sourceLeftToken);
         sourceRightToken = Coverage.contiguous(sourceRightToken);
 
         //Find the mapped position that respects most of the left-right word-tag relationship as possible.
+
+        //Consider also the artificial position targetWords which is aligned with the artificial position sourceWords (see Alignment constructor)
         for (int i = 0; i <= targetWords; i++) {
             targetRightToken.add(i);
         }
@@ -376,9 +380,9 @@ class SpanTree {
         int maxScore = rightTokenIntersection.size();
         int bestPosition = 0;
         int actualPosition = 0;
-        for (int i = 0; i < targetWords; i++) {
+        for (int i = 0; i <= targetWords; i++) {
             actualPosition++;
-            if (!targetLeftToken.contains(i))
+            if (!targetLeftToken.contains(i)) //add position only once
                 targetLeftToken.add(i);
 
             targetRightToken.remove(i);
@@ -445,7 +449,7 @@ class SpanTree {
                         Coverage contiguousIntersection = Coverage.intersection(Coverage.contiguous(posI), Coverage.contiguous(posJ));
                         if (!contiguousIntersection.isEmpty()) {
                             // the two children overlap
-                            // choose one point to exclude from both childI and childJ
+                            // choose one point to exclude from either childI or childJ
                             // so that their intersection is minimal
 
                             positionsToRemove = Coverage.choosePositions(posI, posJ);
@@ -456,9 +460,11 @@ class SpanTree {
                             Iterator<Integer> iterator = positionsToRemove.iterator();
                             while (!modifiedI && !modifiedJ && iterator.hasNext()) {
                                 Integer pos = iterator.next();
-                                modifiedI = modifiedI || posI.remove(pos);
+                                //remove pos from childI if present in childI
+                                modifiedI = posI.remove(pos);
+                                //remove pos from childJ if present in chilI and not present in childI
                                 if (!modifiedI) {
-                                    modifiedJ = modifiedJ || posJ.remove(pos);
+                                    modifiedJ = posJ.remove(pos);
                                 }
                             }
                         }
