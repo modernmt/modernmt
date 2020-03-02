@@ -11,8 +11,6 @@ import eu.modernmt.processing.builder.XMLPipelineBuilder;
 import eu.modernmt.processing.splitter.SentenceSplitter;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
 import java.io.File;
@@ -36,7 +34,7 @@ public class PreprocessorMain {
             Option skipPlaceholders = Option.builder().longOpt("print-placeholders").hasArg(false).required(false).build();
             Option keepSpaces = Option.builder().longOpt("original-spacing").hasArg(false).required(false).build();
             Option sentenceSplit = Option.builder().longOpt("sentence-split").hasArg(false).required(false).build();
-            Option configFile = Option.builder("pre").longOpt("preConfig").hasArg().required(false).build();
+            Option configFile = Option.builder().longOpt("preprocessor").hasArg().required(false).build();
 
             cliOptions = new Options();
             cliOptions.addOption(sourceLanguage);
@@ -69,14 +67,12 @@ public class PreprocessorMain {
             keepSpaces = cli.hasOption("original-spacing");
             batch = cli.hasOption("batch");
             split = cli.hasOption("sentence-split");
-            configFile = (cli.hasOption("preConfig")) ? new File(cli.getOptionValue("preConfig")) : null;
-
+            configFile = cli.hasOption("preprocessor") ? new File(cli.getOptionValue("preprocessor")) : null;
         }
 
     }
 
     public static void main(String[] _args) throws Throwable {
-        Logger logger = LogManager.getLogger(PreprocessorMain.class);
         Args args = new Args(_args);
 
         Preprocessor preprocessor = null;
@@ -86,11 +82,9 @@ public class PreprocessorMain {
 
         try {
             if (args.configFile != null) {
-                logger.info("Loading pre-processing configuration from " + args.configFile);
                 XMLPipelineBuilder<String, Sentence> builder = XMLPipelineBuilder.loadFromXML(args.configFile);
                 preprocessor = new Preprocessor(builder);
             } else {
-                logger.info("Loading default pre-processing configuration");
                 preprocessor = new Preprocessor();
             }
 

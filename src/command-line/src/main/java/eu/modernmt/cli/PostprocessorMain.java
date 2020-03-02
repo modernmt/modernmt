@@ -14,8 +14,6 @@ import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.builder.XMLPipelineBuilder;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.Closeable;
 import java.io.File;
@@ -23,7 +21,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 
 public class PostprocessorMain {
-    private static Logger logger = LogManager.getLogger(PostprocessorMain.class);
 
     private static final Sentence EMPTY_SENTENCE = new Sentence(new Word[0]);
     private static final Alignment EMPTY_ALIGNMENT = new Alignment(new int[0], new int[0]);
@@ -37,8 +34,8 @@ public class PostprocessorMain {
             Option targetLanguage = Option.builder("t").hasArg().required().build();
             Option srcInputPath = Option.builder().longOpt("source").hasArg().build();
             Option alignInputPath = Option.builder().longOpt("alignment").hasArg().build();
-            Option preConfig = Option.builder("pre").longOpt("preConfig").hasArg().required(false).build();
-            Option postConfig = Option.builder("post").longOpt("postConfig").hasArg().required(false).build();
+            Option preConfig = Option.builder().longOpt("preprocessor").hasArg().required(false).build();
+            Option postConfig = Option.builder().longOpt("postprocessor").hasArg().required(false).build();
 
             cliOptions = new Options();
             cliOptions.addOption(sourceLanguage);
@@ -70,8 +67,8 @@ public class PostprocessorMain {
             if ((source == null && alignment != null) || (source != null && alignment == null))
                 throw new ParseException("You must specify both '--source' and '--alignment' options or none of them");
 
-            preConfigFile = (cli.hasOption("preConfig")) ? new File(cli.getOptionValue("preConfig")) : null;
-            postConfigFile = (cli.hasOption("postConfig")) ? new File(cli.getOptionValue("postConfig")) : null;
+            preConfigFile = cli.hasOption("preprocessor") ? new File(cli.getOptionValue("preprocessor")) : null;
+            postConfigFile = cli.hasOption("postprocessor") ? new File(cli.getOptionValue("postprocessor")) : null;
         }
 
     }
@@ -87,13 +84,10 @@ public class PostprocessorMain {
             translations = new TranslationProvider(args.language, args.source, args.alignment, args.preConfigFile);
             postprocessor = new Postprocessor();
 
-
             if (args.postConfigFile != null) {
-                logger.info("Loading post-processing configuration from " + args.postConfigFile);
                 XMLPipelineBuilder<Translation, Void> builder = XMLPipelineBuilder.loadFromXML(args.postConfigFile);
                 postprocessor = new Postprocessor(builder);
             } else {
-                logger.info("Loading default post-processing configuration");
                 postprocessor = new Postprocessor();
             }
 
@@ -105,7 +99,7 @@ public class PostprocessorMain {
                 postprocessor.process(args.language, translation);
                 stdout.writeLine(translation.toString());
             }
-        }  catch (IOException | ProcessingException e) {
+        } catch (IOException | ProcessingException e) {
             throw new BootstrapException("Failed to load pre-processor", e);
         } finally {
             IOUtils.closeQuietly(translations);
@@ -122,7 +116,7 @@ public class PostprocessorMain {
         private final LineReader sources;
         private final LineReader stdin;
 
-        public TranslationProvider(LanguageDirection language, File source, File alignment, File configFile) throws IOException, BootstrapException {
+        public TranslationProvider(LanguageDirection language, File source, File alignment, File configFile) throws BootstrapException {
             this.language = language;
 
             if (source != null && alignment != null) {
@@ -130,11 +124,9 @@ public class PostprocessorMain {
 
                 try {
                     if (configFile != null) {
-                        logger.info("Loading post-processing configuration from " + configFile);
                         XMLPipelineBuilder<String, Sentence> builder = XMLPipelineBuilder.loadFromXML(configFile);
                         this.preprocessor = new Preprocessor(builder);
                     } else {
-                        logger.info("Loading default pre-processing configuration");
                         this.preprocessor = new Preprocessor();
                     }
 
@@ -143,7 +135,7 @@ public class PostprocessorMain {
                     success = true;
                 } catch (IOException | ProcessingException e) {
                     throw new BootstrapException("Failed to load pre-processor", e);
-                }  finally {
+                } finally {
                     if (!success)
                         close();
                 }
