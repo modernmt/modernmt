@@ -1,5 +1,6 @@
 package eu.modernmt.cli;
 
+import eu.modernmt.engine.BootstrapException;
 import eu.modernmt.io.*;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
@@ -10,6 +11,7 @@ import eu.modernmt.model.Word;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
+import eu.modernmt.processing.builder.XMLPipelineBuilder;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 
@@ -32,18 +34,24 @@ public class PostprocessorMain {
             Option targetLanguage = Option.builder("t").hasArg().required().build();
             Option srcInputPath = Option.builder().longOpt("source").hasArg().build();
             Option alignInputPath = Option.builder().longOpt("alignment").hasArg().build();
+            Option preConfig = Option.builder().longOpt("preprocessor").hasArg().required(false).build();
+            Option postConfig = Option.builder().longOpt("postprocessor").hasArg().required(false).build();
 
             cliOptions = new Options();
             cliOptions.addOption(sourceLanguage);
             cliOptions.addOption(targetLanguage);
             cliOptions.addOption(srcInputPath);
             cliOptions.addOption(alignInputPath);
+            cliOptions.addOption(preConfig);
+            cliOptions.addOption(postConfig);
 
         }
 
         public final LanguageDirection language;
         public final File source;
         public final File alignment;
+        public final File preConfigFile;
+        public final File postConfigFile;
 
         public Args(String[] args) throws ParseException {
             CommandLineParser parser = new DefaultParser();
@@ -58,6 +66,9 @@ public class PostprocessorMain {
 
             if ((source == null && alignment != null) || (source != null && alignment == null))
                 throw new ParseException("You must specify both '--source' and '--alignment' options or none of them");
+
+            preConfigFile = cli.hasOption("preprocessor") ? new File(cli.getOptionValue("preprocessor")) : null;
+            postConfigFile = cli.hasOption("postprocessor") ? new File(cli.getOptionValue("postprocessor")) : null;
         }
 
     }
@@ -70,8 +81,16 @@ public class PostprocessorMain {
         LineWriter stdout = null;
 
         try {
-            translations = new TranslationProvider(args.language, args.source, args.alignment);
+            translations = new TranslationProvider(args.language, args.source, args.alignment, args.preConfigFile);
             postprocessor = new Postprocessor();
+
+            if (args.postConfigFile != null) {
+                XMLPipelineBuilder<Translation, Void> builder = XMLPipelineBuilder.loadFromXML(args.postConfigFile);
+                postprocessor = new Postprocessor(builder);
+            } else {
+                postprocessor = new Postprocessor();
+            }
+
             stdout = new UnixLineWriter(System.out, UTF8Charset.get());
 
             Translation translation;
@@ -80,6 +99,8 @@ public class PostprocessorMain {
                 postprocessor.process(args.language, translation);
                 stdout.writeLine(translation.toString());
             }
+        } catch (IOException | ProcessingException e) {
+            throw new BootstrapException("Failed to load pre-processor", e);
         } finally {
             IOUtils.closeQuietly(translations);
             IOUtils.closeQuietly(postprocessor);
@@ -95,17 +116,25 @@ public class PostprocessorMain {
         private final LineReader sources;
         private final LineReader stdin;
 
-        public TranslationProvider(LanguageDirection language, File source, File alignment) throws IOException {
+        public TranslationProvider(LanguageDirection language, File source, File alignment, File configFile) throws BootstrapException {
             this.language = language;
 
             if (source != null && alignment != null) {
                 boolean success = false;
 
                 try {
-                    this.preprocessor = new Preprocessor();
+                    if (configFile != null) {
+                        XMLPipelineBuilder<String, Sentence> builder = XMLPipelineBuilder.loadFromXML(configFile);
+                        this.preprocessor = new Preprocessor(builder);
+                    } else {
+                        this.preprocessor = new Preprocessor();
+                    }
+
                     this.alignments = new UnixLineReader(new FileInputStream(alignment), UTF8Charset.get());
                     this.sources = new UnixLineReader(new FileInputStream(source), UTF8Charset.get());
                     success = true;
+                } catch (IOException | ProcessingException e) {
+                    throw new BootstrapException("Failed to load pre-processor", e);
                 } finally {
                     if (!success)
                         close();
