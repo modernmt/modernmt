@@ -4,7 +4,7 @@
 
     <groupId>eu.modernmt</groupId>
     <artifactId>mmt-root</artifactId>
-    <version>4.4</version>
+    <version>4.4.1</version>
 
     <modules>
         <module>commons</module>
@@ -31,9 +31,9 @@
 
         <lucene.version>4.10.4</lucene.version>
         <kafka.version>2.4.0</kafka.version>
-        <cassandra.version>3.11.5</cassandra.version>
+        <cassandra.version>3.11.6</cassandra.version>
 
-        <mmt.version>4.4</mmt.version>
+        <mmt.version>4.4.1</mmt.version>
         <mmt.build.number>${maven.build.timestamp}</mmt.build.number>
 
         <!-- Native project definitions -->

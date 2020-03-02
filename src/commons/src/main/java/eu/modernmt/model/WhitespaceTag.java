@@ -18,6 +18,11 @@ public class WhitespaceTag extends Tag {
     }
 
     @Override
+    public WhitespaceTag clone() {
+        return new WhitespaceTag(name, text, leftSpace, rightSpace, position, type);
+    }
+
+    @Override
     public String toString() {
         return text == null ? placeholder : text;
     }

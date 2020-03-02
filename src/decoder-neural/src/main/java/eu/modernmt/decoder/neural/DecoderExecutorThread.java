@@ -6,7 +6,7 @@ import eu.modernmt.decoder.neural.queue.PythonDecoder;
 import eu.modernmt.decoder.neural.scheduler.Scheduler;
 import eu.modernmt.decoder.neural.scheduler.TranslationSplit;
 import eu.modernmt.lang.LanguageDirection;
-import eu.modernmt.model.Translation;
+import eu.modernmt.model.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,10 +71,12 @@ public class DecoderExecutorThread extends Thread {
             try {
                 split.ensureValid();
 
-                if (split.sentence.hasWords())
+                if (!split.sentence.hasWords() || !SentenceUtils.hasAnyLetterOrDigit(split.sentence)) {
+                    split.onTranslationBegin(System.currentTimeMillis());
+                    split.setTranslation(SentenceUtils.verbatimTranslation(split.sentence));
+                } else {
                     result.add(split);
-                else
-                    split.setTranslation(Translation.emptyTranslation(split.sentence));
+                }
             } catch (TranslationTimeoutException e) {
                 split.setException(e);
             }

@@ -1,6 +1,7 @@
 package eu.modernmt.cluster;
 
 import com.hazelcast.config.Config;
+import com.hazelcast.config.GroupConfig;
 import com.hazelcast.config.TcpIpConfig;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.Hazelcast;
@@ -67,6 +68,7 @@ public class ClusterNode {
     }
 
     private final Logger logger = LogManager.getLogger(ClusterNode.class);
+    private final String clusterName;
 
     private Engine engine;
 
@@ -84,7 +86,8 @@ public class ClusterNode {
     private boolean loadBalancing = true;
     private boolean isShuttingDown = false;
 
-    public ClusterNode() {
+    public ClusterNode(String clusterName) {
+        this.clusterName = clusterName;
         this.status = Status.CREATED;
     }
 
@@ -171,6 +174,8 @@ public class ClusterNode {
 
     private Config getHazelcastConfig(NodeConfig nodeConfig, long interval, TimeUnit unit) {
         Config hazelcastConfig = new XmlConfigBuilder().build();
+        hazelcastConfig.setGroupConfig(
+                new GroupConfig().setName(this.clusterName));
 
         NetworkConfig networkConfig = nodeConfig.getNetworkConfig();
         if (unit != null && interval > 0L) {
@@ -212,7 +217,7 @@ public class ClusterNode {
     }
 
     public void start(NodeConfig nodeConfig, long joinTimeoutInterval, TimeUnit joinTimeoutUnit) throws FailedToJoinClusterException, BootstrapException {
-        logger.info("Starting node with config:\n" + nodeConfig.toString());
+        logger.info("Starting node in cluster \"" + this.clusterName + "\" with config:\n" + nodeConfig.toString());
 
         this.loadBalancing = nodeConfig.isLoadBalancingActive();
 

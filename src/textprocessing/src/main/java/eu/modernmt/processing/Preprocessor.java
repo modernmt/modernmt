@@ -35,6 +35,10 @@ public class Preprocessor implements Closeable {
         this(threads, getDefaultBuilder());
     }
 
+    public Preprocessor(XMLPipelineBuilder<String, Sentence> builder) {
+        this(DEFAULT_THREADS, builder);
+    }
+
     public Preprocessor(int threads, XMLPipelineBuilder<String, Sentence> builder) {
         this.executor = new PipelineExecutor<>(builder, threads);
         this.threads = threads;

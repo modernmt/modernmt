@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
+import java.net.UnknownHostException;
 import java.util.List;
 
 /**
@@ -153,7 +154,11 @@ public class ClusterNodeMain {
 
             if (leader != null) {
                 JoinConfig.Member[] members = new JoinConfig.Member[1];
-                members[0] = new JoinConfig.Member(leader, netConfig.getPort());
+                try {
+                    members[0] = new JoinConfig.Member(leader, netConfig.getPort());
+                } catch (UnknownHostException e) {
+                    throw new ConfigException(e);
+                }
                 joinConfig.setMembers(members);
                 binlogConfig.setHost(leader);
                 dbConfig.setHost(leader);

@@ -23,6 +23,11 @@ public class EmojiTag extends Tag {
     }
 
     @Override
+    public EmojiTag clone() {
+        return new EmojiTag(name, text, leftSpace, rightSpace, position, type);
+    }
+
+    @Override
     public String toString() {
         return text == null ? placeholder : text;
     }

@@ -17,8 +17,12 @@ import eu.modernmt.io.FileConst;
 import eu.modernmt.io.Paths;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.LanguageIndex;
+import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Translation;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
+import eu.modernmt.processing.ProcessingException;
+import eu.modernmt.processing.builder.XMLPipelineBuilder;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
@@ -45,6 +49,7 @@ public class Engine implements Closeable, DataListenerProvider {
     }
 
     private final Logger logger = LogManager.getLogger(Engine.class);
+
     private final String name;
     private final LanguageIndex languageIndex;
 
@@ -55,22 +60,41 @@ public class Engine implements Closeable, DataListenerProvider {
     private final Decoder decoder;
 
     public static Engine load(EngineConfig config) throws BootstrapException {
+        Logger logger = LogManager.getLogger(Engine.class);
+
         String name = config.getName();
         LanguageIndex languageIndex = config.getLanguageIndex();
 
-        File models = Paths.join(FileConst.getEngineRoot(name), "models");
+        File root = FileConst.getEngineRoot(name);
+        File models = Paths.join(root, "models");
 
         Preprocessor preprocessor;
         try {
-            preprocessor = new Preprocessor();
-        } catch (IOException e) {
+            File configFile = new File(root, "preprocessor.xml");
+            if (configFile.isFile()) {
+                logger.info("Loading pre-processing from custom file: " + configFile);
+                XMLPipelineBuilder<String, Sentence> builder = XMLPipelineBuilder.loadFromXML(configFile);
+                preprocessor = new Preprocessor(builder);
+            } else {
+                logger.info("Loading default pre-processing configuration");
+                preprocessor = new Preprocessor();
+            }
+        } catch (IOException | ProcessingException e) {
             throw new BootstrapException("Failed to load pre-processor", e);
         }
 
         Postprocessor postprocessor;
         try {
-            postprocessor = new Postprocessor();
-        } catch (IOException e) {
+            File configFile = new File(root, "postprocessor.xml");
+            if (configFile.isFile()) {
+                logger.info("Loading post-processing from custom file: " + configFile);
+                XMLPipelineBuilder<Translation, Void> builder = XMLPipelineBuilder.loadFromXML(configFile);
+                postprocessor = new Postprocessor(builder);
+            } else {
+                logger.info("Loading default post-processing configuration");
+                postprocessor = new Postprocessor();
+            }
+        } catch (IOException | ProcessingException e) {
             throw new BootstrapException("Failed to load post-processor", e);
         }
 

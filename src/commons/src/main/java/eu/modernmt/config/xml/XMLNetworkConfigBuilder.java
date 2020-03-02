@@ -6,6 +6,8 @@ import eu.modernmt.config.JoinConfig;
 import eu.modernmt.config.NetworkConfig;
 import org.w3c.dom.Element;
 
+import java.net.UnknownHostException;
+
 /**
  * Created by davide on 04/01/17.
  */
@@ -74,14 +76,18 @@ class XMLNetworkConfigBuilder extends XMLAbstractBuilder {
             return config;
         }
 
-        private JoinConfig.Member parseMember(Element element) {
+        private JoinConfig.Member parseMember(Element element) throws ConfigException {
             if (element == null)
                 return null;
 
             String host = getStringAttribute(element, "host");
             int port = getIntAttribute(element, "port");
 
-            return new JoinConfig.Member(host, port);
+            try {
+                return new JoinConfig.Member(host, port);
+            } catch (UnknownHostException e) {
+                throw new ConfigException(e);
+            }
         }
 
     }
