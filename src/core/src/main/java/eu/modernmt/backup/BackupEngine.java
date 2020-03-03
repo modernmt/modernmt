@@ -35,6 +35,8 @@ public class BackupEngine {
     private BinaryLog binlog = null;
 
     public BackupEngine(NodeConfig config, File models) {
+        config.getEngineConfig().getDecoderConfig().setEchoServer(true);
+
         this.uuid = UUID.randomUUID().toString();
         this.config = config;
         this.models = models;
