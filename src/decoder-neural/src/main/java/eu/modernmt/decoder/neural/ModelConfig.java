@@ -40,15 +40,6 @@ public class ModelConfig {
         return basePath;
     }
 
-    public boolean isEchoServer() {
-        try {
-            SubnodeConfiguration settings = config.configurationAt("settings");
-            return settings.getBoolean("echo_server", false);
-        } catch (IllegalArgumentException iex) {
-            return false;
-        }
-    }
-
     public Map<LanguageDirection, File> getAvailableModels() {
         HashMap<LanguageDirection, File> result = new HashMap<>();
 

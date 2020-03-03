@@ -151,6 +151,9 @@ class XMLEngineConfigBuilder extends XMLAbstractBuilder {
             if (config.isUsingGPUs() && hasAttribute("threads"))
                 throw new ConfigException("In order to specify 'threads', you have to add gpus='none'");
 
+            if (hasAttribute("echo"))
+                config.setEchoServer(getBooleanAttribute("echo"));
+
             return config;
         }
     }
