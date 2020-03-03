@@ -13,7 +13,7 @@ class Translator(object):
     def __init__(self, engine):
         self._engine = engine
 
-    def run(self, in_stream, out_stream, threads=None):
+    def run(self, in_stream, out_stream, threads=None, suppress_errors=False):
         raise NotImplementedError
 
 
@@ -21,7 +21,7 @@ class XLIFFTranslator(Translator):
     def __init__(self, engine):
         Translator.__init__(self, engine)
 
-    def run(self, in_stream, out_stream, threads=None):
+    def run(self, in_stream, out_stream, threads=None, suppress_errors=False):
         temp_file = None
 
         try:
@@ -37,7 +37,8 @@ class XLIFFTranslator(Translator):
                         yield src_line
 
             with xliff.writer() as writer:
-                self._engine.translate_batch(generator(), lambda r: writer.write(None, r), threads=threads)
+                self._engine.translate_batch(generator(), lambda r: writer.write(None, r),
+                                             threads=threads, suppress_errors=suppress_errors)
 
             with open(temp_file, 'r', encoding='utf-8') as result:
                 out_stream.write(result.read())
@@ -50,8 +51,8 @@ class BatchTranslator(Translator):
     def __init__(self, engine):
         Translator.__init__(self, engine)
 
-    def run(self, in_stream, out_stream, threads=None):
-        self._engine.translate_stream(in_stream, out_stream, threads=threads)
+    def run(self, in_stream, out_stream, threads=None, suppress_errors=False):
+        self._engine.translate_stream(in_stream, out_stream, threads=threads, suppress_errors=suppress_errors)
 
 
 class InteractiveTranslator(Translator):
@@ -77,7 +78,7 @@ class InteractiveTranslator(Translator):
         else:
             return memory['name']
 
-    def run(self, in_stream, out_stream, threads=None):
+    def run(self, in_stream, out_stream, threads=None, suppress_errors=False):
         try:
             while 1:
                 out_stream.write('> ')
@@ -125,6 +126,8 @@ def parse_args(argv=None):
                         help='if set, the input is a XLIFF file.')
     parser.add_argument('--split-lines', dest='split_lines', action='store_true', default=False,
                         help='if set, ModernMT will split input text by carriage-return char')
+    parser.add_argument('--quiet', dest='quiet', action='store_true', default=False,
+                        help='if set, translation errors are suppressed and an empty translation is returned instead')
     parser.add_argument('--echo', dest='echo', action='store_true', default=False,
                         help='if set, outputs a fake translation coming from an echo server. '
                              'This is useful if you want to test input format validity before '
@@ -173,6 +176,6 @@ def main(argv=None):
             translator = InteractiveTranslator(engine)
 
         try:
-            translator.run(sys.stdin, sys.stdout, threads=args.threads)
+            translator.run(sys.stdin, sys.stdout, threads=args.threads, suppress_errors=args.quiet)
         except KeyboardInterrupt:
             pass  # exit

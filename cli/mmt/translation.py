@@ -1,4 +1,5 @@
 import random
+import sys
 import threading
 import time
 from multiprocessing.dummy import Pool
@@ -38,7 +39,7 @@ class TranslateEngine(object):
     def translate_text(self, text):
         raise NotImplementedError
 
-    def translate_batch(self, generator, consumer, threads=None):
+    def translate_batch(self, generator, consumer, threads=None, suppress_errors=False):
         pool = Pool(threads if threads is not None else self._get_default_threads())
         jobs = Queue()
 
@@ -61,11 +62,21 @@ class TranslateEngine(object):
         consumer_thread = threading.Thread(target=_consumer_thread_run)
         consumer_thread.start()
 
+        def _translate_text(text):
+            try:
+                return self.translate_text(text)
+            except BaseException as e:
+                if suppress_errors:
+                    print(str(e), file=sys.stderr)
+                    return ''
+                else:
+                    raise
+
         try:
             count = 0
             for line in generator:
                 count += 1
-                _job = pool.apply_async(self.translate_text, (line,))
+                _job = pool.apply_async(_translate_text, (line,))
                 jobs.put(_job, block=True)
             return count
         finally:
@@ -76,7 +87,7 @@ class TranslateEngine(object):
             if len(raise_error) > 0:
                 raise raise_error[0]
 
-    def translate_stream(self, input_stream, output_stream, threads=None):
+    def translate_stream(self, input_stream, output_stream, threads=None, suppress_errors=False):
         def generator():
             for line in input_stream:
                 yield line.rstrip('\n')
@@ -85,12 +96,13 @@ class TranslateEngine(object):
             output_stream.write(line)
             output_stream.write('\n')
 
-        return self.translate_batch(generator(), consumer, threads=threads)
+        return self.translate_batch(generator(), consumer, threads=threads, suppress_errors=suppress_errors)
 
-    def translate_file(self, input_file, output_file, threads=None):
+    def translate_file(self, input_file, output_file, threads=None, suppress_errors=False):
         with open(input_file, 'r', encoding='utf-8') as input_stream:
             with open(output_file, 'w', encoding='utf-8') as output_stream:
-                return self.translate_stream(input_stream, output_stream, threads=threads)
+                return self.translate_stream(input_stream, output_stream,
+                                             threads=threads, suppress_errors=suppress_errors)
 
 
 class EchoTranslate(TranslateEngine):
@@ -177,7 +189,7 @@ class ModernMTTranslate(TranslateEngine):
         except ApiException as e:
             raise TranslateError(e.cause)
 
-    def translate_file(self, input_file, output_file, threads=None):
+    def translate_file(self, input_file, output_file, threads=None, suppress_errors=False):
         reset_context = False
 
         try:
@@ -185,7 +197,8 @@ class ModernMTTranslate(TranslateEngine):
                 reset_context = True
                 self._context = self._api.get_context_f(self.source_lang, self.target_lang, input_file)
 
-            return super(ModernMTTranslate, self).translate_file(input_file, output_file, threads=threads)
+            return super(ModernMTTranslate, self).translate_file(input_file, output_file,
+                                                                 threads=threads, suppress_errors=suppress_errors)
         except requests.exceptions.ConnectionError:
             raise TranslateError('Unable to connect to MMT. '
                                  'Please check if engine is running on port %d.' % self._api.port)
