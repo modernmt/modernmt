@@ -62,7 +62,7 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
 
         this.suggestionsLimit = modelConfig.getSuggestionsLimit();
         this.directions = new HashSet<>(modelConfig.getAvailableModels().keySet());
-        this.echoServer = modelConfig.isEchoServer();
+        this.echoServer = config.isEchoServer();
 
         // Translation Memory
         try {

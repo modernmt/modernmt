@@ -282,7 +282,7 @@ class XLIFFFileFormat(FileFormat):
             match = tu.find('.//sdl:seg[@id="%s"][@percent="100"]' % _id, cls.NAMESPACES)
             return True if match is not None else False
         else:
-            return True
+            return False
 
     @classmethod
     def _get_tag_name(cls, e):

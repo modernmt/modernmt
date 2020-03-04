@@ -25,6 +25,7 @@ public class DecoderConfig {
     private int[] gpus = DEFAULT_GPUS;
     private String decoderClass = null;
     private boolean enabled = true;
+    private boolean echoServer = false;
 
     public DecoderConfig(EngineConfig parent) {
         this.parent = parent;
@@ -64,6 +65,14 @@ public class DecoderConfig {
 
     public void setThreads(int threads) {
         this.threads = threads;
+    }
+
+    public boolean isEchoServer() {
+        return echoServer;
+    }
+
+    public void setEchoServer(boolean echoServer) {
+        this.echoServer = echoServer;
     }
 
     public int[] getGPUs() {
@@ -115,6 +124,7 @@ public class DecoderConfig {
                 ", threads=" + threads +
                 ", gpus=" + StringUtils.join(gpus, ',') +
                 ", class='" + decoderClass + '\'' +
-                ", enabled=" + enabled;
+                ", enabled=" + enabled +
+                ", echo=" + echoServer;
     }
 }
