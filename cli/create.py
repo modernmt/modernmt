@@ -89,8 +89,7 @@ class CreateActivity(StatefulActivity):
         args = Namespace(data_path=self.state.datagen_dir, output_path=self.state.nn_path, debug=self.args.debug,
                          num_checkpoints=self.args.num_checkpoints, resume=self.args.resume, init_model=init_model,
                          gpus=self.args.gpus, tensorboard_port=self.args.tensorboard_port,
-                         train_steps=self.args.train_steps)
-
+                         train_steps=self.args.train_steps, loss_difference_threshold=self.args.loss_difference_threshold)
         activity = train.TrainActivity(args, self.extra_argv, wdir=self.wdir('_temp_train'),
                                        log_file=self.log_fobj, delete_on_exit=self.delete_on_exit)
         activity.indentation = 4
@@ -189,6 +188,8 @@ def parse_args(argv=None):
     train_args.add_argument('--train-steps', dest='train_steps', type=int, default=None,
                             help='by default the training stops when the validation loss reaches a plateau, with '
                                  'this option instead, the training process stops after the specified amount of steps')
+    train_args.add_argument('--loss-difference-threshold', dest='loss_difference_threshold', type=float, default=0.0001,
+                        help='threshold for the termination policy')
 
     args, extra_argv = parser.parse_known_args(argv)
 
