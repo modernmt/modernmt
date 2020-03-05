@@ -55,7 +55,8 @@ public class BackupDaemonMain {
         File logFolder = FileConst.getLogsPath(args.engine);
         FileUtils.forceMkdir(logFolder);
 
-        Log4jConfiguration.setup(new File(logFolder, "backup.log"), Level.INFO);
+
+        Log4jConfiguration.setup(Level.INFO);
 
         FileLimitRetentionPolicy policy = new FileLimitRetentionPolicy(args.limit);
 
