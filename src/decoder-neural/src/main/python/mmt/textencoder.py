@@ -477,6 +477,10 @@ class SubwordDictionary(Dictionary):
         i = 0
 
         for j in range(len(subtoken_ids)):
+            ### handle "empty" sub_tokens like UNK
+            if self[subtoken_ids[j]] == '':
+                subtoken_ids[j] = UNK_ID
+
             _id = subtoken_ids[j]
             if _id == self.eos():
                 break
