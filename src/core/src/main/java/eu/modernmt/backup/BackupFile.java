@@ -1,6 +1,9 @@
 package eu.modernmt.backup;
 
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -41,10 +44,13 @@ public class BackupFile implements Comparable<BackupFile> {
         }
     }
 
-    public static BackupFile create(File folder) {
+    public static BackupFile create(File folder) throws IOException {
         Date timestamp = new Date((System.currentTimeMillis() / 1000L) * 1000L);
         String filename = DATE_FORMAT.format(timestamp);
-        return new BackupFile(timestamp, new File(folder, filename));
+        File path = new File(folder, filename);
+        FileUtils.forceMkdir(path);
+
+        return new BackupFile(timestamp, path);
     }
 
     public BackupFile(Date timestamp, File path) {
