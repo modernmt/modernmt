@@ -81,7 +81,7 @@ public class BackupEngine {
         }
 
         long elapsed = System.currentTimeMillis() - begin;
-        logger.info("BackupFile engine started in " + (elapsed / 1000.) + "s, channels: " + positions);
+        logger.info("Backup engine started in " + (elapsed / 1000.) + "s, channels: " + positions);
     }
 
     public void stop() throws IOException {
@@ -132,6 +132,9 @@ public class BackupEngine {
         logger.info("BackupFile engine stopped");
     }
 
+    public Map<Short, Long> getChannelsPositions() {
+        return binlog == null ? null : binlog.getChannelsPositions();
+    }
 
     private IOException close(Closeable closeable) {
         try {
