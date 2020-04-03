@@ -3,9 +3,7 @@ package eu.modernmt.model;
 import eu.modernmt.xml.XMLUtils;
 
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by davide on 17/02/16.
@@ -14,7 +12,7 @@ public class Sentence implements Serializable, Iterable<Token> {
 
     private final Word[] words;
     private Tag[] tags;
-    private Set<String> annotations;
+    private Map<String, Annotation> annotations;
 
     public Sentence(Word[] words) {
         this(words, null);
@@ -54,23 +52,31 @@ public class Sentence implements Serializable, Iterable<Token> {
         this.tags = tags;
     }
 
-    public void addAnnotations(Set<String> annotations) {
+    public void addAnnotations(Set<Annotation> annotations) {
         if (this.annotations == null)
-            this.annotations = new HashSet<>(annotations);
-        else
-            this.annotations.addAll(annotations);
+            this.annotations = new HashMap<>(annotations.size());
+
+        for (Annotation annotation : annotations)
+            this.annotations.put(annotation.getId(), annotation);
     }
 
-    public void addAnnotation(String annotation) {
+    public void addAnnotation(Annotation annotation) {
         if (annotations == null)
-            annotations = new HashSet<>(5);
-        annotations.add(annotation);
+            annotations = new HashMap<>();
+        annotations.put(annotation.getId(), annotation);
     }
 
     public boolean hasAnnotation(String annotation) {
-        return annotations != null && annotations.contains(annotation);
+        return getAnnotation(annotation) != null;
     }
 
+    public boolean hasAnnotation(Annotation annotation) {
+        return getAnnotation(annotation.getId()) != null;
+    }
+
+    public Annotation getAnnotation(String string) {
+        return annotations == null ? null : this.annotations.get(string);
+    }
 
     private static String combineSpace(String leftSpace, String rightSpace) {
         if (leftSpace == null)

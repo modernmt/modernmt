@@ -1,5 +1,6 @@
 package eu.modernmt.processing.recaser;
 
+import eu.modernmt.model.Annotation;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.string.SentenceBuilder;
@@ -13,7 +14,7 @@ import java.util.regex.Pattern;
  */
 public class UpperCasePreprocessor extends TextProcessor<SentenceBuilder, SentenceBuilder> {
 
-    public static final String ANNOTATION = UpperCasePreprocessor.class.getCanonicalName();
+    public static final Annotation ANNOTATION = new Annotation(UpperCasePreprocessor.class.getCanonicalName());
 
     @Override
     public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) throws ProcessingException {

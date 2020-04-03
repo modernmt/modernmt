@@ -1,10 +1,7 @@
 package eu.modernmt.processing.string;
 
 import eu.modernmt.lang.Language;
-import eu.modernmt.model.Sentence;
-import eu.modernmt.model.Tag;
-import eu.modernmt.model.Token;
-import eu.modernmt.model.Word;
+import eu.modernmt.model.*;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.detokenizer.jflex.JFlexDetokenizer;
 import eu.modernmt.processing.detokenizer.jflex.JFlexSpaceAnnotator;
@@ -43,7 +40,7 @@ public class SentenceBuilder {
 
     private final JFlexSpaceAnnotator annotator;
 
-    private final HashSet<String> annotations = new HashSet<>();
+    private final HashSet<Annotation> annotations = new HashSet<>();
     /*original string to tokenize*/
     private String originalString;
     /*the string as it appears after the changes performed during last commit*/
@@ -137,7 +134,7 @@ public class SentenceBuilder {
         this.annotations.clear();
     }
 
-    public void addAnnotation(String annotation) {
+    public void addAnnotation(Annotation annotation) {
         this.annotations.add(annotation);
     }
 
