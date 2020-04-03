@@ -74,8 +74,9 @@ public class Sentence implements Serializable, Iterable<Token> {
         return getAnnotation(annotation.getId()) != null;
     }
 
-    public Annotation getAnnotation(String string) {
-        return annotations == null ? null : this.annotations.get(string);
+    @SuppressWarnings("unchecked")
+    public <T extends Annotation> T getAnnotation(String string) {
+        return annotations == null ? null : (T) this.annotations.get(string);
     }
 
     private static String combineSpace(String leftSpace, String rightSpace) {
