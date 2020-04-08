@@ -1,5 +1,6 @@
 import os
 from glob import glob
+from pathlib import Path
 
 
 def __mmt_jar():
@@ -54,3 +55,50 @@ def collect_parallel_files(src_lang, tgt_lang, paths):
         all_tgt_files.extend(tgt_files)
 
     return all_src_files, all_tgt_files
+
+
+def collect_parallel_files_with_factor(src_lang, tgt_lang, paths):
+    src_suffix, tgt_suffix, factor_suffix = '.' + src_lang, '.' + tgt_lang, '.factor'
+    all_src_files, all_tgt_files, all_factor_files = [], [], []
+
+    if isinstance(paths, str):
+        paths = [paths]
+
+    for path in paths:
+
+        src_files = sorted([os.path.abspath(os.path.join(path, f)) for f in os.listdir(path) if f.endswith(src_suffix)])
+        tgt_files = sorted([os.path.abspath(os.path.join(path, f)) for f in os.listdir(path) if f.endswith(tgt_suffix)])
+        factor_files = []
+
+        for sf in src_files:
+            f = os.path.abspath(os.path.join(path, Path(sf).stem + factor_suffix))
+            factor_files.append(f if os.path.exists(f) else None)
+
+        if len(src_files) == 0:
+            raise IOError("no valid files found in %s" % path)
+
+        if len(src_files) != len(tgt_files):
+            raise IOError(
+                "files are not parallel: src_files = %d, tgt_files = %d " % (len(src_files), len(tgt_files)))
+
+        if len(src_files) != len(factor_files):
+            raise IOError(
+                "files are not parallel: src_files = %d, factor_files = %d " % (len(src_files), len(factor_files)))
+
+        for src_file, tgt_file, factor_file in zip(src_files, tgt_files, factor_files):
+            if src_file[:src_file.rfind('.')] != tgt_file[:tgt_file.rfind('.')]:
+                raise IOError("invalid parallel file: %s" % src_file)
+
+            if factor_file is not None:
+                if src_file[:src_file.rfind('.')] != factor_file[:factor_file.rfind('.')]:
+                    raise IOError("invalid parallel file: %s" % src_file)
+
+        all_src_files.extend(src_files)
+        all_tgt_files.extend(tgt_files)
+        all_factor_files.extend(factor_files)
+
+        print('collect_parallel_files_with_factor all_src_files:{}'.format(all_src_files))
+        print('collect_parallel_files_with_factor all_tgt_files:{}'.format(all_tgt_files))
+        print('collect_parallel_files_with_factor all_factor_files:{}'.format(all_factor_files))
+
+    return all_src_files, all_tgt_files, all_factor_files

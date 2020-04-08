@@ -6,9 +6,10 @@ import pickle
 import shutil
 from collections import Counter
 from itertools import islice
+from pathlib import Path
 
 from cli import CLIArgsException, StatefulActivity, activitystep
-from cli.mmt import collect_parallel_files, MMT_FAIRSEQ_USER_DIR
+from cli.mmt import collect_parallel_files, MMT_FAIRSEQ_USER_DIR, collect_parallel_files_with_factor
 from cli.mmt.mmtcli import mmt_preprocess
 from cli.utils import osutils
 from mmt.textencoder import SubwordDictionary
@@ -16,8 +17,9 @@ from mmt.textencoder import SubwordDictionary
 
 def _pool_initializer(vocab_path):
     global bpe_vocab
+    global factor_vocab
     bpe_vocab = SubwordDictionary.load(vocab_path)
-
+    factor_vocab = bpe_vocab.get_factor_dictionary()
 
 def _apply_bpe(entry):
     global bpe_vocab
@@ -31,6 +33,18 @@ def _apply_bpe(entry):
         return None, None, 0, 0
     else:
         return ' '.join(src_tokens) + '\n', ' '.join(tgt_tokens) + '\n', len(src_tokens), len(tgt_tokens)
+
+def _generate_factors(src_line, tgt_line=None):
+    global factor_vocab
+    src_line = src_line.strip()
+
+    if len(src_line) == 0:
+        return None, None
+
+    src_tokens = src_line.split()
+    factor_tokens = [ factor_vocab.default_factor for i in range(len(src_tokens)) ]
+
+    return ' '.join(src_tokens) + '\n', tgt_line, ' '.join(factor_tokens) + '\n'
 
 
 class _Sequence(object):
@@ -126,19 +140,92 @@ class DatagenActivity(StatefulActivity):
             train_path = os.path.join(self.state.tokenized_corpora, lang_dir, 'train')
             dev_path = os.path.join(self.state.tokenized_corpora, lang_dir, 'dev')
 
-            all_src, all_tgt = collect_parallel_files(src_lang, tgt_lang, [train_path, dev_path])
+            print('bpe_create train_path:{}'.format(train_path))
+            print('bpe_create dev_path:{}'.format(dev_path))
+            all_src, all_tgt  = collect_parallel_files(src_lang, tgt_lang, [train_path, dev_path])
 
             all_files.extend(all_src)
             all_files.extend(all_tgt)
 
+        print('bpe_create all_files:{}'.format(all_files))
         # Build SubwordDictionary
         builder = SubwordDictionary.Factory(self.args.voc_size,
                                             vocab_threads=self.args.threads,
                                             custom_tokens=custom_tokens,
                                             padding_factor=8,
                                             count_threshold=self.args.count_threshold)
+        print('bpe_create AAA')
+        print('bpe_create AAA self.wdir(bpe_temp):{}'.format(self.wdir('bpe_temp')))
         dictionary = builder.build(all_files, tmp_path=self.wdir('bpe_temp'))
+        print('bpe_create BBB')
         dictionary.save(self.state.vocab)
+
+
+        print('bpe_create END')
+
+    def _generate_factors_files(self, src_lang, tgt_lang,
+                          in_src_files, in_tgt_files,
+                          out_src_files, out_tgt_files, out_factor_files):
+
+        for in_src_file, in_tgt_file, out_src_file, out_tgt_file, out_factor_file\
+                in zip(in_src_files, in_tgt_files, out_src_files, out_tgt_files, out_factor_files):
+
+            with open(in_src_file, 'r', encoding='utf-8') as in_src_file_obj, \
+                 open(in_tgt_file, 'r', encoding='utf-8') as in_tgt_file_obj, \
+                 open(out_src_file, 'w', encoding='utf-8') as out_src_file_obj, \
+                 open(out_tgt_file, 'w', encoding='utf-8') as out_tgt_file_obj, \
+                 open(out_factor_file, 'w', encoding='utf-8') as out_factor_file_obj:
+
+                for src_line, tgt_line in zip(in_src_file_obj.readlines(), in_tgt_file_obj.readlines()):
+
+                    if src_line is None or tgt_line is None:
+                        continue
+
+                    src_line, tgt_line, factor_line = _generate_factors(src_line, tgt_line)
+
+                    out_src_file_obj.write(src_line)
+                    out_tgt_file_obj.write(tgt_line)
+                    out_factor_file_obj.write(factor_line)
+
+    @activitystep('Generating factors corpora')
+    def generate_factors(self):
+        self.state.factored_corpora = self.wdir('factored_corpora')
+        covered_langs = set()
+
+        for src_lang, tgt_lang in self._langs:
+
+            lang_dir = '%s__%s' % tuple(sorted([src_lang, tgt_lang]))
+
+            if lang_dir in covered_langs:
+                continue
+            covered_langs.add(lang_dir)
+
+            train_path = os.path.join(self.state.tokenized_corpora, lang_dir, 'train')
+
+            dev_path = os.path.join(self.state.tokenized_corpora, lang_dir, 'dev')
+            out_train_path = os.path.join(self.state.factored_corpora, lang_dir, 'train')
+            out_dev_path = os.path.join(self.state.factored_corpora, lang_dir, 'dev')
+            os.makedirs(out_dev_path, exist_ok=True)
+            os.makedirs(out_train_path, exist_ok=True)
+
+            train_src_files, train_tgt_files = collect_parallel_files(src_lang, tgt_lang, train_path)
+            dev_src_files, dev_tgt_files = collect_parallel_files(src_lang, tgt_lang, dev_path)
+
+            out_train_src_files = [ os.path.join(out_train_path, os.path.basename(f)) for f in train_src_files ]
+            out_dev_src_files = [ os.path.join(out_dev_path, os.path.basename(f)) for f in dev_src_files ]
+            out_train_tgt_files = [ os.path.join(out_train_path, os.path.basename(f)) for f in train_tgt_files ]
+            out_dev_tgt_files = [ os.path.join(out_dev_path, os.path.basename(f)) for f in dev_tgt_files ]
+            out_train_factor_files = [ os.path.join(out_train_path, Path(os.path.basename(f)).stem+'.factor') for f in train_src_files ]
+            out_dev_factor_files = [ os.path.join(out_dev_path, Path(os.path.basename(f)).stem+'.factor') for f in dev_src_files ]
+
+            self._generate_factors_files(src_lang, tgt_lang,
+                                   train_src_files, train_tgt_files,
+                                   out_train_src_files, out_train_tgt_files, out_train_factor_files)
+
+            self._generate_factors_files(src_lang, tgt_lang,
+                                   dev_src_files, dev_tgt_files,
+                                   out_dev_src_files, out_dev_tgt_files, out_dev_factor_files)
+
 
     def _bpe_encode_files(self, pool, src_lang, tgt_lang,
                           in_src_files, in_tgt_files, out_src_file_obj, out_tgt_file_obj):
@@ -181,16 +268,22 @@ class DatagenActivity(StatefulActivity):
     def bpe_encode(self):
         self.state.encoded_corpora = out_dir = self.wdir('encoded_corpora')
 
-        train_sl, train_tl = os.path.join(out_dir, 'train.sl'), os.path.join(out_dir, 'train.tl')
-        dev_sl, dev_tl = os.path.join(out_dir, 'dev.sl'), os.path.join(out_dir, 'dev.tl')
+        train_sl = os.path.join(out_dir, 'train.sl')
+        train_tl = os.path.join(out_dir, 'train.tl')
+        train_factor = os.path.join(out_dir, 'train.factor')
+        dev_sl = os.path.join(out_dir, 'dev.sl')
+        dev_tl = os.path.join(out_dir, 'dev.tl')
+        dev_factor = os.path.join(out_dir, 'dev.factor')
 
         covered_langs = set()
         decode_lengths = {}
 
         with open(train_sl, 'w', encoding='utf-8') as train_sl_obj, \
                 open(train_tl, 'w', encoding='utf-8') as train_tl_obj, \
+                open(train_factor, 'w', encoding='utf-8') as train_factor_obj, \
                 open(dev_sl, 'w', encoding='utf-8') as dev_sl_obj, \
-                open(dev_tl, 'w', encoding='utf-8') as dev_tl_obj:
+                open(dev_tl, 'w', encoding='utf-8') as dev_tl_obj, \
+                open(dev_factor, 'w', encoding='utf-8') as dev_factor_obj:
             with multiprocessing.Pool(initializer=_pool_initializer, initargs=(self.state.vocab,)) as pool:
                 for src_lang, tgt_lang in self._langs:
                     lang_dir = '%s__%s' % tuple(sorted([src_lang, tgt_lang]))
@@ -199,17 +292,23 @@ class DatagenActivity(StatefulActivity):
                         continue
                     covered_langs.add(lang_dir)
 
-                    train_path = os.path.join(self.state.tokenized_corpora, lang_dir, 'train')
-                    dev_path = os.path.join(self.state.tokenized_corpora, lang_dir, 'dev')
+                    train_path = os.path.join(self.state.factored_corpora, lang_dir, 'train')
+                    dev_path = os.path.join(self.state.factored_corpora, lang_dir, 'dev')
 
-                    train_src_files, train_tgt_files = collect_parallel_files(src_lang, tgt_lang, train_path)
-                    dev_src_files, dev_tgt_files = collect_parallel_files(src_lang, tgt_lang, dev_path)
+                    train_src_files, train_tgt_files, train_factor_files = collect_parallel_files_with_factor(src_lang,
+                                                                                                              tgt_lang,
+                                                                                                              train_path)
+                    dev_src_files, dev_tgt_files, dev_factor_files = collect_parallel_files_with_factor(src_lang,
+                                                                                                              tgt_lang,
+                                                                                                              dev_path)
+
 
                     fwd_seq, bwd_seq = self._bpe_encode_files(pool, src_lang, tgt_lang,
-                                                              train_src_files, train_tgt_files,
-                                                              train_sl_obj, train_tl_obj)
+                                                              train_src_files, train_tgt_files, train_factor_files,
+                                                              train_sl_obj, train_tl_obj, train_factor_obj)
                     self._bpe_encode_files(pool, src_lang, tgt_lang,
-                                           dev_src_files, dev_tgt_files, dev_sl_obj, dev_tl_obj)
+                                           dev_src_files, dev_tgt_files, dev_factor_files,
+                                           dev_sl_obj, dev_tl_obj, dev_factor_obj)
 
                     decode_lengths['%s__%s' % (src_lang, tgt_lang)] = (fwd_seq.modal_value, fwd_seq.std_dev)
                     decode_lengths['%s__%s' % (tgt_lang, src_lang)] = (bwd_seq.modal_value, bwd_seq.std_dev)

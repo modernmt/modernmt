@@ -10,6 +10,8 @@ import cachetools
 import torch
 from fairseq.data import Dictionary
 
+from mmt.factorencoder import FactorDictionary
+
 PAD = "<PAD>_"
 EOS = "<EOS>_"
 UNK = "<UNK>_"
@@ -137,6 +139,7 @@ class _SubwordDictionaryFactory(object):
         if self._padding_factor > 1 and len(ret) % self._padding_factor > 0:
             ret.force_length(len(ret) + (self._padding_factor - len(ret) % self._padding_factor))
 
+        self._logger.info("RETURNING")
         return ret
 
     def _collect_token_counts(self, files):
@@ -383,6 +386,15 @@ class SubwordDictionary(Dictionary):
             self._init_subtokens_from_list(subtokens)
             self._init_alphabet_from_tokens(subtokens)
 
+        # use of a default FactorDictionary
+        self.set_factor_dictionary(FactorDictionary())
+
+    def get_factor_dictionary(self):
+        return self.factor_dict
+
+    def set_factor_dictionary(self, factor_dict):
+        self.factor_dict = factor_dict
+
     def _init_subtokens_from_list(self, subtokens):
         self.symbols = subtokens
         self.indices = {s: i for i, s in enumerate(subtokens) if s}
@@ -508,6 +520,50 @@ class SubwordDictionary(Dictionary):
                         indexes.append(i)
         return indexes
 
+    def indexes_of_with_factors(self, subtoken_ids, factor_ids):
+        indexes = []
+        i = 0
+
+        # factor2 is True if the next factor is of type FACTOR2; False otherwise
+        # this flag is used to decide whether to increment the index i
+        skip = False
+        for j in range(len(subtoken_ids)):
+            ### handle "empty" sub_tokens like UNK
+            if self[subtoken_ids[j]] == '':
+                subtoken_ids[j] = UNK_ID
+
+            if j<len(subtoken_ids)-1:
+                skip = self.factor_dict.skip(factor_ids[j+1])
+
+            _id = subtoken_ids[j]
+            if _id == self.eos():
+                break
+            elif _id != self.pad():
+                if j > 0:
+                    if self[_id] == '_':
+                        x = subtoken_ids[j - 1]
+                        if self[x].endswith('_'):
+                            continue
+                        else:
+                            indexes.append(i)
+                            i = i if skip else i+1
+                    elif self[_id].endswith('_'):
+                        indexes.append(i)
+                        i = i if skip else i+1
+                    else:
+                        indexes.append(i)
+                else:
+                    if self[_id] == '_':
+                        continue
+                    elif self[_id].endswith('_'):
+                        indexes.append(i)
+                        i = i if skip else i+1
+                    else:
+                        indexes.append(i)
+
+        return indexes
+
+
     def string(self, tensor, bpe_symbol=None, escape_unk=False):
         if torch.is_tensor(tensor) and tensor.dim() == 2:
             return '\n'.join(self.string(t) for t in tensor)
@@ -537,6 +593,24 @@ class SubwordDictionary(Dictionary):
         for token in raw_text.strip().split():
             ret.extend(self._subtokens_of(token))
         return ret
+
+    def tokenize_with_factors(self, raw_text, raw_factor=None):
+        subtokens = []
+        subfactors = []
+        tokens = raw_text.split()
+        if raw_factor is not None:
+            factors = raw_factor.split()
+        else:
+            factors = [self.factor_dict.default_factor for i in range(len(tokens))]
+
+        assert (len(tokens) == len(factors))
+
+        for token, factor in zip(tokens, factors):
+            curr_subtokens = self.tokenize(token)
+            subtokens.extend(curr_subtokens)
+            subfactors.extend([factor for i in range(len(curr_subtokens))])
+        return subtokens, subfactors
+
 
     @cachetools.cachedmethod(cache=lambda self: self._cache, key=lambda token: token)
     def _subtokens_of(self, token):
