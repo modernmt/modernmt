@@ -2,7 +2,7 @@ import argparse
 import os
 import shutil
 
-from cli import StatefulActivity, cleaning, datagen, train, Namespace, activitystep, CLIArgsException
+from cli import StatefulActivity, cleaning, tokenize, datagen, train, Namespace, activitystep, CLIArgsException
 from cli.mmt.engine import Engine, EngineNode
 from cli.utils import nvidia_smi
 
@@ -59,9 +59,22 @@ class CreateActivity(StatefulActivity):
         with open(os.path.join(self.state.decoder_dir, 'model.conf'), 'w', encoding='utf-8') as config:
             config.write('[models]\n%s = %s/\n' % (lang_tag, lang_tag))
 
+    @activitystep('Tokenizing corpora')
+    def tokenize(self):
+        input_path = self.state.corpora_clean or self.args.input_path
+        self.state.tokenize_dir = self.wdir('data_tokenized')
+
+        args = Namespace(lang_pairs='%s:%s' % (self.args.src_lang, self.args.tgt_lang), debug=self.args.debug,
+                         input_paths=[input_path], output_path=self.state.tokenize_dir,
+                         test_dir=self._engine.test_data_path if self.args.test_set else None)
+        activity = tokenize.TokenizeActivity(args, wdir=self.wdir('_temp_tokenize'), log_file=self.log_fobj,
+                                           delete_on_exit=self.delete_on_exit)
+        activity.indentation = 4
+        activity.run()
+
     @activitystep('Generating binary archives')
     def datagen(self):
-        input_path = self.state.corpora_clean or self.args.input_path
+        input_path = self.state.tokenize_dir or self.args.input_path
         self.state.datagen_dir = self.wdir('data_generated')
 
         vocabulary_path = self.args.vocabulary_path
@@ -162,6 +175,10 @@ def parse_args(argv=None):
     cleaning_args.add_argument('--skip-cleaning', action='store_true', dest='skip_cleaning', default=False,
                                help='skip the cleaning step (input corpora MUST be in plain text parallel format)')
 
+    tokenize = parser.add_argument_group('Tokenization arguments')
+    tokenize.add_argument('--no-test', action='store_false', dest='test_set', default=True,
+                              help='skip automatically extraction of a test set from the provided training corpora')
+
     datagen_args = parser.add_argument_group('Data generation arguments')
     datagen_args.add_argument('--voc-size', dest='voc_size', default=32768, type=int,
                               help='the vocabulary size to use (default is 32768)')
@@ -172,8 +189,6 @@ def parse_args(argv=None):
                                    'only for alphabet generation in vocabulary creation, useful for very large corpus')
     datagen_args.add_argument('--vocabulary', metavar='VOCABULARY_PATH', dest='vocabulary_path', default=None,
                               help='use the specified bpe vocabulary model instead of re-train a new one from scratch')
-    datagen_args.add_argument('--no-test', action='store_false', dest='test_set', default=True,
-                              help='skip automatically extraction of a test set from the provided training corpora')
 
     train_args = parser.add_argument_group('Train arguments (note: you can use all fairseq cli options)')
     train_args.add_argument('--from-model', dest='init_model', default=None,
