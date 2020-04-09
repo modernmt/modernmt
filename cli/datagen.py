@@ -84,36 +84,14 @@ class DatagenActivity(StatefulActivity):
         self._task = args.task
         self._with_factors =  self.args.with_factors
 
-    @activitystep('Tokenize corpora')
-    def tokenize(self):
-        self.state.tokenized_corpora = self.wdir('tokenized_corpora')
+        self._input_paths = self.args.input_paths
 
-        train_paths, dev_paths = [], []
-
-        partition_size = self.DEFAULT_VALIDATION_LINES
-        if len(self._langs) > 1:
-            partition_size = int((2 * self.DEFAULT_VALIDATION_LINES) / len(self._langs))
-
-        for src_lang, tgt_lang in self._mono_pairs:
-            lang_dir = '%s__%s' % (src_lang, tgt_lang)
-
-            train_path = os.path.join(self.state.tokenized_corpora, lang_dir, 'train')
-            raw_dev_path = os.path.join(self.state.tokenized_corpora, lang_dir, '_dev')
-            dev_path = os.path.join(self.state.tokenized_corpora, lang_dir, 'dev')
-
-            test_path = os.path.join(self.args.test_dir, lang_dir) if self.args.test_dir is not None else None
-
-            mmt_preprocess(src_lang, tgt_lang, self.args.input_paths, train_path,
-                           dev_path=raw_dev_path, test_path=test_path, partition_size=partition_size)
-            mmt_preprocess(src_lang, tgt_lang, raw_dev_path, dev_path)
-
-            shutil.rmtree(raw_dev_path)
-
-            train_paths.append(train_path)
-            dev_paths.append(dev_path)
+        if isinstance(args.input_paths, str):
+            self._input_paths = [self._input_paths]
 
     @activitystep('Training BPE model')
     def bpe_create(self):
+
         os.makedirs(self.args.output_path, exist_ok=True)
         self.state.vocab = os.path.join(self.args.output_path, 'model.vcb')
 
@@ -131,15 +109,16 @@ class DatagenActivity(StatefulActivity):
         # Collect all training files
         all_files = []
 
-        for src_lang, tgt_lang in self._mono_pairs:
-            lang_dir = '%s__%s' % (src_lang, tgt_lang)
-            train_path = os.path.join(self.state.tokenized_corpora, lang_dir, 'train')
-            dev_path = os.path.join(self.state.tokenized_corpora, lang_dir, 'dev')
+        for path in self._input_paths:
+            for src_lang, tgt_lang in self._mono_pairs:
+                lang_dir = '%s__%s' % (src_lang, tgt_lang)
+                train_path = os.path.join(path, lang_dir, 'train')
+                dev_path = os.path.join(path, lang_dir, 'dev')
 
-            all_src, all_tgt, _  = collect_parallel_files(src_lang, tgt_lang, [train_path, dev_path])
+                all_src, all_tgt, _  = collect_parallel_files(src_lang, tgt_lang, [train_path, dev_path])
 
-            all_files.extend(all_src)
-            all_files.extend(all_tgt)
+                all_files.extend(all_src)
+                all_files.extend(all_tgt)
 
         # Build SubwordDictionary
         builder = SubwordDictionary.Factory(self.args.voc_size,
@@ -182,40 +161,41 @@ class DatagenActivity(StatefulActivity):
         self.state.factored_corpora = self.wdir('factored_corpora')
         covered_langs = set()
 
-        for src_lang, tgt_lang in self._langs:
+        #TODO: MUST BE SOLVED: if a corpus belongs to different paths, the outcome will contain just one of them
+        for path in self._input_paths:
+            for src_lang, tgt_lang in self._langs:
 
-            lang_dir = '%s__%s' % tuple(sorted([src_lang, tgt_lang]))
+                lang_dir = '%s__%s' % tuple(sorted([src_lang, tgt_lang]))
 
-            if lang_dir in covered_langs:
-                continue
-            covered_langs.add(lang_dir)
+                if lang_dir in covered_langs:
+                    continue
+                covered_langs.add(lang_dir)
 
-            train_path = os.path.join(self.state.tokenized_corpora, lang_dir, 'train')
+                train_path = os.path.join(path, lang_dir, 'train')
+                dev_path = os.path.join(path, lang_dir, 'dev')
 
-            dev_path = os.path.join(self.state.tokenized_corpora, lang_dir, 'dev')
-            out_train_path = os.path.join(self.state.factored_corpora, lang_dir, 'train')
-            out_dev_path = os.path.join(self.state.factored_corpora, lang_dir, 'dev')
-            os.makedirs(out_dev_path, exist_ok=True)
-            os.makedirs(out_train_path, exist_ok=True)
+                out_train_path = os.path.join(self.state.factored_corpora, lang_dir, 'train')
+                out_dev_path = os.path.join(self.state.factored_corpora, lang_dir, 'dev')
+                os.makedirs(out_dev_path, exist_ok=True)
+                os.makedirs(out_train_path, exist_ok=True)
 
-            train_src_files, train_tgt_files, _ = collect_parallel_files(src_lang, tgt_lang, train_path)
-            dev_src_files, dev_tgt_files, _ = collect_parallel_files(src_lang, tgt_lang, dev_path)
+                train_src_files, train_tgt_files, _ = collect_parallel_files(src_lang, tgt_lang, train_path)
+                dev_src_files, dev_tgt_files, _ = collect_parallel_files(src_lang, tgt_lang, dev_path)
 
-            out_train_src_files = [ os.path.join(out_train_path, os.path.basename(f)) for f in train_src_files ]
-            out_dev_src_files = [ os.path.join(out_dev_path, os.path.basename(f)) for f in dev_src_files ]
-            out_train_tgt_files = [ os.path.join(out_train_path, os.path.basename(f)) for f in train_tgt_files ]
-            out_dev_tgt_files = [ os.path.join(out_dev_path, os.path.basename(f)) for f in dev_tgt_files ]
-            out_train_factor_files = [ os.path.join(out_train_path, Path(os.path.basename(f)).stem+'.factor') for f in train_src_files ]
-            out_dev_factor_files = [ os.path.join(out_dev_path, Path(os.path.basename(f)).stem+'.factor') for f in dev_src_files ]
+                out_train_src_files = [ os.path.join(out_train_path, os.path.basename(f)) for f in train_src_files ]
+                out_dev_src_files = [ os.path.join(out_dev_path, os.path.basename(f)) for f in dev_src_files ]
+                out_train_tgt_files = [ os.path.join(out_train_path, os.path.basename(f)) for f in train_tgt_files ]
+                out_dev_tgt_files = [ os.path.join(out_dev_path, os.path.basename(f)) for f in dev_tgt_files ]
+                out_train_factor_files = [ os.path.join(out_train_path, Path(os.path.basename(f)).stem+'.factor') for f in train_src_files ]
+                out_dev_factor_files = [ os.path.join(out_dev_path, Path(os.path.basename(f)).stem+'.factor') for f in dev_src_files ]
 
-            self._generate_factors_files(src_lang, tgt_lang,
-                                   train_src_files, train_tgt_files,
-                                   out_train_src_files, out_train_tgt_files, out_train_factor_files)
+                self._generate_factors_files(src_lang, tgt_lang,
+                                       train_src_files, train_tgt_files,
+                                       out_train_src_files, out_train_tgt_files, out_train_factor_files)
 
-            self._generate_factors_files(src_lang, tgt_lang,
-                                   dev_src_files, dev_tgt_files,
-                                   out_dev_src_files, out_dev_tgt_files, out_dev_factor_files)
-
+                self._generate_factors_files(src_lang, tgt_lang,
+                                       dev_src_files, dev_tgt_files,
+                                       out_dev_src_files, out_dev_tgt_files, out_dev_factor_files)
 
     def _bpe_encode_files(self, pool, src_lang, tgt_lang,
                           in_src_files, in_tgt_files, in_factor_files, out_src_file_obj, out_tgt_file_obj, out_factor_file_obj):
