@@ -13,7 +13,6 @@ from mmt.factorencoder import FactorDictionary
 
 def parse_args(argv=None):
 
-    print ('preprocess parse_args:{}'.format(argv))
     parser = argparse.ArgumentParser(description='Preprocess', prog='preprocess')
 
     # fmt: off
