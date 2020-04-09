@@ -38,14 +38,14 @@ class FactorDictionary(Dictionary):
     def skip(self, factor):
         return False
 
-    # the generation of the factors for the source side can depend from the target side as well
+    # The generation of the factors for the source side can depend from the target side as well
     def generate_factors(self, src_line, tgt_line=None):
         src_line = src_line.strip()
 
         if len(src_line) == 0:
             return None, None
 
-        src_tokens = src_line.split()
-        factor_tokens = [ self.default_factor for i in range(len(src_tokens)) ]
+        tokens = src_line.split()
+        factors = [ self.default_factor for i in range(len(tokens)) ]
 
-        return ' '.join(src_tokens) + '\n', tgt_line, ' '.join(factor_tokens) + '\n'
+        return ' '.join(tokens) + '\n', ' '.join(factors) + '\n'

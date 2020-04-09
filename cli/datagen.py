@@ -155,7 +155,7 @@ class DatagenActivity(StatefulActivity):
                         continue
 
                     # the generation of the factors for the source side can depend from the target side as well
-                    src_line, tgt_line, factor_line = self.factor_vocab.generate_factors(src_line, tgt_line)
+                    src_line, factor_line = self.factor_vocab.generate_factors(src_line, tgt_line)
 
                     out_src_file_obj.write(src_line)
                     out_tgt_file_obj.write(tgt_line)
