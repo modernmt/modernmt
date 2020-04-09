@@ -4,47 +4,40 @@ import multiprocessing
 import os
 import pickle
 import shutil
+import sys
 from collections import Counter
 from itertools import islice
 from pathlib import Path
 
-from cli import CLIArgsException, StatefulActivity, activitystep
-from cli.mmt import collect_parallel_files, MMT_FAIRSEQ_USER_DIR, collect_parallel_files_with_factor
+from cli import CLIArgsException, StatefulActivity, activitystep, preprocess
+from cli.mmt import collect_parallel_files, MMT_HOME_DIR, MMT_JAR
 from cli.mmt.mmtcli import mmt_preprocess
-from cli.utils import osutils
 from mmt.textencoder import SubwordDictionary
 
 
 def _pool_initializer(vocab_path):
     global bpe_vocab
-    global factor_vocab
     bpe_vocab = SubwordDictionary.load(vocab_path)
-    factor_vocab = bpe_vocab.get_factor_dictionary()
 
 def _apply_bpe(entry):
     global bpe_vocab
 
-    src_line, tgt_line = entry
+    src_line, tgt_line, factor_line = entry
     src_line, tgt_line = src_line.strip(), tgt_line.strip()
-    src_tokens = bpe_vocab.tokenize(src_line)
+    if factor_line is not None:
+        factor_line = factor_line.strip()
+
+    src_tokens, factor_tokens = bpe_vocab.tokenize_with_factors(src_line, factor_line)
     tgt_tokens = bpe_vocab.tokenize(tgt_line)
 
     if len(src_tokens) == 0 or len(tgt_tokens) == 0:
         return None, None, 0, 0
     else:
-        return ' '.join(src_tokens) + '\n', ' '.join(tgt_tokens) + '\n', len(src_tokens), len(tgt_tokens)
-
-def _generate_factors(src_line, tgt_line=None):
-    global factor_vocab
-    src_line = src_line.strip()
-
-    if len(src_line) == 0:
-        return None, None
-
-    src_tokens = src_line.split()
-    factor_tokens = [ factor_vocab.default_factor for i in range(len(src_tokens)) ]
-
-    return ' '.join(src_tokens) + '\n', tgt_line, ' '.join(factor_tokens) + '\n'
+        return ' '.join(src_tokens) + '\n',\
+               ' '.join(tgt_tokens) + '\n',\
+               ' '.join(factor_tokens) + '\n',\
+               len(src_tokens),\
+               len(tgt_tokens)
 
 
 class _Sequence(object):
@@ -87,6 +80,9 @@ class DatagenActivity(StatefulActivity):
         self._langs = [tuple(lp.split(':')) for lp in args.lang_pairs.split(',')]
         self._mono_pairs = [tuple(lp.split(':')) for lp in set([('%s:%s' % tuple(sorted(p))) for p in self._langs])]
         self._target_langs = set([p[1] for p in self._langs])
+
+        self._task = args.task
+        self._with_factors =  self.args.with_factors
 
     @activitystep('Tokenize corpora')
     def tokenize(self):
@@ -140,28 +136,20 @@ class DatagenActivity(StatefulActivity):
             train_path = os.path.join(self.state.tokenized_corpora, lang_dir, 'train')
             dev_path = os.path.join(self.state.tokenized_corpora, lang_dir, 'dev')
 
-            print('bpe_create train_path:{}'.format(train_path))
-            print('bpe_create dev_path:{}'.format(dev_path))
-            all_src, all_tgt  = collect_parallel_files(src_lang, tgt_lang, [train_path, dev_path])
+            all_src, all_tgt, _  = collect_parallel_files(src_lang, tgt_lang, [train_path, dev_path])
 
             all_files.extend(all_src)
             all_files.extend(all_tgt)
 
-        print('bpe_create all_files:{}'.format(all_files))
         # Build SubwordDictionary
         builder = SubwordDictionary.Factory(self.args.voc_size,
                                             vocab_threads=self.args.threads,
                                             custom_tokens=custom_tokens,
                                             padding_factor=8,
                                             count_threshold=self.args.count_threshold)
-        print('bpe_create AAA')
-        print('bpe_create AAA self.wdir(bpe_temp):{}'.format(self.wdir('bpe_temp')))
         dictionary = builder.build(all_files, tmp_path=self.wdir('bpe_temp'))
-        print('bpe_create BBB')
         dictionary.save(self.state.vocab)
-
-
-        print('bpe_create END')
+        self.factor_vocab = dictionary.get_factor_dictionary()
 
     def _generate_factors_files(self, src_lang, tgt_lang,
                           in_src_files, in_tgt_files,
@@ -181,7 +169,8 @@ class DatagenActivity(StatefulActivity):
                     if src_line is None or tgt_line is None:
                         continue
 
-                    src_line, tgt_line, factor_line = _generate_factors(src_line, tgt_line)
+                    # the generation of the factors for the source side can depend from the target side as well
+                    src_line, tgt_line, factor_line = self.factor_vocab.generate_factors(src_line, tgt_line)
 
                     out_src_file_obj.write(src_line)
                     out_tgt_file_obj.write(tgt_line)
@@ -189,6 +178,7 @@ class DatagenActivity(StatefulActivity):
 
     @activitystep('Generating factors corpora')
     def generate_factors(self):
+        #TODO: we could skip this step if factors are not required
         self.state.factored_corpora = self.wdir('factored_corpora')
         covered_langs = set()
 
@@ -208,8 +198,8 @@ class DatagenActivity(StatefulActivity):
             os.makedirs(out_dev_path, exist_ok=True)
             os.makedirs(out_train_path, exist_ok=True)
 
-            train_src_files, train_tgt_files = collect_parallel_files(src_lang, tgt_lang, train_path)
-            dev_src_files, dev_tgt_files = collect_parallel_files(src_lang, tgt_lang, dev_path)
+            train_src_files, train_tgt_files, _ = collect_parallel_files(src_lang, tgt_lang, train_path)
+            dev_src_files, dev_tgt_files, _ = collect_parallel_files(src_lang, tgt_lang, dev_path)
 
             out_train_src_files = [ os.path.join(out_train_path, os.path.basename(f)) for f in train_src_files ]
             out_dev_src_files = [ os.path.join(out_dev_path, os.path.basename(f)) for f in dev_src_files ]
@@ -228,22 +218,26 @@ class DatagenActivity(StatefulActivity):
 
 
     def _bpe_encode_files(self, pool, src_lang, tgt_lang,
-                          in_src_files, in_tgt_files, out_src_file_obj, out_tgt_file_obj):
-        src_prefix, tgt_prefix = None, None
+                          in_src_files, in_tgt_files, in_factor_files, out_src_file_obj, out_tgt_file_obj, out_factor_file_obj):
+        #TODO: remove the birectional generation because the generation of the factor is done for the source side only
+
+
+        #TODO: we could skip the creation of the bpe for the factors if factors are not required
+
+        src_prefix = None
         if len(self._target_langs) > 1:
             src_prefix = SubwordDictionary.language_tag(tgt_lang) + '_ '
-            tgt_prefix = SubwordDictionary.language_tag(src_lang) + '_ '
 
         batch_size = (multiprocessing.cpu_count() or 1) * 100
-        bidirectional = ((src_lang, tgt_lang) in self._langs) and ((tgt_lang, src_lang) in self._langs)
 
         fwd_seq, bwd_seq = _Sequence(), _Sequence()
 
-        for in_src_file, in_tgt_file in zip(in_src_files, in_tgt_files):
+        for in_src_file, in_tgt_file, in_factor_file in zip(in_src_files, in_tgt_files, in_factor_files):
             with open(in_src_file, 'r', encoding='utf-8') as in_src_file_obj, \
-                    open(in_tgt_file, 'r', encoding='utf-8') as in_tgt_file_obj:
-                for batch in iter(lambda: tuple(islice(zip(in_src_file_obj, in_tgt_file_obj), batch_size)), ()):
-                    for src_line, tgt_line, src_len, tgt_len in pool.map(_apply_bpe, batch):
+                    open(in_tgt_file, 'r', encoding='utf-8') as in_tgt_file_obj, \
+                    open(in_factor_file, 'r', encoding='utf-8') as in_factor_file_obj:
+                for batch in iter(lambda: tuple(islice(zip(in_src_file_obj, in_tgt_file_obj, in_factor_file_obj), batch_size)), ()):
+                    for src_line, tgt_line, factor_line, src_len, tgt_len in pool.map(_apply_bpe, batch):
                         if src_line is None or tgt_line is None:
                             continue
 
@@ -253,14 +247,10 @@ class DatagenActivity(StatefulActivity):
 
                         if src_prefix is not None:
                             out_src_file_obj.write(src_prefix)
+                            out_factor_file_obj.write(self.factor_vocab.default_factor)
                         out_src_file_obj.write(src_line)
                         out_tgt_file_obj.write(tgt_line)
-
-                        if bidirectional:
-                            if tgt_prefix is not None:
-                                out_src_file_obj.write(tgt_prefix)
-                            out_src_file_obj.write(tgt_line)
-                            out_tgt_file_obj.write(src_line)
+                        out_factor_file_obj.write(factor_line)
 
         return fwd_seq, bwd_seq
 
@@ -295,12 +285,12 @@ class DatagenActivity(StatefulActivity):
                     train_path = os.path.join(self.state.factored_corpora, lang_dir, 'train')
                     dev_path = os.path.join(self.state.factored_corpora, lang_dir, 'dev')
 
-                    train_src_files, train_tgt_files, train_factor_files = collect_parallel_files_with_factor(src_lang,
-                                                                                                              tgt_lang,
-                                                                                                              train_path)
-                    dev_src_files, dev_tgt_files, dev_factor_files = collect_parallel_files_with_factor(src_lang,
-                                                                                                              tgt_lang,
-                                                                                                              dev_path)
+                    train_src_files, train_tgt_files, train_factor_files = collect_parallel_files(src_lang,
+                                                                                                  tgt_lang,
+                                                                                                  train_path)
+                    dev_src_files, dev_tgt_files, dev_factor_files = collect_parallel_files(src_lang,
+                                                                                          tgt_lang,
+                                                                                          dev_path)
 
 
                     fwd_seq, bwd_seq = self._bpe_encode_files(pool, src_lang, tgt_lang,
@@ -317,19 +307,31 @@ class DatagenActivity(StatefulActivity):
         with open(os.path.join(self.args.output_path, 'decode_lengths.bin'), 'wb') as f:
             pickle.dump(decode_lengths, f)
 
+
     @activitystep('Generating binary data')
     def datagen(self):
         os.makedirs(self.args.output_path, exist_ok=True)
 
         train_pref = os.path.join(self.state.encoded_corpora, 'train')
         valid_pref = os.path.join(self.state.encoded_corpora, 'dev')
-        cmd = ['fairseq-preprocess', '--source-lang', 'sl', '--target-lang', 'tl', '--user-dir', MMT_FAIRSEQ_USER_DIR,
-               '--task', 'mmt_translation', '--trainpref', train_pref, '--validpref', valid_pref,
-               '--destdir', self.args.output_path, '--workers', str(multiprocessing.cpu_count()),
+
+        key = 'PYTHONPATH'
+        python_paths = os.environ[key].split(':') if key in os.environ else []
+        python_paths.append(MMT_HOME_DIR)
+        python_paths.append(MMT_JAR)
+        os.environ[key] = ":".join(sorted(python_paths))
+
+        sys.path.insert(0, MMT_JAR)
+        cpu_count = multiprocessing.cpu_count() # TODO: it seems that it does not work when workers are larger than 1
+
+        args = ['--source-lang', 'sl', '--target-lang', 'tl',
+               '--task', self._task, '--trainpref', train_pref, '--validpref', valid_pref,
+               '--destdir', self.args.output_path, '--workers', str(cpu_count),
                '--srcdict', self.state.vocab, '--joined-dictionary', '--dataset-impl', 'mmap']
+        if self._with_factors:
+            args.append('--with-factors')
 
-        osutils.shell_exec(cmd, stdout=self.log_fobj, stderr=self.log_fobj)
-
+        preprocess.main(args)
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description='Generate archives for neural training', prog='mmt datagen')
@@ -353,6 +355,12 @@ def parse_args(argv=None):
     parser.add_argument('--log', dest='log_file', default=None, help='detailed log file')
     parser.add_argument('--test', metavar='TEST_SET_DIR', dest='test_dir', default=None,
                         help='optional directory where to store a small subset of training data for testing')
+
+    parser.add_argument('--task', metavar='TASK', dest='task', default='mmt_translation',
+                        help='task')
+    parser.add_argument('--with-factors', dest='with_factors', action='store_true', default=False,
+                        help='generate factors')
+
 
     args = parser.parse_args(argv)
     if args.debug and args.wdir is None:
