@@ -11,7 +11,6 @@ from pathlib import Path
 
 from cli import CLIArgsException, StatefulActivity, activitystep, preprocess
 from cli.mmt import collect_parallel_files, MMT_HOME_DIR, MMT_JAR
-from cli.mmt.mmtcli import mmt_preprocess
 from mmt.textencoder import SubwordDictionary
 
 
@@ -22,7 +21,14 @@ def _pool_initializer(vocab_path):
 def _apply_bpe(entry):
     global bpe_vocab
 
-    src_line, tgt_line, factor_line = entry
+    if len(entry) == 2:
+        src_line, tgt_line = entry
+        factor_line = None
+    elif len(entry) == 3:
+        src_line, tgt_line, factor_line = entry
+    else:
+        raise Exception('wrong entry format: expected 2-tuple or 3-tuple, foudn {}-tuple' + len(entry))
+
     src_line, tgt_line = src_line.strip(), tgt_line.strip()
     if factor_line is not None:
         factor_line = factor_line.strip()
@@ -31,7 +37,7 @@ def _apply_bpe(entry):
     tgt_tokens = bpe_vocab.tokenize(tgt_line)
 
     if len(src_tokens) == 0 or len(tgt_tokens) == 0:
-        return None, None, 0, 0
+        return None, None, None, 0, 0
     else:
         return ' '.join(src_tokens) + '\n',\
                ' '.join(tgt_tokens) + '\n',\
@@ -209,28 +215,48 @@ class DatagenActivity(StatefulActivity):
             src_prefix = SubwordDictionary.language_tag(tgt_lang) + '_ '
 
         batch_size = (multiprocessing.cpu_count() or 1) * 100
+        batch_size = 1
 
         fwd_seq, bwd_seq = _Sequence(), _Sequence()
 
         for in_src_file, in_tgt_file, in_factor_file in zip(in_src_files, in_tgt_files, in_factor_files):
-            with open(in_src_file, 'r', encoding='utf-8') as in_src_file_obj, \
-                    open(in_tgt_file, 'r', encoding='utf-8') as in_tgt_file_obj, \
-                    open(in_factor_file, 'r', encoding='utf-8') as in_factor_file_obj:
-                for batch in iter(lambda: tuple(islice(zip(in_src_file_obj, in_tgt_file_obj, in_factor_file_obj), batch_size)), ()):
-                    for src_line, tgt_line, factor_line, src_len, tgt_len in pool.map(_apply_bpe, batch):
-                        if src_line is None or tgt_line is None:
-                            continue
+            if in_factor_file is not None:
+                with open(in_src_file, 'r', encoding='utf-8') as in_src_file_obj, \
+                        open(in_tgt_file, 'r', encoding='utf-8') as in_tgt_file_obj, \
+                        open(in_factor_file, 'r', encoding='utf-8') as in_factor_file_obj:
+                    for batch in iter(lambda: tuple(islice(zip(in_src_file_obj, in_tgt_file_obj, in_factor_file_obj), batch_size)), ()):
+                        for src_line, tgt_line, factor_line, src_len, tgt_len in pool.map(_apply_bpe, batch):
+                            if src_line is None or tgt_line is None:
+                                continue
 
-                        s2t_rate, t2s_rate = tgt_len / src_len, src_len / tgt_len
-                        fwd_seq.add(s2t_rate)
-                        bwd_seq.add(t2s_rate)
+                            s2t_rate, t2s_rate = tgt_len / src_len, src_len / tgt_len
+                            fwd_seq.add(s2t_rate)
+                            bwd_seq.add(t2s_rate)
 
-                        if src_prefix is not None:
-                            out_src_file_obj.write(src_prefix)
-                            out_factor_file_obj.write(self.factor_vocab.default_factor)
-                        out_src_file_obj.write(src_line)
-                        out_tgt_file_obj.write(tgt_line)
-                        out_factor_file_obj.write(factor_line)
+                            if src_prefix is not None:
+                                out_src_file_obj.write(src_prefix)
+                                out_factor_file_obj.write(self.factor_vocab.default_factor)
+                            out_src_file_obj.write(src_line)
+                            out_tgt_file_obj.write(tgt_line)
+                            out_factor_file_obj.write(factor_line)
+            else:
+                with open(in_src_file, 'r', encoding='utf-8') as in_src_file_obj, \
+                        open(in_tgt_file, 'r', encoding='utf-8') as in_tgt_file_obj:
+                    for batch in iter(lambda: tuple(islice(zip(in_src_file_obj, in_tgt_file_obj), batch_size)), ()):
+                        for src_line, tgt_line, factor_line, src_len, tgt_len in pool.map(_apply_bpe, batch):
+                            if src_line is None or tgt_line is None:
+                                continue
+
+                            s2t_rate, t2s_rate = tgt_len / src_len, src_len / tgt_len
+                            fwd_seq.add(s2t_rate)
+                            bwd_seq.add(t2s_rate)
+
+                            if src_prefix is not None:
+                                out_src_file_obj.write(src_prefix)
+                                out_factor_file_obj.write(self.factor_vocab.default_factor)
+                            out_src_file_obj.write(src_line)
+                            out_tgt_file_obj.write(tgt_line)
+                            out_factor_file_obj.write(factor_line)
 
         return fwd_seq, bwd_seq
 
@@ -254,34 +280,35 @@ class DatagenActivity(StatefulActivity):
                 open(dev_sl, 'w', encoding='utf-8') as dev_sl_obj, \
                 open(dev_tl, 'w', encoding='utf-8') as dev_tl_obj, \
                 open(dev_factor, 'w', encoding='utf-8') as dev_factor_obj:
-            with multiprocessing.Pool(initializer=_pool_initializer, initargs=(self.state.vocab,)) as pool:
-                for src_lang, tgt_lang in self._langs:
-                    lang_dir = '%s__%s' % tuple(sorted([src_lang, tgt_lang]))
+            for path in self._input_paths:
+                with multiprocessing.Pool(initializer=_pool_initializer, initargs=(self.state.vocab,)) as pool:
+                    for src_lang, tgt_lang in self._langs:
+                        lang_dir = '%s__%s' % tuple(sorted([src_lang, tgt_lang]))
 
-                    if lang_dir in covered_langs:
-                        continue
-                    covered_langs.add(lang_dir)
+                        if lang_dir in covered_langs:
+                            continue
+                        covered_langs.add(lang_dir)
 
-                    train_path = os.path.join(self.state.factored_corpora, lang_dir, 'train')
-                    dev_path = os.path.join(self.state.factored_corpora, lang_dir, 'dev')
+                        train_path = os.path.join(path, lang_dir, 'train')
+                        dev_path = os.path.join(path, lang_dir, 'dev')
 
-                    train_src_files, train_tgt_files, train_factor_files = collect_parallel_files(src_lang,
-                                                                                                  tgt_lang,
-                                                                                                  train_path)
-                    dev_src_files, dev_tgt_files, dev_factor_files = collect_parallel_files(src_lang,
-                                                                                          tgt_lang,
-                                                                                          dev_path)
+                        train_src_files, train_tgt_files, train_factor_files = collect_parallel_files(src_lang,
+                                                                                                      tgt_lang,
+                                                                                                      train_path)
+                        dev_src_files, dev_tgt_files, dev_factor_files = collect_parallel_files(src_lang,
+                                                                                              tgt_lang,
+                                                                                              dev_path)
 
 
-                    fwd_seq, bwd_seq = self._bpe_encode_files(pool, src_lang, tgt_lang,
-                                                              train_src_files, train_tgt_files, train_factor_files,
-                                                              train_sl_obj, train_tl_obj, train_factor_obj)
-                    self._bpe_encode_files(pool, src_lang, tgt_lang,
-                                           dev_src_files, dev_tgt_files, dev_factor_files,
-                                           dev_sl_obj, dev_tl_obj, dev_factor_obj)
+                        fwd_seq, bwd_seq = self._bpe_encode_files(pool, src_lang, tgt_lang,
+                                                                  train_src_files, train_tgt_files, train_factor_files,
+                                                                  train_sl_obj, train_tl_obj, train_factor_obj)
+                        self._bpe_encode_files(pool, src_lang, tgt_lang,
+                                               dev_src_files, dev_tgt_files, dev_factor_files,
+                                               dev_sl_obj, dev_tl_obj, dev_factor_obj)
 
-                    decode_lengths['%s__%s' % (src_lang, tgt_lang)] = (fwd_seq.modal_value, fwd_seq.std_dev)
-                    decode_lengths['%s__%s' % (tgt_lang, src_lang)] = (bwd_seq.modal_value, bwd_seq.std_dev)
+                        decode_lengths['%s__%s' % (src_lang, tgt_lang)] = (fwd_seq.modal_value, fwd_seq.std_dev)
+                        decode_lengths['%s__%s' % (tgt_lang, src_lang)] = (bwd_seq.modal_value, bwd_seq.std_dev)
 
         os.makedirs(self.args.output_path, exist_ok=True)
         with open(os.path.join(self.args.output_path, 'decode_lengths.bin'), 'wb') as f:
