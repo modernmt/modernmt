@@ -305,11 +305,13 @@ class DatagenActivity(StatefulActivity):
         cpu_count = multiprocessing.cpu_count() # TODO: it seems that it does not work when workers are larger than 1
 
         args = ['--source-lang', 'sl', '--target-lang', 'tl',
-               '--task', self._task, '--trainpref', train_pref, '--validpref', valid_pref,
+               '--trainpref', train_pref, '--validpref', valid_pref,
                '--destdir', self.args.output_path, '--workers', str(cpu_count),
                '--srcdict', self.state.vocab, '--joined-dictionary', '--dataset-impl', 'mmap']
         if self._with_factors:
             args.append('--with-factors')
+        if self._task is not None:
+            args.extend(['--task', self._task])
 
         preprocess.main(args)
 
