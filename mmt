@@ -25,10 +25,11 @@ __description = '''\
 def main():
     import argparse
     from cli import CLIArgsException
-    from cli import cleaning, datagen, train, create, server, translate, evaluate, memory
+    from cli import cleaning, tokenize, datagen, train, create, server, translate, evaluate, memory
 
     actions = {
         'clean': cleaning.main,
+        'tokenize': tokenize.main,
         'datagen': datagen.main,
         'train': train.main,
         'create': create.main,
