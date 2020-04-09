@@ -5,31 +5,47 @@ EOS = "<EOS>_"
 UNK = "<UNK>_"
 
 RESERVED_TOKENS = ["<Lua_Heritage>", PAD, EOS, UNK]
-PAD_ID = RESERVED_TOKENS.index(PAD)  # Normally 1
-EOS_ID = RESERVED_TOKENS.index(EOS)  # Normally 2
-UNK_ID = RESERVED_TOKENS.index(UNK)  # Normally 3
-
 
 class FactorDictionary(Dictionary):
 
     def __init__(self):
-        # super().__init__()  - DO NOT CALL
+        # super().__init__()  # DO NOT CALL
         self.pad_word, self.eos_word, self.unk_word = PAD, EOS, UNK
-        self.pad_index, self.eos_index, self.unk_index = PAD_ID, EOS_ID, UNK_ID
 
-        self.symbols = []
-        self.indices = {}
-        self.count = None
-
-        self.pad_index = RESERVED_TOKENS.index(PAD)
-        self.eos_index = RESERVED_TOKENS.index(EOS)
-        self.unk_index = RESERVED_TOKENS.index(UNK)
+        self.symbols = RESERVED_TOKENS
         self.nspecial = len(RESERVED_TOKENS)
-
+        self.count = []
 
         self.default_factor = '0'
-        self.add_symbol(self.default_factor)
+        if self.default_factor not in self.symbols:
+            self.symbols.append(self.default_factor)
+
+        self.indices = {s: i for i, s in enumerate(self.symbols) if s}
+
+        self.pad_index = self.indices[PAD]
+        self.eos_index = self.indices[EOS]
+        self.unk_index = self.indices[UNK]
+
+    def save(self, f):
+        if isinstance(f, str):
+            with open(f, 'w', encoding='utf-8') as fd:
+                return self.save(fd)
+
+        for symbol in self.symbols:
+            print("'{}'".format(symbol), file=f)
 
     # This function returns True if the factor should be skipped for the sake of recovering original tokens
     def skip(self, factor):
         return False
+
+    # the generation of the factors for the source side can depend from the target side as well
+    def generate_factors(self, src_line, tgt_line=None):
+        src_line = src_line.strip()
+
+        if len(src_line) == 0:
+            return None, None
+
+        src_tokens = src_line.split()
+        factor_tokens = [ self.default_factor for i in range(len(src_tokens)) ]
+
+        return ' '.join(src_tokens) + '\n', tgt_line, ' '.join(factor_tokens) + '\n'
