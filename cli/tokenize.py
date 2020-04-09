@@ -54,8 +54,6 @@ def parse_args(argv=None):
                         help='the working directory for temporary files (default is os temp folder)')
     parser.add_argument('-d', '--debug', action='store_true', dest='debug', default=False,
                         help='prevents temporary files to be removed after execution')
-    parser.add_argument('-T', '--threads', dest='threads', default=2, type=int,
-                        help='the number of threads used to find the bounds for vocabulary creation (default is 2)')
     parser.add_argument('--log', dest='log_file', default=None, help='detailed log file')
     parser.add_argument('--test', metavar='TEST_SET_DIR', dest='test_dir', default=None,
                         help='optional directory where to store a small subset of training data for testing')
