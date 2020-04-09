@@ -139,7 +139,6 @@ class _SubwordDictionaryFactory(object):
         if self._padding_factor > 1 and len(ret) % self._padding_factor > 0:
             ret.force_length(len(ret) + (self._padding_factor - len(ret) % self._padding_factor))
 
-        self._logger.info("RETURNING")
         return ret
 
     def _collect_token_counts(self, files):
@@ -386,7 +385,7 @@ class SubwordDictionary(Dictionary):
             self._init_subtokens_from_list(subtokens)
             self._init_alphabet_from_tokens(subtokens)
 
-        # use of a default FactorDictionary
+        # use a default FactorDictionary
         self.set_factor_dictionary(FactorDictionary())
 
     def get_factor_dictionary(self):
@@ -524,8 +523,8 @@ class SubwordDictionary(Dictionary):
         indexes = []
         i = 0
 
-        # factor2 is True if the next factor is of type FACTOR2; False otherwise
         # this flag is used to decide whether to increment the index i
+        # the information is provided by the factor dictionary
         skip = False
         for j in range(len(subtoken_ids)):
             ### handle "empty" sub_tokens like UNK
