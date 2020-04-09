@@ -84,8 +84,7 @@ class CreateActivity(StatefulActivity):
         args = Namespace(lang_pairs='%s:%s' % (self.args.src_lang, self.args.tgt_lang), debug=self.args.debug,
                          input_paths=[input_path], output_path=self.state.datagen_dir,
                          voc_size=self.args.voc_size, threads=self.args.threads,
-                         count_threshold=self.args.count_threshold, vocabulary_path=vocabulary_path,
-                         test_dir=self._engine.test_data_path if self.args.test_set else None)
+                         count_threshold=self.args.count_threshold, vocabulary_path=vocabulary_path)
         activity = datagen.DatagenActivity(args, wdir=self.wdir('_temp_datagen'), log_file=self.log_fobj,
                                            delete_on_exit=self.delete_on_exit)
         activity.indentation = 4

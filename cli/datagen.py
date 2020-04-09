@@ -333,8 +333,6 @@ def parse_args(argv=None):
     parser.add_argument('--vocabulary', metavar='VOCABULARY_PATH', dest='vocabulary_path', default=None,
                         help='use the specified bpe vocabulary model instead of re-train a new one from scratch')
     parser.add_argument('--log', dest='log_file', default=None, help='detailed log file')
-    parser.add_argument('--test', metavar='TEST_SET_DIR', dest='test_dir', default=None,
-                        help='optional directory where to store a small subset of training data for testing')
 
     parser.add_argument('--task', metavar='TASK', dest='task', default='mmt_translation',
                         help='task')
