@@ -5,6 +5,7 @@ EOS = "<EOS>_"
 UNK = "<UNK>_"
 
 RESERVED_TOKENS = ["<Lua_Heritage>", PAD, EOS, UNK]
+DEFAULT_FACTOR = "0"
 
 class FactorDictionary(Dictionary):
 
@@ -16,7 +17,7 @@ class FactorDictionary(Dictionary):
         self.nspecial = len(RESERVED_TOKENS)
         self.count = []
 
-        self.default_factor = '0'
+        self.default_factor = DEFAULT_FACTOR
         if self.default_factor not in self.symbols:
             self.symbols.append(self.default_factor)
 
@@ -49,3 +50,7 @@ class FactorDictionary(Dictionary):
         factors = [ self.default_factor for i in range(len(tokens)) ]
 
         return ' '.join(tokens) + '\n', ' '.join(factors) + '\n'
+
+    @classmethod
+    def default_factor(cls):
+        return DEFAULT_FACTOR

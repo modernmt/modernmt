@@ -10,6 +10,7 @@ from itertools import islice
 
 from cli import CLIArgsException, StatefulActivity, activitystep, preprocess
 from cli.mmt import collect_parallel_files, MMT_HOME_DIR, MMT_JAR
+from mmt.factorencoder import FactorDictionary
 from mmt.textencoder import SubwordDictionary
 
 
@@ -134,7 +135,6 @@ class DatagenActivity(StatefulActivity):
                                             count_threshold=self.args.count_threshold)
         dictionary = builder.build(all_files, tmp_path=self.wdir('bpe_temp'))
         dictionary.save(self.state.vocab)
-        self.factor_vocab = dictionary.get_factor_dictionary()
 
     def _bpe_encode_files(self, pool, src_lang, tgt_lang,
                           in_src_files, in_tgt_files, in_factor_files, out_src_file_obj, out_tgt_file_obj,
@@ -148,7 +148,6 @@ class DatagenActivity(StatefulActivity):
             src_prefix = SubwordDictionary.language_tag(tgt_lang) + '_ '
 
         batch_size = (multiprocessing.cpu_count() or 1) * 100
-        batch_size = 1
 
         fwd_seq, bwd_seq = _Sequence(), _Sequence()
 
@@ -169,7 +168,7 @@ class DatagenActivity(StatefulActivity):
 
                             if src_prefix is not None:
                                 out_src_file_obj.write(src_prefix)
-                                out_factor_file_obj.write(self.factor_vocab.default_factor)
+                                out_factor_file_obj.write(FactorDictionary.default_factor())
                             out_src_file_obj.write(src_line)
                             out_tgt_file_obj.write(tgt_line)
                             out_factor_file_obj.write(factor_line)
@@ -187,7 +186,7 @@ class DatagenActivity(StatefulActivity):
 
                             if src_prefix is not None:
                                 out_src_file_obj.write(src_prefix)
-                                out_factor_file_obj.write(self.factor_vocab.default_factor)
+                                out_factor_file_obj.write(FactorDictionary.default_factor())
                             out_src_file_obj.write(src_line)
                             out_tgt_file_obj.write(tgt_line)
                             out_factor_file_obj.write(factor_line)
@@ -214,15 +213,15 @@ class DatagenActivity(StatefulActivity):
                 open(dev_sl, 'w', encoding='utf-8') as dev_sl_obj, \
                 open(dev_tl, 'w', encoding='utf-8') as dev_tl_obj, \
                 open(dev_factor, 'w', encoding='utf-8') as dev_factor_obj:
-            for path in self._input_paths:
-                with multiprocessing.Pool(initializer=_pool_initializer, initargs=(self.state.vocab,)) as pool:
-                    for src_lang, tgt_lang in self._langs:
-                        lang_dir = '%s__%s' % tuple(sorted([src_lang, tgt_lang]))
+            with multiprocessing.Pool(initializer=_pool_initializer, initargs=(self.state.vocab,)) as pool:
+                for src_lang, tgt_lang in self._langs:
 
-                        if lang_dir in covered_langs:
-                            continue
-                        covered_langs.add(lang_dir)
+                    lang_dir = '%s__%s' % tuple(sorted([src_lang, tgt_lang]))
+                    if lang_dir in covered_langs:
+                        continue
+                    covered_langs.add(lang_dir)
 
+                    for path in self._input_paths:
                         train_path = os.path.join(path, lang_dir, 'train')
                         dev_path = os.path.join(path, lang_dir, 'dev')
 
@@ -232,7 +231,6 @@ class DatagenActivity(StatefulActivity):
                         dev_src_files, dev_tgt_files, dev_factor_files = collect_parallel_files(src_lang,
                                                                                                 tgt_lang,
                                                                                                 dev_path)
-
                         fwd_seq, bwd_seq = self._bpe_encode_files(pool, src_lang, tgt_lang,
                                                                   train_src_files, train_tgt_files, train_factor_files,
                                                                   train_sl_obj, train_tl_obj, train_factor_obj)
