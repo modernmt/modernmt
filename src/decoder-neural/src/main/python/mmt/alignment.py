@@ -122,15 +122,13 @@ def make_alignment(source_indexes, target_indexes, attention_matrix, prefix_lang
     return alignment
 
 
-import string, zhon.hanzi
+import regex
+pattern = regex.compile(r'\w', flags=regex.U)
 
-all_punctuation = string.punctuation + zhon.hanzi.punctuation
-#TODO: add list of punctuation for other languages
-
+def is_punctuation(txt):
+    return pattern.search(txt) is None
 
 def clean_alignment(alignment, src, tgt):
-    def is_punctuation(txt):
-        return txt in all_punctuation
 
     if len(alignment) == 0:
         return alignment
