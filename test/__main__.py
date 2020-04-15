@@ -32,5 +32,7 @@ if __name__ == '__main__':
     from testcases.onlinelearning import *
     # noinspection PyUnresolvedReferences
     from testcases.backup import *
+    # noinspection PyUnresolvedReferences
+    from testcases.tagprojection import *
 
     main()

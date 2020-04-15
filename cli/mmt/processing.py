@@ -4,16 +4,17 @@ import re
 
 class XMLEncoder:
     __TAG_NAME = '([a-zA-Z]|_|:)([a-zA-Z]|[0-9]|\\.|-|_|:|)*'
-    __TAG_REGEX = re.compile('(<(' + __TAG_NAME + ')[^>]*/?>)|(<!(' + __TAG_NAME + ')[^>]*[^/]>)|(</(' +
-                             __TAG_NAME + ')[^>]*>)|(<!--)|(-->)')
+    TAG_REGEX = re.compile('(<(' + __TAG_NAME + ')[^>]*/?>)|(<!(' + __TAG_NAME + ')[^>]*[^/]>)|(</(' +
+                           __TAG_NAME + ')[^>]*>)|(<!--)|(-->)')
+    TAG_NAME_REGEX = re.compile(__TAG_NAME)
 
     @staticmethod
     def is_xml_tag(string):
-        return XMLEncoder.__TAG_REGEX.match(string) is not None
+        return XMLEncoder.TAG_REGEX.match(string) is not None
 
     @staticmethod
     def has_xml_tag(string):
-        for _ in XMLEncoder.__TAG_REGEX.finditer(string):
+        for _ in XMLEncoder.TAG_REGEX.finditer(string):
             return True
         return False
 
@@ -34,7 +35,7 @@ class XMLEncoder:
         result = []
         index = 0
 
-        for match in XMLEncoder.__TAG_REGEX.finditer(string):
+        for match in XMLEncoder.TAG_REGEX.finditer(string):
             start = match.start()
             end = match.end()
 
