@@ -122,6 +122,34 @@ def make_alignment(source_indexes, target_indexes, attention_matrix, prefix_lang
     return alignment
 
 
+import string, zhon.hanzi
+
+all_punctuation = string.punctuation + zhon.hanzi.punctuation
+#TODO: add list of punctuation for other languages
+
+
+def clean_alignment(alignment, src, tgt):
+    def is_punctuation(txt):
+        return txt in all_punctuation
+
+    if len(alignment) == 0:
+        return alignment
+
+    filtered = []
+    src_tokens = src.split()
+    tgt_tokens = tgt.split()
+
+    for align in alignment:
+        src_token = src_tokens[align[0]]
+        tgt_token = tgt_tokens[align[1]]
+
+        if (is_punctuation(src_token) and is_punctuation(tgt_token)) or \
+                (not is_punctuation(src_token) and not is_punctuation(tgt_token)):
+            filtered.append(align)
+
+    return filtered
+
+
 # - Alignment util functions -------------------------------------------------------------------------------------------
 
 

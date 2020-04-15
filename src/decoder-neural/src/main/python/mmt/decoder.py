@@ -11,7 +11,7 @@ from fairseq.models.transformer import TransformerModel
 from fairseq.sequence_generator import SequenceGenerator
 
 from mmt import textencoder
-from mmt.alignment import make_alignment
+from mmt.alignment import make_alignment, clean_alignment
 from mmt.tuning import Tuner, TuningOptions
 
 
@@ -220,9 +220,9 @@ class MMTDecoder(object):
             self._tuner.tune(dataset, num_iterations=epochs, lr=learning_rate)
             self._nn_needs_reset = True
 
-    def _decode(self, source_lang, target_lang, batch):
+    def _decode(self, source_lang, target_lang, segments):
         prefix_lang = target_lang if self._checkpoint.multilingual_target else None
-        batch, input_indexes, sentence_len = self._make_decode_batch(batch, prefix_lang=prefix_lang)
+        batch, input_indexes, sentence_len = self._make_decode_batch(segments, prefix_lang=prefix_lang)
 
         # Compute translation
         self._translator.max_len_b = self._checkpoint.decode_length(source_lang, target_lang, sentence_len)
@@ -246,6 +246,8 @@ class MMTDecoder(object):
                                                 prefix_lang=prefix_lang is not None)
             else:
                 hypo_alignment = []
+
+            hypo_alignment = clean_alignment(hypo_alignment, segments[i], hypo_str)
 
             results.append(Translation(hypo_str, alignment=hypo_alignment, score=hypo_score))
 
@@ -281,6 +283,8 @@ class MMTDecoder(object):
             # Make alignment
             hypo_alignment = make_alignment(src_indexes[i], tgt_indexes[i], hypo_attention.data.numpy(),
                                             prefix_lang=prefix_lang is not None)
+
+            hypo_alignment = clean_alignment(hypo_alignment, segments[i], translations[i])
 
             results.append(Translation(translations[i], alignment=hypo_alignment))
 
