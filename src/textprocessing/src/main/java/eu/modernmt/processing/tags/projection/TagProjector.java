@@ -1,7 +1,6 @@
 package eu.modernmt.processing.tags.projection;
 
 import eu.modernmt.model.*;
-import eu.modernmt.xml.XMLUtils;
 
 import java.util.Arrays;
 
@@ -12,7 +11,7 @@ public class TagProjector {
         Sentence source = translation.getSource();
 
         if (source.hasTags()) {
-            TagCollection sourceTags = new TagCollection(source.getTags());
+            TagCollection sourceTags = new TagCollection(source.getTags(), true);
 
             if (source.hasWords()) {
                 if (translation.hasAlignment()) {
@@ -99,7 +98,7 @@ public class TagProjector {
                     tagIdx++;
                 else
                     wordIdx++;
-                if (wordIdx == wordN -1)
+                if (wordIdx == wordN - 1)
                     lastWord = true;
             }
             previousToken = currentToken;

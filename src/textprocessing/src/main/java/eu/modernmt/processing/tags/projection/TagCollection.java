@@ -3,7 +3,10 @@ package eu.modernmt.processing.tags.projection;
 import eu.modernmt.model.Tag;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 public class TagCollection implements Iterable<Tag> {
     private List<Tag> list;
@@ -14,8 +17,15 @@ public class TagCollection implements Iterable<Tag> {
     }
 
     TagCollection(Tag[] tags) {
+        this(tags, false);
+    }
+
+    TagCollection(Tag[] tags, boolean clone) {
         this.list = new ArrayList<>(tags.length);
-        this.list.addAll(Arrays.asList(tags));
+        for (Tag tag : tags) {
+            if (clone) tag = tag.clone();
+            this.list.add(tag);
+        }
     }
 
 
@@ -49,14 +59,6 @@ public class TagCollection implements Iterable<Tag> {
             Tag t = span.getEndTag();
             t.setPosition(anchor);
             this.list.add(t);
-        }
-    }
-
-    protected void print() {
-        int tagIdx = 0;
-        for (Tag tag : this.list) {
-            System.out.println("Tag " + tagIdx + " " + tag.toString() + " " + tag.getType() + " " + tag.getPosition());
-            tagIdx++;
         }
     }
 
@@ -137,7 +139,6 @@ public class TagCollection implements Iterable<Tag> {
     public Tag[] getTags() {
         return this.isEmpty() ? null : this.list.toArray(new Tag[0]);
     }
-
 
     @NotNull
     @Override
