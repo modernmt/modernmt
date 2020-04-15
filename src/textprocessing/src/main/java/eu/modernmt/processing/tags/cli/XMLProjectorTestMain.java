@@ -31,6 +31,8 @@ public class XMLProjectorTestMain {
                 output.writeLine(serialized);
             }
         }
+
+        output.flush();
     }
 
     private static String serialize(Sentence sentence) {
@@ -98,7 +100,7 @@ public class XMLProjectorTestMain {
 
                 if (start > last) {
                     words.addAll(Arrays.asList(
-                            TokensOutputStream.deserializeWords(string.substring(last, start))
+                            TokensOutputStream.deserializeWords(string.substring(last, start).trim())
                     ));
                 }
 
