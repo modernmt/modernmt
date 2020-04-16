@@ -14,16 +14,13 @@ class _XTag(object):
 
     @staticmethod
     def from_text(text):
-        if text == '<!--':
-            return _XTag(text, '--', 'O')
-        if text == '-->':
-            return _XTag(text, '--', 'C')
+        if text == '<!--' or text == '-->':
+            return None
 
         name_offset = 1
 
         if text[1] == '!':  # DTD
-            xml_type = 'O'
-            name_offset = 2
+            return None
         elif text[1] == '/':
             xml_type = 'C'
             name_offset = 2
