@@ -1,7 +1,5 @@
 package eu.modernmt.processing.tags.projection;
 
-import eu.modernmt.model.Tag;
-
 import java.util.*;
 
 class SpanTree {
@@ -119,11 +117,11 @@ class SpanTree {
         print(this.root);
     }
 
-    protected void print(Node node) {
+    private void print(Node node) {
         print(node, INDENTATION);
     }
 
-    protected void print(Node node, String appender) {
+    private void print(Node node, String appender) {
         if (node != null) {
             System.out.println(appender + node.toString());
             node.getChildren().forEach(each -> print(each, INDENTATION + appender));
@@ -205,7 +203,6 @@ class SpanTree {
         Set<Node> nodeVisit = new HashSet<>();
         fixNode(this.root, nodeVisit);
         fixAnchors(this.root, sourceSpans, alignment, targetWords);
-//        fixUndefinedAnchors(this.root);
     }
 
     Node getRoot() {
@@ -220,112 +217,6 @@ class SpanTree {
             fixAnchors(child, sourceSpans, alignment, targetWords);
         }
     }
-
-/*
-    static private void fixUndefinedAnchors(Node node) {
-        if (node.getChildren().size() >= 2) {
-            //fix anchor of children having beginTag == null; it assign the anchor of the closest right span with anchors ~= -1
-            for (int i = 0; i < node.getChildren().size(); i++) {
-                Node childI = node.getChildren().get(i);
-
-                int newAnchor = childI.getData().getAnchor();
-                if (newAnchor == -1 && childI.getData().getBeginTag() == null) {
-
-                    for (int j = i + 1; j < node.getChildren().size(); j++) {
-                        Node childJ = node.getChildren().get(j);
-                        newAnchor = childJ.getData().getAnchor();
-                        if (newAnchor != -1) {
-                            break;
-                        }
-                    }
-                    childI.getData().setAnchor(newAnchor);
-                }
-            }
-
-            //fix anchor of children having endTag == null; it assign the anchor of the closest left span with anchors ~= -1
-            for (int i = node.getChildren().size() - 1; i >= 0; i--) {
-                Node childI = node.getChildren().get(i);
-
-                int newAnchor = childI.getData().getAnchor();
-                if (newAnchor == -1 && childI.getData().getEndTag() == null) {
-
-                    for (int j = i - 1; j >= 0; j--) {
-                        Node childJ = node.getChildren().get(j);
-                        newAnchor = childJ.getData().getAnchor();
-                        if (newAnchor != -1) {
-                            break;
-                        }
-                        int sz = childJ.getData().getPositions().size();
-                        newAnchor = (sz > 0) ? childJ.getData().getPositions().get(sz - 1) + 1 : newAnchor;
-
-                        if (newAnchor != -1) {
-                            break;
-                        }
-                    }
-                    childI.getData().setAnchor(newAnchor);
-                }
-            }
-
-            //fix anchor of children having both beginTag end endTag != null; it assign the anchor of the closest left or right span with anchors ~= -1
-            for (int i = node.getChildren().size() - 1; i >= 0; i--) {
-                Node childI = node.getChildren().get(i);
-
-                int anchorI = childI.getData().getAnchor();
-                if (anchorI == -1 && childI.getData().getEndTag() != null && childI.getData().getBeginTag() != null) {
-
-                    int leftClosest = 0;
-                    int leftAnchor = -1;
-                    for (int j = i - 1; j >= 0; j--) {
-                        Node childJ = node.getChildren().get(j);
-                        leftAnchor = childJ.getData().getAnchor();
-                        if (leftAnchor != -1) {
-                            leftClosest = j;
-                            break;
-                        }
-                        int sz = childJ.getData().getPositions().size();
-                        leftAnchor = (sz > 0) ? childJ.getData().getPositions().get(sz - 1) + 1 : leftAnchor;
-                        if (leftAnchor != -1) {
-                            leftClosest = j;
-                            break;
-                        }
-                    }
-
-                    int rightClosest = node.getChildren().size();
-                    int rightAnchor = -1;
-                    for (int j = i + 1; j < node.getChildren().size(); j++) {
-                        Node childJ = node.getChildren().get(j);
-                        rightAnchor = childJ.getData().getAnchor();
-                        if (rightAnchor != -1) {
-                            rightClosest = j;
-                            break;
-                        }
-                    }
-                    int newAnchor;
-                    if (rightAnchor != -1) {
-                        if (leftAnchor != -1) {
-                            newAnchor = (i - leftClosest < i - rightClosest) ? leftAnchor : rightAnchor;
-                        } else {
-                            newAnchor = rightAnchor;
-                        }
-                    } else {
-                        newAnchor = leftAnchor;
-
-                    }
-
-                    childI.getData().setAnchor(newAnchor);
-                }
-            }
-        } else {
-            if ((node.getData().getAnchor() == -1) && (node.getParent() != null)) {
-                node.getData().setAnchor(node.getParent().getData().getAnchor());
-            }
-        }
-
-        for (Node child : node.getChildren()) {
-            fixUndefinedAnchors(child);
-        }
-    }
-*/
 
     static private int computeAnchor(Node node, SpanCollection sourceSpans, Alignment alignment, int targetWords) {
         Span span = node.getData();
@@ -346,36 +237,26 @@ class SpanTree {
         } else {
 // there are both opening and closing tags
             if (targetAnchor == -1) {
-                Coverage spanPositions = span.getPositions();
                 Node parent = node.getParent();
+                Coverage parentPositions = parent.getData().getPositions();
 
-                if (span.getBeginTag().getType() == Tag.Type.EMPTY_TAG) {
-                    //the tag can float in any position within its first not empty descendant
-                    Coverage parentPositions;
-                    while (true) {
-                        parentPositions = parent.getData().getPositions();
-                        if (!parentPositions.isEmpty())
-                            break;
-                        parent = node.getParent();
-                    }
-                    //TODO: to get from SourceTree
-                    Coverage sourcePositions = sourceSpans.get(parent.getId()).getPositions();
-                    int sourceAnchor = sourceSpans.get(span.getId()).getAnchor();
-                    float ratio = (float) (sourceAnchor - sourcePositions.getMin()) / sourcePositions.size();
-                    targetAnchor = Math.round(parentPositions.getMin() + parentPositions.size() * ratio);
-                } else {
-                    //the tag is positioned at the beginning of the parent
-                    //i.e it inherits the anchor of the parent
+                if (parent.getData().getPositions().size() == 0) {
+                    //the parent anchor has already been fixed.
                     targetAnchor = parent.getData().getAnchor();
+                } else {
+                    //the tag can float within the parent positions
+                    Coverage sourceParentPositions = sourceSpans.get(parent.getId()).getPositions();
+                    assert(sourceParentPositions.size() > 0);
+                    int sourceAnchor = sourceSpans.get(span.getId()).getAnchor();
+                    float ratio = (float) (sourceAnchor - sourceParentPositions.getMin()) / sourceParentPositions.size();
+                    targetAnchor = Math.round(parentPositions.getMin() + parentPositions.size() * ratio);
+
                 }
             }
         }
 
+        assert(targetAnchor != -1);
         return targetAnchor;
-    }
-
-    static private int computeSelfClosingAnchor(Node node, Alignment alignment, int targetWords) {
-        return 0; //TODO
     }
 
     static private void fixPositions(Node node, Node child) {
