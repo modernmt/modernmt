@@ -1,5 +1,7 @@
 package eu.modernmt.processing.tags.projection;
 
+import eu.modernmt.model.Tag;
+
 import java.util.*;
 
 class SpanTree {
@@ -197,28 +199,29 @@ class SpanTree {
         return root;
     }
 
-    protected void project(SpanTree sourceTree, Alignment alignment, int targetWords) {
+    protected void project(SpanTree sourceTree, SpanCollection sourceSpans, Alignment alignment, int targetWords) {
         this.root = sourceTree.getRoot().clone(this.spans);
 
         Set<Node> nodeVisit = new HashSet<>();
         fixNode(this.root, nodeVisit);
-        fixAnchors(this.root, alignment, targetWords);
-        fixUndefinedAnchors(this.root);
+        fixAnchors(this.root, sourceSpans, alignment, targetWords);
+//        fixUndefinedAnchors(this.root);
     }
 
     Node getRoot() {
         return this.root;
     }
 
-    static private void fixAnchors(Node node, Alignment alignment, int targetWords) {
+    static private void fixAnchors(Node node, SpanCollection sourceSpans, Alignment alignment, int targetWords) {
         Span targetSpan = node.getData();
-        targetSpan.setAnchor(computeAnchor(node, alignment, targetWords));
+        targetSpan.setAnchor(computeAnchor(node, sourceSpans, alignment, targetWords));
 
         for (Node child : node.getChildren()) {
-            fixAnchors(child, alignment, targetWords);
+            fixAnchors(child, sourceSpans, alignment, targetWords);
         }
     }
 
+/*
     static private void fixUndefinedAnchors(Node node) {
         if (node.getChildren().size() >= 2) {
             //fix anchor of children having beginTag == null; it assign the anchor of the closest right span with anchors ~= -1
@@ -262,6 +265,7 @@ class SpanTree {
                     childI.getData().setAnchor(newAnchor);
                 }
             }
+
             //fix anchor of children having both beginTag end endTag != null; it assign the anchor of the closest left or right span with anchors ~= -1
             for (int i = node.getChildren().size() - 1; i >= 0; i--) {
                 Node childI = node.getChildren().get(i);
@@ -321,13 +325,16 @@ class SpanTree {
             fixUndefinedAnchors(child);
         }
     }
+*/
 
-    static private int computeAnchor(Node node, Alignment alignment, int targetWords) {
+    static private int computeAnchor(Node node, SpanCollection sourceSpans, Alignment alignment, int targetWords) {
         Span span = node.getData();
         int targetAnchor = span.getAnchor();
         if (span.getBeginTag() == null) {
+// there is no corresponding opening tag
             targetAnchor = 0;
         } else if (span.getEndTag() == null) {
+// there is no corresponding closing tag
             if (targetAnchor == -1) {
                 Coverage spanPositions = span.getPositions();
                 if (spanPositions.size() > 0) {
@@ -337,12 +344,38 @@ class SpanTree {
                 }
             }
         } else {
-            Coverage spanPositions = span.getPositions();
-            if (spanPositions.size() > 0)
-                targetAnchor = spanPositions.get(0);
+// there are both opening and closing tags
+            if (targetAnchor == -1) {
+                Coverage spanPositions = span.getPositions();
+                Node parent = node.getParent();
+
+                if (span.getBeginTag().getType() == Tag.Type.EMPTY_TAG) {
+                    //the tag can float in any position within its first not empty descendant
+                    Coverage parentPositions;
+                    while (true) {
+                        parentPositions = parent.getData().getPositions();
+                        if (!parentPositions.isEmpty())
+                            break;
+                        parent = node.getParent();
+                    }
+                    //TODO: to get from SourceTree
+                    Coverage sourcePositions = sourceSpans.get(parent.getId()).getPositions();
+                    int sourceAnchor = sourceSpans.get(span.getId()).getAnchor();
+                    float ratio = (float) (sourceAnchor - sourcePositions.getMin()) / sourcePositions.size();
+                    targetAnchor = Math.round(parentPositions.getMin() + parentPositions.size() * ratio);
+                } else {
+                    //the tag is positioned at the beginning of the parent
+                    //i.e it inherits the anchor of the parent
+                    targetAnchor = parent.getData().getAnchor();
+                }
+            }
         }
 
         return targetAnchor;
+    }
+
+    static private int computeSelfClosingAnchor(Node node, Alignment alignment, int targetWords) {
+        return 0; //TODO
     }
 
     static private void fixPositions(Node node, Node child) {

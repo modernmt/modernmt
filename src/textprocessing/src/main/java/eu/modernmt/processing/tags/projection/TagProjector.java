@@ -2,8 +2,6 @@ package eu.modernmt.processing.tags.projection;
 
 import eu.modernmt.model.*;
 
-import java.util.Arrays;
-
 
 public class TagProjector {
 
@@ -31,7 +29,7 @@ public class TagProjector {
                     translationSpans.project(sourceSpans, alignment, translationWords.length);
 
                     SpanTree translationTree = new SpanTree(translationSpans);
-                    translationTree.project(sourceTree, alignment, translationWords.length);
+                    translationTree.project(sourceTree, sourceSpans, alignment, translationWords.length);
                     translationTree.sort();
 
                     translationTags.populate(translationTree);
