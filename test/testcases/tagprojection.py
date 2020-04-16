@@ -2,7 +2,6 @@ import os
 import tempfile
 import unittest
 
-from cli.mmt.fileformats import ParallelFileFormat
 from cli.mmt.mmtcli import mmt_java
 from cli.mmt.processing import XMLEncoder
 from cli.utils import osutils
@@ -60,6 +59,31 @@ class _XTag(object):
         return self._text
 
 
+class _Reader(object):
+    def __init__(self, src_file, tgt_file, alg_file) -> None:
+        self._src_file = src_file
+        self._tgt_file = tgt_file
+        self._alg_file = alg_file
+        self._src_stream = None
+        self._tgt_stream = None
+        self._alg_stream = None
+
+    def __enter__(self):
+        self._src_stream = open(self._src_file, 'r', encoding='utf-8')
+        self._tgt_stream = open(self._tgt_file, 'r', encoding='utf-8')
+        self._alg_stream = open(self._alg_file, 'r', encoding='utf-8')
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self._src_stream.close()
+        self._tgt_stream.close()
+        self._alg_stream.close()
+
+    def __iter__(self):
+        for src_line, tgt_line, alg_line in zip(self._src_stream, self._tgt_stream, self._alg_stream):
+            yield src_line.rstrip('\n'), tgt_line.rstrip('\n'), alg_line.rstrip('\n')
+
+
 class TagProjectionTest(unittest.TestCase):
     @staticmethod
     def __extract_tags(line):
@@ -95,18 +119,16 @@ class TagProjectionTest(unittest.TestCase):
             osutils.shell_exec(java_cmd, stdout=out_stream)
             out_stream.flush()
 
-            corpus = ParallelFileFormat(src, tgt, src_file, out_stream.name)
-
-            with corpus.reader() as reader:
-                for src_line, tgt_line in reader:
+            with _Reader(src_file, out_stream.name, alg_file) as reader:
+                for src_line, tgt_line, alg_line in reader:
                     src_line, tgt_line = src_line.rstrip(), tgt_line.rstrip()
                     src_tags, tgt_tags = self.__extract_tags(src_line), self.__extract_tags(tgt_line)
 
                     if set(src_tags) != set(tgt_tags):
-                        self.fail('Not all tags were projected:\n\t%s\n\t%s' % (src_line, tgt_line))
+                        self.fail('Not all tags were projected:\n\t%s\n\t%s\n\t%s' % (src_line, tgt_line, alg_line))
 
                     if not self.__validate_tags(tgt_tags):
-                        self.fail('Invalid tag projection:\n\t%s\n\t%s' % (src_line, tgt_line))
+                        self.fail('Invalid tag projection:\n\t%s\n\t%s\n\t%s' % (src_line, tgt_line, alg_line))
 
     def test_project_en_de(self):
         self.__test('en', 'de', 'corpus_en_de')
