@@ -30,9 +30,6 @@ public class TagCollection implements Iterable<Tag> {
 
     void populate(SpanTree tree) {
         populate(tree.getRoot());
-
-        //Sort the tag in according to their position and order in the source sentence
-        Collections.sort(this.list);
     }
 
     private void populate(SpanTree.Node node) {
