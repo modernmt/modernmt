@@ -13,24 +13,19 @@ class SpanCollection implements Iterable<Span> {
 
     private List<Span> list;
 
-
     SpanCollection() {
         list = new ArrayList<>();
     }
 
-    SpanCollection(Tag[] tags, int words) {
-        list = new ArrayList<>();
-        populate(tags, words);
-    }
-
-    private void populate(Tag[] tags, int words) {
+    SpanCollection(List<Tag> tags, int words) {
+        list = new ArrayList<>(tags.size());
 
         Map<String, List<Integer>> openingTagSet = new HashMap<>();
         Map<String, List<Integer>> closingTagSet = new HashMap<>();
         Map<String, List<Integer>> emptyTagSet = new HashMap<>();
 
-        for (int tagIndex = 0; tagIndex < tags.length; tagIndex++) {
-            Tag tag = tags[tagIndex];
+        for (int tagIndex = 0; tagIndex < tags.size(); tagIndex++) {
+            Tag tag = tags.get(tagIndex);
             String name = tag.getName();
             if (tag.getType() == Tag.Type.OPENING_TAG) {
                 openingTagSet.computeIfAbsent(name, k -> new ArrayList<>());
@@ -47,24 +42,24 @@ class SpanCollection implements Iterable<Span> {
 
         }
 
-        int[] tagLevel = new int[tags.length];
+        int[] tagLevel = new int[tags.size()];
 
         int level = ROOT_LEVEL;
         int minLevel = 0;
-        for (int t = 0; t < tags.length; t++) {
-            Tag.Type type = tags[t].getType();
+        for (int t = 0; t < tags.size(); t++) {
+            Tag.Type type = tags.get(t).getType();
             if (type == Tag.Type.EMPTY_TAG) {
                 //do nothing
                 tagLevel[t] = level;
-                minLevel = minLevel < level ? minLevel : level;
+                minLevel = Math.min(minLevel, level);
             } else if (type == Tag.Type.OPENING_TAG) {
                 tagLevel[t] = level;
                 level++;
-                minLevel = minLevel < level ? minLevel : level;
+                minLevel = Math.min(minLevel, level);
             } else if (type == Tag.Type.CLOSING_TAG) {
                 level--;
                 tagLevel[t] = level;
-                minLevel = minLevel < level ? minLevel : level;
+                minLevel = Math.min(minLevel, level);
             }
         }
         minLevel--;
@@ -72,8 +67,8 @@ class SpanCollection implements Iterable<Span> {
             tagLevel[t] = tagLevel[t] - minLevel;
         }
 
-        int[] tagLink = new int[tags.length];
-        boolean[] tagVisit = new boolean[tags.length];
+        int[] tagLink = new int[tags.size()];
+        boolean[] tagVisit = new boolean[tags.size()];
 
         for (String name : openingTagSet.keySet()) {
             List<Integer> openingTags = openingTagSet.get(name);
@@ -93,18 +88,17 @@ class SpanCollection implements Iterable<Span> {
                     }
 
                     int endTagIdx = -1;
-                    for (int et = 0; et < closingTags.size(); et++) {
-                        int idx = closingTags.get(et);
+                    for (int idx : closingTags) {
                         if (!tagVisit[idx] && idx > beginTagIdx) {
                             endTagIdx = idx;
                             break;
                         }
                     }
+                    tagVisit[beginTagIdx] = true;
                     if (endTagIdx != -1) {
                         //found opening/closing pair
                         //create the corresponding span opening/closing span
                         //visit both
-                        tagVisit[beginTagIdx] = true;
                         tagVisit[endTagIdx] = true;
                         tagLink[beginTagIdx] = endTagIdx;
                         tagLink[endTagIdx] = beginTagIdx;
@@ -112,9 +106,7 @@ class SpanCollection implements Iterable<Span> {
                         //found opening tag without closing
                         //create the corresponding span opening span without closing
                         //visit opening tag
-                        tagVisit[beginTagIdx] = true;
                         tagLink[beginTagIdx] = -1;
-
                     }
                 }
             }
@@ -130,9 +122,7 @@ class SpanCollection implements Iterable<Span> {
                     tagLink[endTagIdx] = -1;
                 }
             } else {
-                for (int et = 0; et < closingTags.size(); et++) {
-                    int endTagIdx = closingTags.get(et);
-
+                for (int endTagIdx : closingTags) {
                     if (tagVisit[endTagIdx]) {
                         continue;
                     }
@@ -180,22 +170,24 @@ class SpanCollection implements Iterable<Span> {
         list.add(span);
 
         Tag beginTag = null, endTag = null;
-        for (int t = 0; t < tags.length; t++) {
-            Tag.Type type = tags[t].getType();
+        for (int t = 0; t < tags.size(); t++) {
+            Tag tag = tags.get(t);
+            Tag.Type type = tag.getType();
+
             if (tagLink[t] != -1) {
                 if ((type == Tag.Type.OPENING_TAG) || (type == Tag.Type.EMPTY_TAG)) {
-                    beginTag = tags[t];
-                    endTag = tags[tagLink[t]];
+                    beginTag = tag;
+                    endTag = tags.get(tagLink[t]);
                 } else {
                     continue;
                 }
             } else {
                 if (type == Tag.Type.OPENING_TAG) {
-                    beginTag = tags[t];
+                    beginTag = tag;
                     endTag = null;
                 } else if (type == Tag.Type.CLOSING_TAG) {
                     beginTag = null;
-                    endTag = tags[t];
+                    endTag = tag;
                 }
             }
             span = new Span(spanIdx, tagLevel[t], beginTag, endTag, words);
@@ -291,13 +283,6 @@ class SpanCollection implements Iterable<Span> {
                 return pos;
             }
         };
-    }
-
-
-    protected void print() {
-        for (Span span : this.list) {
-            System.out.println("Span " + span.getId() + " " + span.toString());
-        }
     }
 
 }

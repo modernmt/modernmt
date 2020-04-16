@@ -35,12 +35,11 @@ public class TagProjector {
 
                     translationTags.populate(translationTree);
 
-                    translation.setTags(translationTags.getTags());
+                    translation.setTags(translationTags.toArray());
                     simpleSpaceAnalysis(translation);
                 }
             } else { //there are no source words; just copy the source tags in the target tags
-                Tag[] copy = Arrays.copyOf(sourceTags.getTags(), sourceTags.size());
-                translation.setTags(copy);
+                translation.setTags(sourceTags.toArray());
             }
         }
 

@@ -28,7 +28,6 @@ public class TagCollection implements Iterable<Tag> {
         }
     }
 
-
     void populate(SpanTree tree) {
         populate(tree.getRoot());
 
@@ -136,8 +135,12 @@ public class TagCollection implements Iterable<Tag> {
         return this.list.size();
     }
 
-    public Tag[] getTags() {
+    public Tag[] toArray() {
         return this.isEmpty() ? null : this.list.toArray(new Tag[0]);
+    }
+
+    public List<Tag> getTags() {
+        return list;
     }
 
     @NotNull
