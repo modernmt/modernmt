@@ -1,4 +1,5 @@
 import numpy as np
+import regex
 
 
 # - Symmetrization strategies ------------------------------------------------------------------------------------------
@@ -120,6 +121,32 @@ def make_alignment(source_indexes, target_indexes, attention_matrix, prefix_lang
         alignment = [(al[0] - 1, al[1]) for al in alignment if al[0] > 0]
 
     return alignment
+
+
+_is_word_regex = regex.compile(r'\w', flags=regex.U)
+
+
+def _is_punctuation(txt):
+    return _is_word_regex.search(txt) is None
+
+
+def clean_alignment(alignment, src, tgt):
+    if len(alignment) == 0:
+        return alignment
+
+    filtered = []
+    src_tokens = src.split()
+    tgt_tokens = tgt.split()
+
+    for align in alignment:
+        src_token = src_tokens[align[0]]
+        tgt_token = tgt_tokens[align[1]]
+
+        if (_is_punctuation(src_token) and _is_punctuation(tgt_token)) or \
+                (not _is_punctuation(src_token) and not _is_punctuation(tgt_token)):
+            filtered.append(align)
+
+    return filtered
 
 
 # - Alignment util functions -------------------------------------------------------------------------------------------
