@@ -1,4 +1,5 @@
 import os
+import re
 import tempfile
 import unittest
 
@@ -9,6 +10,8 @@ from testcases import TEST_RESOURCES
 
 
 class _XTag(object):
+    VALID_NAME_REGEX = re.compile(r'^tag[0-9]+$')
+
     @staticmethod
     def from_text(text):
         if text == '<!--':
@@ -30,7 +33,7 @@ class _XTag(object):
             xml_type = 'O'
 
         name = next(XMLEncoder.TAG_NAME_REGEX.finditer(text, name_offset)).group()
-        return _XTag(text, name, xml_type)
+        return _XTag(text, name, xml_type) if _XTag.VALID_NAME_REGEX.match(name) else None
 
     def __init__(self, text, name, xml_type):
         self._text = text
@@ -86,8 +89,9 @@ class _Reader(object):
 
 class TagProjectionTest(unittest.TestCase):
     @staticmethod
-    def __extract_tags(line):
-        return [_XTag.from_text(x.group()) for x in XMLEncoder.TAG_REGEX.finditer(line)]
+    def _extract_tags(line):
+        tags = [_XTag.from_text(x.group()) for x in XMLEncoder.TAG_REGEX.finditer(line)]
+        return [tag for tag in tags if tag is not None]
 
     @staticmethod
     def __validate_tags(tags):
@@ -122,7 +126,7 @@ class TagProjectionTest(unittest.TestCase):
             with _Reader(src_file, out_stream.name, alg_file) as reader:
                 for src_line, tgt_line, alg_line in reader:
                     src_line, tgt_line = src_line.rstrip(), tgt_line.rstrip()
-                    src_tags, tgt_tags = self.__extract_tags(src_line), self.__extract_tags(tgt_line)
+                    src_tags, tgt_tags = self._extract_tags(src_line), self._extract_tags(tgt_line)
 
                     if set(src_tags) != set(tgt_tags):
                         self.fail('Not all tags were projected:\n\t%s\n\t%s\n\t%s' % (src_line, tgt_line, alg_line))
