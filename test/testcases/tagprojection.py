@@ -125,3 +125,6 @@ class TagProjectionTest(unittest.TestCase):
 
     def test_project_en_zh(self):
         self.__test('en', 'zh', 'corpus_en_zh')
+
+    def test_project_extra_en_fr(self):
+        self.__test('en', 'fr', 'extra_en_fr')
