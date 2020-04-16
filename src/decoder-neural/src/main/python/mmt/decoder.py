@@ -244,10 +244,9 @@ class MMTDecoder(object):
             if len(hypo_indexes) > 0:
                 hypo_alignment = make_alignment(input_indexes[i], hypo_indexes, hypo_attention,
                                                 prefix_lang=prefix_lang is not None)
+                hypo_alignment = clean_alignment(hypo_alignment, segments[i], hypo_str)
             else:
                 hypo_alignment = []
-
-            hypo_alignment = clean_alignment(hypo_alignment, segments[i], hypo_str)
 
             results.append(Translation(hypo_str, alignment=hypo_alignment, score=hypo_score))
 
