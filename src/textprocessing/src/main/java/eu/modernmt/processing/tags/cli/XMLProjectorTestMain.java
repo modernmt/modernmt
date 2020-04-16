@@ -8,6 +8,9 @@ import org.apache.commons.io.IOUtils;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 
 public class XMLProjectorTestMain {
@@ -24,12 +27,23 @@ public class XMLProjectorTestMain {
 
         UnixLineWriter output = new UnixLineWriter(System.out, UTF8Charset.get());
 
+        ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        ArrayList<Future<Translation>> translations = new ArrayList<>();
+
         try (TranslationProvider provider = new TranslationProvider(source, target, alignment)) {
             Translation translation;
             while ((translation = provider.next()) != null) {
-                String serialized = serialize(projector.project(translation));
+                final Translation t = translation;
+                Future<Translation> future = executor.submit(() -> projector.project(t));
+                translations.add(future);
+            }
+
+            for (Future<Translation> future : translations) {
+                String serialized = serialize(future.get());
                 output.writeLine(serialized);
             }
+        } finally {
+            executor.shutdownNow();
         }
 
         output.flush();
