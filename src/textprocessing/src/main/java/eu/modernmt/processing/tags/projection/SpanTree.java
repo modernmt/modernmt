@@ -2,10 +2,9 @@ package eu.modernmt.processing.tags.projection;
 
 import java.util.*;
 
-import static eu.modernmt.model.Tag.Type;
-
 class SpanTree {
-    public class Node implements Comparable<Node> {
+
+    public static class Node implements Comparable<Node> {
         private List<Node> children = new ArrayList<>();
         private Node parent = null;
         private Span data;
@@ -203,9 +202,7 @@ class SpanTree {
 
         Set<Node> nodeVisit = new HashSet<>();
         fixNode(this.root, nodeVisit);
-
         fixAnchors(this.root, alignment, targetWords);
-
         fixUndefinedAnchors(this.root);
     }
 
@@ -215,9 +212,7 @@ class SpanTree {
 
     static private void fixAnchors(Node node, Alignment alignment, int targetWords) {
         Span targetSpan = node.getData();
-        if (targetSpan.getAnchor() == -1) {
-            targetSpan.setAnchor(computeAnchor(node, alignment, targetWords));
-        }
+        targetSpan.setAnchor(computeAnchor(node, alignment, targetWords));
 
         for (Node child : node.getChildren()) {
             fixAnchors(child, alignment, targetWords);
@@ -328,81 +323,60 @@ class SpanTree {
     }
 
     static private int computeAnchor(Node node, Alignment alignment, int targetWords) {
-        int targetAnchor = -1;
         Span span = node.getData();
+        int targetAnchor = span.getAnchor();
         if (span.getBeginTag() == null) {
             targetAnchor = 0;
-        } else {
-            if (span.getPositions().size() > 0) { //node with at least 1 contained token
-                targetAnchor = span.getPositions().get(0);
-            } else if (span.getBeginTag().getType() == Type.EMPTY_TAG) {
-                targetAnchor = computeAnchorForSelfClosing(span.getBeginTag().getPosition(), alignment, targetWords);
+        } else if (span.getEndTag() == null) {
+            if (targetAnchor == -1) {
+                Coverage spanPositions = span.getPositions();
+                if (spanPositions.size() > 0) {
+                    targetAnchor = spanPositions.getMin();
+                } else {
+                    targetAnchor = node.getParent().getData().getAnchor();
+                }
             }
+        } else {
+            Coverage spanPositions = span.getPositions();
+            if (spanPositions.size() > 0)
+                targetAnchor = spanPositions.get(0);
         }
 
         return targetAnchor;
     }
 
-    static private int computeAnchorForSelfClosing(int sourcePosition, Alignment alignment, int targetWords) {
-        Coverage sourceLeftToken = new Coverage();
-        Coverage sourceRightToken = new Coverage();
-        Coverage targetLeftToken = new Coverage();
-        Coverage targetRightToken = new Coverage();
-        Coverage leftTokenIntersection = new Coverage();
-        Coverage rightTokenIntersection = new Coverage();
+    static private void fixPositions(Node node, Node child) {
+        Coverage positions = Coverage.difference(child.getData().getPositions(), node.getData().getPositions());
+        for (Integer pos : positions) {
+            // remove the positions from child not included in the node (because already removed)
+            child.getData().getPositions().remove(pos);
+        }
+    }
 
-        //Words that are at the left of the tag in the source sentence, should be at left of the mapped tag
-        //in the translation. Some reasoning for those that are at the right.
+    static private void fixSiblings(Node childI, Node childJ) {
 
-        for (int sourceP = 0; sourceP < alignment.size(); sourceP++) {
-            if (sourceP < sourcePosition) {
-                //If the word is at the left of the current tag
-                //Remember that it should be at the left also in the translation
-                sourceLeftToken.addAll(alignment.get(sourceP));
-            } else {
-                //otherwise, i.e. if the word is at the right of the current tag
-                //Remember that it should be at the right also in the translation
-                sourceRightToken.addAll(alignment.get(sourceP));
+        boolean modified = true;
+
+        while (modified) {
+            modified = false;
+            Coverage posI = childI.getData().getPositions();
+            Coverage posJ = childJ.getData().getPositions();
+            Coverage positions = Coverage.intersection(Coverage.contiguous(posI), Coverage.contiguous(posJ));
+            if (!positions.isEmpty()) {
+                // the two children overlap
+                // choose one point to exclude from either childI or childJ
+                // so that their intersection is minimal
+
+                int posToRemove = Coverage.choosePosition(posI, posJ);
+                // remove the chosen position from the larget coverage
+                if (posI.size() > posJ.size()) {
+                    modified = posI.remove(posToRemove) || posJ.remove(posToRemove);
+                } else {
+                    modified = posJ.remove(posToRemove) || posI.remove(posToRemove);
+
+                }
             }
         }
-        //create a contiguous span of left and right positions
-        sourceLeftToken = Coverage.contiguous(sourceLeftToken);
-        sourceRightToken = Coverage.contiguous(sourceRightToken);
-
-        //Find the mapped position that respects most of the left-right word-tag relationship as possible.
-
-        //Consider also the artificial position targetWords which is aligned with the artificial position sourceWords (see Alignment constructor)
-        for (int i = 0; i <= targetWords; i++) {
-            targetRightToken.add(i);
-        }
-        rightTokenIntersection.addAll(sourceRightToken);
-        rightTokenIntersection.retainAll(targetRightToken);
-        int maxScore = rightTokenIntersection.size();
-        int bestPosition = 0;
-        int actualPosition = 0;
-        for (int i = 0; i <= targetWords; i++) {
-            actualPosition++;
-            if (!targetLeftToken.contains(i)) //add position only once
-                targetLeftToken.add(i);
-
-            targetRightToken.remove(i);
-            leftTokenIntersection.clear();
-            rightTokenIntersection.clear();
-
-            leftTokenIntersection.addAll(sourceLeftToken);
-            leftTokenIntersection.retainAll(targetLeftToken);
-            rightTokenIntersection.addAll(sourceRightToken);
-            rightTokenIntersection.retainAll(targetRightToken);
-            int score = leftTokenIntersection.size() + rightTokenIntersection.size();
-
-            //Remember the best position and score (for opening tag prefer to shift them to the right)
-            if (score >= maxScore) {
-                maxScore = score;
-                bestPosition = actualPosition;
-            }
-        }
-
-        return bestPosition;
     }
 
     static private void fixNode(Node node, Set<Node> nodeVisit) {
@@ -413,136 +387,43 @@ class SpanTree {
         if (node.getChildren().size() == 0) { // there are no children
             //do nothing; just label as visited
             nodeVisit.add(node);
-        } else if (node.getChildren().size() == 1) { // there is only one child
-            nodeVisit.add(node);
+        } else {
             for (Node child : node.getChildren()) {
-                Coverage positionsToRemove = Coverage.difference(child.getData().getPositions(), node.getData().getPositions());
-                fixChildren(node, positionsToRemove);
-                fixNode(child, nodeVisit);
+                //remove position of child not included in node
+                fixPositions(node, child);
             }
-        } else { // there are at least two children
-            Iterator<Node> iteratorI = node.getChildren().iterator();
-            Node childI;
-            boolean modifiedI = true;
-            boolean modifiedJ = true;
-            while (iteratorI.hasNext()) {
-                modifiedI = false;
-                modifiedJ = false;
-                childI = iteratorI.next();
-                Node childJ = null;
-
-                if (nodeVisit.contains(childI)) {
-                    continue;   //childI and its descendant are already fixed
-                }
-                Coverage positionsToRemove = Coverage.difference(childI.getData().getPositions(), node.getData().getPositions());
-                fixChildren(node, positionsToRemove);
-                positionsToRemove.clear();
-
-                Iterator<Node> iteratorJ = node.getChildren().iterator();
-                while (!modifiedI && !modifiedJ && iteratorJ.hasNext()) {
-                    childJ = iteratorJ.next();
-
-                    if (childI != childJ) {
-                        Coverage posI = childI.getData().getPositions();
-                        Coverage posJ = childJ.getData().getPositions();
-
-                        Coverage contiguousIntersection = Coverage.intersection(Coverage.contiguous(posI), Coverage.contiguous(posJ));
-                        if (!contiguousIntersection.isEmpty()) {
-                            // the two children overlap
-                            // choose one point to exclude from either childI or childJ
-                            // so that their intersection is minimal
-
-                            positionsToRemove = Coverage.choosePositions(posI, posJ);
-
-                            // remove positions and flag if the removal occurs
-                            modifiedI = false;
-                            modifiedJ = false;
-                            Iterator<Integer> iterator = positionsToRemove.iterator();
-                            while (!modifiedI && !modifiedJ && iterator.hasNext()) {
-                                Integer pos = iterator.next();
-                                //remove pos from childI if present in childI
-                                modifiedI = posI.remove(pos);
-                                //remove pos from childJ if present in chilI and not present in childI
-                                if (!modifiedI) {
-                                    modifiedJ = posJ.remove(pos);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (modifiedI) {
-                    // recursive remove positionsToRemove from childI
-                    fixChildren(childI, positionsToRemove);
-                } else if (modifiedJ) {
-                    // recursive remove positionsToRemove from childJ
-                    fixChildren(childJ, positionsToRemove);
-                }
-
-                if (modifiedI || modifiedJ) {
-                    break;
-                }
-            }
-
-            if (modifiedI || modifiedJ) {
-                fixNode(node, nodeVisit);
-            } else {
-                nodeVisit.add(node);
-                iteratorI = node.getChildren().iterator();
+            if (node.getChildren().size() > 1) { // there are at least two children
+                Iterator<Node> iteratorI = node.getChildren().iterator();
+                Node childI, childJ;
                 while (iteratorI.hasNext()) {
                     childI = iteratorI.next();
-                    fixNode(childI, nodeVisit);
-                }
-            }
-        }
 
-
-    }
-
-    static private void fixChildren(Node node, Coverage positionsToRemove) {
-        Coverage nodePositions = node.getData().getPositions();
-
-        if (nodePositions.size() == 0) {
-            if (positionsToRemove.contains(node.getData().getAnchor())) {
-                node.getData().setAnchor(-1);
-            }
-        } else {
-            node.getData().setAnchor(nodePositions.get(0));
-        }
-
-        List<Node> childrenToRemove = new ArrayList<>();
-        for (Node child : node.getChildren()) {
-            Coverage childPositions = node.getData().getPositions();
-
-            if (childPositions.size() > 0) {
-                Coverage intersection = Coverage.intersection(childPositions, nodePositions);
-                if (intersection.size() == childPositions.size()) {
-                    // child is not totally contained in  node
-
-                    if (intersection.size() > 0) {
-                        // child is only partially contained in  node
-                        for (Integer pos : positionsToRemove) {
-                            // remove the positions from child already removed from node
-                            child.getData().getPositions().remove(pos);
-                        }
-                    } else {
-                        // child becomes a sibling of node
-                        child.getData().setLevel(node.getData().getLevel());
-                        childrenToRemove.add(child);
+                    if (nodeVisit.contains(childI)) {
+                        continue;   //childI is already fixed
                     }
-                    fixChildren(child, positionsToRemove);
-                }
-            } else {
-                if (positionsToRemove.contains(child.getData().getAnchor())) {
-                    child.getData().setAnchor(-1);
+
+                    for (Node value : node.getChildren()) {
+                        childJ = value;
+
+                        if (childI.getId() >= childJ.getId()) { //childI and childJ are already considered
+                            continue;
+                        }
+
+                        if (nodeVisit.contains(childJ)) {
+                            continue;   //childJ is already fixed
+                        }
+
+                        fixSiblings(childI, childJ);
+                    }
                 }
             }
-        }
-        for (Node child : childrenToRemove) {
-            node.removeChild(child);
-            node.getParent().addChild(child);
+
+            // all children are fixed; label as visited
+            nodeVisit.add(node);
+            for (Node child : node.getChildren()) {
+                //perform fixing on all children
+                fixNode(child, nodeVisit);
+            }
         }
     }
-
-
 }

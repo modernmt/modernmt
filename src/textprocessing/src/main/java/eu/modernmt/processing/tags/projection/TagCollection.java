@@ -97,7 +97,7 @@ public class TagCollection implements Iterable<Tag> {
         boolean found = false;
 
         int idx = inspectTags.size() - 1;
-        while (!found && idx >= 0) {
+        while (idx >= 0) {
             cursorTag = inspectTags.get(idx);
             if (cursorTag.getName().equals(tag.getName())) {
                 found = true;

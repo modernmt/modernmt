@@ -33,7 +33,6 @@ class Span implements Comparable<Span> {
         this.endTag = span.getEndTag();
         this.level = span.getLevel();
         this.positions = new Coverage(span.getPositions());
-        this.positions.addAll(span.getPositions());
         this.anchor = span.getAnchor();
     }
 

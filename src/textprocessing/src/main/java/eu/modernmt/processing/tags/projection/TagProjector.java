@@ -49,9 +49,7 @@ public class TagProjector {
     public static void simpleSpaceAnalysis(Sentence sentence) {
 
         int wordN = sentence.getWords().length;
-        int tagN = sentence.getTags().length;
         int wordIdx = 0;
-        int tagIdx = 0;
         boolean lastWord = false;
 
         String spaceAfterPreviousWord = null;
@@ -93,9 +91,7 @@ public class TagProjector {
 
                 }
 
-                if (currentToken instanceof Tag)
-                    tagIdx++;
-                else
+                if (!(currentToken instanceof Tag))
                     wordIdx++;
                 if (wordIdx == wordN - 1)
                     lastWord = true;
