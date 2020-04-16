@@ -96,7 +96,20 @@ public class XMLProjectorTestMain {
             Word[] targetWords = TokensOutputStream.deserializeWords(targetLine);
             Alignment alignment = parseAlignment(alignmentLine);
 
+            try {
+                verifyAlignment(sentence.getWords().length, targetWords.length, alignment);
+            } catch (IndexOutOfBoundsException e) {
+                throw new IOException("Invalid alignment: \n" + sourceLine + "\n" + targetLine + "\n" + alignmentLine);
+            }
+
             return new Translation(targetWords, sentence, alignment);
+        }
+
+        public static void verifyAlignment(int srcLength, int tgtLength, Alignment alignment) {
+            for (int[] point : alignment) {
+                if (point[0] >= srcLength || point[1] >= tgtLength)
+                    throw new IndexOutOfBoundsException();
+            }
         }
 
         public static Sentence parseSentence(String string) {
@@ -126,7 +139,7 @@ public class XMLProjectorTestMain {
 
             if (last < string.length() - 1) {
                 words.addAll(Arrays.asList(
-                        TokensOutputStream.deserializeWords(string.substring(last))
+                        TokensOutputStream.deserializeWords(string.substring(last).trim())
                 ));
             }
 
