@@ -3,7 +3,8 @@ package eu.modernmt.processing.tags.projection;
 import java.util.*;
 
 class SpanTree {
-    public class Node implements Comparable<Node> {
+
+    public static class Node implements Comparable<Node> {
         private List<Node> children = new ArrayList<>();
         private Node parent = null;
         private Span data;
@@ -197,25 +198,12 @@ class SpanTree {
     }
 
     protected void project(SpanTree sourceTree, Alignment alignment, int targetWords) {
-//        System.out.println("HERE sourceTree");
-//        sourceTree.print();
         this.root = sourceTree.getRoot().clone(this.spans);
 
-//        System.out.println("HERE 0");
-//        this.print();
         Set<Node> nodeVisit = new HashSet<>();
         fixNode(this.root, nodeVisit);
-
-//        System.out.println("HERE 1");
-//        this.print();
-
         fixAnchors(this.root, alignment, targetWords);
-//        System.out.println("HERE 2");
-//        this.print();
-
         fixUndefinedAnchors(this.root);
-//        System.out.println("HERE 3");
-//        this.print();
     }
 
     Node getRoot() {
@@ -224,7 +212,6 @@ class SpanTree {
 
     static private void fixAnchors(Node node, Alignment alignment, int targetWords) {
         Span targetSpan = node.getData();
-
         targetSpan.setAnchor(computeAnchor(node, alignment, targetWords));
 
         for (Node child : node.getChildren()) {
@@ -336,7 +323,6 @@ class SpanTree {
     }
 
     static private int computeAnchor(Node node, Alignment alignment, int targetWords) {
-//        int targetAnchor = -1;
         Span span = node.getData();
         int targetAnchor = span.getAnchor();
         if (span.getBeginTag() == null) {
@@ -351,121 +337,12 @@ class SpanTree {
                 }
             }
         } else {
-            Coverage parentPositions = node.getParent().getData().getPositions();
             Coverage spanPositions = span.getPositions();
-
-
-//            if (targetAnchor == -1 || !spanPositions.contains(targetAnchor)) {
-//            if (targetAnchor == -1) {
-//                if (spanPositions.size() > 0) {
-//                    targetAnchor = spanPositions.get(0);
-//                } else {
-////                    targetAnchor = node.getParent().getData().getAnchor();
-////                    Coverage anchorPositions = alignment.get(span.getAnchor());
-////                    for (int pos : anchorPositions) {
-////
-////                        if (parentPositions.contains(pos)) {
-////                            targetAnchor = pos;
-////                            break;
-////                        }
-////                    }
-//                }
-//            }
-            if (spanPositions.size() > 0) {
+            if (spanPositions.size() > 0)
                 targetAnchor = spanPositions.get(0);
-            }
-
         }
 
         return targetAnchor;
-    }
-
-    /*
-    static private int computeAnchor(Node node, Alignment alignment, int targetWords) {
-        int targetAnchor = -1;
-        Span span = node.getData();
-        if (span.getBeginTag() == null) {
-            targetAnchor = 0;
-        } else {
-            if (span.getPositions().size() > 0) { //node with at least 1 contained token
-                targetAnchor = span.getPositions().get(0);
-            } else if (span.getBeginTag().getType() == Tag.Type.EMPTY_TAG) {
-                targetAnchor = computeAnchorForSelfClosing(span.getBeginTag().getPosition(), alignment, targetWords);
-            }
-        }
-
-        return targetAnchor;
-    }
-*/
-    static private int computeAnchorForSelfClosing(int sourcePosition, Alignment alignment, int targetWords) {
-        Coverage sourceLeftToken = new Coverage();
-        Coverage sourceRightToken = new Coverage();
-        Coverage targetLeftToken = new Coverage();
-        Coverage targetRightToken = new Coverage();
-        Coverage leftTokenIntersection = new Coverage();
-        Coverage rightTokenIntersection = new Coverage();
-
-        //Words that are at the left of the tag in the source sentence, should be at left of the mapped tag
-        //in the translation. Some reasoning for those that are at the right.
-
-        for (int sourceP = 0; sourceP < alignment.size(); sourceP++) {
-            if (sourceP < sourcePosition) {
-                //If the word is at the left of the current tag
-                //Remember that it should be at the left also in the translation
-                sourceLeftToken.addAll(alignment.get(sourceP));
-            } else {
-                //otherwise, i.e. if the word is at the right of the current tag
-                //Remember that it should be at the right also in the translation
-                sourceRightToken.addAll(alignment.get(sourceP));
-            }
-        }
-        //create a contiguous span of left and right positions
-        sourceLeftToken = Coverage.contiguous(sourceLeftToken);
-        sourceRightToken = Coverage.contiguous(sourceRightToken);
-
-        //Find the mapped position that respects most of the left-right word-tag relationship as possible.
-
-        //Consider also the artificial position targetWords which is aligned with the artificial position sourceWords (see Alignment constructor)
-        for (int i = 0; i <= targetWords; i++) {
-            targetRightToken.add(i);
-        }
-        rightTokenIntersection.addAll(sourceRightToken);
-        rightTokenIntersection.retainAll(targetRightToken);
-        int maxScore = rightTokenIntersection.size();
-        int bestPosition = 0;
-        int actualPosition = 0;
-        for (int i = 0; i <= targetWords; i++) {
-            actualPosition++;
-            if (!targetLeftToken.contains(i)) //add position only once
-                targetLeftToken.add(i);
-
-            targetRightToken.remove(i);
-            leftTokenIntersection.clear();
-            rightTokenIntersection.clear();
-
-            leftTokenIntersection.addAll(sourceLeftToken);
-            leftTokenIntersection.retainAll(targetLeftToken);
-            rightTokenIntersection.addAll(sourceRightToken);
-            rightTokenIntersection.retainAll(targetRightToken);
-            int score = leftTokenIntersection.size() + rightTokenIntersection.size();
-
-            //Remember the best position and score (for opening tag prefer to shift them to the right)
-            if (score >= maxScore) {
-//            if (score > maxScore) {
-                maxScore = score;
-                bestPosition = actualPosition;
-            }
-        }
-
-        return bestPosition;
-    }
-
-    static private void makeSibling(Node node, Node child) {
-        Coverage positions = Coverage.intersection(child.getData().getPositions(), node.getData().getPositions());
-        if (positions.isEmpty()) {
-            node.removeChild(child);
-            node.getParent().addChild(child);
-        }
     }
 
     static private void fixPositions(Node node, Node child) {
@@ -525,9 +402,8 @@ class SpanTree {
                         continue;   //childI is already fixed
                     }
 
-                    Iterator<Node> iteratorJ = node.getChildren().iterator();
-                    while (iteratorJ.hasNext()) {
-                        childJ = iteratorJ.next();
+                    for (Node value : node.getChildren()) {
+                        childJ = value;
 
                         if (childI.getId() >= childJ.getId()) { //childI and childJ are already considered
                             continue;

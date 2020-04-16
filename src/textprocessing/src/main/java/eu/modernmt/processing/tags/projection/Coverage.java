@@ -111,7 +111,7 @@ public class Coverage implements Iterable<Integer> {
         //there is at least one point in the overlap
         int min1 = c1.getMin();
         int min2 = c2.getMin();
-        return (min1 <= min2) ? min2 : min1;
+        return Math.max(min1, min2);
     }
 
     @NotNull

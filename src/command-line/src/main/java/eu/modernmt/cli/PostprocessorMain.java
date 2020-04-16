@@ -48,12 +48,12 @@ public class PostprocessorMain {
         }
 
         public final LanguageDirection language;
-        private final File source;
-        private final File alignment;
-        private final File preConfigFile;
-        private final File postConfigFile;
+        public final File source;
+        public final File alignment;
+        public final File preConfigFile;
+        public final File postConfigFile;
 
-        private Args(String[] args) throws ParseException {
+        public Args(String[] args) throws ParseException {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
