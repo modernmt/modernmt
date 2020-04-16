@@ -2,7 +2,6 @@ package eu.modernmt.processing.xml;
 
 import eu.modernmt.model.*;
 import eu.modernmt.processing.tags.projection.TagProjector;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.*;

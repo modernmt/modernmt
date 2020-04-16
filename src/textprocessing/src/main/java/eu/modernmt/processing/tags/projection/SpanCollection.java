@@ -93,8 +93,7 @@ class SpanCollection implements Iterable<Span> {
                     }
 
                     int endTagIdx = -1;
-                    for (int et = 0; et < closingTags.size(); et++) {
-                        int idx = closingTags.get(et);
+                    for (int idx : closingTags) {
                         if (!tagVisit[idx] && idx > beginTagIdx) {
                             endTagIdx = idx;
                             break;
@@ -130,9 +129,7 @@ class SpanCollection implements Iterable<Span> {
                     tagLink[endTagIdx] = -1;
                 }
             } else {
-                for (int et = 0; et < closingTags.size(); et++) {
-                    int endTagIdx = closingTags.get(et);
-
+                for (int endTagIdx : closingTags) {
                     if (tagVisit[endTagIdx]) {
                         continue;
                     }

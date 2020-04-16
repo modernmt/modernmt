@@ -107,30 +107,11 @@ public class Coverage implements Iterable<Integer> {
         return Collections.max(this.positions);
     }
 
-    private static int choosePosition(Coverage c1, Coverage c2) {
-        int minI = c1.getMin();
-        int minJ = c2.getMin();
-        return (minI <= minJ) ? c1.getMax() : minJ;
-    }
-
-    static Coverage choosePositions(Coverage c1, Coverage c2) {
-        Coverage positions = new Coverage();
-
-        Coverage tmpPos1 = new Coverage(c1);
-        Coverage tmpPos2 = new Coverage(c2);
-        while (true) {
-            int chosenP = choosePosition(tmpPos1, tmpPos2);
-
-            tmpPos1.remove(chosenP);
-            tmpPos2.remove(chosenP);
-            positions.add(chosenP);
-
-            Coverage tmpIntersection = intersection(contiguous(tmpPos1), contiguous(tmpPos2));
-            if (tmpIntersection.size() == 0) {
-                break;
-            }
-        }
-        return positions;
+    public static int choosePosition(Coverage c1, Coverage c2) {
+        //there is at least one point in the overlap
+        int min1 = c1.getMin();
+        int min2 = c2.getMin();
+        return (min1 <= min2) ? min2 : min1;
     }
 
     @NotNull
