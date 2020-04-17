@@ -94,7 +94,6 @@ class SpanTree {
     }
 
     private static int ROOT_INDEX = 0;
-    private static String INDENTATION = "  ";
 
     private SpanCollection spans;
     private Node root;
@@ -111,21 +110,6 @@ class SpanTree {
     private static void sort(Node node) {
         node.sortChildren();
         node.getChildren().forEach(SpanTree::sort);
-    }
-
-    protected void print() {
-        print(this.root);
-    }
-
-    private void print(Node node) {
-        print(node, INDENTATION);
-    }
-
-    private void print(Node node, String appender) {
-        if (node != null) {
-            System.out.println(appender + node.toString());
-            node.getChildren().forEach(each -> print(each, INDENTATION + appender));
-        }
     }
 
     protected void create() {
@@ -339,5 +323,23 @@ class SpanTree {
                 fixNode(child, nodeVisit);
             }
         }
+    }
+
+    private String toString(Node node) {
+        StringBuilder result = new StringBuilder();
+        toString(node, result, "");
+        return result.toString();
+    }
+
+    private void toString(Node node, StringBuilder collector, String indentation) {
+        if (node != null) {
+            collector.append(indentation).append(node).append('\n');
+            node.getChildren().forEach(each -> toString(each, collector, "  " + indentation));
+        }
+    }
+
+    @Override
+    public String toString() {
+        return toString(this.root);
     }
 }
