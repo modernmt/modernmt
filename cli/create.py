@@ -89,7 +89,8 @@ class CreateActivity(StatefulActivity):
         args = Namespace(data_path=self.state.datagen_dir, output_path=self.state.nn_path, debug=self.args.debug,
                          num_checkpoints=self.args.num_checkpoints, resume=self.args.resume, init_model=init_model,
                          gpus=self.args.gpus, tensorboard_port=self.args.tensorboard_port,
-                         train_steps=self.args.train_steps, loss_difference_threshold=self.args.loss_difference_threshold)
+                         train_steps=self.args.train_steps,
+                         loss_difference_threshold=self.args.loss_difference_threshold)
         activity = train.TrainActivity(args, self.extra_argv, wdir=self.wdir('_temp_train'),
                                        log_file=self.log_fobj, delete_on_exit=self.delete_on_exit)
         activity.indentation = 4
@@ -150,13 +151,13 @@ def parse_args(argv=None):
     parser.add_argument('input_path', metavar='INPUT', help='the path to the parallel corpora collection')
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, "default" will be used if absent',
                         default='default')
-    parser.add_argument('-d', '--debug', action='store_true', dest='debug', default=False,
-                        help='prevents temporary files to be removed after execution')
     parser.add_argument('-y', '--yes', action='store_true', dest='force_delete', default=False,
                         help='if set, skip engine overwrite confirmation check')
     parser.add_argument('--resume', action='store_true', dest='resume', default=False,
                         help='resume an interrupted training, '
                              'it can be used also to resume a training after its completion')
+    parser.add_argument('--delete', action='store_true', dest='delete', default=False,
+                        help='forces temporary files to be removed after execution')
 
     cleaning_args = parser.add_argument_group('Data cleaning arguments')
     cleaning_args.add_argument('--skip-cleaning', action='store_true', dest='skip_cleaning', default=False,
@@ -189,7 +190,7 @@ def parse_args(argv=None):
                             help='by default the training stops when the validation loss reaches a plateau, with '
                                  'this option instead, the training process stops after the specified amount of steps')
     train_args.add_argument('--loss-difference-threshold', dest='loss_difference_threshold', type=float, default=0.0001,
-                        help='threshold for the termination policy')
+                            help='threshold for the termination policy')
 
     args, extra_argv = parser.parse_known_args(argv)
 
@@ -245,5 +246,5 @@ def main(argv=None):
         if os.path.isfile(log_file):
             os.remove(log_file)
 
-    activity = CreateActivity(engine, args, extra_argv, wdir=wdir, log_file=log_file, delete_on_exit=not args.debug)
+    activity = CreateActivity(engine, args, extra_argv, wdir=wdir, log_file=log_file, delete_on_exit=args.delete)
     activity.run()
