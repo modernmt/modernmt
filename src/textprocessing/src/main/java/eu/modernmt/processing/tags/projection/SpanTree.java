@@ -282,12 +282,21 @@ class SpanTree {
                 // so that their intersection is minimal
 
                 int posToRemove = Coverage.choosePosition(posI, posJ);
-                // remove the chosen position from the larget coverage
+                // remove the chosen position from the largest coverage
                 if (posI.size() > posJ.size()) {
                     modified = posI.remove(posToRemove) || posJ.remove(posToRemove);
                 } else {
                     modified = posJ.remove(posToRemove) || posI.remove(posToRemove);
-
+                }
+                if (posI.isEmpty()) {
+                    childI.getData().setAnchor(-1);
+                } else {
+                    childI.getData().setAnchor(posI.getMin());
+                }
+                if (posJ.isEmpty()) {
+                    childJ.getData().setAnchor(-1);
+                } else {
+                    childJ.getData().setAnchor(posJ.getMin());
                 }
             }
         }

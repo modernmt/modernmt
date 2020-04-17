@@ -74,6 +74,7 @@ public class Coverage implements Iterable<Integer> {
     }
 
     boolean contains(Integer pos) {
+        if (pos < 0) return false;
         return this.positions.contains(pos);
     }
 
@@ -109,9 +110,26 @@ public class Coverage implements Iterable<Integer> {
 
     public static int choosePosition(Coverage c1, Coverage c2) {
         //there is at least one point in the overlap
+        //choose a point to remove form wither c1 or c2
         int min1 = c1.getMin();
         int min2 = c2.getMin();
-        return Math.max(min1, min2);
+        int max1 = c1.getMax();
+        int max2 = c2.getMax();
+        int Dmin = min1 - min2;
+        int Dmax = max1 - max2;
+        if ( Dmin >= 0 && Dmax <= 0 ) {
+            //es:  c1:[1,2,3,4] c2:[0,4]
+            return ( (Dmin > -Dmax)) ? max2 : min2;
+        } else if ( Dmin <= 0 && Dmax >= 0 ) {
+            //es:  c1:[0,4,5] c2:[1,2,3]
+            return ( Dmax > -Dmin ) ? min1 : max1;
+        } else if ( Dmin > 0 && Dmax > 0){
+            //es:  c1:[1,2,3,4] c2:[0,1,2]
+            return ( c1.size() > c2.size() ) ? min1 : max2;
+        } else { // i.e.:( Dmin < 0 && Dmax < 0)
+            //es:  c1:[1,2,3] c2:[2,3,4]
+            return ( c1.size() > c2.size() ) ? max1 : min2;
+        }
     }
 
     @NotNull
