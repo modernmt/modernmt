@@ -200,6 +200,7 @@ def parse_args(argv=None):
     if args.tensorboard_port is not None:
         train.verify_tensorboard_dependencies(parser)
 
+    args.debug = not args.delete  # for backward compatibility
     return args, train.parse_extra_argv(parser, extra_argv)
 
 

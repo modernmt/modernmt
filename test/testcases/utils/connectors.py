@@ -48,7 +48,7 @@ class ModernMTConnector(object):
             path = os.path.join(mmt.MMT_HOME_DIR, 'examples', 'data', 'train')
 
         self.cli('create', src_lang, tgt_lang, path, '-e', self.engine.name, '-y',
-                 '-a', arch, '--debug', '--no-test', '--max-epoch', str(epochs))
+                 '-a', arch, '--no-test', '--max-epoch', str(epochs))
 
     def wait_import_job(self, import_job, refresh_rate_in_seconds=1):
         while import_job['progress'] != 1.0:
