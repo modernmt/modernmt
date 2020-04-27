@@ -7,6 +7,7 @@ import eu.modernmt.model.Word;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class SentenceSplitter {
 
@@ -27,77 +28,83 @@ public class SentenceSplitter {
     }
 
     public static List<Sentence> split(Sentence sentence, boolean includeTags) {
-        return split(sentence, includeTags, 4);
+        return split(sentence, includeTags, 4, 200);
     }
 
-    public static List<Sentence> split(Sentence sentence, boolean includeTags, int minLength) {
+    public static List<Sentence> split(Sentence sentence, boolean includeTags, int minLength, int maxLength) {
         ArrayList<Sentence> output = new ArrayList<>(count(sentence));
 
         boolean pendingSentenceBreak = false;
-        Builder builder = new Builder(includeTags);
+        SentenceSplit split = new SentenceSplit(includeTags);
 
         for (Token token : sentence) {
-            if (!includeTags && (token instanceof Tag)) continue;
-
             if (pendingSentenceBreak) {
                 if ((token instanceof Tag) && !((Tag) token).isOpeningTag()) {
-                    builder.append(token);
+                    split.append(token);
                     continue;
                 } else {
-                    output.add(builder.toSentence());
-                    builder.clear();
+                    output.add(split.toSentence());
+                    split.clear();
                 }
             }
 
-            builder.append(token);
-            pendingSentenceBreak = token.isSentenceBreak() && builder.wordcount() >= minLength;
+            if (split.wordcount() > maxLength) {
+                Sentence longSentence = split.toSentence();
+                split.clear();
+
+                int index = getBestSplitIndex(longSentence);
+                split(longSentence, index, split, output);
+            }
+
+            split.append(token);
+            pendingSentenceBreak = token.isSentenceBreak() && split.wordcount() >= minLength;
         }
 
-        if (builder.size() > 0)
-            output.add(builder.toSentence());
+        if (split.size() > 0)
+            output.add(split.toSentence());
 
         return output;
     }
 
-    private static class Builder {
+    private static Pattern PUNCTUATION_WORD = Pattern.compile("[\\s\\p{IsPunctuation}]+", Pattern.UNICODE_CHARACTER_CLASS);
 
-        private final boolean includeTags;
-        private final ArrayList<Word> words = new ArrayList<>();
-        private final ArrayList<Tag> tags = new ArrayList<>();
+    private static int getBestSplitIndex(Sentence sentence) {
+        Word[] words = sentence.getWords();
+        int pivot = words.length / 2;
 
-        public Builder(boolean includeTags) {
-            this.includeTags = includeTags;
-        }
+        for (int i = pivot; i >= 0; i--) {
+            String word = words[i].getPlaceholder();
+            if (PUNCTUATION_WORD.matcher(word).matches())
+                return i;
 
-        public void append(Token token) {
-            if (token instanceof Tag) {
-                if (includeTags) {
-                    Tag tag = ((Tag) token).clone();
-                    tag.setPosition(words.size());
-                    tags.add(tag);
-                }
-            } else {
-                this.words.add((Word) token);
+            int right = pivot + (pivot - i);
+            if (right < words.length) {
+                word = words[right].getPlaceholder();
+                if (PUNCTUATION_WORD.matcher(word).matches())
+                    return i;
             }
+
         }
 
-        public Sentence toSentence() {
-            Word[] words = this.words.toArray(new Word[0]);
-            Tag[] tags = this.tags.toArray(new Tag[0]);
-            return new Sentence(words, tags);
+        return pivot;
+    }
+
+    private static void split(Sentence sentence, int index, SentenceSplit split, List<Sentence> output) {
+        int i = 0;
+        for (Token token : sentence) {
+            split.append(token);
+
+            if (i == index) {
+                output.add(split.toSentence());
+                split.clear();
+            }
+
+            i++;
         }
 
-        public int wordcount() {
-            return words.size();
-        }
-
-        public int size() {
-            return words.size() + tags.size();
-        }
-
-        public void clear() {
-            words.clear();
-            tags.clear();
+        if (split.size() > 0) {
+            output.add(split.toSentence());
+            split.clear();
         }
     }
 
