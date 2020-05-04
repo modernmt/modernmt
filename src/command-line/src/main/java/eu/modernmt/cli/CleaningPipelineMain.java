@@ -23,7 +23,7 @@ import java.util.List;
 public class CleaningPipelineMain {
 
     public enum Filter {
-        ERASE_XML, PUNCTUATION, ODD_SENTENCES, DRAFTS, SENTENCE_LENGTH, VERBATIM, NUMERIC, LANGUAGE, BROKEN_UTF8
+        ERASE_XML, PUNCTUATION, ODD_SENTENCES, DRAFTS, SENTENCE_LENGTH, VERBATIM, NUMERIC, LANGUAGE, INLINE_LANGUAGE, BROKEN_UTF8
     }
 
     private static class Args {
@@ -117,7 +117,10 @@ public class CleaningPipelineMain {
                         options.filterVerbatimTranslations = true;
                         break;
                     case LANGUAGE:
-                        options.filterByLanguage = true;
+                        options.filterByLanguageBatch = true;
+                        break;
+                    case INLINE_LANGUAGE:
+                        options.filterByLanguageInline = true;
                         break;
                 }
             }

@@ -1,11 +1,5 @@
 package eu.modernmt.cleaning.filters.lang;
 
-import com.optimaize.langdetect.DetectedLanguage;
-import com.optimaize.langdetect.text.CommonTextObjectFactories;
-import com.optimaize.langdetect.text.TextObject;
-
-import java.util.List;
-
 /**
  * Created by davide on 27/12/17.
  */
@@ -65,18 +59,8 @@ class Batch {
         return endIndex;
     }
 
-    public String getLanguage() {
-        TextObject textObject = CommonTextObjectFactories.forDetectingOnLargeText().create().append(buffer);
-        List<DetectedLanguage> languages = OptimaizeLanguageFilter.getLanguageDetector().getProbabilities(textObject);
-
-        if (languages.size() < 1)
-            return null;
-
-        DetectedLanguage lang = languages.get(0);
-        if (lang.getProbability() < 0.50d && languages.size() > 1)
-            return null;
-
-        return lang.getLocale().getLanguage();
+    public CharSequence getContent() {
+        return buffer;
     }
 
 }

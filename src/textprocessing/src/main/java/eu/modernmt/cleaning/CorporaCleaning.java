@@ -2,6 +2,7 @@ package eu.modernmt.cleaning;
 
 import eu.modernmt.cleaning.filters.*;
 import eu.modernmt.cleaning.filters.draft.DraftFilter;
+import eu.modernmt.cleaning.filters.lang.OptimaizeLanguageBatchFilter;
 import eu.modernmt.cleaning.filters.lang.OptimaizeLanguageFilter;
 import eu.modernmt.cleaning.normalizers.ControlCharsStripper;
 import eu.modernmt.cleaning.normalizers.DeepXMLEraser;
@@ -27,7 +28,8 @@ public class CorporaCleaning {
             options.filterBySentenceLength = true;
             options.filterNumericSentences = true;
             options.filterVerbatimTranslations = true;
-            options.filterByLanguage = true;
+            options.filterByLanguageBatch = true;
+            options.filterByLanguageInline = false;
             return options;
         }
 
@@ -41,7 +43,8 @@ public class CorporaCleaning {
             options.filterBySentenceLength = true;
             options.filterNumericSentences = true;
             options.filterVerbatimTranslations = false;
-            options.filterByLanguage = true;
+            options.filterByLanguageBatch = true;
+            options.filterByLanguageInline = false;
             return options;
         }
 
@@ -55,7 +58,8 @@ public class CorporaCleaning {
             options.filterOddSentences = false;
             options.filterDrafts = false;
             options.filterBySentenceLength = false;
-            options.filterByLanguage = false;
+            options.filterByLanguageBatch = false;
+            options.filterByLanguageInline = false;
             return options;
         }
 
@@ -67,7 +71,8 @@ public class CorporaCleaning {
         public boolean filterBySentenceLength = false;
         public boolean filterNumericSentences = false;
         public boolean filterVerbatimTranslations = false;
-        public boolean filterByLanguage = false;
+        public boolean filterByLanguageBatch = false;
+        public boolean filterByLanguageInline = false;
 
     }
 
@@ -124,7 +129,9 @@ public class CorporaCleaning {
             composer.addMultilingual(DraftFilter.class);
         if (options.filterBySentenceLength)
             composer.addMultilingual(SentenceLengthFilter.class);
-        if (options.filterByLanguage)
+        if (options.filterByLanguageBatch)
+            composer.add(OptimaizeLanguageBatchFilter.class);
+        if (options.filterByLanguageInline)
             composer.add(OptimaizeLanguageFilter.class);
 
         return composer;
