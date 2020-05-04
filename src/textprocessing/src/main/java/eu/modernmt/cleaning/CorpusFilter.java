@@ -8,14 +8,14 @@ public interface CorpusFilter {
 
         void onBegin();
 
-        void onLine(String line, int index);
+        void onLine(Language language, String line, int index);
 
         void onEnd();
     }
 
-    Initializer getInitializer(Language language);
+    Initializer getInitializer();
 
-    boolean accept(String line, int index);
+    boolean accept(Language language, String line, int index);
 
     void clear();
 

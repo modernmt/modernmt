@@ -9,12 +9,12 @@ import eu.modernmt.lang.Language;
 public class BrokenUTF8Filter implements CorpusFilter {
 
     @Override
-    public Initializer getInitializer(Language language) {
+    public Initializer getInitializer() {
         return null;
     }
 
     @Override
-    public boolean accept(String line, int index) {
+    public boolean accept(Language language, String line, int index) {
         return line.indexOf('\uFFFD') == -1 && line.indexOf('\uFFFE') == -1 && line.indexOf('\uFFFF') == -1;
     }
 

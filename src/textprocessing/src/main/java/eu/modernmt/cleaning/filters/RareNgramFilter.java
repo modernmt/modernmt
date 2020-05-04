@@ -18,7 +18,7 @@ public class RareNgramFilter implements CorpusFilter {
     private HashSet<String> words = null;
 
     @Override
-    public Initializer getInitializer(Language language) {
+    public Initializer getInitializer() {
         return new Initializer() {
 
             private final HashMap<String, Counter> map = new HashMap<>();
@@ -30,7 +30,7 @@ public class RareNgramFilter implements CorpusFilter {
             }
 
             @Override
-            public void onLine(String line, int index) {
+            public void onLine(Language language, String line, int index) {
                 lines++;
 
                 line = normalize(line);
@@ -104,7 +104,7 @@ public class RareNgramFilter implements CorpusFilter {
     }
 
     @Override
-    public boolean accept(String line, int index) {
+    public boolean accept(Language language, String line, int index) {
         if (words == null)
             return true;
 

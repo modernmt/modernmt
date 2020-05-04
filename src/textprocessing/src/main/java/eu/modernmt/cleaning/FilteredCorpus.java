@@ -38,6 +38,7 @@ public class FilteredCorpus implements CorpusWrapper {
 
         return new LineReader() {
 
+            private final Language language = corpus.getLanguage();
             private final LineReader reader = corpus.getContentReader();
             private int index = 0;
 
@@ -48,7 +49,7 @@ public class FilteredCorpus implements CorpusWrapper {
                 while ((next = reader.readLine()) != null) {
                     if (normalizer != null)
                         next = normalizer.normalize(next);
-                    boolean accept = filter.accept(next, index);
+                    boolean accept = filter.accept(language, next, index);
 
                     index++;
 
@@ -68,7 +69,8 @@ public class FilteredCorpus implements CorpusWrapper {
     }
 
     private void initialize() throws IOException {
-        CorpusFilter.Initializer initializer = filter.getInitializer(this.getLanguage());
+        Language language = getLanguage();
+        CorpusFilter.Initializer initializer = filter.getInitializer();
 
         if (initializer != null) {
             initializer.onBegin();
@@ -83,7 +85,7 @@ public class FilteredCorpus implements CorpusWrapper {
                 while ((line = reader.readLine()) != null) {
                     if (normalizer != null)
                         line = normalizer.normalize(line);
-                    initializer.onLine(line, index);
+                    initializer.onLine(language, line, index);
                     index++;
                 }
             } finally {

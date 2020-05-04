@@ -13,12 +13,12 @@ public class NumericTextFilter implements CorpusFilter {
     private static final Pattern REGEX = Pattern.compile("[0-9\\s]+");
 
     @Override
-    public Initializer getInitializer(Language language) {
+    public Initializer getInitializer() {
         return null;
     }
 
     @Override
-    public boolean accept(String line, int index) {
+    public boolean accept(Language language, String line, int index) {
         return !REGEX.matcher(line).matches();
     }
 

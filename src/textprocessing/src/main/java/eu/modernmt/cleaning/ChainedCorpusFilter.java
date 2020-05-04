@@ -7,8 +7,8 @@ import java.util.ArrayList;
 public class ChainedCorpusFilter implements CorpusFilter, CorpusNormalizer {
 
     public static class Builder {
-        private ArrayList<CorpusFilter> filters = new ArrayList<>();
-        private ArrayList<CorpusNormalizer> normalizers = new ArrayList<>();
+        private final ArrayList<CorpusFilter> filters = new ArrayList<>();
+        private final ArrayList<CorpusNormalizer> normalizers = new ArrayList<>();
 
         public void add(CorpusFilter filter) {
             this.filters.add(filter);
@@ -45,11 +45,11 @@ public class ChainedCorpusFilter implements CorpusFilter, CorpusNormalizer {
     // - CorpusFilter --------------------------------------------------------------------------------------------------
 
     @Override
-    public Initializer getInitializer(Language language) {
+    public Initializer getInitializer() {
         final ArrayList<CorpusFilter.Initializer> initializers = new ArrayList<>(filters.length);
 
         for (CorpusFilter filter : filters) {
-            CorpusFilter.Initializer initializer = filter.getInitializer(language);
+            CorpusFilter.Initializer initializer = filter.getInitializer();
             if (initializer != null)
                 initializers.add(initializer);
         }
@@ -65,9 +65,9 @@ public class ChainedCorpusFilter implements CorpusFilter, CorpusNormalizer {
                 }
 
                 @Override
-                public void onLine(String line, int index) {
+                public void onLine(Language language, String line, int index) {
                     for (CorpusFilter.Initializer initializer : initializers)
-                        initializer.onLine(line, index);
+                        initializer.onLine(language, line, index);
                 }
 
                 @Override
@@ -80,9 +80,9 @@ public class ChainedCorpusFilter implements CorpusFilter, CorpusNormalizer {
     }
 
     @Override
-    public boolean accept(String line, int index) {
+    public boolean accept(Language language, String line, int index) {
         for (CorpusFilter filter : filters) {
-            if (!filter.accept(line, index))
+            if (!filter.accept(language, line, index))
                 return false;
         }
 

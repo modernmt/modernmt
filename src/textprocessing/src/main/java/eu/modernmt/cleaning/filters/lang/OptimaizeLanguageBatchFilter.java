@@ -11,12 +11,10 @@ public class OptimaizeLanguageBatchFilter extends AbstractOptimaizeFilter {
     private Blacklist blacklist = null;
 
     @Override
-    public Initializer getInitializer(Language language) {
-        boolean isLanguageSupported = isSupported(language);
-        String languageKey = makeLanguageKey(language.getLanguage());
-
+    public Initializer getInitializer() {
         return new Initializer() {
 
+            private /* final */ OptimaizeLanguage language = null;
             private final Batch batch = new Batch();
 
             @Override
@@ -25,8 +23,13 @@ public class OptimaizeLanguageBatchFilter extends AbstractOptimaizeFilter {
             }
 
             @Override
-            public void onLine(String line, int index) {
-                if (isLanguageSupported) {
+            public void onLine(Language language, String line, int index) {
+                if (this.language == null)
+                    this.language = new OptimaizeLanguage(language);
+
+                assert this.language.getLanguage().equals(language);
+
+                if (this.language.isSupported()) {
                     batch.add(line, index);
 
                     if (batch.isFull())
@@ -36,10 +39,9 @@ public class OptimaizeLanguageBatchFilter extends AbstractOptimaizeFilter {
 
             private void analyze(Batch batch) {
                 if (batch.size() >= MIN_SIZE) {
-                    String lang = guessLanguage(batch.getContent(), true);
-                    String langKey = makeLanguageKey(lang);
+                    String guess = guessLanguage(batch.getContent(), true);
 
-                    if (!languageKey.equals(langKey)) {
+                    if (!language.match(guess)) {
                         int beginIndex = batch.getBeginIndex();
                         int endIndex = batch.getEndIndex();
 
@@ -62,7 +64,7 @@ public class OptimaizeLanguageBatchFilter extends AbstractOptimaizeFilter {
     }
 
     @Override
-    public boolean accept(String line, int index) {
+    public boolean accept(Language language, String line, int index) {
         return blacklist == null || !blacklist.contains(index);
     }
 

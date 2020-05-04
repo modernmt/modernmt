@@ -7,25 +7,23 @@ import eu.modernmt.lang.Language;
  */
 public class OptimaizeLanguageFilter extends AbstractOptimaizeFilter {
 
-    private String languageKey = null;
+    private /* final */ OptimaizeLanguage language = null;
 
     @Override
-    public Initializer getInitializer(Language language) {
-        if (isSupported(language))
-            languageKey = makeLanguageKey(language.getLanguage());
-        else
-            languageKey = null;
-
+    public Initializer getInitializer() {
         return null;
     }
 
     @Override
-    public boolean accept(String line, int index) {
-        if (languageKey != null) {
-            String lang = guessLanguage(line, false);
-            String langKey = makeLanguageKey(lang);
+    public boolean accept(Language language, String line, int index) {
+        if (this.language == null)
+            this.language = new OptimaizeLanguage(language);
 
-            return languageKey.equals(langKey);
+        assert this.language.getLanguage().equals(language);
+
+        if (this.language.isSupported()) {
+            String guess = guessLanguage(line, false);
+            return this.language.match(guess);
         } else {
             return true;
         }
@@ -33,7 +31,7 @@ public class OptimaizeLanguageFilter extends AbstractOptimaizeFilter {
 
     @Override
     public void clear() {
-        languageKey = null;
+        language = null;
     }
 
 }

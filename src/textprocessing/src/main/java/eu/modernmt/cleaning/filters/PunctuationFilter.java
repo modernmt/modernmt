@@ -15,12 +15,12 @@ public class PunctuationFilter implements CorpusFilter {
     private static final Pattern LETTER_REGEX = Pattern.compile("[\\p{Digit}\\p{L}]");
 
     @Override
-    public Initializer getInitializer(Language language) {
+    public Initializer getInitializer() {
         return null;
     }
 
     @Override
-    public boolean accept(String line, int index) {
+    public boolean accept(Language language, String line, int index) {
         String norm = normalize(line);
 
         double sourceRatio = countLetters(norm) / ((double) norm.length());

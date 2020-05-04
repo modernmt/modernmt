@@ -45,19 +45,8 @@ abstract class AbstractOptimaizeFilter implements CorpusFilter {
         return detectorInstance;
     }
 
-    protected final boolean isSupported(Language language) {
+    public static boolean isSupported(Language language) {
         return SUPPORTED_LANGUAGES.contains(language.getLanguage());
-    }
-
-    protected final String makeLanguageKey(String language) {
-        // We cannot rely on identification of these languages
-        if ("sr".equalsIgnoreCase(language) || "hr".equalsIgnoreCase(language) || "bs".equalsIgnoreCase(language)) {
-            return "sr_hr_bs";
-        } else if ("id".equalsIgnoreCase(language) || "ms".equalsIgnoreCase(language)) {
-            return "id_ms";
-        } else {
-            return language.toLowerCase();
-        }
     }
 
     protected String guessLanguage(CharSequence text, boolean largeText) {

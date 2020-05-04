@@ -17,12 +17,12 @@ public class EmptyLinesFilter implements CorpusFilter {
     }
 
     @Override
-    public Initializer getInitializer(Language language) {
+    public Initializer getInitializer() {
         return null;
     }
 
     @Override
-    public boolean accept(String line, int index) {
+    public boolean accept(Language language, String line, int index) {
         return !isBlankLine(line);
     }
 

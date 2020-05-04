@@ -30,7 +30,7 @@ public class MultilingualCorpusFilterAdapter implements MultilingualCorpusFilter
 
     public MultilingualCorpusFilterAdapter(Factory factory) {
         this.factory = factory;
-        this.hasInitializer = (factory.create().getInitializer(Language.ENGLISH) != null);
+        this.hasInitializer = (factory.create().getInitializer() != null);
     }
 
     @Override
@@ -49,14 +49,14 @@ public class MultilingualCorpusFilterAdapter implements MultilingualCorpusFilter
             @Override
             public void onPair(MultilingualCorpus.StringPair pair, int index) {
                 initializers.computeIfAbsent(pair.language.source, this::createInitializer)
-                        .onLine(pair.source, index);
+                        .onLine(pair.language.source, pair.source, index);
                 initializers.computeIfAbsent(pair.language.target, this::createInitializer)
-                        .onLine(pair.target, index);
+                        .onLine(pair.language.target, pair.target, index);
             }
 
             private CorpusFilter.Initializer createInitializer(Language language) {
                 CorpusFilter filter = filters.computeIfAbsent(language, (l) -> factory.create());
-                CorpusFilter.Initializer initializer = filter.getInitializer(language);
+                CorpusFilter.Initializer initializer = filter.getInitializer();
                 initializer.onBegin();
 
                 return initializer;
@@ -75,7 +75,8 @@ public class MultilingualCorpusFilterAdapter implements MultilingualCorpusFilter
         CorpusFilter sourceFilter = filters.computeIfAbsent(pair.language.source, (l) -> factory.create());
         CorpusFilter targetFilter = filters.computeIfAbsent(pair.language.target, (l) -> factory.create());
 
-        return sourceFilter.accept(pair.source, index) && targetFilter.accept(pair.target, index);
+        return sourceFilter.accept(pair.language.source, pair.source, index) &&
+                targetFilter.accept(pair.language.target, pair.target, index);
     }
 
     @Override

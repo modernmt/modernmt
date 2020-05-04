@@ -7,8 +7,8 @@ import java.util.ArrayList;
 public class ChainedMultilingualCorpusFilter implements MultilingualCorpusFilter, CorpusNormalizer {
 
     public static class Builder {
-        private ArrayList<MultilingualCorpusFilter> filters = new ArrayList<>();
-        private ArrayList<CorpusNormalizer> normalizers = new ArrayList<>();
+        private final ArrayList<MultilingualCorpusFilter> filters = new ArrayList<>();
+        private final ArrayList<CorpusNormalizer> normalizers = new ArrayList<>();
 
         public void add(MultilingualCorpusFilter filter) {
             this.filters.add(filter);
