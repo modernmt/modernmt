@@ -7,6 +7,7 @@ import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
 import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.Language;
+import eu.modernmt.model.corpus.BaseCorpus;
 import eu.modernmt.model.corpus.BaseMultilingualCorpus;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -79,7 +80,7 @@ public class CorporaBloomFilter {
     }
 
     public Corpus wrap(final Corpus corpus, final int lengthThreshold) {
-        return new Corpus() {
+        return new BaseCorpus() {
 
             @Override
             public String getName() {

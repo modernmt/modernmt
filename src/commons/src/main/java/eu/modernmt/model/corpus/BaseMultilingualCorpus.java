@@ -4,6 +4,7 @@ import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
+import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -23,7 +24,7 @@ public abstract class BaseMultilingualCorpus implements MultilingualCorpus {
             synchronized (this) {
                 if (_counts == null)
                     try {
-                        _counts = Corpora.countLines(this);
+                        _counts = countLines();
                     } catch (IOException e) {
                         _counts = new HashMap<>();
                     }
@@ -31,6 +32,33 @@ public abstract class BaseMultilingualCorpus implements MultilingualCorpus {
         }
 
         return _counts;
+    }
+
+    private Map<LanguageDirection, Integer> countLines() throws IOException {
+        Map<LanguageDirection, Counter> counts = new HashMap<>();
+
+        MultilingualCorpus.MultilingualLineReader reader = null;
+
+        try {
+            reader = getContentReader();
+
+            MultilingualCorpus.StringPair line;
+            while ((line = reader.read()) != null) {
+                counts.computeIfAbsent(line.language, k -> new Counter()).count++;
+            }
+        } finally {
+            IOUtils.closeQuietly(reader);
+        }
+
+        Map<LanguageDirection, Integer> result = new HashMap<>(counts.size());
+        for (Map.Entry<LanguageDirection, Counter> entry : counts.entrySet())
+            result.put(entry.getKey(), entry.getValue().count);
+
+        return result;
+    }
+
+    private static final class Counter {
+        public int count = 0;
     }
 
     @Override
@@ -67,6 +95,11 @@ public abstract class BaseMultilingualCorpus implements MultilingualCorpus {
         @Override
         public Language getLanguage() {
             return source ? direction.source : direction.target;
+        }
+
+        @Override
+        public int getLineCount() {
+            return BaseMultilingualCorpus.this.getLineCount(direction);
         }
 
         @Override

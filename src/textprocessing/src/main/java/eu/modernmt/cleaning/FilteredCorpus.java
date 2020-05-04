@@ -3,6 +3,7 @@ package eu.modernmt.cleaning;
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
 import eu.modernmt.lang.Language;
+import eu.modernmt.model.corpus.BaseCorpus;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.CorpusWrapper;
 import org.apache.commons.io.IOUtils;
@@ -10,7 +11,7 @@ import org.apache.commons.io.IOUtils;
 import java.io.IOException;
 import java.io.Reader;
 
-public class FilteredCorpus implements CorpusWrapper {
+public class FilteredCorpus extends BaseCorpus implements CorpusWrapper {
 
     private final Corpus corpus;
     private final CorpusFilter filter;

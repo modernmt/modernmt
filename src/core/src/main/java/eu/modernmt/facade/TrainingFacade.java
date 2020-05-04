@@ -194,4 +194,21 @@ public class TrainingFacade {
         copyProcess.run();
     }
 
+    public void deduplicateMonolingual(List<Corpus> corpora, File outputDirectory, int lengthThreshold) throws IOException {
+        long lines = 0;
+        for (long count : IOCorporaUtils.countMonolingualLines(corpora).values())
+            lines += count;
+
+        FileUtils.deleteDirectory(outputDirectory);
+        FileUtils.forceMkdir(outputDirectory);
+
+        CorporaBloomFilter bloomFilter = new CorporaBloomFilter(lines);
+
+        BatchCopyProcess copyProcess = new BatchCopyProcess(
+                new LazyWriterFactory(new BloomFilterFactory(bloomFilter, lengthThreshold, outputDirectory)));
+        for (Corpus corpus : corpora)
+            copyProcess.add(corpus);
+        copyProcess.run();
+    }
+
 }

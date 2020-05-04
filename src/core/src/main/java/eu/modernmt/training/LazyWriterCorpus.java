@@ -3,6 +3,7 @@ package eu.modernmt.training;
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
 import eu.modernmt.lang.Language;
+import eu.modernmt.model.corpus.BaseCorpus;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.CorpusWrapper;
 
@@ -12,7 +13,7 @@ import java.io.Reader;
 /**
  * Created by davide on 29/08/17.
  */
-public class LazyWriterCorpus implements CorpusWrapper {
+public class LazyWriterCorpus extends BaseCorpus implements CorpusWrapper {
 
     private final Corpus corpus;
 

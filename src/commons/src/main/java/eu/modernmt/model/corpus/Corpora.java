@@ -1,6 +1,7 @@
 package eu.modernmt.model.corpus;
 
 import eu.modernmt.io.FileProxy;
+import eu.modernmt.io.LineReader;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
@@ -103,33 +104,6 @@ public class Corpora {
         } else {
             throw new IllegalArgumentException("Unknown corpus: " + corpus.getClass().getSimpleName());
         }
-    }
-
-    public static Map<LanguageDirection, Integer> countLines(MultilingualCorpus corpus) throws IOException {
-        Map<LanguageDirection, Counter> counts = new HashMap<>();
-
-        MultilingualCorpus.MultilingualLineReader reader = null;
-
-        try {
-            reader = corpus.getContentReader();
-
-            MultilingualCorpus.StringPair line;
-            while ((line = reader.read()) != null) {
-                counts.computeIfAbsent(line.language, k -> new Counter()).count++;
-            }
-        } finally {
-            IOUtils.closeQuietly(reader);
-        }
-
-        Map<LanguageDirection, Integer> result = new HashMap<>(counts.size());
-        for (Map.Entry<LanguageDirection, Counter> entry : counts.entrySet())
-            result.put(entry.getKey(), entry.getValue().count);
-
-        return result;
-    }
-
-    private static final class Counter {
-        public int count = 0;
     }
 
     public static List<Corpus> list(Language language, File... roots) throws IOException {

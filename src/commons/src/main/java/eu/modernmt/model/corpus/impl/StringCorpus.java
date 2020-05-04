@@ -5,6 +5,7 @@ import eu.modernmt.io.LineWriter;
 import eu.modernmt.io.UnixLineReader;
 import eu.modernmt.io.UnixLineWriter;
 import eu.modernmt.lang.Language;
+import eu.modernmt.model.corpus.BaseCorpus;
 import eu.modernmt.model.corpus.Corpus;
 
 import java.io.IOException;
@@ -15,7 +16,7 @@ import java.io.StringWriter;
 /**
  * Created by davide on 24/02/16.
  */
-public class StringCorpus implements Corpus {
+public class StringCorpus extends BaseCorpus {
 
     private final String name;
     private final Language language;

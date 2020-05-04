@@ -1,5 +1,6 @@
 package eu.modernmt.io;
 
+import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -18,35 +19,60 @@ public class IOCorporaUtils {
 
     // Line count ------------------------------------------------------------------------------------------------------
 
+    public static Map<Language, Long> countMonolingualLines(Collection<Corpus> corpora) throws IOException {
+        return countMonolingualLines(corpora, Runtime.getRuntime().availableProcessors());
+    }
+
+    public static Map<Language, Long> countMonolingualLines(Collection<Corpus> corpora, int threads) throws IOException {
+        ArrayList<Callable<Map<Language, Long>>> tasks = new ArrayList<>();
+        for (Corpus corpus : corpora) {
+            tasks.add(() -> {
+                Language language = corpus.getLanguage();
+                return Collections.singletonMap(language, (long) corpus.getLineCount());
+            });
+        }
+
+        return count(tasks, threads);
+    }
+
     public static Map<LanguageDirection, Long> countLines(Collection<MultilingualCorpus> corpora) throws IOException {
         return countLines(corpora, Runtime.getRuntime().availableProcessors());
     }
 
     public static Map<LanguageDirection, Long> countLines(Collection<MultilingualCorpus> corpora, int threads) throws IOException {
+        ArrayList<Callable<Map<LanguageDirection, Long>>> tasks = new ArrayList<>();
+        for (MultilingualCorpus corpus : corpora) {
+            tasks.add(() -> {
+                Set<LanguageDirection> languages = corpus.getLanguages();
+                HashMap<LanguageDirection, Long> counts = new HashMap<>(languages.size());
+
+                for (LanguageDirection language : languages)
+                    counts.put(language, (long) corpus.getLineCount(language));
+
+                return counts;
+            });
+        }
+
+        return count(tasks, threads);
+    }
+
+    private static <T> Map<T, Long> count(Collection<Callable<Map<T, Long>>> tasks, int threads) throws IOException {
         ExecutorService executor = null;
 
         try {
             executor = threads > 1 ? Executors.newFixedThreadPool(threads) : Executors.newSingleThreadExecutor();
 
-            ArrayList<Future<HashMap<LanguageDirection, Long>>> futures = new ArrayList<>(corpora.size());
+            ArrayList<Future<Map<T, Long>>> futures = new ArrayList<>(tasks.size());
 
-            for (MultilingualCorpus corpus : corpora) {
-                futures.add(executor.submit(() -> {
-                    Set<LanguageDirection> languages = corpus.getLanguages();
-                    HashMap<LanguageDirection, Long> counts = new HashMap<>(languages.size());
-
-                    for (LanguageDirection language : languages)
-                        counts.put(language, (long) corpus.getLineCount(language));
-
-                    return counts;
-                }));
+            for (Callable<Map<T, Long>> task : tasks) {
+                futures.add(executor.submit(task));
             }
 
-            HashMap<LanguageDirection, Long> result = new HashMap<>();
+            Map<T, Long> result = new HashMap<>();
 
-            for (Future<HashMap<LanguageDirection, Long>> future : futures) {
+            for (Future<Map<T, Long>> future : futures) {
                 try {
-                    for (Map.Entry<LanguageDirection, Long> count : future.get().entrySet()) {
+                    for (Map.Entry<T, Long> count : future.get().entrySet()) {
                         Long old = result.get(count.getKey());
                         result.put(count.getKey(), (old == null ? 0L : old) + count.getValue());
                     }

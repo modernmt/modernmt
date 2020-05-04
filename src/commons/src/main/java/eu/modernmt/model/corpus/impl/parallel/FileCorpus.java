@@ -2,6 +2,7 @@ package eu.modernmt.model.corpus.impl.parallel;
 
 import eu.modernmt.io.*;
 import eu.modernmt.lang.Language;
+import eu.modernmt.model.corpus.BaseCorpus;
 import eu.modernmt.model.corpus.Corpus;
 
 import java.io.File;
@@ -12,11 +13,11 @@ import java.io.Reader;
 /**
  * Created by davide on 10/07/15.
  */
-public class FileCorpus implements Corpus {
+public class FileCorpus extends BaseCorpus {
 
-    private FileProxy file;
-    private String name;
-    private Language language;
+    private final FileProxy file;
+    private final String name;
+    private final Language language;
 
     private static String getNameFromFilename(String filename) {
         int lastDot = filename.lastIndexOf('.');
