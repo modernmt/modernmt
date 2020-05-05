@@ -27,6 +27,9 @@ public class OptimaizeLanguage {
     }
 
     public boolean match(String language) {
+        if (language == null)
+            return false;
+
         String key = makeLanguageKey(language);
         return this.key.equals(key);
     }
