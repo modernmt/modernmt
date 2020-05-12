@@ -78,23 +78,44 @@ public class DefaultQueryBuilder implements QueryBuilder {
     }
 
     private static void loadTerms(String fieldName, Sentence sentence, Analyzer analyzer, BooleanQuery output) {
+        final int maxClauseCount = BooleanQuery.getMaxClauseCount();
         String text = TokensOutputStream.serialize(sentence, false, true);
 
+        TokenStream stream = null;
         try {
-            TokenStream stream = analyzer.tokenStream(fieldName, text);
+            stream = analyzer.tokenStream(fieldName, text);
             CharTermAttribute charTermAttribute = stream.addAttribute(CharTermAttribute.class);
 
+            int count = 0;
+
             stream.reset();
-            while (stream.incrementToken()) {
+            while (stream.incrementToken() && (count + 1) < maxClauseCount) {
                 Term term = new Term(fieldName, charTermAttribute.toString());
                 output.add(new TermQuery(term), BooleanClause.Occur.SHOULD);
+                count++;
             }
-
-            stream.end();
-            stream.close();
         } catch (IOException e) {
             throw new Error("This should never happen", e);
+        } finally {
+            closeQuietly(stream);
         }
+    }
+
+    private static void closeQuietly(TokenStream stream) {
+        if (stream != null) {
+            try {
+                stream.end();
+            } catch (Throwable e) {
+                // Ignore it
+            }
+
+            try {
+                stream.close();
+            } catch (Throwable e) {
+                // Ignore it
+            }
+        }
+
     }
 
 }
