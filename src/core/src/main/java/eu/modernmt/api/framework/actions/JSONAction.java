@@ -42,7 +42,7 @@ public abstract class JSONAction implements Action {
         } catch (DecoderUnavailableException | TestFailedException e) {
             resp.unavailable(e);
         } catch (Throwable e) {
-            logger.error("Internal error while executing action " + this, e);
+            logger.error("Unexpected error: ", e);
             resp.unexpectedError(e);
         }
     }

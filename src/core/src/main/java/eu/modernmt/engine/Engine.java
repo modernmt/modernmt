@@ -260,7 +260,7 @@ public class Engine implements Closeable, DataListenerProvider {
             if (decoder != null)
                 decoder.close();
         } catch (IOException e) {
-            logger.error(e);
+            logger.error("Error while closing decoder", e);
             error = e;
         }
 
@@ -268,7 +268,7 @@ public class Engine implements Closeable, DataListenerProvider {
             if (aligner != null)
                 aligner.close();
         } catch (IOException e) {
-            logger.error(e);
+            logger.error("Error while closing aligner", e);
             error = e;
         }
 
@@ -276,7 +276,7 @@ public class Engine implements Closeable, DataListenerProvider {
             if (contextAnalyzer != null)
                 contextAnalyzer.close();
         } catch (IOException e) {
-            logger.error(e);
+            logger.error("Error while closing context analyzer", e);
             error = e;
         }
 

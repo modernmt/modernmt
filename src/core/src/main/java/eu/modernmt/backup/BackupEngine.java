@@ -141,7 +141,7 @@ public class BackupEngine {
             closeable.close();
             return null;
         } catch (IOException e) {
-            logger.error(e);
+            logger.error("Error while closing backup engine", e);
             return e;
         }
     }

@@ -3,7 +3,7 @@
     <Appenders>
         <Console name="Console" target="SYSTEM_ERR">
             <PatternLayout>
-                <Pattern>%d %-5level %c [%t] %msg%n%throwable</Pattern>
+                <Pattern>%d %-5level %c [%t] %msg{nolookups} %throwable{separator(#n)}%n</Pattern>
             </PatternLayout>
         </Console>
     </Appenders>
