@@ -19,6 +19,8 @@ public interface DocumentBuilder {
 
     Document create(TranslationUnit unit);
 
+    Document create(TranslationUnit unit, String hash);
+
     Document create(Map<Short, Long> channels);
 
     // Getters

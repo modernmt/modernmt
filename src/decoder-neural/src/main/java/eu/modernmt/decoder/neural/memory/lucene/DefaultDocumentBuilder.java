@@ -43,6 +43,7 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
         return create(unit, hash);
     }
 
+    @Override
     public Document create(TranslationUnit unit, String hash) {
         LanguageDirection language = unit.language;
         String sentence = TokensOutputStream.serialize(unit.sentence, false, true);
