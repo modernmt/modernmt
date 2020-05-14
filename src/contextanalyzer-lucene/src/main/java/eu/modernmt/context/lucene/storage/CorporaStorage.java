@@ -1,8 +1,8 @@
 package eu.modernmt.context.lucene.storage;
 
 import eu.modernmt.data.DataBatch;
-import eu.modernmt.data.LogDataListener;
 import eu.modernmt.data.Deletion;
+import eu.modernmt.data.LogDataListener;
 import eu.modernmt.data.TranslationUnit;
 import org.apache.commons.io.FileUtils;
 
@@ -28,6 +28,10 @@ public class CorporaStorage implements LogDataListener, Closeable {
         this.path = path;
         this.buckets = new BucketRegistry(path, maskLanguageRegion);
         this.channels = buckets.getChannels();
+    }
+
+    public BucketRegistry getRegistry() {
+        return buckets;
     }
 
     public int size() throws IOException {

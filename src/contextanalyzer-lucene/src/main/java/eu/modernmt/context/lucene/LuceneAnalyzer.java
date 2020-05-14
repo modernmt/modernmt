@@ -93,6 +93,19 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
         logger.info("Memory forced merge completed in " + (elapsed / 1000.) + "s");
     }
 
+    public void analyze(Bucket bucket) throws IOException {
+        long size = bucket.getSize();
+
+        if (size == 0) {
+            // Deleted
+            index.delete(bucket.getId());
+        } else {
+            Reader reader = new InputStreamReader(bucket.getContentStream(), UTF8Charset.get());
+            Document document = DocumentBuilder.newInstance(bucket.getOwner(), bucket.getId(), bucket.getLanguage(), reader);
+            index.update(document);
+        }
+    }
+
     @Override
     public void close() throws IOException {
         try {
@@ -233,17 +246,9 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
         public void run() {
             try {
                 long start = System.currentTimeMillis();
-
                 this.size = bucket.getSize();
 
-                if (this.size == 0) {
-                    // Deleted
-                    index.delete(bucket.getId());
-                } else {
-                    Reader reader = new InputStreamReader(bucket.getContentStream(), UTF8Charset.get());
-                    Document document = DocumentBuilder.newInstance(bucket.getOwner(), bucket.getId(), bucket.getLanguage(), reader);
-                    index.update(document);
-                }
+                LuceneAnalyzer.this.analyze(bucket);
 
                 long elapsed = (long) ((System.currentTimeMillis() - start) / 100.);
                 if (logger.isDebugEnabled())
@@ -253,4 +258,5 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
             }
         }
     }
+
 }

@@ -9,7 +9,7 @@ import java.io.*;
 import java.nio.channels.FileChannel;
 import java.util.zip.GZIPOutputStream;
 
-class BucketWriter implements Closeable {
+public class BucketWriter implements Closeable {
 
     private static final long COMPRESS_THRESHOLD = 50L * 1024L; // 50 Kb
 

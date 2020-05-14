@@ -74,7 +74,7 @@ public class Bucket {
         this.fileLock.unlock();
     }
 
-    BucketWriter getWriter() {
+    public BucketWriter getWriter() {
         if (writer == null) {
             synchronized (this) {
                 if (writer == null)

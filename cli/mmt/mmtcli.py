@@ -32,7 +32,7 @@ assert __java_version is not None, 'missing Java executable, please check INSTAL
 assert __java_version > 7, 'wrong version of Java: required Java 8 or higher'
 
 
-def __mmt_env():
+def mmt_env():
     llp = (MMT_LIB_DIR + os.pathsep + os.environ['LD_LIBRARY_PATH']) if 'LD_LIBRARY_PATH' in os.environ else MMT_LIB_DIR
     return dict(os.environ, LD_LIBRARY_PATH=llp, LC_ALL='C.UTF-8', LANG='C.UTF-8')
 
@@ -94,7 +94,7 @@ def mmt_tmsclean(src_lang, tgt_lang, in_path, out_path, out_format=None, filters
 
     java_ops = ['-DentityExpansionLimit=0', '-DtotalEntitySizeLimit=0', '-Djdk.xml.totalEntitySizeLimit=0']
     command = mmt_java('eu.modernmt.cli.CleaningPipelineMain', args, max_heap_mb=extended_heap_mb, java_ops=java_ops)
-    osutils.shell_exec(command, env=__mmt_env())
+    osutils.shell_exec(command, env=mmt_env())
 
 
 def mmt_preprocess(src_lang, tgt_lang, in_paths, out_path, dev_path=None, test_path=None, partition_size=None):
@@ -112,7 +112,7 @@ def mmt_preprocess(src_lang, tgt_lang, in_paths, out_path, dev_path=None, test_p
         args += ['--test', test_path]
 
     command = mmt_java('eu.modernmt.cli.TrainingPipelineMain', args)
-    osutils.shell_exec(command, env=__mmt_env())
+    osutils.shell_exec(command, env=mmt_env())
 
 
 def mmt_dedup(src_lang, tgt_lang, in_path, out_path, length_threshold=None, sort=None):
@@ -123,7 +123,7 @@ def mmt_dedup(src_lang, tgt_lang, in_path, out_path, length_threshold=None, sort
         args += ['--sort'] + sort
 
     command = mmt_java('eu.modernmt.cli.DeduplicationMain', args)
-    osutils.shell_exec(command, env=__mmt_env())
+    osutils.shell_exec(command, env=mmt_env())
 
 
 # - Fastalign CLI functions --------------------------------------------------------------------------------------------
@@ -146,7 +146,7 @@ def fastalign_build(src_lang, tgt_lang, in_path, out_model, iterations=None,
     if not favor_diagonal:
         command.append('--no-favor-diagonal')
 
-    osutils.shell_exec(command, stdout=log, stderr=log, env=__mmt_env())
+    osutils.shell_exec(command, stdout=log, stderr=log, env=mmt_env())
 
 
 def fastalign_score(src_lang, tgt_lang, model_path, in_path, out_path=None):
@@ -154,7 +154,7 @@ def fastalign_score(src_lang, tgt_lang, model_path, in_path, out_path=None):
 
     command = [os.path.join(MMT_BIN_DIR, 'fa_score'), '-s', src_lang, '-t', tgt_lang,
                '-m', model_path, '-i', in_path, '-o', out_path or in_path]
-    stdout, _ = osutils.shell_exec(command, env=__mmt_env())
+    stdout, _ = osutils.shell_exec(command, env=mmt_env())
 
     result = dict()
     for line in stdout.splitlines(keepends=False):
