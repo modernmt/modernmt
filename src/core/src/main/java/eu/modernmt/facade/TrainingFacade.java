@@ -11,7 +11,7 @@ import eu.modernmt.training.BatchCopyProcess;
 import eu.modernmt.training.LazyWriterCorpus;
 import eu.modernmt.training.LazyWriterMultilingualCorpus;
 import eu.modernmt.training.PreprocessingPipeline;
-import eu.modernmt.training.filters.CorporaBloomFilter;
+import eu.modernmt.training.bloomfilter.CorporaBloomFilter;
 import eu.modernmt.training.partitioning.CorporaPartition;
 import org.apache.commons.io.FileUtils;
 
@@ -154,29 +154,6 @@ public class TrainingFacade {
 
     // - Deduplicate ---------------------------------------------------------------------------------------------------
 
-    private static class BloomFilterFactory implements BatchCopyProcess.OutputCorpusFactory {
-
-        private final CorporaBloomFilter bloomFilter;
-        private final int lengthThreshold;
-        private final File outputDirectory;
-
-        public BloomFilterFactory(CorporaBloomFilter bloomFilter, int lengthThreshold, File outputDirectory) {
-            this.bloomFilter = bloomFilter;
-            this.lengthThreshold = lengthThreshold;
-            this.outputDirectory = outputDirectory;
-        }
-
-        @Override
-        public MultilingualCorpus getOutput(MultilingualCorpus corpus) {
-            return bloomFilter.wrap(Corpora.rename(corpus, outputDirectory), lengthThreshold);
-        }
-
-        @Override
-        public Corpus getOutput(Corpus corpus) {
-            return bloomFilter.wrap(Corpora.rename(corpus, outputDirectory), lengthThreshold);
-        }
-    }
-
     public void deduplicate(List<MultilingualCorpus> corpora, File outputDirectory, int lengthThreshold, boolean sorted) throws IOException {
         long lines = 0;
         for (long count : IOCorporaUtils.countLines(corpora).values())
@@ -187,10 +164,9 @@ public class TrainingFacade {
 
         CorporaBloomFilter bloomFilter = new CorporaBloomFilter(lines);
 
-        BatchCopyProcess copyProcess = new BatchCopyProcess(
-                new LazyWriterFactory(new BloomFilterFactory(bloomFilter, lengthThreshold, outputDirectory)));
+        BatchCopyProcess copyProcess = new BatchCopyProcess(new LazyWriterFactory(new RenameCorpusFactory(outputDirectory)));
         for (MultilingualCorpus corpus : corpora)
-            copyProcess.add(corpus);
+            copyProcess.add(bloomFilter.wrap(corpus, lengthThreshold));
 
         if (sorted)
             copyProcess.setIoThreads(1);
@@ -208,10 +184,9 @@ public class TrainingFacade {
 
         CorporaBloomFilter bloomFilter = new CorporaBloomFilter(lines);
 
-        BatchCopyProcess copyProcess = new BatchCopyProcess(
-                new LazyWriterFactory(new BloomFilterFactory(bloomFilter, lengthThreshold, outputDirectory)));
+        BatchCopyProcess copyProcess = new BatchCopyProcess(new LazyWriterFactory(new RenameCorpusFactory(outputDirectory)));
         for (Corpus corpus : corpora)
-            copyProcess.add(corpus);
+            copyProcess.add(bloomFilter.wrap(corpus, lengthThreshold));
 
         if (sorted)
             copyProcess.setIoThreads(1);
