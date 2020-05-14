@@ -146,9 +146,15 @@ public class Corpora {
                 } else if (CFC_EXTENSION.equalsIgnoreCase(extension)) {
                     output.add(new CompactFileCorpus(filename, file));
                 } else {
+                    Language extLanguage;
+                    try {
+                        extLanguage = Language.fromString(extension);
+                    } catch (IllegalArgumentException e) {
+                        continue;
+                    }
+
                     File key = new File(directory, filename);
                     ParallelFileCorpusBuilder builder = builders.computeIfAbsent(key, ParallelFileCorpusBuilder::new);
-                    Language extLanguage = Language.fromString(extension);
 
                     if (language.source.isEqualOrMoreGenericThan(extLanguage))
                         builder.setSourceFile(file);

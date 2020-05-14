@@ -45,12 +45,17 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
 
     @Override
     public Document create(TranslationUnit unit, String hash) {
-        LanguageDirection language = unit.language;
         String sentence = TokensOutputStream.serialize(unit.sentence, false, true);
         String translation = TokensOutputStream.serialize(unit.translation, false, true);
 
+        return create(unit.memory, unit.language, sentence, translation, hash,
+                unit.rawLanguage, unit.rawSentence, unit.rawTranslation);
+    }
+
+    protected Document create(long memory, LanguageDirection language, String sentence, String translation, String hash,
+                              LanguageDirection rawLanguage, String rawSentence, String rawTranslation) {
         Document document = new Document();
-        document.add(new LongField(MEMORY_FIELD, unit.memory, Field.Store.YES));
+        document.add(new LongField(MEMORY_FIELD, memory, Field.Store.YES));
         document.add(new HashField(HASH_FIELD, hash, Field.Store.NO));
 
         document.add(new StringField(makeLanguageFieldName(language.source), language.source.toLanguageTag(), Field.Store.YES));
@@ -58,10 +63,10 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
         document.add(new TextField(makeContentFieldName(language), sentence, Field.Store.YES));
         document.add(new TextField(makeContentFieldName(language.reversed()), translation, Field.Store.YES));
 
-        document.add(new StoredField(SOURCE_LANGUAGE_FIELD, unit.rawLanguage.source.toLanguageTag()));
-        document.add(new StoredField(TARGET_LANGUAGE_FIELD, unit.rawLanguage.target.toLanguageTag()));
-        document.add(new StoredField(SENTENCE_FIELD, unit.rawSentence.getBytes(UTF8Charset.get())));
-        document.add(new StoredField(TRANSLATION_FIELD, unit.rawTranslation.getBytes(UTF8Charset.get())));
+        document.add(new StoredField(SOURCE_LANGUAGE_FIELD, rawLanguage.source.toLanguageTag()));
+        document.add(new StoredField(TARGET_LANGUAGE_FIELD, rawLanguage.target.toLanguageTag()));
+        document.add(new StoredField(SENTENCE_FIELD, rawSentence.getBytes(UTF8Charset.get())));
+        document.add(new StoredField(TRANSLATION_FIELD, rawTranslation.getBytes(UTF8Charset.get())));
 
         return document;
     }
