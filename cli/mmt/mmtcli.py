@@ -115,10 +115,12 @@ def mmt_preprocess(src_lang, tgt_lang, in_paths, out_path, dev_path=None, test_p
     osutils.shell_exec(command, env=__mmt_env())
 
 
-def mmt_dedup(src_lang, tgt_lang, in_path, out_path, length_threshold=None):
+def mmt_dedup(src_lang, tgt_lang, in_path, out_path, length_threshold=None, sort=None):
     args = ['-s', src_lang, '-t', tgt_lang, '--input', in_path, '--output', out_path]
     if length_threshold is not None and length_threshold > 0:
         args += ['-l', length_threshold]
+    if sort is not None:
+        args += ['--sort'] + sort
 
     command = mmt_java('eu.modernmt.cli.DeduplicationMain', args)
     osutils.shell_exec(command, env=__mmt_env())

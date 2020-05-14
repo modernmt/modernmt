@@ -177,7 +177,7 @@ public class TrainingFacade {
         }
     }
 
-    public void deduplicate(List<MultilingualCorpus> corpora, File outputDirectory, int lengthThreshold) throws IOException {
+    public void deduplicate(List<MultilingualCorpus> corpora, File outputDirectory, int lengthThreshold, boolean sorted) throws IOException {
         long lines = 0;
         for (long count : IOCorporaUtils.countLines(corpora).values())
             lines += count;
@@ -191,10 +191,14 @@ public class TrainingFacade {
                 new LazyWriterFactory(new BloomFilterFactory(bloomFilter, lengthThreshold, outputDirectory)));
         for (MultilingualCorpus corpus : corpora)
             copyProcess.add(corpus);
+
+        if (sorted)
+            copyProcess.setIoThreads(1);
+
         copyProcess.run();
     }
 
-    public void deduplicateMonolingual(List<Corpus> corpora, File outputDirectory, int lengthThreshold) throws IOException {
+    public void deduplicateMonolingual(List<Corpus> corpora, File outputDirectory, int lengthThreshold, boolean sorted) throws IOException {
         long lines = 0;
         for (long count : IOCorporaUtils.countMonolingualLines(corpora).values())
             lines += count;
@@ -208,6 +212,10 @@ public class TrainingFacade {
                 new LazyWriterFactory(new BloomFilterFactory(bloomFilter, lengthThreshold, outputDirectory)));
         for (Corpus corpus : corpora)
             copyProcess.add(corpus);
+
+        if (sorted)
+            copyProcess.setIoThreads(1);
+
         copyProcess.run();
     }
 

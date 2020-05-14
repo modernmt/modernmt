@@ -71,7 +71,8 @@ class CleaningActivity(StatefulActivity):
         in_path = self.state.clean_corpora or self.args.input_path
         self.state.dedup_corpora = self.wdir('dedup_corpora')
 
-        mmt_dedup(self.args.src_lang, self.args.tgt_lang, in_path, self.state.dedup_corpora)
+        mmt_dedup(self.args.src_lang, self.args.tgt_lang, in_path, self.state.dedup_corpora,
+                  sort=self.args.dedup_sort)
 
     @activitystep('Preprocess corpora')
     def preprocess(self):
@@ -124,6 +125,8 @@ def parse_args(argv=None):
     parser.add_argument('tgt_lang', metavar='TARGET_LANGUAGE', help='the target language (ISO 639-1)')
     parser.add_argument('input_path', metavar='INPUT', help='the path to the corpora to clean')
     parser.add_argument('output_path', metavar='OUTPUT', help='the destination folder')
+    parser.add_argument('--dedup-sort', metavar='SUBSTRING', dest='dedup_sort', default=None, nargs='+',
+                        help='list of substrings to use to sort corpora during deduplication')
     parser.add_argument('-w', '--working-dir', metavar='WORKING_DIR', dest='wdir', default=None,
                         help='the working directory for temporary files (default is os temp folder)')
     parser.add_argument('-d', '--debug', action='store_true', dest='debug', default=False,
