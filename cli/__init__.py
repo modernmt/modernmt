@@ -65,29 +65,9 @@ def pp_time(elapsed):
 def activitystep(description):
     def decorator(method):
         _, line_no = inspect.getsourcelines(method)
-        return _Step(method, line_no, description)
+        return StatefulActivity.Step(method, line_no, description)
 
     return decorator
-
-
-class _Step:
-    def __init__(self, f, line_no, description):
-        self.id = f.__name__.strip('_')
-        self._description = description
-        self._line_no = line_no
-        self._f = f
-
-    def __lt__(self, other):
-        return self._line_no < other._line_no
-
-    def __call__(self, *_args, **_kwargs):
-        self._f(*_args, **_kwargs)
-
-    def __str__(self):
-        return self._description
-
-    def __repr__(self):
-        return 'Step(line=%d, id=%s, desc=%s)' % (self._line_no, self.id, self._description)
 
 
 class Namespace(object):
@@ -108,9 +88,31 @@ class Namespace(object):
 
 
 class StatefulActivity(object):
+    class Step:
+        def __init__(self, f, line_no, description):
+            self.id = f.__name__.strip('_')
+            self.name = f.__name__
+            self.declaring_class = f.__qualname__.split('.')[0]
+            self._description = description
+            self._line_no = line_no
+            self._f = f
+
+        def __lt__(self, other):
+            return self._line_no < other._line_no
+
+        def __call__(self, *_args, **_kwargs):
+            self._f(*_args, **_kwargs)
+
+        def __str__(self):
+            return self._description
+
+        def __repr__(self):
+            return 'Step(line=%d, id=%s, desc=%s)' % (self._line_no, self.id, self._description)
+
     @classmethod
     def steps(cls):
-        return sorted([method for _, method in inspect.getmembers(cls) if isinstance(method, _Step)])
+        return sorted([method for _, method in inspect.getmembers(cls)
+                       if isinstance(method, StatefulActivity.Step) and method.declaring_class == cls.__name__])
 
     def __init__(self, args, extra_argv=None, wdir=None, log_file=None, start_step=None, delete_on_exit=True):
         self.args = args
