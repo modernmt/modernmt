@@ -62,9 +62,8 @@ class InteractiveTranslator(Translator):
         print('\nModernMT Translate command line')
 
         if isinstance(engine, ModernMTTranslate) and engine.context_vector:
-            norm = sum([e['score'] for e in engine.context_vector])
             print('>> Context:', ', '.join(
-                ['%s %.f%%' % (self._memory_to_string(score['memory']), round(score['score'] * 100 / norm))
+                ['%s %.1f%%' % (self._memory_to_string(score['memory']), score['score'] * 100)
                  for score in engine.context_vector]))
         else:
             print('>> No context provided.')

@@ -193,12 +193,6 @@ class _RestApi(object):
         r = requests.post(url, data=data, headers=headers, timeout=self.DEFAULT_TIMEOUT)
         return self._unpack(r)
 
-    @staticmethod
-    def _encode_context(context):
-        scores = [(e['memory'], e['score']) for e in context if 'memory' in e]
-        scores = [(m['id'] if isinstance(m, dict) else m, s) for m, s in scores]
-        return ','.join(['%d:%f' % e for e in scores])
-
     def info(self):
         return self._get('')
 
@@ -226,8 +220,22 @@ class _RestApi(object):
 
     @staticmethod
     def _unpack_context(data):
-        result = data['vectors']
-        return None if len(result) != 1 else list(result.values())[0]
+        if 'vectors' in data:
+            data = data['vectors']
+            if len(data) != 1:
+                return None
+            data = list(data.values())[0]
+        for e in data:
+            if 'domain' in e:
+                e['memory'] = e['domain']
+                del e['domain']
+        return data
+
+    @staticmethod
+    def _encode_context(context):
+        scores = [(e['memory'], e['score']) for e in context if 'memory' in e]
+        scores = [(m['id'] if isinstance(m, dict) else m, s) for m, s in scores]
+        return ','.join(['%d:%f' % e for e in scores])
 
     def health_check(self):
         return self._get('_health')
