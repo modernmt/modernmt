@@ -1,4 +1,4 @@
-package eu.modernmt.cli.utils;
+package eu.modernmt.io;
 
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -35,7 +35,11 @@ public interface FileFormat {
 
         @Override
         public MultilingualCorpus rename(LanguageDirection language, MultilingualCorpus corpus, File directory) {
-            return new TMXCorpus(corpus.getName(), new File(directory, corpus.getName() + ".tmx"));
+            FileStats stats = Corpora.stats(corpus);
+            String extension = '.' + Corpora.TMX_EXTENSION;
+            if (stats.gzipped) extension += ".gz";
+            FileProxy file = new FileProxy.NativeFileProxy(new File(directory, corpus.getName() + extension), stats.gzipped);
+            return new TMXCorpus(corpus.getName(), file);
         }
 
     }
@@ -49,7 +53,11 @@ public interface FileFormat {
 
         @Override
         public MultilingualCorpus rename(LanguageDirection language, MultilingualCorpus corpus, File directory) {
-            return new CompactFileCorpus(corpus.getName(), new File(directory, corpus.getName() + ".cq"));
+            FileStats stats = Corpora.stats(corpus);
+            String extension = '.' + Corpora.COMPACT_EXTENSION;
+            if (stats.gzipped) extension += ".gz";
+            FileProxy file = new FileProxy.NativeFileProxy(new File(directory, corpus.getName() + extension), stats.gzipped);
+            return new CompactFileCorpus(corpus.getName(), file);
         }
 
     }
@@ -65,7 +73,19 @@ public interface FileFormat {
 
         @Override
         public MultilingualCorpus rename(LanguageDirection language, MultilingualCorpus corpus, File directory) {
-            return new ParallelFileCorpus(directory, corpus.getName(), language);
+            FileStats stats = Corpora.stats(corpus);
+            String sourceExt = '.' + language.source.toLanguageTag();
+            String targetExt = '.' + language.target.toLanguageTag();
+
+            if (stats.gzipped) {
+                sourceExt += ".gz";
+                targetExt += ".gz";
+            }
+
+            FileProxy source = new FileProxy.NativeFileProxy(new File(directory, corpus.getName() + sourceExt), stats.gzipped);
+            FileProxy target = new FileProxy.NativeFileProxy(new File(directory, corpus.getName() + targetExt), stats.gzipped);
+
+            return new ParallelFileCorpus(corpus.getName(), language, source, target);
         }
 
     }

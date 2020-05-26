@@ -1,11 +1,10 @@
 package eu.modernmt.cli;
 
 import eu.modernmt.cli.log4j.Log4jConfiguration;
-import eu.modernmt.cli.utils.FileFormat;
-import eu.modernmt.io.IOCorporaUtils;
+import eu.modernmt.io.FileFormat;
+import eu.modernmt.io.Corpora;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
-import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MaskedMultilingualCorpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -70,7 +69,7 @@ public class ConvertMain {
             MultilingualCorpus input = new MaskedMultilingualCorpus(args.language, args.inputFormat.parse(args.language, args.input));
             MultilingualCorpus output = args.outputFormat.rename(args.language, input, args.output);
 
-            IOCorporaUtils.copy(input, output);
+            Corpora.copy(input, output);
         } else {
             BatchCopyProcess copy = new BatchCopyProcess(new BatchCopyProcess.OutputCorpusFactory() {
                 @Override

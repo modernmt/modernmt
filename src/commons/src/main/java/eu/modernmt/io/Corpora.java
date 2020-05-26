@@ -3,9 +3,16 @@ package eu.modernmt.io;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.corpus.CorpusWrapper;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.MultilingualCorpusWrapper;
+import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
+import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
+import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
+import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
 import org.apache.commons.io.IOUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
@@ -13,9 +20,131 @@ import java.util.concurrent.*;
 /**
  * Created by davide on 04/05/17.
  */
-public class IOCorporaUtils {
+public class Corpora {
+
+    public static final String TMX_EXTENSION = "tmx";
+    public static final String COMPACT_EXTENSION = "cfc";
 
     private static final int MAX_IO_THREADS = 10;
+
+    // Stats -----------------------------------------------------------------------------------------------------------
+
+    public static FileStats stats(MultilingualCorpus corpus) {
+        return FileStats.of(MultilingualCorpusWrapper.unwrap(corpus));
+    }
+
+    public static FileStats stats(Corpus corpus) {
+        return FileStats.of(CorpusWrapper.unwrap(corpus));
+    }
+
+    // List ------------------------------------------------------------------------------------------------------------
+
+    public static List<Corpus> list(Language language, File... roots) throws IOException {
+        String tag = language.toLanguageTag();
+
+        ArrayList<Corpus> corpora = new ArrayList<>();
+
+        for (File folder : roots) {
+            if (!folder.isDirectory())
+                throw new IOException(folder + " is not a valid folder");
+
+            File[] files = folder.listFiles();
+            if (files == null) break;
+
+            for (File file : files) {
+                FileStats stats = FileStats.of(file);
+                if (!stats.extension.equalsIgnoreCase(tag) || stats.name.isEmpty())
+                    continue;
+
+                FileCorpus corpus = new FileCorpus(new FileProxy.NativeFileProxy(file, stats.gzipped), stats.name, language);
+                corpora.add(corpus);
+            }
+        }
+
+        return corpora;
+    }
+
+    public static List<MultilingualCorpus> list(LanguageDirection language, File... roots) throws IOException {
+        ArrayList<MultilingualCorpus> output = new ArrayList<>();
+
+        HashMap<File, ParallelFileCorpusBuilder> builders = new HashMap<>();
+
+        for (File directory : roots) {
+            File[] files = directory.listFiles();
+            if (files == null) continue;
+
+            for (File file : files) {
+                FileStats stats = FileStats.of(file);
+                if (stats.name.isEmpty() || stats.extension.isEmpty())
+                    continue;
+
+                if (TMX_EXTENSION.equalsIgnoreCase(stats.extension)) {
+                    output.add(new TMXCorpus(stats.name, new FileProxy.NativeFileProxy(file, stats.gzipped)));
+                } else if (COMPACT_EXTENSION.equalsIgnoreCase(stats.extension)) {
+                    output.add(new CompactFileCorpus(stats.name, new FileProxy.NativeFileProxy(file, stats.gzipped)));
+                } else {
+                    Language extLanguage;
+                    try {
+                        extLanguage = Language.fromString(stats.extension);
+                    } catch (IllegalArgumentException e) {
+                        continue;
+                    }
+
+                    File key = new File(directory, stats.name);
+                    FileProxy fileProxy = new FileProxy.NativeFileProxy(file, stats.gzipped);
+                    ParallelFileCorpusBuilder builder = builders.computeIfAbsent(key, ParallelFileCorpusBuilder::new);
+
+                    if (language.source.isEqualOrMoreGenericThan(extLanguage))
+                        builder.setSourceFile(fileProxy);
+                    else if (language.target.isEqualOrMoreGenericThan(extLanguage))
+                        builder.setTargetFile(fileProxy);
+                }
+            }
+        }
+
+        for (ParallelFileCorpusBuilder builder : builders.values()) {
+            ParallelFileCorpus corpus = builder.getParallelFileCorpus(language);
+            if (corpus != null)
+                output.add(corpus);
+        }
+
+        return output;
+    }
+
+    // Rename ----------------------------------------------------------------------------------------------------------
+
+    public static MultilingualCorpus rename(MultilingualCorpus corpus, File folder) {
+        return rename(corpus, folder, corpus.getName());
+    }
+
+    public static MultilingualCorpus rename(MultilingualCorpus corpus, File folder, String name) {
+        corpus = MultilingualCorpusWrapper.unwrap(corpus);
+        FileStats stats = FileStats.of(corpus);
+
+        switch (stats.type) {
+            case TMX:
+                return new TMXCorpus(nativeFile(folder, name, TMX_EXTENSION, stats.gzipped));
+            case PARALLEL:
+                LanguageDirection language = ((ParallelFileCorpus) corpus).getLanguage();
+                return new ParallelFileCorpus(name, language,
+                        nativeFile(folder, name, language.source.toLanguageTag(), stats.gzipped),
+                        nativeFile(folder, name, language.target.toLanguageTag(), stats.gzipped));
+            case COMPACT:
+                return new CompactFileCorpus(nativeFile(folder, name, COMPACT_EXTENSION, stats.gzipped));
+            default:
+                throw new Error("unknown type");
+        }
+    }
+
+    public static Corpus rename(Corpus corpus, File folder) {
+        return rename(corpus, folder, corpus.getName());
+    }
+
+    public static Corpus rename(Corpus corpus, File folder, String name) {
+        Language language = corpus.getLanguage();
+        FileStats stats = FileStats.of(CorpusWrapper.unwrap(corpus));
+        return new FileCorpus(nativeFile(folder, name, language.toLanguageTag(), stats.gzipped), name, language);
+    }
 
     // Line count ------------------------------------------------------------------------------------------------------
 
@@ -147,7 +276,7 @@ public class IOCorporaUtils {
             executor.shutdownNow();
         }
 
-        return getCounts(accumulator);
+        return accumulator == null ? Collections.emptyMap() : getCounts(accumulator);
     }
 
     private static Map<LanguageDirection, Counter> doWordCount(MultilingualCorpus corpus) throws IOException {
@@ -251,4 +380,40 @@ public class IOCorporaUtils {
             throw new Error("Unexpected exception", cause);
         }
     }
+
+    private static class ParallelFileCorpusBuilder {
+
+        public final String name;
+        private FileProxy sourceFile = null;
+        private FileProxy targetFile = null;
+
+        public ParallelFileCorpusBuilder(File base) {
+            this.name = base.getName();
+        }
+
+        public void setSourceFile(FileProxy sourceFile) throws IOException {
+            if (this.sourceFile != null)
+                throw new IOException("Duplicated entry file: " + sourceFile);
+            this.sourceFile = sourceFile;
+        }
+
+        public void setTargetFile(FileProxy targetFile) throws IOException {
+            if (this.targetFile != null)
+                throw new IOException("Duplicated entry file: " + targetFile);
+            this.targetFile = targetFile;
+        }
+
+        public ParallelFileCorpus getParallelFileCorpus(LanguageDirection language) {
+            if (sourceFile == null || targetFile == null)
+                return null;
+            return new ParallelFileCorpus(name, language, sourceFile, targetFile);
+        }
+    }
+
+    private static FileProxy.NativeFileProxy nativeFile(File folder, String name, String ext, boolean gzipped) {
+        String filename = name + '.' + ext;
+        if (gzipped) filename += ".gz";
+        return new FileProxy.NativeFileProxy(new File(folder, filename), gzipped);
+    }
+
 }

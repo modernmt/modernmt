@@ -7,4 +7,12 @@ public interface CorpusWrapper extends Corpus {
 
     Corpus getWrappedCorpus();
 
+    static Corpus unwrap(Corpus corpus) {
+        while (corpus instanceof CorpusWrapper) {
+            corpus = ((CorpusWrapper) corpus).getWrappedCorpus();
+        }
+
+        return corpus;
+    }
+
 }

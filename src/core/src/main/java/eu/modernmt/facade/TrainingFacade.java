@@ -1,9 +1,8 @@
 package eu.modernmt.facade;
 
 import eu.modernmt.cleaning.CorporaCleaning;
-import eu.modernmt.io.IOCorporaUtils;
+import eu.modernmt.io.Corpora;
 import eu.modernmt.lang.LanguageDirection;
-import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.processing.ProcessingException;
@@ -101,7 +100,7 @@ public class TrainingFacade {
 
         if (multilingualCorpora != null) {
             for (MultilingualCorpus corpus : multilingualCorpora) {
-                long fileSize = Corpora.fileSize(corpus);
+                long fileSize = Corpora.stats(corpus).size;
                 corpus = CorporaCleaning.wrap(corpus, options);
 
                 if (fileSize < sizeThreshold)
@@ -113,7 +112,7 @@ public class TrainingFacade {
 
         if (monolingualCorpora != null) {
             for (Corpus corpus : monolingualCorpora) {
-                long fileSize = Corpora.fileSize(corpus);
+                long fileSize = Corpora.stats(corpus).size;
                 corpus = CorporaCleaning.wrap(corpus, options);
 
                 if (fileSize < sizeThreshold)
@@ -156,7 +155,7 @@ public class TrainingFacade {
 
     public void deduplicate(List<MultilingualCorpus> corpora, File outputDirectory, int lengthThreshold, boolean sorted) throws IOException {
         long lines = 0;
-        for (long count : IOCorporaUtils.countLines(corpora).values())
+        for (long count : Corpora.countLines(corpora).values())
             lines += count;
 
         FileUtils.deleteDirectory(outputDirectory);
@@ -176,7 +175,7 @@ public class TrainingFacade {
 
     public void deduplicateMonolingual(List<Corpus> corpora, File outputDirectory, int lengthThreshold, boolean sorted) throws IOException {
         long lines = 0;
-        for (long count : IOCorporaUtils.countMonolingualLines(corpora).values())
+        for (long count : Corpora.countMonolingualLines(corpora).values())
             lines += count;
 
         FileUtils.deleteDirectory(outputDirectory);

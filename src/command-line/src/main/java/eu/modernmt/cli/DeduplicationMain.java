@@ -2,18 +2,15 @@ package eu.modernmt.cli;
 
 import eu.modernmt.cli.log4j.Log4jConfiguration;
 import eu.modernmt.facade.ModernMT;
-import eu.modernmt.io.IOCorporaUtils;
+import eu.modernmt.io.Corpora;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
-import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.Level;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -77,7 +74,7 @@ public class DeduplicationMain {
                 throw new ParseException("Input path does not contains valid monolingual data");
 
             if (args.sortBy != null) {
-                IOCorporaUtils.countMonolingualLines(corpora);  // pre-compute lines-count value
+                Corpora.countMonolingualLines(corpora);  // pre-compute lines-count value
                 corpora.sort(new MonolingualCorporaComparator(args.sortBy));
             }
 
@@ -89,7 +86,7 @@ public class DeduplicationMain {
                 throw new ParseException("Input path does not contains valid bilingual data");
 
             if (args.sortBy != null) {
-                IOCorporaUtils.countLines(corpora);  // pre-compute lines-count value
+                Corpora.countLines(corpora);  // pre-compute lines-count value
                 corpora.sort(new MultilingualCorporaComparator(language, args.sortBy));
             }
 

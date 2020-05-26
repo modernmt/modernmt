@@ -1,6 +1,6 @@
 package eu.modernmt.training;
 
-import eu.modernmt.io.IOCorporaUtils;
+import eu.modernmt.io.Corpora;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 
@@ -68,7 +68,7 @@ public class BatchCopyProcess {
         for (MultilingualCorpus corpus : multilingualCorpora) {
             final MultilingualCorpus output = outputFactory.getOutput(corpus);
             futures.add(executor.submit(() -> {
-                IOCorporaUtils.copy(corpus, output);
+                Corpora.copy(corpus, output);
                 return null;
             }));
         }
@@ -77,7 +77,7 @@ public class BatchCopyProcess {
         for (Corpus corpus : monolingualCorpora) {
             final Corpus output = outputFactory.getOutput(corpus);
             futures.add(executor.submit(() -> {
-                IOCorporaUtils.copy(corpus, output);
+                Corpora.copy(corpus, output);
                 return null;
             }));
         }

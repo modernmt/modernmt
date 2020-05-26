@@ -1,6 +1,6 @@
 package eu.modernmt.training;
 
-import eu.modernmt.io.IOCorporaUtils;
+import eu.modernmt.io.Corpora;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.MaskedMultilingualCorpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
@@ -50,7 +50,7 @@ public class PreprocessingPipeline {
         Preprocessor preprocessor = new Preprocessor(threads);
 
         try {
-            Map<LanguageDirection, Long> bilingualCorporaLinesMap = IOCorporaUtils.countLines(maskedMultilingualCorpora, threads);
+            Map<LanguageDirection, Long> bilingualCorporaLinesMap = Corpora.countLines(maskedMultilingualCorpora, threads);
             long extraPartitionsLines = PartitioningUtils.countTotalPartitionsLines(extraPartitions);
 
             for (MultilingualCorpus corpus : maskedMultilingualCorpora) {

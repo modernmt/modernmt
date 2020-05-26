@@ -33,6 +33,10 @@ public interface FileProxy {
             this.gzipped = gzipped;
         }
 
+        public boolean isGzipped() {
+            return gzipped;
+        }
+
         public File getFile() {
             return file;
         }

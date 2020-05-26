@@ -1,9 +1,9 @@
 package eu.modernmt.cli;
 
 import eu.modernmt.cli.log4j.Log4jConfiguration;
+import eu.modernmt.io.Corpora;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
-import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;

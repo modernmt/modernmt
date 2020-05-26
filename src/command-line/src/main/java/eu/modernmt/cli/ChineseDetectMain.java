@@ -2,10 +2,10 @@ package eu.modernmt.cli;
 
 import eu.modernmt.cleaning.detect.ChineseDetector;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
+import eu.modernmt.io.Corpora;
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
 import eu.modernmt.lang.Language;
-import eu.modernmt.model.corpus.Corpora;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
 import org.apache.commons.cli.*;
