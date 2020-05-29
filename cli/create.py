@@ -100,7 +100,7 @@ class CreateActivity(StatefulActivity):
         if os.path.exists(output_nn_path):
             shutil.rmtree(output_nn_path)
 
-        os.rename(self.state.nn_path, output_nn_path)
+        shutil.move(self.state.nn_path, output_nn_path)
 
     def run(self):
         self._logger.info('Training started: engine=%s, lang_pair=%s__%s' %
