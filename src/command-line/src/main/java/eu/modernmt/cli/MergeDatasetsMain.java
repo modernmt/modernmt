@@ -8,6 +8,7 @@ import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.MaskedMultilingualCorpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.MultilingualCorpusWrapper;
+import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
 import eu.modernmt.training.bloomfilter.CorporaBloomFilter;
@@ -128,6 +129,10 @@ public class MergeDatasetsMain {
         corpus = MultilingualCorpusWrapper.unwrap(corpus);
         if (corpus instanceof TMXCorpus) {
             File file = ((FileProxy.NativeFileProxy) ((TMXCorpus) corpus).getFile()).getFile();
+            File dest = new File(output, file.getName());
+            FileUtils.copyFile(file, dest);
+        } else if (corpus instanceof CompactFileCorpus) {
+            File file = ((FileProxy.NativeFileProxy) ((CompactFileCorpus) corpus).getFile()).getFile();
             File dest = new File(output, file.getName());
             FileUtils.copyFile(file, dest);
         } else {
