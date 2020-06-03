@@ -151,7 +151,7 @@ public class MergeDatasetsMain {
             try (MultilingualCorpus.MultilingualLineReader reader = c1.getContentReader()) {
                 MultilingualCorpus.StringPair pair;
                 while ((pair = reader.read()) != null) {
-                    bloomFilter.accept(pair, 0);
+                    bloomFilter.put(pair);
                     writer.write(pair);
                 }
             }
@@ -159,7 +159,7 @@ public class MergeDatasetsMain {
             try (MultilingualCorpus.MultilingualLineReader reader = c2.getContentReader()) {
                 MultilingualCorpus.StringPair pair;
                 while ((pair = reader.read()) != null) {
-                    if (bloomFilter.accept(pair, 0))
+                    if (!bloomFilter.contains(pair))
                         writer.write(pair);
                 }
             }

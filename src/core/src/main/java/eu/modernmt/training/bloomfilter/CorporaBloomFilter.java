@@ -19,26 +19,48 @@ public class CorporaBloomFilter {
         this.bloomFilter = BloomFilter.create(new StringFunnel(), expectedEntries, fpp);
     }
 
-    public boolean accept(MultilingualCorpus.StringPair pair, int lengthThreshold) {
+    public boolean put(MultilingualCorpus.StringPair pair) {
+        synchronized (bloomFilter) {
+            // This is not thread safe, even in v24
+            return bloomFilter.put(CorporaBloomFilter.StringFunnel.toString(pair));
+        }
+    }
+
+    public boolean put(String line) {
+        synchronized (bloomFilter) {
+            // This is not thread safe, even in v24
+            return bloomFilter.put(line);
+        }
+    }
+
+    public boolean contains(MultilingualCorpus.StringPair pair) {
+        synchronized (bloomFilter) {
+            // This is not thread safe, even in v24
+            return bloomFilter.mightContain(CorporaBloomFilter.StringFunnel.toString(pair));
+        }
+    }
+
+    public boolean contains(String line) {
+        synchronized (bloomFilter) {
+            // This is not thread safe, even in v24
+            return bloomFilter.mightContain(line);
+        }
+    }
+
+    boolean accept(MultilingualCorpus.StringPair pair, int lengthThreshold) {
         if (lengthThreshold > 0 &&
                 pair.source.length() < lengthThreshold && pair.target.length() < lengthThreshold) {
             return true;
         } else {
-            synchronized (bloomFilter) {
-                // This is not thread safe, even in v24
-                return bloomFilter.put(CorporaBloomFilter.StringFunnel.toString(pair));
-            }
+            return put(pair);
         }
     }
 
-    public boolean accept(String line, int lengthThreshold) {
+    boolean accept(String line, int lengthThreshold) {
         if (lengthThreshold > 0 && line.length() < lengthThreshold) {
             return true;
         } else {
-            synchronized (CorporaBloomFilter.this) {
-                // This is not thread safe, even in v24
-                return bloomFilter.put(line);
-            }
+            return put(line);
         }
     }
 
