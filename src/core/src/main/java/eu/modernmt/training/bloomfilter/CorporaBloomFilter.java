@@ -19,7 +19,7 @@ public class CorporaBloomFilter {
         this.bloomFilter = BloomFilter.create(new StringFunnel(), expectedEntries, fpp);
     }
 
-    boolean accept(MultilingualCorpus.StringPair pair, int lengthThreshold) {
+    public boolean accept(MultilingualCorpus.StringPair pair, int lengthThreshold) {
         if (lengthThreshold > 0 &&
                 pair.source.length() < lengthThreshold && pair.target.length() < lengthThreshold) {
             return true;
@@ -31,7 +31,7 @@ public class CorporaBloomFilter {
         }
     }
 
-    boolean accept(String line, int lengthThreshold) {
+    public boolean accept(String line, int lengthThreshold) {
         if (lengthThreshold > 0 && line.length() < lengthThreshold) {
             return true;
         } else {
