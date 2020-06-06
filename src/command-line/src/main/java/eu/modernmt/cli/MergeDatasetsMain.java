@@ -130,18 +130,18 @@ public class MergeDatasetsMain {
         if (corpus instanceof TMXCorpus) {
             File file = ((FileProxy.NativeFileProxy) ((TMXCorpus) corpus).getFile()).getFile();
             File dest = new File(output, file.getName());
-            FileUtils.copyFile(file, dest);
+            FileUtils.moveFile(file, dest);
         } else if (corpus instanceof CompactFileCorpus) {
             File file = ((FileProxy.NativeFileProxy) ((CompactFileCorpus) corpus).getFile()).getFile();
             File dest = new File(output, file.getName());
-            FileUtils.copyFile(file, dest);
+            FileUtils.moveFile(file, dest);
         } else {
             File source = ((FileProxy.NativeFileProxy) ((ParallelFileCorpus) corpus).getSourceFile()).getFile();
             File target = ((FileProxy.NativeFileProxy) ((ParallelFileCorpus) corpus).getTargetFile()).getFile();
             File sourceDest = new File(output, source.getName());
             File targetDest = new File(output, target.getName());
-            FileUtils.copyFile(source, sourceDest);
-            FileUtils.copyFile(target, targetDest);
+            FileUtils.moveFile(source, sourceDest);
+            FileUtils.moveFile(target, targetDest);
         }
 
         return null;
@@ -170,7 +170,27 @@ public class MergeDatasetsMain {
             }
         }
 
+        delete(c1);
+        delete(c2);
+
         return null;
+    }
+
+    private static void delete(MultilingualCorpus corpus) {
+        corpus = MultilingualCorpusWrapper.unwrap(corpus);
+
+        if (corpus instanceof TMXCorpus) {
+            File file = ((FileProxy.NativeFileProxy) ((TMXCorpus) corpus).getFile()).getFile();
+            FileUtils.deleteQuietly(file);
+        } else if (corpus instanceof CompactFileCorpus) {
+            File file = ((FileProxy.NativeFileProxy) ((CompactFileCorpus) corpus).getFile()).getFile();
+            FileUtils.deleteQuietly(file);
+        } else {
+            File source = ((FileProxy.NativeFileProxy) ((ParallelFileCorpus) corpus).getSourceFile()).getFile();
+            File target = ((FileProxy.NativeFileProxy) ((ParallelFileCorpus) corpus).getTargetFile()).getFile();
+            FileUtils.deleteQuietly(source);
+            FileUtils.deleteQuietly(target);
+        }
     }
 
 }
