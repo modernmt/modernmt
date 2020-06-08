@@ -30,6 +30,7 @@ public class TrainingPipelineMain {
             Option devPath = Option.builder().longOpt("dev").hasArg().required(false).build();
             Option testPath = Option.builder().longOpt("test").hasArg().required(false).build();
             Option partitionSize = Option.builder().longOpt("size").hasArg().required(false).build();
+            Option quiet = Option.builder().longOpt("quiet").required(false).build();
 
             cliOptions = new Options();
             cliOptions.addOption(sourceLanguage);
@@ -39,6 +40,7 @@ public class TrainingPipelineMain {
             cliOptions.addOption(devPath);
             cliOptions.addOption(testPath);
             cliOptions.addOption(partitionSize);
+            cliOptions.addOption(quiet);
         }
 
         public final LanguageDirection language;
@@ -47,6 +49,7 @@ public class TrainingPipelineMain {
         public final File devRoot;
         public final File testRoot;
         public final int partitionSize;
+        public final boolean quiet;
 
         public Args(String[] args) throws ParseException {
             CommandLineParser parser = new DefaultParser();
@@ -66,6 +69,7 @@ public class TrainingPipelineMain {
             devRoot = cli.hasOption("dev") ? new File(cli.getOptionValue("dev")) : null;
             testRoot = cli.hasOption("test") ? new File(cli.getOptionValue("test")) : null;
             partitionSize = cli.hasOption("size") ? Integer.parseInt(cli.getOptionValue("size")) : 0;
+            quiet = cli.hasOption("quiet");
         }
 
     }
@@ -76,21 +80,23 @@ public class TrainingPipelineMain {
         Args args = new Args(_args);
 
         List<MultilingualCorpus> corpora = Corpora.list(args.language, args.inputRoots);
-        if (corpora.isEmpty())
-            throw new ParseException("Input path does not contains valid bilingual data");
+        if (!corpora.isEmpty()) {
+            TrainingFacade.TrainingOptions options = new TrainingFacade.TrainingOptions();
 
-        TrainingFacade.TrainingOptions options = new TrainingFacade.TrainingOptions();
+            if (args.partitionSize > 0)
+                options.partitionSize = args.partitionSize;
 
-        if (args.partitionSize > 0)
-            options.partitionSize = args.partitionSize;
+            if (args.devRoot != null)
+                options.developmentPartition = args.devRoot;
 
-        if (args.devRoot != null)
-            options.developmentPartition = args.devRoot;
+            if (args.testRoot != null)
+                options.testPartition = args.testRoot;
 
-        if (args.testRoot != null)
-            options.testPartition = args.testRoot;
-
-        ModernMT.training.preprocess(args.language, corpora, args.outputRoot, options);
+            ModernMT.training.preprocess(args.language, corpora, args.outputRoot, options);
+        } else {
+            if (!args.quiet)
+                throw new ParseException("Input path does not contains valid bilingual data");
+        }
     }
 
 }

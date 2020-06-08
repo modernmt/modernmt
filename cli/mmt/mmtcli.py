@@ -97,7 +97,8 @@ def mmt_tmsclean(src_lang, tgt_lang, in_path, out_path, out_format=None, filters
     osutils.shell_exec(command, env=mmt_env())
 
 
-def mmt_preprocess(src_lang, tgt_lang, in_paths, out_path, dev_path=None, test_path=None, partition_size=None):
+def mmt_preprocess(src_lang, tgt_lang, in_paths, out_path, dev_path=None, test_path=None,
+                   partition_size=None, quiet=False):
     args = ['-s', src_lang, '-t', tgt_lang, '--output', out_path, '--input']
     if isinstance(in_paths, str):
         in_paths = [in_paths]
@@ -110,6 +111,8 @@ def mmt_preprocess(src_lang, tgt_lang, in_paths, out_path, dev_path=None, test_p
         args += ['--dev', dev_path]
     if test_path is not None:
         args += ['--test', test_path]
+    if quiet:
+        args.append('--quiet')
 
     command = mmt_java('eu.modernmt.cli.TrainingPipelineMain', args)
     osutils.shell_exec(command, env=mmt_env())
