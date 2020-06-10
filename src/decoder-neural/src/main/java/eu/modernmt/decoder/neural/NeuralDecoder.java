@@ -133,6 +133,9 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
             lock = scheduler.schedule(direction, split);
         } else {
             List<Sentence> textSplits = split(text);
+            for (Sentence split : textSplits) {
+                logger.info(split.toString());
+            }
             splits = new TranslationSplit[textSplits.size()];
 
             int i = 0;

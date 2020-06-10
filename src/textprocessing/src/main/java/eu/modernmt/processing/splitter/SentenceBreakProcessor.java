@@ -1,6 +1,8 @@
 package eu.modernmt.processing.splitter;
 
 import eu.modernmt.model.Sentence;
+import eu.modernmt.model.Token;
+import eu.modernmt.model.WhitespaceTag;
 import eu.modernmt.model.Word;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
@@ -8,6 +10,8 @@ import eu.modernmt.processing.TextProcessor;
 import java.util.Map;
 
 public class SentenceBreakProcessor extends TextProcessor<Sentence, Sentence> {
+
+    public static final String SPLIT_BY_NEWLINE = "SentenceBreakProcessor.SPLIT_BY_NEWLINE";
 
     private static boolean isBreakToken(String text) {
         int len = 0;
@@ -50,8 +54,7 @@ public class SentenceBreakProcessor extends TextProcessor<Sentence, Sentence> {
         return '\0';
     }
 
-    @Override
-    public Sentence call(Sentence sentence, Map<String, Object> metadata) throws ProcessingException {
+    private static void breakByPunctuation(Sentence sentence) {
         Word[] words = sentence.getWords();
 
         Word sentenceBreakCandidate = null;
@@ -76,6 +79,28 @@ public class SentenceBreakProcessor extends TextProcessor<Sentence, Sentence> {
 
         if (sentenceBreakCandidate != null)
             sentenceBreakCandidate.setSentenceBreak(true);
+    }
+
+    private static void breakByNewline(Sentence sentence) {
+        Word lastWord = null;
+
+        for (Token token : sentence) {
+            if (token instanceof Word) {
+                lastWord = (Word) token;
+            } else if (token instanceof WhitespaceTag) {
+                if (lastWord != null && token.toString().contains("\n")) {
+                    lastWord.setSentenceBreak(true);
+                }
+            }
+        }
+    }
+
+    @Override
+    public Sentence call(Sentence sentence, Map<String, Object> metadata) throws ProcessingException {
+        breakByPunctuation(sentence);
+
+        if (metadata.containsKey(SPLIT_BY_NEWLINE))
+            breakByNewline(sentence);
 
         return sentence;
     }

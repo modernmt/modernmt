@@ -14,6 +14,7 @@ import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Priority;
 import eu.modernmt.persistence.PersistenceException;
+import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.tags.format.InputFormat;
 
@@ -34,13 +35,17 @@ public class Translate extends ObjectAction<TranslationResponse> {
         TranslationResponse result = new TranslationResponse(params.priority);
         result.verbose = params.verbose;
 
+        Preprocessor.Options processing = new Preprocessor.Options();
+        processing.format = params.format;
+        processing.splitByNewline = params.splitByNewline;
+
         if (params.context != null) {
-            result.translation = ModernMT.translation.get(params.user, params.direction, params.format, params.query, params.context, params.nbest, params.priority, params.timeout);
+            result.translation = ModernMT.translation.get(params.user, params.direction, processing, params.query, params.context, params.nbest, params.priority, params.timeout);
         } else if (params.contextString != null) {
             result.context = ModernMT.translation.getContextVector(params.user, params.direction, params.contextString, params.contextLimit);
-            result.translation = ModernMT.translation.get(params.user, params.direction, params.format, params.query, result.context, params.nbest, params.priority, params.timeout);
+            result.translation = ModernMT.translation.get(params.user, params.direction, processing, params.query, result.context, params.nbest, params.priority, params.timeout);
         } else {
-            result.translation = ModernMT.translation.get(params.user, params.direction, params.format, params.query, params.nbest, params.priority, params.timeout);
+            result.translation = ModernMT.translation.get(params.user, params.direction, processing, params.query, params.nbest, params.priority, params.timeout);
         }
 
 
@@ -58,6 +63,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
     public static class Params extends Parameters {
 
         public final InputFormat.Type format;
+        public final boolean splitByNewline;
         public final UUID user;
         public final LanguageDirection direction;
         public final String query;
@@ -73,6 +79,8 @@ public class Translate extends ObjectAction<TranslationResponse> {
             super(req);
 
             format = getEnum("if", InputFormat.Type.class, null);
+            splitByNewline = getBoolean("split_nl", false);
+
             user = getUUID("user", null);
 
             query = getString("q", true);
