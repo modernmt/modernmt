@@ -65,7 +65,6 @@ public class PostprocessorTest {
 
     @Test
     public void testStandardSpacingMonotone() throws Throwable {
-
         String sourceStr = "Hello, world!";
         String targetStr = "ciao , mondo !";
         String alignStr = "0-0 1-1 2-2 3-3";
@@ -78,7 +77,6 @@ public class PostprocessorTest {
 
     @Test
     public void testForcedSpacingMonotone() throws Throwable {
-
         String sourceStr = "Hello , world!";
         String targetStr = "ciao , mondo !";
         String alignStr = "0-0 1-1 2-2 3-3";
@@ -91,7 +89,6 @@ public class PostprocessorTest {
 
     @Test
     public void testOpeningNotEmptyMonotone() throws Throwable {
-
         String sourceStr = "Hello <b>world</b>!";
         String targetStr = "ciao mondo !";
         String alignStr = "0-0 1-1 2-2";
@@ -104,7 +101,6 @@ public class PostprocessorTest {
 
     @Test
     public void testOpeningNotEmptyMonotoneWithoutSpace() throws Throwable {
-
         String sourceStr = "Hello<b>world</b>!";
         String targetStr = "ciao mondo !";
         String alignStr = "0-0 1-1 2-2";
@@ -118,7 +114,6 @@ public class PostprocessorTest {
 
     @Test
     public void testFrenchEnglishRequiredSpaces() throws Throwable {
-
         String sourceStr = "A#A";
         String targetStr = "A # A";
         String alignStr = "0-0 1-1 2-2";
@@ -132,7 +127,6 @@ public class PostprocessorTest {
 
     @Test
     public void testFrenchEnglishWithoutTags() throws Throwable {
-
         String sourceStr = "A#A Par nature,";
         String targetStr = "A # A By nature ,";
         String alignStr = "0-0 1-1 2-2 3-3 4-3 4-4";
@@ -145,7 +139,6 @@ public class PostprocessorTest {
 
     @Test
     public void testFrenchEnglishWithTags() throws Throwable {
-
         String sourceStr = "<a>A#A</a> Par nature,";
         String targetStr = "A # A By nature ,";
         String alignStr = "0-0 1-1 2-2 3-3 4-3 4-4";
@@ -156,12 +149,8 @@ public class PostprocessorTest {
         test(sourceStr, targetStr, alignStr, expectedOutput, expectedOutputNoTag, new LanguageDirection(Language.FRENCH, Language.ENGLISH));
     }
 
-
-
-
     @Test
     public void testFrenchEnglishWithComplexAlignment() throws Throwable {
-
         String sourceStr = "A#A <LbxTag001>Par<LbxTag002>nature,<LbxTag003> l' atteinte<LbxTag004> de<LbxTag005> ces<LbxTag006> objectifs est<LbxTag007> soumise<LbxTag008> à<LbxTag009> de<LbxTag010> nombreux<LbxTag011> risques<LbxTag012> et<LbxTag013> incertitudes<LbxTag014> susceptibles.<LbxTag015>";
         String targetStr = "A # A By nature , the achievement of these objectives is subject to many risks and uncertainties .";
         String alignStr = "0-0 1-1 2-2 3-3 4-3 4-4 5-8 7-3 7-5 8-6 9-6 10-10 11-11 12-12 13-11 14-13 15-14 16-15 17-16 17-17 18-17 19-18 19-17 20-18";
@@ -174,7 +163,6 @@ public class PostprocessorTest {
 
     @Test
     public void testEmbeddedTokensWithNonMonotoneAlignment() throws Throwable {
-
         String sourceStr = "example with <a>nested <b>tag</b></a>";
         String targetStr = "esempio con tag nidificato";
         String alignStr = "0-0 1-1 2-3 3-2";
@@ -188,7 +176,6 @@ public class PostprocessorTest {
 
     @Test
     public void testTagInsideWord() throws Throwable {
-
         String sourceStr = "C<a>lear cookies";
         String targetStr = "E limina i cookies";
         String alignStr = "0-0 1-1 2-2 2-3";
@@ -201,7 +188,6 @@ public class PostprocessorTest {
 
     @Test
     public void testTagWithApostrophe() throws Throwable {
-
         String sourceStr = "The <a>URL</a>";
         String targetStr = "L' URL";
         String alignStr = "0-0 1-1";
@@ -214,7 +200,6 @@ public class PostprocessorTest {
 
     @Test
     public void testApostrophe() throws Throwable {
-
         String sourceStr = "The URL and the email";
         String targetStr = "L' URL e l' email";
         String alignStr = "0-0 1-1 2-2 3-3 4-4";
@@ -227,7 +212,6 @@ public class PostprocessorTest {
 
     @Test
     public void testApostropheAndTag() throws Throwable {
-
         String sourceStr = "The URL <a>and</a> <b>the email</b>";
         String targetStr = "L' URL e l' email";
         String alignStr = "0-0 1-1 2-2 3-3 4-4";

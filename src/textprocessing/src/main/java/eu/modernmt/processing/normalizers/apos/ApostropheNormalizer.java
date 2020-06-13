@@ -79,7 +79,7 @@ public class ApostropheNormalizer extends TextProcessor<SentenceBuilder, Sentenc
             int start = matcher.start();
             int end = matcher.end();
 
-            replace(editor, string, start - 1, end - 1);
+            replace(editor, string, Math.max(0, start - 1), Math.max(0, end - 1));
         }
 
         return editor.commit();
