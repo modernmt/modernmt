@@ -1,9 +1,6 @@
 <pipeline>
     <!-- Pre EditableString processors -->
     <processor>eu.modernmt.processing.normalizers.ControlCharsRemover</processor>
-    <processor source="en fr it nl">
-        eu.modernmt.processing.normalizers.apos.ApostropheNormalizer
-    </processor>
     <processor>eu.modernmt.processing.string.SentenceConstructor</processor>
 
     <!-- Tag preprocessors -->
@@ -15,6 +12,9 @@
     <!-- String normalization -->
     <processor>eu.modernmt.processing.normalizers.RareCharsNormalizer</processor>
     <processor>eu.modernmt.processing.normalizers.WhitespacesNormalizer</processor>
+    <processor source="en fr it nl">
+        eu.modernmt.processing.normalizers.apos.ApostropheNormalizer
+    </processor>
 
     <!-- Best for small training corpora, skip vor large training sets -->
     <!--<processor>eu.modernmt.processing.numbers.NumericPlaceholderNormalizer</processor>-->

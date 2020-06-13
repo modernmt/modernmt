@@ -6,6 +6,7 @@ import eu.modernmt.lang.Language;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
+import eu.modernmt.processing.string.SentenceBuilder;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -16,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class ApostropheNormalizer extends TextProcessor<String, String> {
+public class ApostropheNormalizer extends TextProcessor<SentenceBuilder, SentenceBuilder> {
 
     private static final ConcurrentHashMap<String, Pattern> cache = new ConcurrentHashMap<>();
 
@@ -69,51 +70,55 @@ public class ApostropheNormalizer extends TextProcessor<String, String> {
     }
 
     @Override
-    public String call(String string, Map<String, Object> metadata) throws ProcessingException {
-        String placeholder = ' ' + string + ' ';
+    public SentenceBuilder call(SentenceBuilder param, Map<String, Object> metadata) throws ProcessingException {
+        String string = param.toString();
+        Matcher matcher = regex.matcher(' ' + string + ' ');
 
-        BitSet bits = new BitSet(placeholder.length());
-        Matcher matcher = regex.matcher(placeholder);
+        SentenceBuilder.Editor editor = param.edit();
+        while (matcher.find()) {
+            int start = matcher.start();
+            int end = matcher.end();
 
-        while (matcher.find())
-            annotate(placeholder, bits, matcher.start(), matcher.end());
+            replace(editor, string, start - 1, end - 1);
+        }
 
-        return bits.isEmpty() ? string : compile(bits, placeholder);
+        return editor.commit();
     }
 
-    private static void annotate(String string, BitSet bits, int start, int end) {
+    private static void replace(SentenceBuilder.Editor editor, String string, int start, int end) {
+        // Search for apostrophe
+        int index = -1;
+        char a = '\0';
         for (int i = start; i < end; i++) {
-            switch (string.charAt(i)) {
-                case '\'':
-                case '`':
-                case '‘':
-                case '’':
-                    for (int j = i + 1; j < end; j++) {
-                        if (Character.isWhitespace(string.charAt(j)))
-                            bits.set(j);
-                        else
-                            break;
-                    }
-
-                    for (int j = i - 1; j >= start; j--) {
-                        if (Character.isWhitespace(string.charAt(j)))
-                            bits.set(j);
-                        else
-                            break;
-                    }
-
-                    break;
+            char c = string.charAt(i);
+            if (c == '\'' || c == '`' || c == '‘' || c == '’') {
+                index = i;
+                a = c;
+                break;
             }
         }
-    }
 
-    private String compile(BitSet bits, String string) {
-        StringBuilder result = new StringBuilder(string.length());
-        for (int i = 1; i < string.length() - 1; i++) {
-            if (!bits.get(i))
-                result.append(string.charAt(i));
+        if (index < 0)
+            return;
+
+        // Find left and right edge of replacement
+        int right = end;
+        for (int i = index + 1; i < end; i++) {
+            if (!Character.isWhitespace(string.charAt(i))) {
+                right = i;
+                break;
+            }
         }
-        return result.toString();
+
+        int left = start;
+        for (int i = index - 1; i >= start; i--) {
+            if (!Character.isWhitespace(string.charAt(i))) {
+                left = i + 1;
+                break;
+            }
+        }
+
+        editor.replace(left, right - left, Character.toString(a));
     }
 
 }

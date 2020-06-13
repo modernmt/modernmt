@@ -1,5 +1,7 @@
 package eu.modernmt.processing.string;
 
+import java.util.BitSet;
+
 /**
  * * Created by andrea on 22/02/17.
  * <p>
@@ -32,6 +34,7 @@ public class Transformation {
     public final String text;        //string to edit
     public final String replacement; //string to use to replace text
     public final TokenFactory tokenFactory;
+    public String originalText = null;
 
     /**
      * Constructor that generates a Transformation object

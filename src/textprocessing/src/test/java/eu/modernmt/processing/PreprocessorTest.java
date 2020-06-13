@@ -18,6 +18,10 @@ public class PreprocessorTest {
     private static final LanguageDirection language = new LanguageDirection(Language.ENGLISH, Language.ITALIAN);
 
     private static Sentence process(String text) throws ProcessingException {
+        return process(language, text);
+    }
+
+    private static Sentence process(LanguageDirection language, String text) throws ProcessingException {
         Preprocessor preprocessor = null;
 
         try {
@@ -30,6 +34,39 @@ public class PreprocessorTest {
         }
     }
 
+    private static Word w(String text) {
+        return new Word(text, text, null, null);
+    }
+
+    private static Word _w(String text) {
+        return new Word(text, text, " ", null);
+    }
+
+    private static Word w_(String text) {
+        return new Word(text, text, null, " ");
+    }
+
+    private static Word _w_(String text) {
+        return new Word(text, text, " ", " ");
+    }
+
+    private static XMLTag t(String text, int pos) {
+        return XMLTag.fromText(text, null, null, pos);
+    }
+
+    private static XMLTag _t(String text, int pos) {
+        return XMLTag.fromText(text, " ", null, pos);
+    }
+
+    private static XMLTag t_(String text, int pos) {
+        return XMLTag.fromText(text, null, " ", pos);
+    }
+
+    private static XMLTag _t_(String text, int pos) {
+        return XMLTag.fromText(text, " ", " ", pos);
+    }
+
+
     @Test
     public void testCommonSentence() throws ProcessingException {
         String text = "Hello world!";
@@ -40,9 +77,7 @@ public class PreprocessorTest {
         assertFalse(sentence.hasTags());
 
         assertArrayEquals(new Word[]{
-                new Word("Hello", "Hello", null," "),
-                new Word("world", "world", " ",null),
-                new Word("!", "!",  null,null),
+                w_("Hello"), _w("world"), w("!")
         }, sentence.getWords());
     }
 
@@ -56,12 +91,10 @@ public class PreprocessorTest {
         assertTrue(sentence.hasTags());
 
         assertArrayEquals(new Word[]{
-                new Word("Hello", "Hello", " "," "),
-                new Word("world", "world", " ", null),
-                new Word("!", "!", null,null),
+                _w_("Hello"), _w("world"), w("!")
         }, sentence.getWords());
         assertArrayEquals(new Tag[]{
-                XMLTag.fromText("<a>", null, " ", 0)
+                t_("<a>", 0)
         }, sentence.getTags());
     }
 
@@ -75,12 +108,10 @@ public class PreprocessorTest {
         assertTrue(sentence.hasTags());
 
         assertArrayEquals(new Word[]{
-                new Word("Hello", "Hello", null,null),
-                new Word("world", "world", " ", null),
-                new Word("!", "!", null, null),
+                w("Hello"), _w("world"), w("!")
         }, sentence.getWords());
         assertArrayEquals(new Tag[]{
-                XMLTag.fromText("<a>", null, " ", 1)
+                t_("<a>", 1)
         }, sentence.getTags());
     }
 
@@ -94,13 +125,10 @@ public class PreprocessorTest {
         assertTrue(sentence.hasTags());
 
         assertArrayEquals(new Word[]{
-                new Word("Hello", "Hello", null, null),
-                new Word("world", "world", null, null),
-                new Word("!", "!", null, null),
+                w("Hello"), w("world"), w("!")
         }, sentence.getWords());
         assertArrayEquals(new Tag[]{
-                XMLTag.fromText("<a>", null, " ", 1),
-                XMLTag.fromText("<b>", " ", null, 1)
+                t_("<a>", 1), _t("<b>", 1)
         }, sentence.getTags());
     }
 
@@ -114,11 +142,10 @@ public class PreprocessorTest {
         assertTrue(sentence.hasTags());
 
         assertArrayEquals(new Word[]{
-                new Word("Hello", "Hello", null, null),
-                new Word("guys", "guys", null, null),
+                w("Hello"), w("guys")
         }, sentence.getWords());
         assertArrayEquals(new Tag[]{
-                XMLTag.fromText("<a>", null, null, 1)
+                t("<a>", 1)
         }, sentence.getTags());
     }
 
@@ -132,11 +159,10 @@ public class PreprocessorTest {
         assertTrue(sentence.hasTags());
 
         assertArrayEquals(new Word[]{
-                new Word("Hello", "Hello", null, null),
-                new Word("!", "!", null, null),
+                w("Hello"), w("!")
         }, sentence.getWords());
         assertArrayEquals(new Tag[]{
-                XMLTag.fromText("<a>", null, null, 1)
+                t("<a>", 1)
         }, sentence.getTags());
     }
 
@@ -150,11 +176,10 @@ public class PreprocessorTest {
         assertTrue(sentence.hasTags());
 
         assertArrayEquals(new Word[]{
-                new Word("Hello", "Hello", null, null),
-                new Word("!", "!", " ", null),
+                w("Hello"), _w("!")
         }, sentence.getWords());
         assertArrayEquals(new Tag[]{
-                XMLTag.fromText("<a>", null, " ", 1)
+                t_("<a>", 1)
         }, sentence.getTags());
     }
 
@@ -168,11 +193,66 @@ public class PreprocessorTest {
         assertTrue(sentence.hasTags());
 
         assertArrayEquals(new Word[]{
-                new Word("Hello", "Hello", null, " "),
-                new Word("!", "!", null, null),
+                w_("Hello"), w("!")
         }, sentence.getWords());
         assertArrayEquals(new Tag[]{
-                XMLTag.fromText("<a>", " ", null, 1)
+                _t("<a>", 1)
+        }, sentence.getTags());
+    }
+
+    @Test
+    public void testTagAfterApostrophe() throws ProcessingException {
+        String text = "Controlla l'<b>accesso</b> al <i>file</i>.";
+        String strippedText = "Controlla l'accesso al file.";
+        Sentence sentence = process(language.reversed(), text);
+
+        assertEquals(text, sentence.toString(true, false));
+        assertEquals(strippedText, sentence.toString(false, false));
+        assertTrue(sentence.hasTags());
+
+        assertArrayEquals(new Word[]{
+                w_("Controlla"), _w("l'"), w("accesso"), _w_("al"), w("file"), w(".")
+        }, sentence.getWords());
+        assertArrayEquals(new Tag[]{
+                t("<b>", 2), t_("</b>", 3), _t("<i>", 4), t("</i>", 5)
+        }, sentence.getTags());
+    }
+
+    @Test
+    public void testTagBeforeApostrophe() throws ProcessingException {
+        String text = "Controlla l<b>'accesso</b> al <i>file</i>.";
+        String correctedText = "Controlla l'<b>accesso</b> al <i>file</i>.";
+        String strippedText = "Controlla l'accesso al file.";
+        Sentence sentence = process(language.reversed(), text);
+
+        assertEquals(correctedText, sentence.toString(true, false));
+        assertEquals(strippedText, sentence.toString(false, false));
+        assertTrue(sentence.hasTags());
+
+        assertArrayEquals(new Word[]{
+                w_("Controlla"), _w("l'"), w("accesso"), _w_("al"), w("file"), w(".")
+        }, sentence.getWords());
+        assertArrayEquals(new Tag[]{
+                t("<b>", 2), t_("</b>", 3), _t("<i>", 4), t("</i>", 5)
+        }, sentence.getTags());
+    }
+
+    @Test
+    public void testTagAroundApostrophe() throws ProcessingException {
+        String text = "Controlla l<b>'</b>accesso al <i>file</i>.";
+        String correctedText = "Controlla l'<b></b>accesso al <i>file</i>.";
+        String strippedText = "Controlla l'accesso al file.";
+        Sentence sentence = process(language.reversed(), text);
+
+        assertEquals(correctedText, sentence.toString(true, false));
+        assertEquals(strippedText, sentence.toString(false, false));
+        assertTrue(sentence.hasTags());
+
+        assertArrayEquals(new Word[]{
+                w_("Controlla"), _w("l'"), w_("accesso"), _w_("al"), w("file"), w(".")
+        }, sentence.getWords());
+        assertArrayEquals(new Tag[]{
+                t("<b>", 2), t("</b>", 2), _t("<i>", 4), t("</i>", 5)
         }, sentence.getTags());
     }
 
