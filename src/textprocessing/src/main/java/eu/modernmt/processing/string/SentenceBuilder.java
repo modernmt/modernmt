@@ -353,9 +353,10 @@ public class SentenceBuilder {
 
             /*generate the Token*/
             Token token = tokenFactory.build(transformation.originalText, placeholder, leftSpace, rightSpace, tagPosition);
-            token.setHiddenLeftSpace(hasHiddenLeftSpace);
-            token.setHiddenRightSpace(hasHiddenRightSpace);
-
+            if (token instanceof  Word) {
+                ((Word) token).setHiddenLeftSpace(hasHiddenLeftSpace);
+                ((Word) token).setHiddenRightSpace(hasHiddenRightSpace);
+            }
             /*put the token in the separate list corresponding to its class*/
             if (token instanceof Tag) {
                 tags.add((Tag) token);

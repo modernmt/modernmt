@@ -17,26 +17,6 @@ public class Token implements Serializable {
     // the original string between this token and the next one
     protected String rightSpace;
 
-    // the attribute hasHiddenLeftSpace is:
-    // - true, if between this token and the closest left Word should be present a space (according to the (de)tokenization modules)),
-    //        but the space is not actually present because there is a Token in-between
-    // - false, otherwise
-    // The attribute is set during the creation of the source sentence, and it is projected from the source to the target by the WhiteSpaceProjector
-    // The attribute is needed for having the right spaces:
-    // - when the sentence is printed without tags (XMLStripped)
-    // - when spaces are projected to the target sentence; Remind that tags and words are re-aligned
-    private boolean hasHiddenLeftSpace;
-
-    // the attribute hasHiddenLeftSpace is:
-    // - true, if between this token and the closest left Word should be present a space (according to the (de)tokenization modules)),
-    //        but the space is not actually present because there is a Token in-between
-    // - false, otherwise
-    // The attribute is set during the creation of the source sentence, and it is projected from the source to the target by the WhiteSpaceProjector
-    // The attribute is needed for having the right spaces:
-    // - when the sentence is printed without tags (XMLStripped)
-    // - when spaces are projected to the target sentence; Remind that tags and words are re-aligned
-    private boolean hasHiddenRightSpace;
-
     // if true, this token mark an end of sentence
     private boolean sentenceBreak;
 
@@ -46,9 +26,6 @@ public class Token implements Serializable {
         this.placeholder = placeholder;
         this.leftSpace = leftSpace;
         this.rightSpace = rightSpace;
-
-        this.hasHiddenLeftSpace = false;
-        this.hasHiddenRightSpace = false;
 
         this.sentenceBreak = false;
     }
@@ -95,22 +72,6 @@ public class Token implements Serializable {
 
     public void setRightSpace(String space) {
         this.rightSpace = (space != null && space.isEmpty()) ? null : space;
-    }
-
-    public boolean hasHiddenLeftSpace() {
-        return hasHiddenLeftSpace;
-    }
-
-    public boolean hasHiddenRightSpace() {
-        return hasHiddenRightSpace;
-    }
-
-    public void setHiddenLeftSpace(boolean hasHiddenLeftSpace) {
-        this.hasHiddenLeftSpace = hasHiddenLeftSpace;
-    }
-
-    public void setHiddenRightSpace(boolean hasHiddenRightSpace) {
-        this.hasHiddenRightSpace = hasHiddenRightSpace;
     }
 
     public Token(String placeholder) {
