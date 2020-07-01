@@ -1,8 +1,6 @@
 package eu.modernmt.processing.builder;
 
-import eu.modernmt.RuntimeErrorException;
 import eu.modernmt.lang.Language;
-import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.ProcessingPipeline;
 import eu.modernmt.processing.TextProcessor;
 
@@ -16,16 +14,15 @@ import java.util.List;
 public abstract class PipelineBuilder<P, R> {
 
     private final List<AbstractBuilder> builders;
-    private final Class<ProcessingPipeline> pipelineClass;
+    private final Class<? extends ProcessingPipeline<P, R>> pipelineClass;
 
-    protected PipelineBuilder(List<AbstractBuilder> builders, Class<ProcessingPipeline> pipelineClass) {
+    protected PipelineBuilder(List<AbstractBuilder> builders, Class<? extends ProcessingPipeline<P, R>> pipelineClass) {
         this.builders = builders;
         this.pipelineClass = pipelineClass;
     }
 
-    @SuppressWarnings("unchecked")
-    public final ProcessingPipeline<P, R> newPipeline(Language source, Language target) throws ProcessingException {
-        ArrayList<TextProcessor> processors = new ArrayList<>(builders.size());
+    public final ProcessingPipeline<P, R> newPipeline(Language source, Language target) {
+        ArrayList<TextProcessor<?, ?>> processors = new ArrayList<>(builders.size());
 
         for (AbstractBuilder builder : builders) {
             if (builder.accept(source, target))
@@ -33,9 +30,9 @@ public abstract class PipelineBuilder<P, R> {
         }
 
         try {
-            return (ProcessingPipeline<P, R>) pipelineClass.getConstructor(List.class).newInstance(processors);
+            return pipelineClass.getConstructor(List.class).newInstance(processors);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            throw new RuntimeErrorException("Failed to instantiate class " + pipelineClass, e);
+            throw new Error("Failed to instantiate class " + pipelineClass, e);
         }
     }
 

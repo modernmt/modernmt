@@ -1,10 +1,8 @@
 package eu.modernmt.processing.detokenizer.jflex;
 
 import eu.modernmt.RuntimeErrorException;
-import eu.modernmt.io.RuntimeIOException;
 import eu.modernmt.lang.Language;
 import eu.modernmt.model.Translation;
-import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.detokenizer.jflex.annotators.*;
 
@@ -85,7 +83,7 @@ public class JFlexDetokenizer extends TextProcessor<Translation, Translation> {
         try {
             return annotator.next();
         } catch (IOException e) {
-            throw new RuntimeErrorException("IOException from CharArrayReader", e);
+            throw new RuntimeErrorException("IOException thrown by CharArrayReader", e);
         }
     }
 

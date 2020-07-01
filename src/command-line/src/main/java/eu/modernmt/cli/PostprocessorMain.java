@@ -133,7 +133,7 @@ public class PostprocessorMain {
                     this.alignments = new UnixLineReader(new FileInputStream(alignment), UTF8Charset.get());
                     this.sources = new UnixLineReader(new FileInputStream(source), UTF8Charset.get());
                     success = true;
-                } catch (IOException | ProcessingException e) {
+                } catch (IOException e) {
                     throw new BootstrapException("Failed to load pre-processor", e);
                 } finally {
                     if (!success)

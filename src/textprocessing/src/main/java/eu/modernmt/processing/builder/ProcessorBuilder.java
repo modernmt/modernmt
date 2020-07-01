@@ -1,8 +1,6 @@
 package eu.modernmt.processing.builder;
 
-import eu.modernmt.RuntimeErrorException;
 import eu.modernmt.lang.Language;
-import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.TextProcessor;
 
 /**
@@ -23,7 +21,7 @@ class ProcessorBuilder extends AbstractBuilder {
         try {
             cls = (Class<? extends TextProcessor<P, R>>) Class.forName(className);
         } catch (ClassCastException | ClassNotFoundException e) {
-            throw new RuntimeErrorException("Invalid TextProcessor class: " + className, e);
+            throw new Error("Invalid TextProcessor class: " + className, e);
         }
 
         return TextProcessor.newInstance(cls, sourceLanguage, targetLanguage);

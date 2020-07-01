@@ -1,6 +1,5 @@
 package eu.modernmt.processing.builder;
 
-import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.ProcessingPipeline;
 import org.apache.commons.io.IOUtils;
 import org.w3c.dom.Document;
@@ -30,11 +29,11 @@ import java.util.List;
  */
 public class XMLPipelineBuilder<P, R> extends PipelineBuilder<P, R> {
 
-    protected XMLPipelineBuilder(List<AbstractBuilder> builders, Class<ProcessingPipeline> pipelineClass) {
+    protected XMLPipelineBuilder(List<AbstractBuilder> builders, Class<? extends ProcessingPipeline<P, R>> pipelineClass) {
         super(builders, pipelineClass);
     }
 
-    public static <P, R> XMLPipelineBuilder<P, R> loadFromXML(File file) throws IOException, ProcessingException {
+    public static <P, R> XMLPipelineBuilder<P, R> loadFromXML(File file) throws IOException {
         FileInputStream input = null;
 
         try {
@@ -45,7 +44,7 @@ public class XMLPipelineBuilder<P, R> extends PipelineBuilder<P, R> {
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static <P, R> XMLPipelineBuilder<P, R> loadFromXML(InputStream input) throws IOException {
         Document xml = getXMLDocument(input);
         Element pipeline = xml.getDocumentElement();

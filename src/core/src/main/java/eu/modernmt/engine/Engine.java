@@ -79,7 +79,7 @@ public class Engine implements Closeable, DataListenerProvider {
                 logger.info("Loading default pre-processing configuration");
                 preprocessor = new Preprocessor();
             }
-        } catch (IOException | ProcessingException e) {
+        } catch (IOException e) {
             throw new BootstrapException("Failed to load pre-processor", e);
         }
 
@@ -94,7 +94,7 @@ public class Engine implements Closeable, DataListenerProvider {
                 logger.info("Loading default post-processing configuration");
                 postprocessor = new Postprocessor();
             }
-        } catch (IOException | ProcessingException e) {
+        } catch (IOException e) {
             throw new BootstrapException("Failed to load post-processor", e);
         }
 
