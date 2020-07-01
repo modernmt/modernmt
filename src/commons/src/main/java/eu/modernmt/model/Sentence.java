@@ -88,11 +88,11 @@ public class Sentence implements Serializable, Iterable<Token> {
 
         //both leftSpace and rightSpace are not null
 
-        //leftSpace is equal to rightSpace
+        //leftSpace is equal to rightSpace; hence, return only one of them
         if (leftSpace.equals(rightSpace))
             return leftSpace;
 
-        //leftSpace is different from rightSpace
+        //leftSpace is different from rightSpace; hence, concatenate both
         return leftSpace + rightSpace;
     }
 
