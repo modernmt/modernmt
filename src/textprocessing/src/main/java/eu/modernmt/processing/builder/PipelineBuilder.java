@@ -1,5 +1,6 @@
 package eu.modernmt.processing.builder;
 
+import eu.modernmt.RuntimeErrorException;
 import eu.modernmt.lang.Language;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.ProcessingPipeline;
@@ -34,7 +35,7 @@ public abstract class PipelineBuilder<P, R> {
         try {
             return (ProcessingPipeline<P, R>) pipelineClass.getConstructor(List.class).newInstance(processors);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-            throw new ProcessingException("Failed to instantiate class " + pipelineClass, e);
+            throw new RuntimeErrorException("Failed to instantiate class " + pipelineClass, e);
         }
     }
 

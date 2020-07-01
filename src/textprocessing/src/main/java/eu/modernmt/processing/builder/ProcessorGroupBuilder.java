@@ -19,7 +19,7 @@ class ProcessorGroupBuilder extends AbstractBuilder {
     }
 
     @Override
-    public <P, R> TextProcessor<P, R> create(Language sourceLanguage, Language targetLanguage) throws ProcessingException {
+    public <P, R> TextProcessor<P, R> create(Language sourceLanguage, Language targetLanguage) {
         for (ProcessorBuilder builder : builders) {
             if (builder.accept(sourceLanguage, targetLanguage))
                 return builder.create(sourceLanguage, targetLanguage);

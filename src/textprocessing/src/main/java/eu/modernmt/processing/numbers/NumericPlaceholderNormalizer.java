@@ -37,10 +37,9 @@ public class NumericPlaceholderNormalizer extends TextProcessor<SentenceBuilder,
      *                 (not used in this specific operation)
      * @return the SentenceBuilder received as a parameter;
      * its internal state has been updated by the queue of the call() method
-     * @throws ProcessingException
      */
     @Override
-    public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) throws ProcessingException {
+    public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) {
         SentenceBuilder.Editor editor = builder.edit();
         Matcher matcher = NUMERIC_PATTERN.matcher(builder.toString());
 

@@ -22,7 +22,7 @@ public class CatalanPuntVolatNormalizer extends TextProcessor<SentenceBuilder, S
     }
 
     @Override
-    public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) throws ProcessingException {
+    public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) {
         String string = builder.toString();
         SentenceBuilder.Editor editor = builder.edit();
 

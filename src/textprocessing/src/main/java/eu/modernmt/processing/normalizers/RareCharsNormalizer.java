@@ -28,11 +28,10 @@ public class RareCharsNormalizer extends TextProcessor<SentenceBuilder, Sentence
      *                 (not used in this specific operation)
      * @return the SentenceBuilder received as a parameter;
      * its internal state has been updated by the queue of the call() method
-     * @throws ProcessingException
      */
     @Override
-    public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) throws ProcessingException {
-        char source[] = builder.toCharArray();
+    public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) {
+        char[] source = builder.toCharArray();
         SentenceBuilder.Editor editor = builder.edit();
 
         for (int i = 0; i < source.length; i++) {

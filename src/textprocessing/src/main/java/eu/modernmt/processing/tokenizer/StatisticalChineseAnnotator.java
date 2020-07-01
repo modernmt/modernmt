@@ -1,5 +1,6 @@
 package eu.modernmt.processing.tokenizer;
 
+import eu.modernmt.io.RuntimeIOException;
 import eu.modernmt.processing.ProcessingException;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -7,6 +8,7 @@ import org.apache.commons.io.LineIterator;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 
 public class StatisticalChineseAnnotator implements BaseTokenizer.Annotator {
@@ -22,7 +24,7 @@ public class StatisticalChineseAnnotator implements BaseTokenizer.Annotator {
 
                 stream = StatisticalChineseAnnotator.class.getResourceAsStream(filename);
 
-                LineIterator lines = IOUtils.lineIterator(stream, Charset.forName("UTF-8"));
+                LineIterator lines = IOUtils.lineIterator(stream, StandardCharsets.UTF_8);
                 while (lines.hasNext()) {
                     String line = lines.nextLine();
 
@@ -55,14 +57,14 @@ public class StatisticalChineseAnnotator implements BaseTokenizer.Annotator {
 
     private static Dictionary dictionary = null;
 
-    private static Dictionary getDictionary() throws ProcessingException {
+    private static Dictionary getDictionary() {
         if (dictionary == null) {
             synchronized (StatisticalChineseAnnotator.class) {
                 if (dictionary == null) {
                     try {
                         dictionary = Dictionary.load("chinese-words.list");
                     } catch (IOException e) {
-                        throw new ProcessingException("Failed to load Chinese dictionary: chinese-words.list");
+                        throw new RuntimeIOException(e);
                     }
                 }
             }
@@ -72,7 +74,7 @@ public class StatisticalChineseAnnotator implements BaseTokenizer.Annotator {
     }
 
     @Override
-    public void annotate(TokenizedString string) throws ProcessingException {
+    public void annotate(TokenizedString string) {
         Dictionary dictionary = getDictionary();
         String text = string.toString();
 

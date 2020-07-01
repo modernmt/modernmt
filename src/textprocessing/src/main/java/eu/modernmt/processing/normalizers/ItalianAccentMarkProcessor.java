@@ -30,7 +30,7 @@ public class ItalianAccentMarkProcessor extends TextProcessor<SentenceBuilder, S
     }
 
     @Override
-    public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) throws ProcessingException {
+    public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) {
         builder = replaceSpecialWords(builder);
         builder = replaceCommonWords(builder);
 

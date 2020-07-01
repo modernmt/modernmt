@@ -40,7 +40,7 @@ public class PreprocessingPipeline {
         this.extraPartitions.add(partition);
     }
 
-    public void process(Collection<MultilingualCorpus> corpora) throws ProcessingException, IOException {
+    public void process(Collection<MultilingualCorpus> corpora) throws ProcessingException, IOException, InterruptedException {
         // Masking input corpora
         ArrayList<MultilingualCorpus> maskedMultilingualCorpora = new ArrayList<>(corpora.size());
         for (MultilingualCorpus corpus : corpora)

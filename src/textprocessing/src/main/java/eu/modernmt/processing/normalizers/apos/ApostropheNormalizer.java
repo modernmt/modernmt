@@ -70,7 +70,7 @@ public class ApostropheNormalizer extends TextProcessor<SentenceBuilder, Sentenc
     }
 
     @Override
-    public SentenceBuilder call(SentenceBuilder param, Map<String, Object> metadata) throws ProcessingException {
+    public SentenceBuilder call(SentenceBuilder param, Map<String, Object> metadata) {
         String string = param.toString();
         Matcher matcher = regex.matcher(' ' + string + ' ');
 

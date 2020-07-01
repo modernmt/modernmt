@@ -44,14 +44,14 @@ public class LanguageToolTokenAnnotator implements BaseTokenizer.Annotator {
     }
 
     @Override
-    public void annotate(TokenizedString string) throws ProcessingException {
+    public void annotate(TokenizedString string) {
         List<String> tokens = tokenizer.tokenize(string.toString());
         tokens.removeIf(token -> token.trim().isEmpty());
 
         annotate(string, tokens);
     }
 
-    public static void annotate(TokenizedString tokenizedString, List<String> tokens) throws ProcessingException {
+    public static void annotate(TokenizedString tokenizedString, List<String> tokens) {
         String string = tokenizedString.toString();
         int length = string.length();
 
@@ -60,9 +60,10 @@ public class LanguageToolTokenAnnotator implements BaseTokenizer.Annotator {
         for (String token : tokens) {
             int tokenPos = string.indexOf(token, stringIndex);
 
-            if (tokenPos < 0)
-                throw new ProcessingException("Unable to find token '" + token + "' starting from index " +
-                        stringIndex + " in sentence \"" + tokenizedString + "\"");
+            if (tokenPos < 0) {
+                throw new IllegalArgumentException(
+                        "Token not found: '" + token + "' at " + stringIndex + " in \"" + tokenizedString + "\"");
+            }
 
             int tokenLength = token.length();
 

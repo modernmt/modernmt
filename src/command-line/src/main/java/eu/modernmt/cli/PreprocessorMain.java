@@ -113,7 +113,7 @@ public class PreprocessorMain {
         }
     }
 
-    private static void batchPreprocess(Preprocessor preprocessor, LanguageDirection language, LineReader input, Outputter output, boolean split) throws IOException, ProcessingException {
+    private static void batchPreprocess(Preprocessor preprocessor, LanguageDirection language, LineReader input, Outputter output, boolean split) throws IOException, ProcessingException, InterruptedException {
         BufferedLineReader bufferedReader = new BufferedLineReader(input);
 
         String[] batch;

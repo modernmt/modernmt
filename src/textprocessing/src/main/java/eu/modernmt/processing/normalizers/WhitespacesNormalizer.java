@@ -31,12 +31,11 @@ public class WhitespacesNormalizer extends TextProcessor<SentenceBuilder, Senten
      *                 (not used in this specific operation)
      * @return the SentenceBuilder received as a parameter;
      * its internal state has been updated by the queue of the call() method
-     * @throws ProcessingException
      */
     @Override
-    public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) throws ProcessingException {
+    public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) {
         /*the current version of the String in the SentenceBuilder*/
-        char source[] = builder.toCharArray();
+        char[] source = builder.toCharArray();
         /*an Editor can analyze the text to request transformations*/
         SentenceBuilder.Editor editor = builder.edit();
 

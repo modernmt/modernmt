@@ -9,7 +9,7 @@ import eu.modernmt.processing.TextProcessor;
  */
 abstract class AbstractBuilder {
 
-    public abstract <P, R> TextProcessor<P, R> create(Language sourceLanguage, Language targetLanguage) throws ProcessingException;
+    public abstract <P, R> TextProcessor<P, R> create(Language sourceLanguage, Language targetLanguage);
 
     public boolean accept(Language sourceLanguage, Language targetLanguage) {
         return true;

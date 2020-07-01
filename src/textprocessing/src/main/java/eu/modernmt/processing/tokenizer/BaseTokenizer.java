@@ -22,7 +22,7 @@ public class BaseTokenizer extends TextProcessor<SentenceBuilder, SentenceBuilde
     }
 
     @Override
-    public SentenceBuilder call(SentenceBuilder sentence, Map<String, Object> metadata) throws ProcessingException {
+    public SentenceBuilder call(SentenceBuilder sentence, Map<String, Object> metadata) {
         TokenizedString string = new TokenizedString(sentence.toString(), true);
 
         for (Annotator annotator : annotators)
@@ -33,7 +33,7 @@ public class BaseTokenizer extends TextProcessor<SentenceBuilder, SentenceBuilde
 
     public interface Annotator {
 
-        void annotate(TokenizedString string) throws ProcessingException;
+        void annotate(TokenizedString string);
 
     }
 

@@ -1,5 +1,6 @@
 package eu.modernmt.processing.tokenizer.jflex;
 
+import eu.modernmt.RuntimeErrorException;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.tokenizer.BaseTokenizer;
 import eu.modernmt.processing.tokenizer.TokenizedString;
@@ -33,7 +34,7 @@ public abstract class JFlexTokenAnnotator implements BaseTokenizer.Annotator {
     }
 
     @Override
-    public final void annotate(TokenizedString text) throws ProcessingException {
+    public final void annotate(TokenizedString text) {
         this.yyreset(text.getReader());
 
         try {
@@ -42,7 +43,7 @@ public abstract class JFlexTokenAnnotator implements BaseTokenizer.Annotator {
                 this.annotate(text, type);
             }
         } catch (IOException e) {
-            throw new ProcessingException(e);
+            throw new RuntimeErrorException("IOException thrown by CharArrayReader", e);
         }
     }
 

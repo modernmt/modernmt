@@ -58,7 +58,7 @@ class KafkaDataBatch implements DataBatch {
         cachedPartitions.push(partition.clear());
     }
 
-    public void load(ConsumerRecords<Integer, KafkaPacket> records, boolean process, boolean align) throws ProcessingException, AlignerException {
+    public void load(ConsumerRecords<Integer, KafkaPacket> records, boolean process, boolean align) throws ProcessingException, AlignerException, InterruptedException {
         // Load records
 
         this.clear();
@@ -150,7 +150,7 @@ class KafkaDataBatch implements DataBatch {
             targets.add(packet.getTranslation());
         }
 
-        public void process(boolean process, boolean align, Collection<TranslationUnit> output) throws ProcessingException, AlignerException {
+        public void process(boolean process, boolean align, Collection<TranslationUnit> output) throws ProcessingException, AlignerException, InterruptedException {
             if (packets.isEmpty())
                 return;
 

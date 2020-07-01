@@ -1,5 +1,6 @@
 package eu.modernmt.processing.string;
 
+import eu.modernmt.RuntimeErrorException;
 import eu.modernmt.lang.Language;
 import eu.modernmt.model.*;
 import eu.modernmt.processing.ProcessingException;
@@ -144,20 +145,16 @@ public class SentenceBuilder {
      * @return the Sentence resulting from the transformations on the original string
      */
     public Sentence build() {
-        try {
-            List<Transformation> tokenizableTransformations = this.getTokenizableTransformations();
+        List<Transformation> tokenizableTransformations = this.getTokenizableTransformations();
 
-            Sentence sentence = tokenize(originalString, tokenizableTransformations);
-            if (!annotations.isEmpty())
-                sentence.addAnnotations(annotations);
+        Sentence sentence = tokenize(originalString, tokenizableTransformations);
+        if (!annotations.isEmpty())
+            sentence.addAnnotations(annotations);
 
-            return computeRequiredSpaces(sentence);
-        } catch (RuntimeException | ProcessingException e) {
-            throw new RuntimeException("Failed to build sentence for string: " + originalString, e);
-        }
+        return computeRequiredSpaces(sentence);
     }
 
-    private Sentence computeRequiredSpaces(Sentence sentence) throws ProcessingException {
+    private Sentence computeRequiredSpaces(Sentence sentence) {
         SpacesAnnotatedString text = SpacesAnnotatedString.fromSentence(sentence);
 
         annotator.reset(text.getReader());
@@ -171,11 +168,11 @@ public class SentenceBuilder {
         return sentence;
     }
 
-    private static int next(JFlexSpaceAnnotator annotator) throws ProcessingException {
+    private static int next(JFlexSpaceAnnotator annotator) {
         try {
             return annotator.next();
         } catch (IOException e) {
-            throw new ProcessingException(e);
+            throw new RuntimeErrorException("IOException thrown by CharArrayReader", e);
         }
     }
 

@@ -61,11 +61,11 @@ public class Preprocessor implements Closeable {
         this.threads = threads;
     }
 
-    public Sentence[] process(LanguageDirection language, String[] batch) throws ProcessingException {
+    public Sentence[] process(LanguageDirection language, String[] batch) throws ProcessingException, InterruptedException {
         return process(language, batch, null);
     }
 
-    public List<Sentence> process(LanguageDirection language, List<String> batch) throws ProcessingException {
+    public List<Sentence> process(LanguageDirection language, List<String> batch) throws ProcessingException, InterruptedException {
         return process(language, batch, null);
     }
 
@@ -73,12 +73,12 @@ public class Preprocessor implements Closeable {
         return process(language, text, null);
     }
 
-    public Sentence[] process(LanguageDirection language, String[] batch, Options options) throws ProcessingException {
+    public Sentence[] process(LanguageDirection language, String[] batch, Options options) throws ProcessingException, InterruptedException {
         Map<String, Object> metadata = getMetadata(options);
         return this.executor.processBatch(metadata, language, batch, new Sentence[batch.length]);
     }
 
-    public List<Sentence> process(LanguageDirection language, List<String> batch, Options options) throws ProcessingException {
+    public List<Sentence> process(LanguageDirection language, List<String> batch, Options options) throws ProcessingException, InterruptedException {
         Map<String, Object> metadata = getMetadata(options);
         Sentence[] result = this.executor.processBatch(metadata, language, batch.toArray(new String[0]), new Sentence[batch.size()]);
         return Arrays.asList(result);

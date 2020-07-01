@@ -5,16 +5,8 @@ package eu.modernmt.processing;
  */
 public class ProcessingException extends Exception {
 
-    public ProcessingException(String message) {
-        super(message);
-    }
-
-    public ProcessingException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public ProcessingException(Throwable cause) {
-        super(cause);
+    public ProcessingException(Object input, TextProcessor<?, ?> processor, RuntimeException cause) {
+        super('(' + processor.getClass().getSimpleName() + ") Failed to process input \"" + input + "\"", cause);
     }
 
 }

@@ -16,7 +16,7 @@ import java.util.Map;
 public class WhitespaceProjector extends TextProcessor<Translation, Translation> {
 
     @Override
-    public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
+    public Translation call(Translation translation, Map<String, Object> metadata) {
         if (!translation.hasAlignment())
             return translation;
 

@@ -164,7 +164,7 @@ class LogDataPollingThread extends Thread {
                     binaryLogListener.onLogDataBatchProcessed(batch.getChannelPositions());
 
                 batch.clear();
-            } catch (WakeupException e) {
+            } catch (WakeupException | InterruptedException e) {
                 // Shutdown request
                 break;
             } catch (RuntimeException e) {

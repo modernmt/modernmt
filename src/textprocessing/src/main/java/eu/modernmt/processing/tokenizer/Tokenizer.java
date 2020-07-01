@@ -71,17 +71,13 @@ public class Tokenizer extends TextProcessor<SentenceBuilder, SentenceBuilder> {
         if (clazz == null) {
             this.tokenizer = new DefaultTokenizer();
         } else {
-            try {
-                this.tokenizer = TextProcessor.newInstance(clazz, sourceLanguage, targetLanguage);
-            } catch (ProcessingException e) {
-                throw new Error(e);
-            }
+            this.tokenizer = TextProcessor.newInstance(clazz, sourceLanguage, targetLanguage);
         }
 
     }
 
     @Override
-    public SentenceBuilder call(SentenceBuilder sentence, Map<String, Object> metadata) throws ProcessingException {
+    public SentenceBuilder call(SentenceBuilder sentence, Map<String, Object> metadata) {
         return tokenizer.call(sentence, metadata);
     }
 

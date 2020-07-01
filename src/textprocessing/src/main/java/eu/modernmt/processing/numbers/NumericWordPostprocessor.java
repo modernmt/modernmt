@@ -15,7 +15,7 @@ import java.util.*;
 public class NumericWordPostprocessor extends TextProcessor<Translation, Translation> {
 
     @Override
-    public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
+    public Translation call(Translation translation, Map<String, Object> metadata) {
         NumericSequence nSentence = NumericSequence.build(translation.getSource());
         NumericSequence nTranslation = NumericSequence.build(translation);
 

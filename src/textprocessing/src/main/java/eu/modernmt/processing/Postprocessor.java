@@ -37,11 +37,11 @@ public class Postprocessor implements Closeable {
         this.executor = new PipelineExecutor<>(builder, threads);
     }
 
-    public void process(LanguageDirection language, Translation[] batch) throws ProcessingException {
+    public void process(LanguageDirection language, Translation[] batch) throws ProcessingException, InterruptedException {
         this.executor.processBatch(language, batch, new Void[batch.length]);
     }
 
-    public void process(LanguageDirection language, List<Translation> batch) throws ProcessingException {
+    public void process(LanguageDirection language, List<Translation> batch) throws ProcessingException, InterruptedException {
         this.executor.processBatch(language, batch.toArray(new Translation[0]), new Void[batch.size()]);
     }
 

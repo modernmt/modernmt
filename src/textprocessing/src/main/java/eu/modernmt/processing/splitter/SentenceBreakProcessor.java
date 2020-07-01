@@ -96,7 +96,7 @@ public class SentenceBreakProcessor extends TextProcessor<Sentence, Sentence> {
     }
 
     @Override
-    public Sentence call(Sentence sentence, Map<String, Object> metadata) throws ProcessingException {
+    public Sentence call(Sentence sentence, Map<String, Object> metadata) {
         breakByPunctuation(sentence);
 
         if (metadata.containsKey(SPLIT_BY_NEWLINE))

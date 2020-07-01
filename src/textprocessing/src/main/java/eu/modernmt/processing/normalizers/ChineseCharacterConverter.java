@@ -65,7 +65,7 @@ public class ChineseCharacterConverter extends TextProcessor<Translation, Transl
     }
 
     @Override
-    public Translation call(Translation param, Map<String, Object> metadata) throws ProcessingException {
+    public Translation call(Translation param, Map<String, Object> metadata) {
         if (chars != null) {
             for (Word word : param.getWords()) {
                 String text = convert(word.toString(false));

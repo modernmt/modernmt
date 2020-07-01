@@ -45,10 +45,9 @@ public class SentenceConstructor extends TextProcessor<String, SentenceBuilder> 
      * @param metadata additional information on the current pipe
      *                 (not used in this specific operation)
      * @return the SentenceBuilder generated starting from the input string
-     * @throws ProcessingException
      */
     @Override
-    public SentenceBuilder call(String string, Map<String, Object> metadata) throws ProcessingException {
+    public SentenceBuilder call(String string, Map<String, Object> metadata) {
         return this.builder.initialize(string);
     }
 }

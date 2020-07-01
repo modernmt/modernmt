@@ -46,7 +46,7 @@ class PreprocessingTask {
         extraPartitions.add(new PartitionWriter(partition, corpus, size));
     }
 
-    public void execute() throws ProcessingException, IOException {
+    public void execute() throws ProcessingException, IOException, InterruptedException {
         LineReader reader = null;
         AsyncCorpusWriter writer = null;
 

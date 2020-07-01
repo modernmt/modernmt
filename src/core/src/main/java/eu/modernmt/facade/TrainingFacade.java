@@ -128,11 +128,11 @@ public class TrainingFacade {
 
     // - Pre-process ---------------------------------------------------------------------------------------------------
 
-    public void preprocess(LanguageDirection language, List<MultilingualCorpus> corpora, File destFolder) throws ProcessingException, IOException {
+    public void preprocess(LanguageDirection language, List<MultilingualCorpus> corpora, File destFolder) throws ProcessingException, IOException, InterruptedException {
         preprocess(language, corpora, destFolder, new TrainingOptions());
     }
 
-    public void preprocess(LanguageDirection language, List<MultilingualCorpus> corpora, File destFolder, TrainingOptions options) throws ProcessingException, IOException {
+    public void preprocess(LanguageDirection language, List<MultilingualCorpus> corpora, File destFolder, TrainingOptions options) throws ProcessingException, IOException, InterruptedException {
         CorporaPartition mainPartition = new CorporaPartition(destFolder);
         PreprocessingPipeline pipeline = new PreprocessingPipeline(language, mainPartition);
 

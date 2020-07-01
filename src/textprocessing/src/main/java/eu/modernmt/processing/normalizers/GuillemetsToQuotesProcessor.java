@@ -13,7 +13,7 @@ import java.util.Map;
 public class GuillemetsToQuotesProcessor extends TextProcessor<Translation, Translation> {
 
     @Override
-    public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
+    public Translation call(Translation translation, Map<String, Object> metadata) {
         Word[] source = translation.getSource().getWords();
         Word[] target = translation.getWords();
 

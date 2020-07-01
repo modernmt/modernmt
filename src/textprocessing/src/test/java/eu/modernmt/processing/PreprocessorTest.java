@@ -1,5 +1,6 @@
 package eu.modernmt.processing;
 
+import eu.modernmt.io.RuntimeIOException;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Sentence;
@@ -28,7 +29,7 @@ public class PreprocessorTest {
             preprocessor = new Preprocessor();
             return preprocessor.process(language, text);
         } catch (IOException e) {
-            throw new ProcessingException(e);
+            throw new RuntimeIOException(e);
         } finally {
             IOUtils.closeQuietly(preprocessor);
         }

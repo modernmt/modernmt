@@ -38,11 +38,11 @@ public class PipelineExecutor<P, R> {
         }
     }
 
-    public R[] processBatch(LanguageDirection language, P[] batch, R[] output) throws ProcessingException {
+    public R[] processBatch(LanguageDirection language, P[] batch, R[] output) throws ProcessingException, InterruptedException {
         return processBatch(Collections.emptyMap(), language, batch, output);
     }
 
-    public R[] processBatch(Map<String, Object> metadata, LanguageDirection language, P[] batch, R[] output) throws ProcessingException {
+    public R[] processBatch(Map<String, Object> metadata, LanguageDirection language, P[] batch, R[] output) throws ProcessingException, InterruptedException {
         Future<?>[] locks = new Future<?>[threads];
 
         if (batch.length < threads) {
@@ -67,8 +67,6 @@ public class PipelineExecutor<P, R> {
 
             try {
                 lock.get();
-            } catch (InterruptedException e) {
-                throw new ProcessingException("Execution interrupted", e);
             } catch (ExecutionException e) {
                 Throwable cause = e.getCause();
 

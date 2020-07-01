@@ -110,8 +110,8 @@ public class TranslationFacade {
         postprocessor.process(direction, translation);
 
         if (translation.hasNbest()) {
-            List<Translation> hypotheses = translation.getNbest();
-            postprocessor.process(direction, hypotheses);
+            for (Translation hypothesis : translation.getNbest())
+                postprocessor.process(direction, hypothesis);
         }
 
         return translation;

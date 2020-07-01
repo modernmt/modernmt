@@ -17,7 +17,7 @@ public class UpperCasePreprocessor extends TextProcessor<SentenceBuilder, Senten
     public static final Annotation ANNOTATION = new Annotation(UpperCasePreprocessor.class.getCanonicalName());
 
     @Override
-    public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) throws ProcessingException {
+    public SentenceBuilder call(SentenceBuilder builder, Map<String, Object> metadata) {
         char[] chars = builder.toCharArray();
 
         if (isUpperCase(chars)) {

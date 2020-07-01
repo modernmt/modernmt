@@ -1,5 +1,6 @@
 package eu.modernmt.processing.tokenizer.lucene;
 
+import eu.modernmt.RuntimeErrorException;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.processing.ProcessingException;
@@ -73,7 +74,7 @@ public class LuceneTokenAnnotator implements BaseTokenizer.Annotator {
     }
 
     @Override
-    public void annotate(TokenizedString string) throws ProcessingException {
+    public void annotate(TokenizedString string) {
         char[] chars = string.toString().toCharArray();
 
         TokenStream stream = null;
@@ -113,7 +114,7 @@ public class LuceneTokenAnnotator implements BaseTokenizer.Annotator {
             if (maxOffset < chars.length)
                 annotate(string, chars, maxOffset, chars.length - maxOffset);
         } catch (IOException e) {
-            throw new ProcessingException(e.getMessage(), e);
+            throw new RuntimeErrorException("IOException for Lucene analyzer reading from string", e);
         } finally {
             if (stream != null)
                 try {

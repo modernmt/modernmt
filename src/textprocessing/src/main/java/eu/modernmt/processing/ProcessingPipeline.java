@@ -23,7 +23,11 @@ public class ProcessingPipeline<P, R> {
         Object result = input;
 
         for (TextProcessor<Object, Object> processor : processors) {
-            result = processor.call(result, metadata);
+            try {
+                result = processor.call(result, metadata);
+            } catch (RuntimeException e) {
+                throw new ProcessingException(input, processor, e);
+            }
         }
 
         return (R) result;

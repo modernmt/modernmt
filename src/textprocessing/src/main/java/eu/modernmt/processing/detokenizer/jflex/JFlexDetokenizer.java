@@ -1,5 +1,7 @@
 package eu.modernmt.processing.detokenizer.jflex;
 
+import eu.modernmt.RuntimeErrorException;
+import eu.modernmt.io.RuntimeIOException;
 import eu.modernmt.lang.Language;
 import eu.modernmt.model.Translation;
 import eu.modernmt.processing.ProcessingException;
@@ -36,7 +38,8 @@ public class JFlexDetokenizer extends TextProcessor<Translation, Translation> {
             return new StandardSpaceAnnotator((Reader) null);
         } else {
             try {
-                return annotatorClass.getConstructor(Reader.class).newInstance((Reader) null);
+                Reader arg = null;
+                return annotatorClass.getConstructor(Reader.class).newInstance(arg);
             } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException | InstantiationException e) {
                 throw new Error("Error during class instantiation: " + annotatorClass.getName(), e);
             }
@@ -53,7 +56,7 @@ public class JFlexDetokenizer extends TextProcessor<Translation, Translation> {
     }
 
     @Override
-    public Translation call(Translation translation, Map<String, Object> metadata) throws ProcessingException {
+    public Translation call(Translation translation, Map<String, Object> metadata) {
         SpacesAnnotatedString text = SpacesAnnotatedString.fromSentence(translation);
 
         annotator.reset(text.getReader());
@@ -78,11 +81,11 @@ public class JFlexDetokenizer extends TextProcessor<Translation, Translation> {
         return translation;
     }
 
-    private static int next(JFlexSpaceAnnotator annotator) throws ProcessingException {
+    private static int next(JFlexSpaceAnnotator annotator) {
         try {
             return annotator.next();
         } catch (IOException e) {
-            throw new ProcessingException(e);
+            throw new RuntimeErrorException("IOException from CharArrayReader", e);
         }
     }
 
