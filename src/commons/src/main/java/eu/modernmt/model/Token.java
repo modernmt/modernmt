@@ -17,10 +17,25 @@ public class Token implements Serializable {
     // the original string between this token and the next one
     protected String rightSpace;
 
-    //if true, it means that the previous token has different type
-    private boolean virtualLeftSpace;
-    //if true, it means that the next token has different type
-    private boolean virtualRightSpace;
+    // the attribute hasHiddenLeftSpace is:
+    // - true, if between this token and the closest left Word should be present a space (according to the (de)tokenization modules)),
+    //        but the space is not actually present because there is a Token in-between
+    // - false, otherwise
+    // The attribute is set during the creation of the source sentence, and it is projected from the source to the target by the WhiteSpaceProjector
+    // The attribute is needed for having the right spaces:
+    // - when the sentence is printed without tags (XMLStripped)
+    // - when spaces are projected to the target sentence; Remind that tags and words are re-aligned
+    private boolean hasHiddenLeftSpace;
+
+    // the attribute hasHiddenLeftSpace is:
+    // - true, if between this token and the closest left Word should be present a space (according to the (de)tokenization modules)),
+    //        but the space is not actually present because there is a Token in-between
+    // - false, otherwise
+    // The attribute is set during the creation of the source sentence, and it is projected from the source to the target by the WhiteSpaceProjector
+    // The attribute is needed for having the right spaces:
+    // - when the sentence is printed without tags (XMLStripped)
+    // - when spaces are projected to the target sentence; Remind that tags and words are re-aligned
+    private boolean hasHiddenRightSpace;
 
     // if true, this token mark an end of sentence
     private boolean sentenceBreak;
@@ -32,8 +47,8 @@ public class Token implements Serializable {
         this.leftSpace = leftSpace;
         this.rightSpace = rightSpace;
 
-        this.virtualLeftSpace = false;
-        this.virtualRightSpace = false;
+        this.hasHiddenLeftSpace = false;
+        this.hasHiddenRightSpace = false;
 
         this.sentenceBreak = false;
     }
@@ -82,20 +97,20 @@ public class Token implements Serializable {
         this.rightSpace = (space != null && space.isEmpty()) ? null : space;
     }
 
-    public boolean isVirtualLeftSpace() {
-        return virtualLeftSpace;
+    public boolean hasHiddenLeftSpace() {
+        return hasHiddenLeftSpace;
     }
 
-    public boolean isVirtualRightSpace() {
-        return virtualRightSpace;
+    public boolean hasHiddenRightSpace() {
+        return hasHiddenRightSpace;
     }
 
-    public void setVirtualLeftSpace(boolean virtualLeftSpace) {
-        this.virtualLeftSpace = virtualLeftSpace;
+    public void setHiddenLeftSpace(boolean hasHiddenLeftSpace) {
+        this.hasHiddenLeftSpace = hasHiddenLeftSpace;
     }
 
-    public void setVirtualRightSpace(boolean virtualRightSpace) {
-        this.virtualRightSpace = virtualRightSpace;
+    public void setHiddenRightSpace(boolean hasHiddenRightSpace) {
+        this.hasHiddenRightSpace = hasHiddenRightSpace;
     }
 
     public Token(String placeholder) {
@@ -105,7 +120,6 @@ public class Token implements Serializable {
     public Token(String placeholder, String leftSpace, String rightSpace) {
         this(null, placeholder, leftSpace, rightSpace);
     }
-
 
     public boolean isSentenceBreak() {
         return sentenceBreak;

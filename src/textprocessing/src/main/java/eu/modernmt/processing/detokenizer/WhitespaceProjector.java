@@ -44,8 +44,8 @@ public class WhitespaceProjector extends TextProcessor<Translation, Translation>
                     (pointSourceWord.hasRightSpace() && !pointSourceWord.isRightSpaceRequired());
 
             if (project) {
-                pointTargetWord.setVirtualRightSpace(pointSourceWord.isVirtualRightSpace());
-                probeTargetWord.setVirtualLeftSpace(probeSourceWord.isVirtualLeftSpace());
+                pointTargetWord.setHiddenRightSpace(pointSourceWord.hasHiddenRightSpace());
+                probeTargetWord.setHiddenLeftSpace(probeSourceWord.hasHiddenLeftSpace());
                 pointTargetWord.setRightSpace(pointSourceWord.getRightSpace());
                 probeTargetWord.setLeftSpace(probeSourceWord.getLeftSpace());
             }

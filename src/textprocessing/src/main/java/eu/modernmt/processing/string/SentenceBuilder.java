@@ -257,9 +257,9 @@ public class SentenceBuilder {
              the current transformation is linked to the previous and next ones in the list*/
 
             /*true if previous and current tokens have different type (Tag-Word or Word-Tag)*/
-            boolean virtualLeftSpace = false;
+            boolean hasHiddenLeftSpace = false;
             /*true if previous and current tokens have different type (Tag-Word or Word-Tag)*/
-            boolean virtualRightSpace = false;
+            boolean hasHiddenRightSpace = false;
 
             /*string with the space between previous transformation text and current one*/
             String leftSpace = null;
@@ -304,7 +304,7 @@ public class SentenceBuilder {
                 if (length == 0) {
                     if ((transformation.tokenFactory == TokenFactory.WORD_FACTORY && previousTransformation.tokenFactory != TokenFactory.WORD_FACTORY) ||
                             (transformation.tokenFactory != TokenFactory.WORD_FACTORY && previousTransformation.tokenFactory == TokenFactory.WORD_FACTORY)) {
-                        virtualLeftSpace = true;
+                        hasHiddenLeftSpace = true;
                     }
                 }
             }
@@ -326,7 +326,7 @@ public class SentenceBuilder {
                 if (length == 0) {
                     if ((transformation.tokenFactory == TokenFactory.WORD_FACTORY && nextTransformation.tokenFactory != TokenFactory.WORD_FACTORY) ||
                             (transformation.tokenFactory != TokenFactory.WORD_FACTORY && nextTransformation.tokenFactory == TokenFactory.WORD_FACTORY)) {
-                        virtualRightSpace = true;
+                        hasHiddenRightSpace = true;
                     }
                 }
             }
@@ -353,8 +353,8 @@ public class SentenceBuilder {
 
             /*generate the Token*/
             Token token = tokenFactory.build(transformation.originalText, placeholder, leftSpace, rightSpace, tagPosition);
-            token.setVirtualLeftSpace(virtualLeftSpace);
-            token.setVirtualRightSpace(virtualRightSpace);
+            token.setHiddenLeftSpace(hasHiddenLeftSpace);
+            token.setHiddenRightSpace(hasHiddenRightSpace);
 
             /*put the token in the separate list corresponding to its class*/
             if (token instanceof Tag) {

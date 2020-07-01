@@ -128,7 +128,7 @@ public class Sentence implements Serializable, Iterable<Token> {
             } else {
                 //Word-Word
                 space = combineSpace(space, rightToken.getLeftSpace());
-                if (space == null && (leftToken.isVirtualRightSpace() || rightToken.isVirtualLeftSpace() )) {
+                if (space == null && (leftToken.hasHiddenRightSpace() || rightToken.hasHiddenLeftSpace() )) {
                     space = " ";
                 }
             }
