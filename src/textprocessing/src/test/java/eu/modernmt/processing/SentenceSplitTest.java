@@ -39,9 +39,6 @@ public class SentenceSplitTest {
         Sentence sentence = process(text, false);
 
         List<Sentence> sentences = SentenceSplitter.split(sentence, true);
-        for (Sentence s : sentences) {
-            System.out.println(s.toString().replace("\n", "\\n"));
-        }
 
         assertEquals(2, sentences.size());
         assertEquals("This is an example sentence. ", sentences.get(0).toString());
@@ -54,9 +51,6 @@ public class SentenceSplitTest {
         Sentence sentence = process(text, true);
 
         List<Sentence> sentences = SentenceSplitter.split(sentence, true);
-        for (Sentence s : sentences) {
-            System.out.println(s.toString().replace("\n", "\\n"));
-        }
 
         assertEquals(4, sentences.size());
         assertEquals("This is an example sentence. ", sentences.get(0).toString());
