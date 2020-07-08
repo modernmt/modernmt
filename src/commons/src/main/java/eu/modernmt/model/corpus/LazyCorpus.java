@@ -1,4 +1,4 @@
-package eu.modernmt.training;
+package eu.modernmt.model.corpus;
 
 import eu.modernmt.io.LineReader;
 import eu.modernmt.io.LineWriter;
@@ -13,11 +13,11 @@ import java.io.Reader;
 /**
  * Created by davide on 29/08/17.
  */
-public class LazyWriterCorpus extends BaseCorpus implements CorpusWrapper {
+public class LazyCorpus extends BaseCorpus implements CorpusWrapper {
 
     private final Corpus corpus;
 
-    public LazyWriterCorpus(Corpus corpus) {
+    public LazyCorpus(Corpus corpus) {
         this.corpus = corpus;
     }
 

@@ -1,4 +1,4 @@
-package eu.modernmt.training;
+package eu.modernmt.model.corpus;
 
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.*;
@@ -9,11 +9,11 @@ import java.util.Set;
 /**
  * Created by davide on 29/08/17.
  */
-public class LazyWriterMultilingualCorpus implements MultilingualCorpusWrapper {
+public class LazyMultilingualCorpus implements MultilingualCorpusWrapper {
 
     private final MultilingualCorpus corpus;
 
-    public LazyWriterMultilingualCorpus(MultilingualCorpus corpus) {
+    public LazyMultilingualCorpus(MultilingualCorpus corpus) {
         this.corpus = corpus;
     }
 

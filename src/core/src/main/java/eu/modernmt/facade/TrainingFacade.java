@@ -7,10 +7,10 @@ import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.training.BatchCopyProcess;
-import eu.modernmt.training.LazyWriterCorpus;
-import eu.modernmt.training.LazyWriterMultilingualCorpus;
+import eu.modernmt.model.corpus.LazyCorpus;
+import eu.modernmt.model.corpus.LazyMultilingualCorpus;
 import eu.modernmt.training.PreprocessingPipeline;
-import eu.modernmt.training.bloomfilter.CorporaBloomFilter;
+import eu.modernmt.cleaning.dedup.CorporaBloomFilter;
 import eu.modernmt.training.partitioning.CorporaPartition;
 import org.apache.commons.io.FileUtils;
 
@@ -65,12 +65,12 @@ public class TrainingFacade {
 
         @Override
         public MultilingualCorpus getOutput(MultilingualCorpus corpus) {
-            return new LazyWriterMultilingualCorpus(factory.getOutput(corpus));
+            return new LazyMultilingualCorpus(factory.getOutput(corpus));
         }
 
         @Override
         public Corpus getOutput(Corpus corpus) {
-            return new LazyWriterCorpus(factory.getOutput(corpus));
+            return new LazyCorpus(factory.getOutput(corpus));
         }
     }
 

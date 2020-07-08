@@ -1,4 +1,4 @@
-package eu.modernmt.training.bloomfilter;
+package eu.modernmt.cleaning.dedup;
 
 import eu.modernmt.model.corpus.*;
 

@@ -1,4 +1,4 @@
-package eu.modernmt.training.bloomfilter;
+package eu.modernmt.cleaning.dedup;
 
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnel;

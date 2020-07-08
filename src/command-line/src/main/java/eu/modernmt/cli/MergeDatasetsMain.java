@@ -9,7 +9,7 @@ import eu.modernmt.model.corpus.*;
 import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
-import eu.modernmt.training.bloomfilter.CorporaBloomFilter;
+import eu.modernmt.cleaning.dedup.CorporaBloomFilter;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.Level;
