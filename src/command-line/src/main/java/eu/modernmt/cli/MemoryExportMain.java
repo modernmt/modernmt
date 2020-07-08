@@ -64,7 +64,8 @@ public class MemoryExportMain {
                 }
             });
 
-            TranslationUnit tu = new TranslationUnit(entry.language, entry.sentence, entry.translation);
+            //TODO: Memory.Entry should have "tuid" parameter
+            TranslationUnit tu = new TranslationUnit(null, entry.language, entry.sentence, entry.translation);
             try {
                 writer.write(tu);
             } catch (IOException e) {

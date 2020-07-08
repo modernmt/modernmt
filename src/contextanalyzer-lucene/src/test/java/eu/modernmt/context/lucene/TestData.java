@@ -317,7 +317,7 @@ public class TestData {
                     if (source == null || target == null)
                         throw new IOException("Not-parallel string corpora");
 
-                    return new TranslationUnit(language, source, target);
+                    return new TranslationUnit(null, language, source, target);
                 }
 
                 @Override

@@ -2,6 +2,7 @@ package eu.modernmt.data;
 
 import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.LanguageDirection;
+import eu.modernmt.model.corpus.TranslationUnit;
 
 /**
  * Created by davide on 30/09/17.
@@ -13,6 +14,10 @@ public class HashGenerator {
     private static final long FNV_PRIME = 1099511628211L;
     private static final long FNV_OFFSET_BASIS = 0xcbf29ce484222325L;
     private static final String CHARS = "0123456789ABCDEF";
+
+    public static String hash(TranslationUnit tu) {
+        return hash(tu.language, tu.source, tu.target);
+    }
 
     public static String hash(LanguageDirection language, String sentence, String translation) {
         sentence = language.source.toLanguageTag() + "|||" + sentence;

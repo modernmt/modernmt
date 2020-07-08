@@ -137,7 +137,7 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
                 return null;
             } else if (source != null && target != null) {
                 this.index++;
-                return new TranslationUnit(language, source, target);
+                return new TranslationUnit(null, language, source, target);
             } else {
                 throw new IOException("Invalid parallel corpus: unmatched line at " + (this.index + 1));
             }

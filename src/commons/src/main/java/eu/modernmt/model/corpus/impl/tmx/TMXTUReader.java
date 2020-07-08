@@ -63,6 +63,7 @@ class TMXTUReader {
         this.resultCache.clear();
 
         Date tuTimestamp = getTimestamp(tu);
+        String tuid = getTuid(tu);
         Language tuSourceLanguage = languageCache.get(XMLUtils.getAttributeValue(tu, null, "srclang"));
 
         Language sourceLanguage = tuSourceLanguage == null ? headerSourceLanguage : tuSourceLanguage;
@@ -95,7 +96,7 @@ class TMXTUReader {
                             sourceText = text;
                         } else {
                             LanguageDirection language = languageCache.get(sourceLanguage, lang);
-                            resultCache.add(new TranslationUnit(language, null, text, timestamp));
+                            resultCache.add(new TranslationUnit(tuid, language, null, text, timestamp));
                         }
                     }
                     break;
@@ -153,6 +154,10 @@ class TMXTUReader {
         }
 
         return timestamp;
+    }
+
+    private String getTuid(StartElement tu) {
+        return XMLUtils.getAttributeValue(tu, null, "tuid");
     }
 
     private static String format(String message, XMLEvent event) {

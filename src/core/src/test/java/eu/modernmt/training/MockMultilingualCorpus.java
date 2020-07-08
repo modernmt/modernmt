@@ -24,13 +24,13 @@ public class MockMultilingualCorpus extends BaseMultilingualCorpus {
     private final TranslationUnit[] tus;
 
     public static TranslationUnit tu(String source, String target, long date) {
-        return new TranslationUnit(MOCK_LANGUAGE, source, target, new Date(MOCK_EPOCH + (date * 60L * 1000L)));
+        return new TranslationUnit(null, MOCK_LANGUAGE, source, target, new Date(MOCK_EPOCH + (date * 60L * 1000L)));
     }
 
     private static TranslationUnit[] parse(String[][] lines) {
         TranslationUnit[] result = new TranslationUnit[lines.length];
         for (int i = 0; i < lines.length; i++)
-            result[i] = new TranslationUnit(MOCK_LANGUAGE, lines[i][0], lines[i][1]);
+            result[i] = new TranslationUnit(null, MOCK_LANGUAGE, lines[i][0], lines[i][1]);
 
         return result;
     }

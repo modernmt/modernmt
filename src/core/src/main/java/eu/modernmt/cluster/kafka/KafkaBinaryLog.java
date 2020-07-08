@@ -328,29 +328,42 @@ public class KafkaBinaryLog implements BinaryLog {
     }
 
     @Override
-    public ImportJob upload(LanguageDirection direction, Memory memory, String sentence, String translation, Date timestamp, short channel) throws BinaryLogException {
-        return upload(direction, memory, sentence, translation, timestamp, getLogChannel(channel));
+    public ImportJob upload(Memory memory, TranslationUnit tu, short channel) throws BinaryLogException {
+        return upload(memory, tu, getLogChannel(channel));
     }
 
     @Override
-    public ImportJob upload(LanguageDirection direction, Memory memory, String sentence, String translation, Date timestamp, LogChannel channel) throws BinaryLogException {
+    public ImportJob upload(Memory memory, TranslationUnit tu, LogChannel channel) throws BinaryLogException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
-        long offset = sendElement(KafkaPacket.createAddition(direction, memory.getOwner(), memory.getId(), sentence, translation, timestamp), true, channel);
+        //TODO: createAddition() should support tuid
+        long offset = sendElement(KafkaPacket.createAddition(tu.language, memory.getOwner(), memory.getId(), tu.source, tu.target, tu.timestamp), true, channel);
         return ImportJob.createEphemeralJob(memory.getId(), offset, channel.getId());
     }
 
     @Override
-    public ImportJob replace(LanguageDirection direction, Memory memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, short channel) throws BinaryLogException {
-        return replace(direction, memory, sentence, translation, previousSentence, previousTranslation, timestamp, getLogChannel(channel));
+    public ImportJob replace(Memory memory, TranslationUnit tu, short channel) throws BinaryLogException {
+        return replace(memory, tu, getLogChannel(channel));
     }
 
     @Override
-    public ImportJob replace(LanguageDirection direction, Memory memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, LogChannel channel) throws BinaryLogException {
+    public ImportJob replace(Memory memory, TranslationUnit tu, LogChannel channel) throws BinaryLogException {
+        //TODO: stub implementation
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public ImportJob replace(Memory memory, TranslationUnit tu, String previousSentence, String previousTranslation, short channel) throws BinaryLogException {
+        return replace(memory, tu, previousSentence, previousTranslation, getLogChannel(channel));
+    }
+
+    @Override
+    public ImportJob replace(Memory memory, TranslationUnit tu, String previousSentence, String previousTranslation, LogChannel channel) throws BinaryLogException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 
-        long offset = sendElement(KafkaPacket.createOverwrite(direction, memory.getOwner(), memory.getId(), sentence, translation, previousSentence, previousTranslation, timestamp), true, channel);
+        //TODO: createOverwrite() should still support tuid
+        long offset = sendElement(KafkaPacket.createOverwrite(tu.language, memory.getOwner(), memory.getId(), tu.source, tu.target, previousSentence, previousTranslation, tu.timestamp), true, channel);
         return ImportJob.createEphemeralJob(memory.getId(), offset, channel.getId());
     }
 

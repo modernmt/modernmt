@@ -65,13 +65,13 @@ public class MaskedMultilingualCorpus extends BaseMultilingualCorpus implements 
             private final TUWriter writer = corpus.getContentWriter(append);
 
             @Override
-            public void write(TranslationUnit pair) throws IOException {
-                if (language.isEqualOrMoreGenericThan(pair.language))
-                    writer.write(new TranslationUnit(language, pair.source, pair.target, pair.timestamp));
-                else if (language.isEqualOrMoreGenericThan(pair.language.reversed()))
-                    writer.write(new TranslationUnit(language, pair.target, pair.source, pair.timestamp));
+            public void write(TranslationUnit tu) throws IOException {
+                if (language.isEqualOrMoreGenericThan(tu.language))
+                    writer.write(new TranslationUnit(tu.tuid, language, tu.source, tu.target, tu.timestamp));
+                else if (language.isEqualOrMoreGenericThan(tu.language.reversed()))
+                    writer.write(new TranslationUnit(tu.tuid, language, tu.target, tu.source, tu.timestamp));
                 else
-                    throw new UnsupportedLanguageException(pair.language);
+                    throw new UnsupportedLanguageException(tu.language);
             }
 
             @Override

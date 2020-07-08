@@ -88,8 +88,8 @@ public class CompactFileCorpus extends BaseMultilingualCorpus {
         }
 
         private TranslationUnit parse(String metadata, String source, String target) throws IOException {
-            String[] parts = metadata.split(",");
-            if (parts.length != 2)
+            String[] parts = metadata.split(",", 3);
+            if (parts.length < 2)
                 throw new IOException("Invalid metadata found: " + metadata);
 
             Date timestamp = null;
@@ -106,7 +106,9 @@ public class CompactFileCorpus extends BaseMultilingualCorpus {
                 return new LanguageDirection(Language.fromString(langs[0]), Language.fromString(langs[1]));
             });
 
-            return new TranslationUnit(language, source, target, timestamp);
+            String tuid = parts.length > 2 ? parts[2] : null;
+
+            return new TranslationUnit(tuid, language, source, target, timestamp);
         }
 
         @Override
@@ -132,8 +134,18 @@ public class CompactFileCorpus extends BaseMultilingualCorpus {
         }
 
         private static String encodeMetadata(TranslationUnit tu) {
-            return (tu.timestamp == null ? "0" : Long.toString(tu.timestamp.getTime())) + ',' +
-                    tu.language.source.toLanguageTag() + ' ' + tu.language.target.toLanguageTag();
+            StringBuilder metadata = new StringBuilder();
+            metadata.append(tu.timestamp == null ? "0" : Long.toString(tu.timestamp.getTime()));
+            metadata.append(',');
+            metadata.append(tu.language.source.toLanguageTag())
+                    .append(' ')
+                    .append(tu.language.target.toLanguageTag());
+            if (tu.tuid != null) {
+                metadata.append(',');
+                metadata.append(tu.tuid);
+            }
+
+            return metadata.toString();
         }
 
         @Override

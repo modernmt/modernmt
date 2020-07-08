@@ -157,7 +157,7 @@ public class TestData {
                         if (index < units.size()) {
                             TranslationUnitMessage unit = units.get(index++);
 
-                            return new TranslationUnit(unit.language, unit.rawSentence, unit.rawTranslation);
+                            return new TranslationUnit(null, unit.language, unit.rawSentence, unit.rawTranslation);
                         } else {
                             return null;
                         }
