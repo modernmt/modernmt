@@ -9,6 +9,8 @@ import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TUReader;
+import eu.modernmt.model.corpus.TranslationUnit;
 import eu.modernmt.processing.Preprocessor;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -278,7 +280,7 @@ public class KafkaBinaryLog implements BinaryLog {
         if (logger.isDebugEnabled())
             logger.debug("Uploading memory " + memory);
 
-        MultilingualCorpus.MultilingualLineReader reader = null;
+        TUReader reader = null;
 
         long importBegin, importEnd;
         int size = 0;
@@ -286,20 +288,20 @@ public class KafkaBinaryLog implements BinaryLog {
         try {
             reader = corpus.getContentReader();
 
-            MultilingualCorpus.StringPair pair = reader.read();
-            if (pair == null)
+            TranslationUnit tu = reader.read();
+            if (tu == null)
                 return null;
 
-            importEnd = importBegin = sendElement(KafkaPacket.createAddition(pair.language, memory.getOwner(), memory.getId(), pair.source, pair.target, pair.timestamp), true, channel);
+            importEnd = importBegin = sendElement(KafkaPacket.createAddition(tu.language, memory.getOwner(), memory.getId(), tu.source, tu.target, tu.timestamp), true, channel);
             size++;
 
-            pair = reader.read();
+            tu = reader.read();
 
-            while (pair != null) {
-                MultilingualCorpus.StringPair current = pair;
-                pair = reader.read();
+            while (tu != null) {
+                TranslationUnit current = tu;
+                tu = reader.read();
 
-                if (pair == null)
+                if (tu == null)
                     importEnd = sendElement(KafkaPacket.createAddition(current.language, memory.getOwner(), memory.getId(), current.source, current.target, current.timestamp), true, channel);
                 else
                     sendElement(KafkaPacket.createAddition(current.language, memory.getOwner(), memory.getId(), current.source, current.target, current.timestamp), false, channel);

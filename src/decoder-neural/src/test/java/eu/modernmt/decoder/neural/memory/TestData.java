@@ -6,8 +6,7 @@ import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
-import eu.modernmt.model.corpus.Corpus;
-import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.*;
 
 import java.io.IOException;
 import java.util.*;
@@ -148,31 +147,31 @@ public class TestData {
             }
 
             @Override
-            public MultilingualLineReader getContentReader() throws IOException {
-                return new MultilingualLineReader() {
+            public TUReader getContentReader() {
+                return new TUReader() {
 
                     private int index = 0;
 
                     @Override
-                    public StringPair read() throws IOException {
+                    public TranslationUnit read() {
                         if (index < units.size()) {
                             TranslationUnitMessage unit = units.get(index++);
 
-                            return new StringPair(unit.language, unit.rawSentence, unit.rawTranslation);
+                            return new TranslationUnit(unit.language, unit.rawSentence, unit.rawTranslation);
                         } else {
                             return null;
                         }
                     }
 
                     @Override
-                    public void close() throws IOException {
+                    public void close() {
                     }
 
                 };
             }
 
             @Override
-            public MultilingualLineWriter getContentWriter(boolean append) throws IOException {
+            public TUWriter getContentWriter(boolean append) {
                 throw new UnsupportedOperationException();
             }
 

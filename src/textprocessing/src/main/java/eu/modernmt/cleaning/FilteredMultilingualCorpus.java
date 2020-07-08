@@ -1,8 +1,6 @@
 package eu.modernmt.cleaning;
 
-import eu.modernmt.model.corpus.BaseMultilingualCorpus;
-import eu.modernmt.model.corpus.MultilingualCorpus;
-import eu.modernmt.model.corpus.MultilingualCorpusWrapper;
+import eu.modernmt.model.corpus.*;
 import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
@@ -30,22 +28,22 @@ public class FilteredMultilingualCorpus extends BaseMultilingualCorpus implement
     }
 
     @Override
-    public MultilingualLineWriter getContentWriter(boolean append) {
+    public TUWriter getContentWriter(boolean append) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public MultilingualLineReader getContentReader() throws IOException {
+    public TUReader getContentReader() throws IOException {
         this.initialize();
 
-        return new MultilingualLineReader() {
+        return new TUReader() {
 
-            private final MultilingualLineReader reader = corpus.getContentReader();
+            private final TUReader reader = corpus.getContentReader();
             private int index = 0;
 
             @Override
-            public StringPair read() throws IOException {
-                StringPair next;
+            public TranslationUnit read() throws IOException {
+                TranslationUnit next;
 
                 while ((next = reader.read()) != null) {
                     if (normalizer != null) {
@@ -78,20 +76,20 @@ public class FilteredMultilingualCorpus extends BaseMultilingualCorpus implement
         if (initializer != null) {
             initializer.onBegin();
 
-            MultilingualLineReader reader = null;
+            TUReader reader = null;
             try {
                 reader = corpus.getContentReader();
 
                 int index = 0;
-                StringPair pair;
+                TranslationUnit tu;
 
-                while ((pair = reader.read()) != null) {
+                while ((tu = reader.read()) != null) {
                     if (normalizer != null) {
-                        pair.source = normalizer.normalize(pair.source);
-                        pair.target = normalizer.normalize(pair.target);
+                        tu.source = normalizer.normalize(tu.source);
+                        tu.target = normalizer.normalize(tu.target);
                     }
 
-                    initializer.onPair(pair, index);
+                    initializer.onTranslationUnit(tu, index);
                     index++;
                 }
             } finally {

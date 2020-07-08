@@ -2,8 +2,7 @@ package eu.modernmt.cli;
 
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
-import eu.modernmt.model.corpus.MaskedMultilingualCorpus;
-import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.*;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
 import org.apache.commons.cli.*;
@@ -60,16 +59,16 @@ public class ExtractTMXSampleMain {
 
     private static Set<Integer> selectIndexes(MultilingualCorpus corpus, int samples, int minLength) throws IOException {
         List<Integer> indexes = new ArrayList<>();
-        MultilingualCorpus.MultilingualLineReader reader = null;
+        TUReader reader = null;
 
         try {
             reader = corpus.getContentReader();
 
             int index = 0;
 
-            MultilingualCorpus.StringPair pair;
-            while ((pair = reader.read()) != null) {
-                if (pair.source.length() > minLength)
+            TranslationUnit tu;
+            while ((tu = reader.read()) != null) {
+                if (tu.source.length() > minLength)
                     indexes.add(index);
                 index++;
             }
@@ -84,8 +83,8 @@ public class ExtractTMXSampleMain {
     private static void extractTest(MultilingualCorpus corpus, MultilingualCorpus test, int samples, int minLength) throws IOException {
         Set<Integer> indexes = selectIndexes(corpus, samples, minLength);
 
-        MultilingualCorpus.MultilingualLineReader reader = null;
-        MultilingualCorpus.MultilingualLineWriter writer = null;
+        TUReader reader = null;
+        TUWriter writer = null;
 
         try {
             reader = corpus.getContentReader();
@@ -93,7 +92,7 @@ public class ExtractTMXSampleMain {
 
             int index = 0;
 
-            MultilingualCorpus.StringPair pair;
+            TranslationUnit pair;
             while ((pair = reader.read()) != null) {
                 if (indexes.contains(index))
                     writer.write(pair);
@@ -106,22 +105,22 @@ public class ExtractTMXSampleMain {
         }
     }
 
-    private static String toKey(MultilingualCorpus.StringPair pair) {
-        return pair.source.replaceAll("\\s+", "") +
+    private static String toKey(TranslationUnit tu) {
+        return tu.source.replaceAll("\\s+", "") +
                 '\n' +
-                pair.target.replaceAll("\\s+", "");
+                tu.target.replaceAll("\\s+", "");
     }
 
     private static Set<String> loadTestSet(MultilingualCorpus corpus) {
         HashSet<String> set = new HashSet<>();
-        MultilingualCorpus.MultilingualLineReader reader = null;
+        TUReader reader = null;
 
         try {
             reader = corpus.getContentReader();
 
-            MultilingualCorpus.StringPair pair;
-            while ((pair = reader.read()) != null)
-                set.add(toKey(pair));
+            TranslationUnit tu;
+            while ((tu = reader.read()) != null)
+                set.add(toKey(tu));
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -134,17 +133,17 @@ public class ExtractTMXSampleMain {
     private static void filterTrain(MultilingualCorpus corpus, MultilingualCorpus test, MultilingualCorpus output) throws IOException {
         Set<String> testSet = loadTestSet(test);
 
-        MultilingualCorpus.MultilingualLineReader reader = null;
-        MultilingualCorpus.MultilingualLineWriter writer = null;
+        TUReader reader = null;
+        TUWriter writer = null;
 
         try {
             reader = corpus.getContentReader();
             writer = output.getContentWriter(false);
 
-            MultilingualCorpus.StringPair pair;
-            while ((pair = reader.read()) != null) {
-                if (!testSet.contains(toKey(pair)))
-                    writer.write(pair);
+            TranslationUnit tu;
+            while ((tu = reader.read()) != null) {
+                if (!testSet.contains(toKey(tu)))
+                    writer.write(tu);
             }
         } finally {
             IOUtils.closeQuietly(reader);

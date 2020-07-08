@@ -1,8 +1,6 @@
 package eu.modernmt.training.bloomfilter;
 
-import eu.modernmt.model.corpus.BaseMultilingualCorpus;
-import eu.modernmt.model.corpus.MultilingualCorpus;
-import eu.modernmt.model.corpus.MultilingualCorpusWrapper;
+import eu.modernmt.model.corpus.*;
 
 import java.io.IOException;
 
@@ -29,18 +27,18 @@ public class BloomFilterMultilingualCorpus extends BaseMultilingualCorpus implem
     }
 
     @Override
-    public MultilingualLineReader getContentReader() throws IOException {
-        return new MultilingualLineReader() {
+    public TUReader getContentReader() throws IOException {
+        return new TUReader() {
 
-            private final MultilingualLineReader reader = corpus.getContentReader();
+            private final TUReader reader = corpus.getContentReader();
 
             @Override
-            public StringPair read() throws IOException {
-                StringPair pair = reader.read();
-                while (pair != null && !bloomFilter.accept(pair, lengthThreshold))
-                    pair = reader.read();
+            public TranslationUnit read() throws IOException {
+                TranslationUnit tu = reader.read();
+                while (tu != null && !bloomFilter.accept(tu, lengthThreshold))
+                    tu = reader.read();
 
-                return pair;
+                return tu;
             }
 
             @Override
@@ -51,15 +49,15 @@ public class BloomFilterMultilingualCorpus extends BaseMultilingualCorpus implem
     }
 
     @Override
-    public MultilingualLineWriter getContentWriter(boolean append) throws IOException {
-        return new MultilingualLineWriter() {
+    public TUWriter getContentWriter(boolean append) throws IOException {
+        return new TUWriter() {
 
-            private final MultilingualLineWriter writer = corpus.getContentWriter(append);
+            private final TUWriter writer = corpus.getContentWriter(append);
 
             @Override
-            public void write(StringPair pair) throws IOException {
-                if (bloomFilter.accept(pair, lengthThreshold))
-                    writer.write(pair);
+            public void write(TranslationUnit tu) throws IOException {
+                if (bloomFilter.accept(tu, lengthThreshold))
+                    writer.write(tu);
             }
 
             @Override

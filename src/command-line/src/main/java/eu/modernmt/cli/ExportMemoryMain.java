@@ -4,6 +4,8 @@ import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.io.RuntimeIOException;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TUWriter;
+import eu.modernmt.model.corpus.TranslationUnit;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
@@ -52,7 +54,7 @@ public class ExportMemoryMain {
         try {
             memory.dump(args.id, e -> {
                 try {
-                    writer.write(new MultilingualCorpus.StringPair(e.language, e.sentence, e.translation));
+                    writer.write(new TranslationUnit(e.language, e.sentence, e.translation));
                 } catch (IOException ex) {
                     throw new RuntimeIOException(ex);
                 }
@@ -63,18 +65,18 @@ public class ExportMemoryMain {
         }
     }
 
-    private static class MultiWriter implements MultilingualCorpus.MultilingualLineWriter {
+    private static class MultiWriter implements TUWriter {
 
         private final File folder;
         private final String prefix;
-        private final HashMap<LanguageDirection, MultilingualCorpus.MultilingualLineWriter> writers = new HashMap<>();
+        private final HashMap<LanguageDirection, TUWriter> writers = new HashMap<>();
 
         public MultiWriter(File prefix) {
             this.folder = prefix.getParentFile();
             this.prefix = prefix.getName();
         }
 
-        private MultilingualCorpus.MultilingualLineWriter getWriter(LanguageDirection language) {
+        private TUWriter getWriter(LanguageDirection language) {
             return writers.computeIfAbsent(language, l -> {
                 String filename = prefix + '_' + language.source.getLanguage() + '_' + language.target.getLanguage() + ".tmx";
                 TMXCorpus tmx = new TMXCorpus(new File(folder, filename));
@@ -87,10 +89,10 @@ public class ExportMemoryMain {
         }
 
         @Override
-        public void write(MultilingualCorpus.StringPair pair) throws IOException {
+        public void write(TranslationUnit tu) throws IOException {
             try {
-                MultilingualCorpus.MultilingualLineWriter writer = getWriter(pair.language);
-                writer.write(pair);
+                TUWriter writer = getWriter(tu.language);
+                writer.write(tu);
             } catch (RuntimeIOException e) {
                 throw e.getCause();
             }
@@ -98,13 +100,13 @@ public class ExportMemoryMain {
 
         @Override
         public void flush() throws IOException {
-            for (MultilingualCorpus.MultilingualLineWriter writer : writers.values())
+            for (TUWriter writer : writers.values())
                 writer.flush();
         }
 
         @Override
         public void close() throws IOException {
-            for (MultilingualCorpus.MultilingualLineWriter writer : writers.values())
+            for (TUWriter writer : writers.values())
                 writer.close();
         }
     }

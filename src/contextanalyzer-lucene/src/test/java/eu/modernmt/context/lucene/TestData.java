@@ -8,8 +8,7 @@ import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
-import eu.modernmt.model.corpus.BaseMultilingualCorpus;
-import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.corpus.*;
 import eu.modernmt.model.corpus.impl.StringCorpus;
 import org.apache.commons.io.IOUtils;
 
@@ -301,14 +300,14 @@ public class TestData {
         }
 
         @Override
-        public MultilingualLineReader getContentReader() throws IOException {
-            return new MultilingualLineReader() {
+        public TUReader getContentReader() {
+            return new TUReader() {
 
                 private final LineReader sourceReader = sourceCorpus.getContentReader();
                 private final LineReader targetReader = targetCorpus.getContentReader();
 
                 @Override
-                public StringPair read() throws IOException {
+                public TranslationUnit read() throws IOException {
                     String source = sourceReader.readLine();
                     String target = targetReader.readLine();
 
@@ -318,11 +317,11 @@ public class TestData {
                     if (source == null || target == null)
                         throw new IOException("Not-parallel string corpora");
 
-                    return new StringPair(language, source, target);
+                    return new TranslationUnit(language, source, target);
                 }
 
                 @Override
-                public void close() throws IOException {
+                public void close() {
                     IOUtils.closeQuietly(sourceReader);
                     IOUtils.closeQuietly(targetReader);
                 }
@@ -330,7 +329,7 @@ public class TestData {
         }
 
         @Override
-        public MultilingualLineWriter getContentWriter(boolean append) throws IOException {
+        public TUWriter getContentWriter(boolean append) {
             throw new UnsupportedOperationException();
         }
 
@@ -361,22 +360,22 @@ public class TestData {
         }
 
         @Override
-        public MultilingualLineWriter getContentWriter(boolean append) {
+        public TUWriter getContentWriter(boolean append) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public MultilingualLineReader getContentReader() {
-            return new MultilingualLineReader() {
+        public TUReader getContentReader() {
+            return new TUReader() {
 
                 private int index = 0;
-                private MultilingualLineReader reader = null;
+                private TUReader reader = null;
 
                 @Override
-                public StringPair read() throws IOException {
-                    StringPair pair = null;
+                public TranslationUnit read() throws IOException {
+                    TranslationUnit tu = null;
 
-                    while (pair == null) {
+                    while (tu == null) {
                         if (reader == null) {
                             if (index < corpora.length)
                                 reader = corpora[index++].getContentReader();
@@ -384,15 +383,15 @@ public class TestData {
                                 return null;
                         }
 
-                        pair = reader.read();
+                        tu = reader.read();
 
-                        if (pair == null) {
+                        if (tu == null) {
                             reader.close();
                             reader = null;
                         }
                     }
 
-                    return pair;
+                    return tu;
                 }
 
                 @Override

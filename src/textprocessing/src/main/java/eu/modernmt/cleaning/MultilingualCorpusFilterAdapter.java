@@ -3,6 +3,7 @@ package eu.modernmt.cleaning;
 
 import eu.modernmt.lang.Language;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TranslationUnit;
 
 import java.util.HashMap;
 
@@ -47,11 +48,11 @@ public class MultilingualCorpusFilterAdapter implements MultilingualCorpusFilter
             }
 
             @Override
-            public void onPair(MultilingualCorpus.StringPair pair, int index) {
-                initializers.computeIfAbsent(pair.language.source, this::createInitializer)
-                        .onLine(pair.language.source, pair.source, index);
-                initializers.computeIfAbsent(pair.language.target, this::createInitializer)
-                        .onLine(pair.language.target, pair.target, index);
+            public void onTranslationUnit(TranslationUnit tu, int index) {
+                initializers.computeIfAbsent(tu.language.source, this::createInitializer)
+                        .onLine(tu.language.source, tu.source, index);
+                initializers.computeIfAbsent(tu.language.target, this::createInitializer)
+                        .onLine(tu.language.target, tu.target, index);
             }
 
             private CorpusFilter.Initializer createInitializer(Language language) {
@@ -71,12 +72,12 @@ public class MultilingualCorpusFilterAdapter implements MultilingualCorpusFilter
     }
 
     @Override
-    public boolean accept(MultilingualCorpus.StringPair pair, int index) {
-        CorpusFilter sourceFilter = filters.computeIfAbsent(pair.language.source, (l) -> factory.create());
-        CorpusFilter targetFilter = filters.computeIfAbsent(pair.language.target, (l) -> factory.create());
+    public boolean accept(TranslationUnit tu, int index) {
+        CorpusFilter sourceFilter = filters.computeIfAbsent(tu.language.source, (l) -> factory.create());
+        CorpusFilter targetFilter = filters.computeIfAbsent(tu.language.target, (l) -> factory.create());
 
-        return sourceFilter.accept(pair.language.source, pair.source, index) &&
-                targetFilter.accept(pair.language.target, pair.target, index);
+        return sourceFilter.accept(tu.language.source, tu.source, index) &&
+                targetFilter.accept(tu.language.target, tu.target, index);
     }
 
     @Override

@@ -1,7 +1,8 @@
 package eu.modernmt.model.corpus.impl.tmx;
 
 import eu.modernmt.io.FileProxy;
-import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TUReader;
+import eu.modernmt.model.corpus.TranslationUnit;
 import eu.modernmt.xml.XMLUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -15,17 +16,17 @@ import java.util.List;
 /**
  * Created by davide on 14/03/16.
  */
-class TMXLineReader implements MultilingualCorpus.MultilingualLineReader {
+class TMXReader implements TUReader {
 
-    private final TMXPairReader tmxPairReader = new TMXPairReader();
+    private final TMXTUReader tmxTuReader = new TMXTUReader();
 
     private final FileProxy tmx;
     private final InputStream stream;
     private final XMLEventReader reader;
 
-    private List<MultilingualCorpus.StringPair> cachedPairs = Collections.emptyList();
+    private List<TranslationUnit> cachedTUs = Collections.emptyList();
 
-    TMXLineReader(FileProxy tmx) throws IOException {
+    TMXReader(FileProxy tmx) throws IOException {
         this.tmx = tmx;
 
         InputStream stream = null;
@@ -46,12 +47,12 @@ class TMXLineReader implements MultilingualCorpus.MultilingualLineReader {
     }
 
     @Override
-    public MultilingualCorpus.StringPair read() throws IOException {
+    public TranslationUnit read() throws IOException {
         try {
-            if (cachedPairs.isEmpty())
-                cachedPairs = tmxPairReader.read(reader);
+            if (cachedTUs.isEmpty())
+                cachedTUs = tmxTuReader.read(reader);
 
-            return (cachedPairs == null || cachedPairs.isEmpty()) ? null : cachedPairs.remove(0);
+            return (cachedTUs == null || cachedTUs.isEmpty()) ? null : cachedTUs.remove(0);
         } catch (XMLStreamException e) {
             throw new IOException("Invalid TMX " + tmx, e);
         }

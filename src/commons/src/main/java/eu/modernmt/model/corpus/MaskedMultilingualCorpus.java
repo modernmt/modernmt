@@ -21,22 +21,22 @@ public class MaskedMultilingualCorpus extends BaseMultilingualCorpus implements 
     }
 
     @Override
-    public MultilingualCorpus.MultilingualLineReader getContentReader() throws IOException {
-        return new MultilingualCorpus.MultilingualLineReader() {
+    public TUReader getContentReader() throws IOException {
+        return new TUReader() {
 
-            private final MultilingualCorpus.MultilingualLineReader reader = corpus.getContentReader();
+            private final TUReader reader = corpus.getContentReader();
 
             @Override
-            public MultilingualCorpus.StringPair read() throws IOException {
-                MultilingualCorpus.StringPair pair;
-                while ((pair = reader.read()) != null) {
-                    if (language.isEqualOrMoreGenericThan(pair.language)) {
-                        pair.language = language;
-                        return pair;
-                    } else if (language.isEqualOrMoreGenericThan(pair.language.reversed())) {
-                        pair = reverse(pair);
-                        pair.language = language;
-                        return pair;
+            public TranslationUnit read() throws IOException {
+                TranslationUnit tu;
+                while ((tu = reader.read()) != null) {
+                    if (language.isEqualOrMoreGenericThan(tu.language)) {
+                        tu.language = language;
+                        return tu;
+                    } else if (language.isEqualOrMoreGenericThan(tu.language.reversed())) {
+                        tu = reverse(tu);
+                        tu.language = language;
+                        return tu;
                     }
                 }
 
@@ -50,26 +50,26 @@ public class MaskedMultilingualCorpus extends BaseMultilingualCorpus implements 
         };
     }
 
-    private static MultilingualCorpus.StringPair reverse(MultilingualCorpus.StringPair pair) {
-        String temp = pair.target;
-        pair.target = pair.source;
-        pair.source = temp;
+    private static TranslationUnit reverse(TranslationUnit tu) {
+        String temp = tu.target;
+        tu.target = tu.source;
+        tu.source = temp;
 
-        return pair;
+        return tu;
     }
 
     @Override
-    public MultilingualCorpus.MultilingualLineWriter getContentWriter(boolean append) throws IOException {
-        return new MultilingualCorpus.MultilingualLineWriter() {
+    public TUWriter getContentWriter(boolean append) throws IOException {
+        return new TUWriter() {
 
-            private final MultilingualCorpus.MultilingualLineWriter writer = corpus.getContentWriter(append);
+            private final TUWriter writer = corpus.getContentWriter(append);
 
             @Override
-            public void write(MultilingualCorpus.StringPair pair) throws IOException {
+            public void write(TranslationUnit pair) throws IOException {
                 if (language.isEqualOrMoreGenericThan(pair.language))
-                    writer.write(new MultilingualCorpus.StringPair(language, pair.source, pair.target, pair.timestamp));
+                    writer.write(new TranslationUnit(language, pair.source, pair.target, pair.timestamp));
                 else if (language.isEqualOrMoreGenericThan(pair.language.reversed()))
-                    writer.write(new MultilingualCorpus.StringPair(language, pair.target, pair.source, pair.timestamp));
+                    writer.write(new TranslationUnit(language, pair.target, pair.source, pair.timestamp));
                 else
                     throw new UnsupportedLanguageException(pair.language);
             }

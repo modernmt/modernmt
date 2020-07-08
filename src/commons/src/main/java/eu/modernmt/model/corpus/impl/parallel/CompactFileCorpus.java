@@ -7,6 +7,9 @@ import eu.modernmt.io.UnixLineWriter;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.BaseMultilingualCorpus;
+import eu.modernmt.model.corpus.TUReader;
+import eu.modernmt.model.corpus.TUWriter;
+import eu.modernmt.model.corpus.TranslationUnit;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
@@ -49,26 +52,26 @@ public class CompactFileCorpus extends BaseMultilingualCorpus {
     }
 
     @Override
-    public MultilingualLineReader getContentReader() throws IOException {
-        return new CompactLineReader(file);
+    public TUReader getContentReader() throws IOException {
+        return new CompactReader(file);
     }
 
     @Override
-    public MultilingualLineWriter getContentWriter(boolean append) throws IOException {
-        return new CompactLineWriter(file, append);
+    public TUWriter getContentWriter(boolean append) throws IOException {
+        return new CompactWriter(file, append);
     }
 
-    private static class CompactLineReader implements MultilingualLineReader {
+    private static class CompactReader implements TUReader {
 
         private final UnixLineReader reader;
         private final HashMap<String, LanguageDirection> cachedLanguagePairs = new HashMap<>();
 
-        private CompactLineReader(FileProxy file) throws IOException {
+        private CompactReader(FileProxy file) throws IOException {
             this.reader = new UnixLineReader(file.getInputStream(), UTF8Charset.get());
         }
 
         @Override
-        public StringPair read() throws IOException {
+        public TranslationUnit read() throws IOException {
             String source = reader.readLine();
             if (source == null)
                 return null;
@@ -84,7 +87,7 @@ public class CompactFileCorpus extends BaseMultilingualCorpus {
             return parse(metadata, source, target);
         }
 
-        private StringPair parse(String metadata, String source, String target) throws IOException {
+        private TranslationUnit parse(String metadata, String source, String target) throws IOException {
             String[] parts = metadata.split(",");
             if (parts.length != 2)
                 throw new IOException("Invalid metadata found: " + metadata);
@@ -103,7 +106,7 @@ public class CompactFileCorpus extends BaseMultilingualCorpus {
                 return new LanguageDirection(Language.fromString(langs[0]), Language.fromString(langs[1]));
             });
 
-            return new StringPair(language, source, target, timestamp);
+            return new TranslationUnit(language, source, target, timestamp);
         }
 
         @Override
@@ -113,24 +116,24 @@ public class CompactFileCorpus extends BaseMultilingualCorpus {
 
     }
 
-    private static class CompactLineWriter implements MultilingualLineWriter {
+    private static class CompactWriter implements TUWriter {
 
         private final UnixLineWriter writer;
 
-        private CompactLineWriter(FileProxy file, boolean append) throws IOException {
+        private CompactWriter(FileProxy file, boolean append) throws IOException {
             this.writer = new UnixLineWriter(file.getOutputStream(append), UTF8Charset.get());
         }
 
         @Override
-        public void write(StringPair pair) throws IOException {
-            writer.writeLine(pair.source);
-            writer.writeLine(pair.target);
-            writer.writeLine(encodeMetadata(pair));
+        public void write(TranslationUnit tu) throws IOException {
+            writer.writeLine(tu.source);
+            writer.writeLine(tu.target);
+            writer.writeLine(encodeMetadata(tu));
         }
 
-        private static String encodeMetadata(StringPair pair) {
-            return (pair.timestamp == null ? "0" : Long.toString(pair.timestamp.getTime())) + ',' +
-                    pair.language.source.toLanguageTag() + ' ' + pair.language.target.toLanguageTag();
+        private static String encodeMetadata(TranslationUnit tu) {
+            return (tu.timestamp == null ? "0" : Long.toString(tu.timestamp.getTime())) + ',' +
+                    tu.language.source.toLanguageTag() + ' ' + tu.language.target.toLanguageTag();
         }
 
         @Override

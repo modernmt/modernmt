@@ -11,6 +11,7 @@ import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TranslationUnit;
 import eu.modernmt.persistence.*;
 import org.apache.commons.io.IOUtils;
 
@@ -117,16 +118,16 @@ public class MemoryFacade {
 
     public ImportJob add(LanguageDirection direction, long memoryId, String source, String target) throws BinaryLogException, PersistenceException {
         // Normalizing
-        MultilingualCorpus.StringPair pair = new MultilingualCorpus.StringPair(direction, source, target);
-        contributionFilter.normalize(pair);
+        TranslationUnit tu = new TranslationUnit(direction, source, target);
+        contributionFilter.normalize(tu);
 
         // Filtering
-        if (!contributionFilter.accept(pair, 0))
+        if (!contributionFilter.accept(tu, 0))
             return ImportJob.createEphemeralJob(memoryId, 0, BinaryLog.CONTRIBUTIONS_CHANNEL_ID);
 
-        direction = pair.language;
-        source = pair.source;
-        target = pair.target;
+        direction = tu.language;
+        source = tu.source;
+        target = tu.target;
 
         // Adding
         Connection connection = null;
@@ -159,8 +160,8 @@ public class MemoryFacade {
                              String previousSentence, String previousTranslation)
             throws BinaryLogException, PersistenceException {
         // Normalizing
-        MultilingualCorpus.StringPair previous = new MultilingualCorpus.StringPair(direction, previousSentence, previousTranslation);
-        MultilingualCorpus.StringPair current = new MultilingualCorpus.StringPair(direction, sentence, translation);
+        TranslationUnit previous = new TranslationUnit(direction, previousSentence, previousTranslation);
+        TranslationUnit current = new TranslationUnit(direction, sentence, translation);
         contributionFilter.normalize(previous);
         contributionFilter.normalize(current);
 

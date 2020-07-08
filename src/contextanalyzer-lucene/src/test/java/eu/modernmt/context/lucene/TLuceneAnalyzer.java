@@ -13,6 +13,8 @@ import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TUReader;
+import eu.modernmt.model.corpus.TranslationUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.search.IndexSearcher;
@@ -239,14 +241,14 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
             position++;
 
         ArrayList<TranslationUnitMessage> units = new ArrayList<>();
-        MultilingualCorpus.MultilingualLineReader reader = null;
+        TUReader reader = null;
         try {
             reader = corpus.getContentReader();
 
-            MultilingualCorpus.StringPair pair;
-            while ((pair = reader.read()) != null) {
-                TranslationUnitMessage unit = new TranslationUnitMessage((short) 0, position++, memory.getOwner(), pair.language, pair.language, memory.getId(),
-                        pair.source, pair.target, null, null, new Date(), null, null, null);
+            TranslationUnit tu;
+            while ((tu = reader.read()) != null) {
+                TranslationUnitMessage unit = new TranslationUnitMessage((short) 0, position++, memory.getOwner(), tu.language, tu.language, memory.getId(),
+                        tu.source, tu.target, null, null, new Date(), null, null, null);
                 units.add(unit);
             }
         } finally {

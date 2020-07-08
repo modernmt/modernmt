@@ -5,6 +5,7 @@ import eu.modernmt.cleaning.filters.util.Sequence;
 import eu.modernmt.io.WordCounter;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TranslationUnit;
 
 import java.util.HashMap;
 
@@ -37,14 +38,14 @@ public class SentenceLengthFilter implements MultilingualCorpusFilter {
             }
 
             @Override
-            public void onPair(MultilingualCorpus.StringPair pair, int index) {
-                int sourceLength = pair.source.length();
-                int targetLength = pair.target.length();
+            public void onTranslationUnit(TranslationUnit tu, int index) {
+                int sourceLength = tu.source.length();
+                int targetLength = tu.target.length();
 
                 if (sourceLength <= maxLength && targetLength <= maxLength && sourceLength > 0 && targetLength > 0) {
-                    Sequence ratioSequence = lengthRatios.computeIfAbsent(pair.language, k -> new Sequence());
+                    Sequence ratioSequence = lengthRatios.computeIfAbsent(tu.language, k -> new Sequence());
 
-                    ratioSequence.add(((double) WordCounter.count(pair.source)) / WordCounter.count(pair.target));
+                    ratioSequence.add(((double) WordCounter.count(tu.source)) / WordCounter.count(tu.target));
                 }
             }
 
@@ -57,20 +58,20 @@ public class SentenceLengthFilter implements MultilingualCorpusFilter {
     }
 
     @Override
-    public boolean accept(MultilingualCorpus.StringPair pair, int index) {
-        int sourceLength = pair.source.length();
-        int targetLength = pair.target.length();
+    public boolean accept(TranslationUnit tu, int index) {
+        int sourceLength = tu.source.length();
+        int targetLength = tu.target.length();
 
         if (sourceLength > maxLength || targetLength > maxLength || sourceLength == 0 || targetLength == 0)
             return false;
 
-        Sequence seq = lengthRatios.get(pair.language);
+        Sequence seq = lengthRatios.get(tu.language);
 
         if (seq.length() < MIN_CORPUS_LINES)
             return true;
 
-        int sourceWordCount = WordCounter.count(pair.source);
-        int targetWordCount = WordCounter.count(pair.target);
+        int sourceWordCount = WordCounter.count(tu.source);
+        int targetWordCount = WordCounter.count(tu.target);
 
         if (sourceWordCount < 6 && targetWordCount < 6)
             return true;

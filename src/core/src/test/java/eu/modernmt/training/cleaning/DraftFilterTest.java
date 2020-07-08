@@ -3,6 +3,7 @@ package eu.modernmt.training.cleaning;
 import eu.modernmt.cleaning.FilteredMultilingualCorpus;
 import eu.modernmt.cleaning.filters.draft.DraftFilter;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TranslationUnit;
 import eu.modernmt.training.MockMultilingualCorpus;
 import org.junit.Test;
 
@@ -63,11 +64,11 @@ public class DraftFilterTest {
 
     @Test
     public void testAllUniqueSortedByDate() throws IOException {
-        MockMultilingualCorpus corpus = new MockMultilingualCorpus(new MultilingualCorpus.StringPair[]{
-                MockMultilingualCorpus.pair("A", "a", 0),
-                MockMultilingualCorpus.pair("B", "b", 1),
-                MockMultilingualCorpus.pair("C", "c", 2),
-                MockMultilingualCorpus.pair("D", "d", 3),
+        MockMultilingualCorpus corpus = new MockMultilingualCorpus(new TranslationUnit[]{
+                MockMultilingualCorpus.tu("A", "a", 0),
+                MockMultilingualCorpus.tu("B", "b", 1),
+                MockMultilingualCorpus.tu("C", "c", 2),
+                MockMultilingualCorpus.tu("D", "d", 3),
         });
 
         FilteredMultilingualCorpus filteredCorpus = wrap(corpus);
@@ -78,21 +79,21 @@ public class DraftFilterTest {
 
     @Test
     public void testDraftsSortedByDate() throws IOException {
-        MockMultilingualCorpus corpus = new MockMultilingualCorpus(new MultilingualCorpus.StringPair[]{
-                MockMultilingualCorpus.pair("A", "z", 0),
-                MockMultilingualCorpus.pair("A", "a", 1),
-                MockMultilingualCorpus.pair("B", "z", 2),
-                MockMultilingualCorpus.pair("C", "z", 3),
-                MockMultilingualCorpus.pair("D", "d", 4),
-                MockMultilingualCorpus.pair("C", "c", 5),
-                MockMultilingualCorpus.pair("B", "b", 6),
+        MockMultilingualCorpus corpus = new MockMultilingualCorpus(new TranslationUnit[]{
+                MockMultilingualCorpus.tu("A", "z", 0),
+                MockMultilingualCorpus.tu("A", "a", 1),
+                MockMultilingualCorpus.tu("B", "z", 2),
+                MockMultilingualCorpus.tu("C", "z", 3),
+                MockMultilingualCorpus.tu("D", "d", 4),
+                MockMultilingualCorpus.tu("C", "c", 5),
+                MockMultilingualCorpus.tu("B", "b", 6),
         });
 
-        MockMultilingualCorpus expected = new MockMultilingualCorpus(new MultilingualCorpus.StringPair[]{
-                MockMultilingualCorpus.pair("A", "a", 1),
-                MockMultilingualCorpus.pair("D", "d", 4),
-                MockMultilingualCorpus.pair("C", "c", 5),
-                MockMultilingualCorpus.pair("B", "b", 6),
+        MockMultilingualCorpus expected = new MockMultilingualCorpus(new TranslationUnit[]{
+                MockMultilingualCorpus.tu("A", "a", 1),
+                MockMultilingualCorpus.tu("D", "d", 4),
+                MockMultilingualCorpus.tu("C", "c", 5),
+                MockMultilingualCorpus.tu("B", "b", 6),
         });
 
         FilteredMultilingualCorpus filteredCorpus = wrap(corpus);
@@ -103,21 +104,21 @@ public class DraftFilterTest {
 
     @Test
     public void testMixedDraftsWithShuffledDates() throws IOException {
-        MockMultilingualCorpus corpus = new MockMultilingualCorpus(new MultilingualCorpus.StringPair[]{
-                MockMultilingualCorpus.pair("A", "z", 1),
-                MockMultilingualCorpus.pair("A", "a", 0),
-                MockMultilingualCorpus.pair("B", "z", 2),
-                MockMultilingualCorpus.pair("C", "z", 5),
-                MockMultilingualCorpus.pair("D", "d", 4),
-                MockMultilingualCorpus.pair("C", "c", 3),
-                MockMultilingualCorpus.pair("B", "b", 6),
+        MockMultilingualCorpus corpus = new MockMultilingualCorpus(new TranslationUnit[]{
+                MockMultilingualCorpus.tu("A", "z", 1),
+                MockMultilingualCorpus.tu("A", "a", 0),
+                MockMultilingualCorpus.tu("B", "z", 2),
+                MockMultilingualCorpus.tu("C", "z", 5),
+                MockMultilingualCorpus.tu("D", "d", 4),
+                MockMultilingualCorpus.tu("C", "c", 3),
+                MockMultilingualCorpus.tu("B", "b", 6),
         });
 
-        MockMultilingualCorpus expected = new MockMultilingualCorpus(new MultilingualCorpus.StringPair[]{
-                MockMultilingualCorpus.pair("A", "z", 1),
-                MockMultilingualCorpus.pair("C", "z", 5),
-                MockMultilingualCorpus.pair("D", "d", 4),
-                MockMultilingualCorpus.pair("B", "b", 6),
+        MockMultilingualCorpus expected = new MockMultilingualCorpus(new TranslationUnit[]{
+                MockMultilingualCorpus.tu("A", "z", 1),
+                MockMultilingualCorpus.tu("C", "z", 5),
+                MockMultilingualCorpus.tu("D", "d", 4),
+                MockMultilingualCorpus.tu("B", "b", 6),
         });
 
         FilteredMultilingualCorpus filteredCorpus = wrap(corpus);
@@ -128,19 +129,19 @@ public class DraftFilterTest {
 
     @Test
     public void testDraftsWithSameDate() throws IOException {
-        MockMultilingualCorpus corpus = new MockMultilingualCorpus(new MultilingualCorpus.StringPair[]{
-                MockMultilingualCorpus.pair("A", "z", 0),
-                MockMultilingualCorpus.pair("B", "b", 1),
-                MockMultilingualCorpus.pair("A", "a", 0),
-                MockMultilingualCorpus.pair("C", "c", 2),
-                MockMultilingualCorpus.pair("D", "d", 3),
+        MockMultilingualCorpus corpus = new MockMultilingualCorpus(new TranslationUnit[]{
+                MockMultilingualCorpus.tu("A", "z", 0),
+                MockMultilingualCorpus.tu("B", "b", 1),
+                MockMultilingualCorpus.tu("A", "a", 0),
+                MockMultilingualCorpus.tu("C", "c", 2),
+                MockMultilingualCorpus.tu("D", "d", 3),
         });
 
-        MockMultilingualCorpus expected = new MockMultilingualCorpus(new MultilingualCorpus.StringPair[]{
-                MockMultilingualCorpus.pair("B", "b", 1),
-                MockMultilingualCorpus.pair("A", "a", 0),
-                MockMultilingualCorpus.pair("C", "c", 2),
-                MockMultilingualCorpus.pair("D", "d", 3),
+        MockMultilingualCorpus expected = new MockMultilingualCorpus(new TranslationUnit[]{
+                MockMultilingualCorpus.tu("B", "b", 1),
+                MockMultilingualCorpus.tu("A", "a", 0),
+                MockMultilingualCorpus.tu("C", "c", 2),
+                MockMultilingualCorpus.tu("D", "d", 3),
 
         });
 

@@ -1,6 +1,6 @@
 package eu.modernmt.cleaning;
 
-import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TranslationUnit;
 
 import java.util.ArrayList;
 
@@ -42,9 +42,9 @@ public class ChainedMultilingualCorpusFilter implements MultilingualCorpusFilter
         return line;
     }
 
-    public void normalize(MultilingualCorpus.StringPair pair) {
-        pair.source = normalize(pair.source);
-        pair.target = normalize(pair.target);
+    public void normalize(TranslationUnit tu) {
+        tu.source = normalize(tu.source);
+        tu.target = normalize(tu.target);
     }
 
     // - CorpusFilter --------------------------------------------------------------------------------------------------
@@ -70,9 +70,9 @@ public class ChainedMultilingualCorpusFilter implements MultilingualCorpusFilter
                 }
 
                 @Override
-                public void onPair(MultilingualCorpus.StringPair pair, int index) {
+                public void onTranslationUnit(TranslationUnit tu, int index) {
                     for (Initializer initializer : initializers)
-                        initializer.onPair(pair, index);
+                        initializer.onTranslationUnit(tu, index);
                 }
 
                 @Override
@@ -85,9 +85,9 @@ public class ChainedMultilingualCorpusFilter implements MultilingualCorpusFilter
     }
 
     @Override
-    public boolean accept(MultilingualCorpus.StringPair pair, int index) {
+    public boolean accept(TranslationUnit tu, int index) {
         for (MultilingualCorpusFilter filter : filters) {
-            if (!filter.accept(pair, index))
+            if (!filter.accept(tu, index))
                 return false;
         }
 

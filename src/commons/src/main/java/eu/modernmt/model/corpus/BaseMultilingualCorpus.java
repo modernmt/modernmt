@@ -24,7 +24,7 @@ public abstract class BaseMultilingualCorpus implements MultilingualCorpus {
             synchronized (this) {
                 if (_counts == null)
                     try {
-                        _counts = countLines();
+                        _counts = count();
                     } catch (IOException e) {
                         _counts = new HashMap<>();
                     }
@@ -34,17 +34,17 @@ public abstract class BaseMultilingualCorpus implements MultilingualCorpus {
         return _counts;
     }
 
-    private Map<LanguageDirection, Integer> countLines() throws IOException {
+    private Map<LanguageDirection, Integer> count() throws IOException {
         Map<LanguageDirection, Counter> counts = new HashMap<>();
 
-        MultilingualCorpus.MultilingualLineReader reader = null;
+        TUReader reader = null;
 
         try {
             reader = getContentReader();
 
-            MultilingualCorpus.StringPair line;
-            while ((line = reader.read()) != null) {
-                counts.computeIfAbsent(line.language, k -> new Counter()).count++;
+            TranslationUnit tu;
+            while ((tu = reader.read()) != null) {
+                counts.computeIfAbsent(tu.language, k -> new Counter()).count++;
             }
         } finally {
             IOUtils.closeQuietly(reader);
@@ -106,19 +106,19 @@ public abstract class BaseMultilingualCorpus implements MultilingualCorpus {
         public LineReader getContentReader() throws IOException {
             return new LineReader() {
 
-                private final MultilingualLineReader reader = BaseMultilingualCorpus.this.getContentReader();
+                private final TUReader reader = BaseMultilingualCorpus.this.getContentReader();
 
                 @Override
                 public String readLine() throws IOException {
-                    StringPair pair;
+                    TranslationUnit tu;
                     do {
-                        pair = reader.read();
-                    } while (pair != null && !pair.language.equals(direction));
+                        tu = reader.read();
+                    } while (tu != null && !tu.language.equals(direction));
 
-                    if (pair == null)
+                    if (tu == null)
                         return null;
                     else
-                        return source ? pair.source : pair.target;
+                        return source ? tu.source : tu.target;
                 }
 
                 @Override
