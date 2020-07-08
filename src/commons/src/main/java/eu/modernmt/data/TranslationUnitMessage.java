@@ -10,7 +10,7 @@ import java.util.UUID;
 /**
  * Created by davide on 06/09/16.
  */
-public class TranslationUnit extends DataMessage {
+public class TranslationUnitMessage extends DataMessage {
 
     public final long memory;
     public final UUID owner;
@@ -27,9 +27,9 @@ public class TranslationUnit extends DataMessage {
     public final Sentence translation;
     public final Alignment alignment;
 
-    public TranslationUnit(short channel, long channelPosition, UUID owner, LanguageDirection rawLanguage, LanguageDirection language, long memory,
-                           String rawSentence, String rawTranslation, String rawPreviousSentence, String rawPreviousTranslation,
-                           Date timestamp, Sentence sentence, Sentence translation, Alignment alignment) {
+    public TranslationUnitMessage(short channel, long channelPosition, UUID owner, LanguageDirection rawLanguage, LanguageDirection language, long memory,
+                                  String rawSentence, String rawTranslation, String rawPreviousSentence, String rawPreviousTranslation,
+                                  Date timestamp, Sentence sentence, Sentence translation, Alignment alignment) {
         super(channel, channelPosition);
         this.memory = memory;
         this.owner = owner;

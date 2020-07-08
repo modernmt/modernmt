@@ -1,7 +1,7 @@
 package eu.modernmt.context.lucene;
 
-import eu.modernmt.data.Deletion;
-import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.data.DeletionMessage;
+import eu.modernmt.data.TranslationUnitMessage;
 import eu.modernmt.io.LineReader;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
@@ -108,16 +108,16 @@ public class TestData {
 
     // Translation units
 
-    public static List<TranslationUnit> tuList(LanguageDirection language, int size) {
+    public static List<TranslationUnitMessage> tuList(LanguageDirection language, int size) {
         return tuList(1L, language, size);
     }
 
-    public static List<TranslationUnit> tuList(long memory, LanguageDirection language, int size) {
+    public static List<TranslationUnitMessage> tuList(long memory, LanguageDirection language, int size) {
         return tuList(0, 0L, memory, language, size);
     }
 
-    public static List<TranslationUnit> tuList(int channel, long channelPosition, long memory, LanguageDirection language, int size) {
-        ArrayList<TranslationUnit> units = new ArrayList<>(size);
+    public static List<TranslationUnitMessage> tuList(int channel, long channelPosition, long memory, LanguageDirection language, int size) {
+        ArrayList<TranslationUnitMessage> units = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             String source = EXAMPLE_SENTENCES.get(language.source.getLanguage());
             String target = EXAMPLE_SENTENCES.get(language.target.getLanguage());
@@ -132,46 +132,46 @@ public class TestData {
         return units;
     }
 
-    public static TranslationUnit tu(LanguageDirection language, Date timestamp) {
+    public static TranslationUnitMessage tu(LanguageDirection language, Date timestamp) {
         return tu(1L, language, timestamp);
     }
 
-    public static TranslationUnit tu(long memory, LanguageDirection language, Date timestamp) {
+    public static TranslationUnitMessage tu(long memory, LanguageDirection language, Date timestamp) {
         return tu(0, 0L, memory, language, timestamp);
     }
 
-    public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguageDirection language, Date timestamp) {
+    public static TranslationUnitMessage tu(int channel, long channelPosition, long memory, LanguageDirection language, Date timestamp) {
         return tu(channel, channelPosition, memory, language,
                 EXAMPLE_SENTENCES.get(language.source.getLanguage()),
                 EXAMPLE_SENTENCES.get(language.target.getLanguage()),
                 timestamp);
     }
 
-    public static TranslationUnit tu(LanguageDirection language, String source, String target, Date timestamp) {
+    public static TranslationUnitMessage tu(LanguageDirection language, String source, String target, Date timestamp) {
         return tu(1L, language, source, target, timestamp);
     }
 
-    public static TranslationUnit tu(long memory, LanguageDirection language, String source, String target, Date timestamp) {
+    public static TranslationUnitMessage tu(long memory, LanguageDirection language, String source, String target, Date timestamp) {
         return tu(0, 0, memory, language, source, target, timestamp);
     }
 
-    public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguageDirection language, String source, String target, Date timestamp) {
+    public static TranslationUnitMessage tu(int channel, long channelPosition, long memory, LanguageDirection language, String source, String target, Date timestamp) {
         return tu(channel, channelPosition, null, memory, language, source, target, timestamp);
     }
 
-    public static TranslationUnit tu(int channel, long channelPosition, UUID owner, long memory, LanguageDirection language, String source, String target, Date timestamp) {
-        return new TranslationUnit((short) channel, channelPosition, owner, language, language, memory,
+    public static TranslationUnitMessage tu(int channel, long channelPosition, UUID owner, long memory, LanguageDirection language, String source, String target, Date timestamp) {
+        return new TranslationUnitMessage((short) channel, channelPosition, owner, language, language, memory,
                 source, target, null, null, timestamp,
                 sentence(source), sentence(target), null);
     }
 
-    public static Set<String> tuGetTerms(List<TranslationUnit> units, boolean source) throws IOException {
+    public static Set<String> tuGetTerms(List<TranslationUnitMessage> units, boolean source) throws IOException {
         return tuGetTerms(units, source, null);
     }
 
-    public static Set<String> tuGetTerms(List<TranslationUnit> units, boolean source, LanguageDirection direction) throws IOException {
+    public static Set<String> tuGetTerms(List<TranslationUnitMessage> units, boolean source, LanguageDirection direction) throws IOException {
         HashSet<String> terms = new HashSet<>();
-        for (TranslationUnit unit : units) {
+        for (TranslationUnitMessage unit : units) {
             if (direction == null || unit.language.equals(direction)) {
                 String text = source ? unit.rawSentence : unit.rawTranslation;
                 terms.addAll(Arrays.asList(text.split(" ")));
@@ -181,13 +181,13 @@ public class TestData {
         return terms;
     }
 
-    public static String tuGetContent(List<TranslationUnit> units, boolean source) {
+    public static String tuGetContent(List<TranslationUnitMessage> units, boolean source) {
         return tuGetContent(units, source, null);
     }
 
-    public static String tuGetContent(List<TranslationUnit> units, boolean source, LanguageDirection direction) {
+    public static String tuGetContent(List<TranslationUnitMessage> units, boolean source, LanguageDirection direction) {
         StringBuilder builder = new StringBuilder();
-        for (TranslationUnit unit : units) {
+        for (TranslationUnitMessage unit : units) {
             if (direction == null || unit.language.equals(direction)) {
                 builder.append(source ? unit.rawSentence : unit.rawTranslation);
                 builder.append('\n');
@@ -214,12 +214,12 @@ public class TestData {
 
     // Deletion
 
-    public static Deletion deletion(long memory) {
-        return new Deletion((short) 1, 0, memory);
+    public static DeletionMessage deletion(long memory) {
+        return new DeletionMessage((short) 1, 0, memory);
     }
 
-    public static Deletion deletion(long channelPosition, long memory) {
-        return new Deletion((short) 1, channelPosition, memory);
+    public static DeletionMessage deletion(long channelPosition, long memory) {
+        return new DeletionMessage((short) 1, channelPosition, memory);
     }
 
     // Content

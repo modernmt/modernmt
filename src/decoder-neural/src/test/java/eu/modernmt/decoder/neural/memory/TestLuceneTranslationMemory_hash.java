@@ -1,6 +1,6 @@
 package eu.modernmt.decoder.neural.memory;
 
-import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.data.TranslationUnitMessage;
 import eu.modernmt.decoder.neural.memory.lucene.DefaultDocumentBuilder;
 import eu.modernmt.decoder.neural.memory.lucene.DocumentBuilder;
 import eu.modernmt.decoder.neural.memory.lucene.query.QueryBuilder;
@@ -34,7 +34,7 @@ public class TestLuceneTranslationMemory_hash {
     private TLuceneTranslationMemory memory;
 
     private Document create(LanguageDirection language, int memory, String sentence, String translation, String hash) {
-        TranslationUnit unit = new TranslationUnit((short) 0, 0, null, language, language, memory,
+        TranslationUnitMessage unit = new TranslationUnitMessage((short) 0, 0, null, language, language, memory,
                 sentence, sentence, null, null, null,
                 new Sentence(TokensOutputStream.deserializeWords(sentence)),
                 new Sentence(TokensOutputStream.deserializeWords(translation)),
@@ -89,10 +89,10 @@ public class TestLuceneTranslationMemory_hash {
 
     @Test
     public void overwriteNotExisting() throws Throwable {
-        TranslationUnit original = tu(0, 0L, 1L, EN__IT, "hello world", "ciao mondo", null);
+        TranslationUnitMessage original = tu(0, 0L, 1L, EN__IT, "hello world", "ciao mondo", null);
         memory.onDataReceived(Collections.singletonList(original));
 
-        TranslationUnit overwrite = tu(0, 1L, 1L, EN__IT, "test sentence", "frase di prova",
+        TranslationUnitMessage overwrite = tu(0, 1L, 1L, EN__IT, "test sentence", "frase di prova",
                 "hello world __", "ciao mondo __", null);
         memory.onDataReceived(Collections.singletonList(overwrite));
 
@@ -103,10 +103,10 @@ public class TestLuceneTranslationMemory_hash {
 
     @Test
     public void overwriteExisting() throws Throwable {
-        TranslationUnit original = tu(0, 0L, 1L, EN__IT, "hello world", "ciao mondo", null);
+        TranslationUnitMessage original = tu(0, 0L, 1L, EN__IT, "hello world", "ciao mondo", null);
         memory.onDataReceived(Collections.singletonList(original));
 
-        TranslationUnit overwrite = tu(0, 1L, 1L, EN__IT, "test sentence", "frase di prova",
+        TranslationUnitMessage overwrite = tu(0, 1L, 1L, EN__IT, "test sentence", "frase di prova",
                 "hello world", "ciao mondo", null);
         memory.onDataReceived(Collections.singletonList(overwrite));
 

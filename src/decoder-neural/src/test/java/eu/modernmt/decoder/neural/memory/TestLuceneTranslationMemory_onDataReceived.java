@@ -1,7 +1,6 @@
 package eu.modernmt.decoder.neural.memory;
 
-import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.memory.ScoreEntry;
+import eu.modernmt.data.TranslationUnitMessage;
 import eu.modernmt.memory.TranslationMemory;
 import org.junit.After;
 import org.junit.Before;
@@ -34,7 +33,7 @@ public class TestLuceneTranslationMemory_onDataReceived {
         this.memory = null;
     }
 
-    private void test(List<TranslationUnit> units) throws IOException {
+    private void test(List<TranslationUnitMessage> units) throws IOException {
         int size = units.size();
         Map<Short, Long> expectedChannels = TestData.channels(0, size - 1);
         Set<TranslationMemory.Entry> expectedEntries = TLuceneTranslationMemory.asEntrySet(units);
@@ -58,7 +57,7 @@ public class TestLuceneTranslationMemory_onDataReceived {
 
     @Test
     public void allDirectionsContributions() throws Throwable {
-        List<TranslationUnit> units = Arrays.asList(
+        List<TranslationUnitMessage> units = Arrays.asList(
                 TestData.tu(0, 0L, 1L, EN__IT, null),
                 TestData.tu(0, 1L, 2L, EN__IT, null),
                 TestData.tu(0, 2L, 1L, FR__ES, null),
@@ -70,12 +69,12 @@ public class TestLuceneTranslationMemory_onDataReceived {
 
     @Test
     public void duplicateContribution() throws Throwable {
-        List<TranslationUnit> units = Arrays.asList(
+        List<TranslationUnitMessage> units = Arrays.asList(
                 TestData.tu(1, 0L, 1L, EN__IT, null),
                 TestData.tu(1, 1L, 1L, EN__IT, null)
         );
 
-        List<TranslationUnit> cloneUnits = Arrays.asList(
+        List<TranslationUnitMessage> cloneUnits = Arrays.asList(
                 TestData.tu(1, 0L, 2L, FR__ES, null),
                 TestData.tu(1, 1L, 2L, FR__ES, null)
         );

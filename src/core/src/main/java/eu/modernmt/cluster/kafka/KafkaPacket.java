@@ -1,7 +1,7 @@
 package eu.modernmt.cluster.kafka;
 
-import eu.modernmt.data.Deletion;
-import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.data.DeletionMessage;
+import eu.modernmt.data.TranslationUnitMessage;
 import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
@@ -139,22 +139,22 @@ public class KafkaPacket {
         return translation;
     }
 
-    public Deletion asDeletion() {
+    public DeletionMessage asDeletion() {
         if (channel < 0 || position < 0)
             throw new IllegalStateException("Call setChannelInfo() before parsing methods.");
 
-        return new Deletion(channel, position, memory);
+        return new DeletionMessage(channel, position, memory);
     }
 
-    public TranslationUnit asTranslationUnit(LanguageDirection language) {
+    public TranslationUnitMessage asTranslationUnit(LanguageDirection language) {
         return this.asTranslationUnit(language, null, null, null);
     }
 
-    public TranslationUnit asTranslationUnit(LanguageDirection language, Sentence sSentence, Sentence sTranslation, Alignment alignment) {
+    public TranslationUnitMessage asTranslationUnit(LanguageDirection language, Sentence sSentence, Sentence sTranslation, Alignment alignment) {
         if (channel < 0 || position < 0)
             throw new IllegalStateException("Call setChannelInfo() before parsing methods.");
 
-        return new TranslationUnit(channel, position, owner, this.direction, language, memory,
+        return new TranslationUnitMessage(channel, position, owner, this.direction, language, memory,
                 sentence, translation, previousSentence, previousTranslation, timestamp,
                 sSentence, sTranslation, alignment);
     }

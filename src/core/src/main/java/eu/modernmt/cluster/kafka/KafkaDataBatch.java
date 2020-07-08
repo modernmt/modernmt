@@ -3,9 +3,8 @@ package eu.modernmt.cluster.kafka;
 import eu.modernmt.aligner.Aligner;
 import eu.modernmt.aligner.AlignerException;
 import eu.modernmt.data.DataBatch;
-import eu.modernmt.data.Deletion;
-import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.lang.Language;
+import eu.modernmt.data.DeletionMessage;
+import eu.modernmt.data.TranslationUnitMessage;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.model.Alignment;
@@ -22,8 +21,8 @@ import java.util.*;
  */
 class KafkaDataBatch implements DataBatch {
 
-    private final ArrayList<TranslationUnit> translationUnits = new ArrayList<>();
-    private final ArrayList<Deletion> deletions = new ArrayList<>();
+    private final ArrayList<TranslationUnitMessage> translationUnits = new ArrayList<>();
+    private final ArrayList<DeletionMessage> deletions = new ArrayList<>();
     private final HashMap<Short, Long> currentPositions = new HashMap<>();
 
     private final LanguageIndex languageIndex;
@@ -104,12 +103,12 @@ class KafkaDataBatch implements DataBatch {
     }
 
     @Override
-    public Collection<TranslationUnit> getTranslationUnits() {
+    public Collection<TranslationUnitMessage> getTranslationUnits() {
         return translationUnits;
     }
 
     @Override
-    public Collection<Deletion> getDeletions() {
+    public Collection<DeletionMessage> getDeletions() {
         return deletions;
     }
 
@@ -150,7 +149,7 @@ class KafkaDataBatch implements DataBatch {
             targets.add(packet.getTranslation());
         }
 
-        public void process(boolean process, boolean align, Collection<TranslationUnit> output) throws ProcessingException, AlignerException, InterruptedException {
+        public void process(boolean process, boolean align, Collection<TranslationUnitMessage> output) throws ProcessingException, AlignerException, InterruptedException {
             if (packets.isEmpty())
                 return;
 

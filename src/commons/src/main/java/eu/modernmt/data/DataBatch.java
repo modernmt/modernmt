@@ -8,9 +8,9 @@ import java.util.Map;
  */
 public interface DataBatch {
 
-    Collection<TranslationUnit> getTranslationUnits();
+    Collection<TranslationUnitMessage> getTranslationUnits();
 
-    Collection<Deletion> getDeletions();
+    Collection<DeletionMessage> getDeletions();
 
     Map<Short, Long> getChannelPositions();
 

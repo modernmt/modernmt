@@ -1,7 +1,7 @@
 package eu.modernmt.decoder.neural.memory.lucene;
 
 import eu.modernmt.data.HashGenerator;
-import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.data.TranslationUnitMessage;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.Language;
@@ -38,13 +38,13 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
     // Factory methods
 
     @Override
-    public Document create(TranslationUnit unit) {
+    public Document create(TranslationUnitMessage unit) {
         String hash = HashGenerator.hash(unit.rawLanguage, unit.rawSentence, unit.rawTranslation);
         return create(unit, hash);
     }
 
     @Override
-    public Document create(TranslationUnit unit, String hash) {
+    public Document create(TranslationUnitMessage unit, String hash) {
         String sentence = TokensOutputStream.serialize(unit.sentence, false, true);
         String translation = TokensOutputStream.serialize(unit.translation, false, true);
 

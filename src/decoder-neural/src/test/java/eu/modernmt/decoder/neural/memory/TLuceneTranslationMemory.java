@@ -1,13 +1,12 @@
 package eu.modernmt.decoder.neural.memory;
 
 import eu.modernmt.data.DataBatch;
-import eu.modernmt.data.Deletion;
-import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.data.DeletionMessage;
+import eu.modernmt.data.TranslationUnitMessage;
 import eu.modernmt.decoder.neural.memory.lucene.DocumentBuilder;
 import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.decoder.neural.memory.lucene.query.QueryBuilder;
 import eu.modernmt.io.RuntimeIOException;
-import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.memory.TranslationMemory;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -46,10 +45,10 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
         return result;
     }
 
-    public static Set<TranslationMemory.Entry> asEntrySet(Collection<TranslationUnit> units) {
+    public static Set<TranslationMemory.Entry> asEntrySet(Collection<TranslationUnitMessage> units) {
         HashSet<TranslationMemory.Entry> result = new HashSet<>(units.size());
 
-        for (TranslationUnit unit : units) {
+        for (TranslationUnitMessage unit : units) {
             TranslationMemory.Entry entry = new TranslationMemory.Entry(unit.memory, unit.language, unit.rawSentence, unit.rawTranslation);
             result.add(entry);
         }
@@ -59,16 +58,16 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
 
     // DataListener utils
 
-    public void onDelete(final Deletion deletion) throws IOException {
+    public void onDelete(final DeletionMessage deletion) throws IOException {
         super.onDataReceived(new DataBatch() {
 
             @Override
-            public Collection<TranslationUnit> getTranslationUnits() {
+            public Collection<TranslationUnitMessage> getTranslationUnits() {
                 return Collections.emptyList();
             }
 
             @Override
-            public Collection<Deletion> getDeletions() {
+            public Collection<DeletionMessage> getDeletions() {
                 return Collections.singleton(deletion);
             }
 
@@ -80,9 +79,9 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
         });
     }
 
-    public void onDataReceived(Collection<TranslationUnit> units) throws IOException {
+    public void onDataReceived(Collection<TranslationUnitMessage> units) throws IOException {
         final HashMap<Short, Long> positions = new HashMap<>();
-        for (TranslationUnit unit : units) {
+        for (TranslationUnitMessage unit : units) {
             Long existingPosition = positions.get(unit.channel);
 
             if (existingPosition == null || existingPosition < unit.channelPosition)
@@ -92,12 +91,12 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
         super.onDataReceived(new DataBatch() {
 
             @Override
-            public Collection<TranslationUnit> getTranslationUnits() {
+            public Collection<TranslationUnitMessage> getTranslationUnits() {
                 return units;
             }
 
             @Override
-            public Collection<Deletion> getDeletions() {
+            public Collection<DeletionMessage> getDeletions() {
                 return Collections.emptyList();
             }
 
