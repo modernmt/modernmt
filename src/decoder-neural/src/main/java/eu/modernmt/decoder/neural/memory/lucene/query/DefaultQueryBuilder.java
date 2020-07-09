@@ -1,5 +1,6 @@
 package eu.modernmt.decoder.neural.memory.lucene.query;
 
+import eu.modernmt.data.HashGenerator;
 import eu.modernmt.decoder.neural.memory.lucene.DocumentBuilder;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguageDirection;
@@ -29,10 +30,33 @@ public class DefaultQueryBuilder implements QueryBuilder {
     }
 
     @Override
-    public Query getByHash(DocumentBuilder builder, long memory, String hash) {
+    public Query getByMatch(DocumentBuilder builder, long memory, LanguageDirection language, String previousSentence, String previousTranslation) {
+        return getByMatchHash(builder, memory, HashGenerator.hash(language, previousSentence, previousTranslation));
+    }
+
+    public Query getByMatchHash(DocumentBuilder builder, long memory, String hash) {
         PhraseQuery hashQuery = new PhraseQuery();
         for (String h : hash.split(" "))
             hashQuery.add(builder.makeHashTerm(h));
+
+        TermQuery memoryQuery = new TermQuery(builder.makeMemoryTerm(memory));
+
+        BooleanQuery query = new BooleanQuery();
+        query.add(hashQuery, BooleanClause.Occur.MUST);
+        query.add(memoryQuery, BooleanClause.Occur.MUST);
+
+        return query;
+    }
+
+    @Override
+    public Query getByTuid(DocumentBuilder builder, long memory, LanguageDirection language, String tuid) {
+        return getByTuidHash(builder, memory, HashGenerator.hash(language, tuid));
+    }
+
+    public Query getByTuidHash(DocumentBuilder builder, long memory, String hash) {
+        PhraseQuery hashQuery = new PhraseQuery();
+        for (String h : hash.split(" "))
+            hashQuery.add(builder.makeTuidHashTerm(h));
 
         TermQuery memoryQuery = new TermQuery(builder.makeMemoryTerm(memory));
 

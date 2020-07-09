@@ -3,6 +3,7 @@ package eu.modernmt.decoder.neural.memory;
 import eu.modernmt.data.TranslationUnitMessage;
 import eu.modernmt.decoder.neural.memory.lucene.DefaultDocumentBuilder;
 import eu.modernmt.decoder.neural.memory.lucene.DocumentBuilder;
+import eu.modernmt.decoder.neural.memory.lucene.query.DefaultQueryBuilder;
 import eu.modernmt.decoder.neural.memory.lucene.query.QueryBuilder;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguageDirection;
@@ -55,7 +56,7 @@ public class TestLuceneTranslationMemory_hash {
     public void queryWithMisleadingHashes() throws Throwable {
         IndexWriter indexWriter = memory.getIndexWriter();
         DocumentBuilder documentBuilder = memory.getDocumentBuilder();
-        QueryBuilder queryBuilder = memory.getQueryBuilder();
+        DefaultQueryBuilder queryBuilder = (DefaultQueryBuilder) memory.getQueryBuilder();
 
         indexWriter.addDocument(create(EN__IT, 2, "2-1", "2-1", "A B C D"));
         indexWriter.addDocument(create(EN__IT, 1, "1-1", "1-1", "A B C D"));
@@ -64,7 +65,7 @@ public class TestLuceneTranslationMemory_hash {
         indexWriter.addDocument(create(EN__IT, 1, "1-3", "1-3", "D C B Z"));
         indexWriter.commit();
 
-        Query query = queryBuilder.getByHash(documentBuilder, 1, "A B C D");
+        Query query = queryBuilder.getByMatchHash(documentBuilder, 1, "A B C D");
 
         IndexSearcher searcher = memory.getIndexSearcher();
         ScoreDoc[] result = searcher.search(query, 10).scoreDocs;
@@ -91,9 +92,9 @@ public class TestLuceneTranslationMemory_hash {
         TranslationUnitMessage overwrite = overwrite(0, 1L, 1L,
                 tu(EN__IT, "test sentence", "frase di prova"),
                 "hello world __", "ciao mondo __");
-        memory.onDataReceived(Collections.singletonList(overwrite));
+        memory.onDataReceived(overwrite);
 
-        Set<TranslationMemory.Entry> expectedEntries = TLuceneTranslationMemory.asEntrySet(Arrays.asList(original, overwrite));
+        Set<TranslationMemory.Entry> expectedEntries = TLuceneTranslationMemory.asEntrySet(original, overwrite);
 
         assertEquals(expectedEntries, memory.entrySet());
     }

@@ -53,8 +53,8 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
         HashSet<TranslationMemory.Entry> result = new HashSet<>(units.size());
 
         for (TranslationUnitMessage unit : units) {
-            //TODO: Memory.Entry should have "tuid" filed
-            TranslationMemory.Entry entry = new TranslationMemory.Entry(unit.memory, unit.language, unit.value.source, unit.value.target);
+            TranslationMemory.Entry entry = new TranslationMemory.Entry(
+                    unit.value.tuid, unit.memory, unit.language, unit.value.source, unit.value.target);
             result.add(entry);
         }
 

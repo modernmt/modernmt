@@ -45,6 +45,8 @@ public interface DocumentBuilder {
 
     Term makeHashTerm(String h);
 
+    Term makeTuidHashTerm(String hash);
+
     Term makeMemoryTerm(long memory);
 
     Term makeChannelsTerm();
