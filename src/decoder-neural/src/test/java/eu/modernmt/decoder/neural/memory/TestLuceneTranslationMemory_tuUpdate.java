@@ -4,8 +4,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Arrays;
-
 import static eu.modernmt.decoder.neural.memory.TestData.*;
 import static org.junit.Assert.assertEquals;
 
@@ -20,11 +18,11 @@ public class TestLuceneTranslationMemory_tuUpdate {
     public void setup() throws Throwable {
         this.memory = new TLuceneTranslationMemory();
 
-        memory.onDataReceived(Arrays.asList(
-                TestData.tu(1L, EN__IT, "This is an example", "Questo è un esempio"),
-                TestData.tu(1L, EN__FR, "This is an example", "Ceci est un exemple"),
-                TestData.tu(2L, EN__IT, "This is an example", "Questo è un esempio")
-        ));
+        memory.onDataReceived(
+                addition(0, 0, 1L, tu(EN__IT, "This is an example", "Questo è un esempio")),
+                addition(0, 1, 1L, tu(EN__FR, "This is an example", "Ceci est un exemple")),
+                addition(0, 2, 2L, tu(EN__IT, "This is an example", "Questo è un esempio"))
+        );
     }
 
     @After
@@ -36,50 +34,50 @@ public class TestLuceneTranslationMemory_tuUpdate {
     @Test
     public void updateByValueExisting() throws Throwable {
         // Overwrite - 1, IT
-        memory.onDataReceived(tu(0, 1L,
-                1L, EN__IT, "This is an example", "Questo è un esempio 1IT",
+        memory.onDataReceived(overwrite(0, 3,
+                1L, tu(EN__IT, "This is an example", "Questo è un esempio 1IT"),
                 "This is an example", "Questo è un esempio"));
 
         assertEquals(TLuceneTranslationMemory.asEntrySet(
-                TestData.tu(1L, EN__IT, "This is an example", "Questo è un esempio 1IT"),
-                TestData.tu(1L, EN__FR, "This is an example", "Ceci est un exemple"),
-                TestData.tu(2L, EN__IT, "This is an example", "Questo è un esempio")
+                addition(0, 0, 1L, tu(EN__IT, "This is an example", "Questo è un esempio 1IT")),
+                addition(0, 0, 1L, tu(EN__FR, "This is an example", "Ceci est un exemple")),
+                addition(0, 0, 2L, tu(EN__IT, "This is an example", "Questo è un esempio"))
         ), memory.entrySet());
 
         // Overwrite - 2, IT
-        memory.onDataReceived(tu(0, 2L,
-                2L, EN__IT, "This is an example", "Questo è un esempio 2IT",
+        memory.onDataReceived(overwrite(0, 4,
+                2L, tu(EN__IT, "This is an example", "Questo è un esempio 2IT"),
                 "This is an example", "Questo è un esempio"));
 
         assertEquals(TLuceneTranslationMemory.asEntrySet(
-                TestData.tu(1L, EN__IT, "This is an example", "Questo è un esempio 1IT"),
-                TestData.tu(1L, EN__FR, "This is an example", "Ceci est un exemple"),
-                TestData.tu(2L, EN__IT, "This is an example", "Questo è un esempio 2IT")
+                addition(0, 0, 1L, tu(EN__IT, "This is an example", "Questo è un esempio 1IT")),
+                addition(0, 0, 1L, tu(EN__FR, "This is an example", "Ceci est un exemple")),
+                addition(0, 0, 2L, tu(EN__IT, "This is an example", "Questo è un esempio 2IT"))
         ), memory.entrySet());
 
         // Overwrite - 1, FR
-        memory.onDataReceived(tu(0, 3L,
-                1L, EN__FR, "This is an example", "Ceci est un exemple 1FR",
+        memory.onDataReceived(overwrite(0, 5,
+                1L, tu(EN__FR, "This is an example", "Ceci est un exemple 1FR"),
                 "This is an example", "Ceci est un exemple"));
 
         assertEquals(TLuceneTranslationMemory.asEntrySet(
-                TestData.tu(1L, EN__IT, "This is an example", "Questo è un esempio 1IT"),
-                TestData.tu(1L, EN__FR, "This is an example", "Ceci est un exemple 1FR"),
-                TestData.tu(2L, EN__IT, "This is an example", "Questo è un esempio 2IT")
+                addition(0, 0, 1L, tu(EN__IT, "This is an example", "Questo è un esempio 1IT")),
+                addition(0, 0, 1L, tu(EN__FR, "This is an example", "Ceci est un exemple 1FR")),
+                addition(0, 0, 2L, tu(EN__IT, "This is an example", "Questo è un esempio 2IT"))
         ), memory.entrySet());
     }
 
     @Test
     public void updateByValueNotExisting() throws Throwable {
-        memory.onDataReceived(tu(0, 1L,
-                1L, EN__IT, "This is a second example", "Questo è un secondo esempio",
+        memory.onDataReceived(overwrite(0, 3,
+                1L, tu(EN__IT, "This is a second example", "Questo è un secondo esempio"),
                 "This is a second example", "Questo è un esempio secondo"));
 
         assertEquals(TLuceneTranslationMemory.asEntrySet(
-                TestData.tu(1L, EN__IT, "This is an example", "Questo è un esempio"),
-                TestData.tu(1L, EN__IT, "This is a second example", "Questo è un secondo esempio"),
-                TestData.tu(1L, EN__FR, "This is an example", "Ceci est un exemple"),
-                TestData.tu(2L, EN__IT, "This is an example", "Questo è un esempio")
+                addition(0, 0, 1L, tu(EN__IT, "This is an example", "Questo è un esempio")),
+                addition(0, 0, 1L, tu(EN__IT, "This is a second example", "Questo è un secondo esempio")),
+                addition(0, 0, 1L, tu(EN__FR, "This is an example", "Ceci est un exemple")),
+                addition(0, 0, 2L, tu(EN__IT, "This is an example", "Questo è un esempio"))
         ), memory.entrySet());
     }
 

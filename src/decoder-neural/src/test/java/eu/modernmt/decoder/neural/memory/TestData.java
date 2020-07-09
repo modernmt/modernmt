@@ -9,6 +9,7 @@ import eu.modernmt.model.Word;
 import eu.modernmt.model.corpus.*;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
@@ -56,17 +57,29 @@ public class TestData {
         return new Sentence(words);
     }
 
+    public static String tuid(LanguageDirection language, String source, String target) {
+        ByteBuffer buffer = ByteBuffer.allocate(16);
+        buffer.putInt(language.source.toLanguageTag().hashCode());
+        buffer.putInt(language.target.toLanguageTag().hashCode());
+        buffer.putInt(source.hashCode());
+        buffer.putInt(target.hashCode());
+
+        buffer.rewind();
+
+        return new UUID(buffer.getLong(), buffer.getLong()).toString();
+    }
+
     // Translation units
 
-    public static List<TranslationUnitMessage> tuList(LanguageDirection language, int size) {
-        return tuList(1L, language, size);
+    public static List<TranslationUnitMessage> additions(LanguageDirection language, int size) {
+        return additions(1L, language, size);
     }
 
-    public static List<TranslationUnitMessage> tuList(long memory, LanguageDirection language, int size) {
-        return tuList(0, 0L, memory, language, size);
+    public static List<TranslationUnitMessage> additions(long memory, LanguageDirection language, int size) {
+        return additions(0, 0L, memory, language, size);
     }
 
-    public static List<TranslationUnitMessage> tuList(int channel, long channelPosition, long memory, LanguageDirection language, int size) {
+    public static List<TranslationUnitMessage> additions(int channel, long channelPosition, long memory, LanguageDirection language, int size) {
         ArrayList<TranslationUnitMessage> units = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             String source = EXAMPLE_SENTENCES.get(language.source.getLanguage());
@@ -77,60 +90,58 @@ public class TestData {
                 target += " " + i;
             }
 
-            units.add(tu(channel, channelPosition++, memory, language, source, target, null));
+            units.add(addition(channel, channelPosition++, memory, tu(language, source, target)));
         }
         return units;
     }
 
-    public static TranslationUnitMessage tu(LanguageDirection language, Date timestamp) {
-        return tu(1L, language, timestamp);
+    public static TranslationUnit tu(LanguageDirection language) {
+        String source = EXAMPLE_SENTENCES.get(language.source.getLanguage());
+        String target = EXAMPLE_SENTENCES.get(language.target.getLanguage());
+        return tu(tuid(language, source, target), language, source, target);
     }
 
-    public static TranslationUnitMessage tu(long memory, LanguageDirection language, Date timestamp) {
-        return tu(0, 0L, memory, language, timestamp);
+    public static TranslationUnit tu(LanguageDirection language, String source, String target) {
+        return tu(tuid(language, source, target), language, source, target);
     }
 
-    public static TranslationUnitMessage tu(int channel, long channelPosition, long memory, LanguageDirection language, Date timestamp) {
-        return tu(channel, channelPosition, memory, language,
-                EXAMPLE_SENTENCES.get(language.source.getLanguage()),
-                EXAMPLE_SENTENCES.get(language.target.getLanguage()),
-                timestamp);
+    public static TranslationUnit tu(String tuid, LanguageDirection language, String source, String target) {
+        return new TranslationUnit(tuid, language, source, target, new Date());
     }
 
-    public static TranslationUnitMessage tu(LanguageDirection language, String source, String target, Date timestamp) {
-        return tu(1L, language, source, target, timestamp);
+    public static DeletionMessage deletion(int channel, long channelPosition, long memory) {
+        return new DeletionMessage((short) channel, channelPosition, memory);
     }
 
-    public static TranslationUnitMessage tu(long memory, LanguageDirection language, String source, String target) {
-        return tu(0, 0, memory, language, source, target, new Date());
+    public static TranslationUnitMessage addition(int channel, long channelPosition, long memory, TranslationUnit tu) {
+        return addition(channel, channelPosition, memory, null, tu);
     }
 
-    public static TranslationUnitMessage tu(long memory, LanguageDirection language, String source, String target, Date timestamp) {
-        return tu(0, 0, memory, language, source, target, timestamp);
-    }
-
-    public static TranslationUnitMessage tu(int channel, long channelPosition, long memory, LanguageDirection language, String source, String target, Date timestamp) {
-        return tu(channel, channelPosition, memory, language, source, target, null, null, timestamp);
-    }
-
-    public static TranslationUnitMessage tu(int channel, long channelPosition, UUID owner, long memory, LanguageDirection language, String source, String target, Date timestamp) {
-        return tu(channel, channelPosition, owner, memory, language, source, target, null, null, timestamp);
-    }
-
-    public static TranslationUnitMessage tu(int channel, long channelPosition, long memory, LanguageDirection language, String source, String target, String previousSource, String previousTarget) {
-        return tu(channel, channelPosition, null, memory, language, source, target, previousSource, previousTarget, new Date());
-    }
-
-    public static TranslationUnitMessage tu(int channel, long channelPosition, long memory, LanguageDirection language, String source, String target, String previousSource, String previousTarget, Date timestamp) {
-        return tu(channel, channelPosition, null, memory, language, source, target, previousSource, previousTarget, timestamp);
-    }
-
-    public static TranslationUnitMessage tu(int channel, long channelPosition, UUID owner, long memory, LanguageDirection language, String source, String target, String previousSource, String previousTarget, Date timestamp) {
-        boolean update = previousSource != null;
-        TranslationUnit tu = new TranslationUnit(null, language, source, target, timestamp);
+    public static TranslationUnitMessage addition(int channel, long channelPosition, long memory, UUID owner, TranslationUnit tu) {
         return new TranslationUnitMessage((short) channel, channelPosition, memory, owner, tu,
-                update, previousSource, previousTarget,
-                language, sentence(source), sentence(target), null);
+                false, null, null,
+                tu.language, sentence(tu.source), sentence(tu.target), null);
+    }
+
+    public static TranslationUnitMessage overwrite(int channel, long channelPosition, long memory, TranslationUnit tu) {
+        return overwrite(channel, channelPosition, memory, null, tu);
+    }
+
+    public static TranslationUnitMessage overwrite(int channel, long channelPosition, long memory, UUID owner, TranslationUnit tu) {
+        assert tu.tuid != null;
+        return new TranslationUnitMessage((short) channel, channelPosition, memory, owner, tu,
+                true, null, null,
+                tu.language, sentence(tu.source), sentence(tu.target), null);
+    }
+
+    public static TranslationUnitMessage overwrite(int channel, long channelPosition, long memory, TranslationUnit tu, String previousSentence, String previousTranslation) {
+        return overwrite(channel, channelPosition, memory, null, tu, previousSentence, previousTranslation);
+    }
+
+    public static TranslationUnitMessage overwrite(int channel, long channelPosition, long memory, UUID owner, TranslationUnit tu, String previousSentence, String previousTranslation) {
+        return new TranslationUnitMessage((short) channel, channelPosition, memory, owner, tu,
+                true, previousSentence, previousTranslation,
+                tu.language, sentence(tu.source), sentence(tu.target), null);
     }
 
     // Corpus

@@ -11,8 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static eu.modernmt.decoder.neural.memory.TestData.EN__IT;
-import static eu.modernmt.decoder.neural.memory.TestData.FR__ES;
+import static eu.modernmt.decoder.neural.memory.TestData.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -36,8 +35,8 @@ public class TestLuceneTranslationMemory_onDelete {
 
     @Test
     public void monolingualMemory() throws Throwable {
-        List<TranslationUnitMessage> units1 = TestData.tuList(0, 0, 1, EN__IT, 10);
-        List<TranslationUnitMessage> units2 = TestData.tuList(0, 10, 2, EN__IT, 10);
+        List<TranslationUnitMessage> units1 = additions(0, 0, 1, EN__IT, 10);
+        List<TranslationUnitMessage> units2 = additions(0, 10, 2, EN__IT, 10);
 
         Set<TranslationMemory.Entry> expectedEntries = TLuceneTranslationMemory.asEntrySet(units2);
 
@@ -55,12 +54,12 @@ public class TestLuceneTranslationMemory_onDelete {
     @Test
     public void multilingualMemory() throws Throwable {
         List<TranslationUnitMessage> units1 = Arrays.asList(
-                TestData.tu(0, 0, 1L, EN__IT, null),
-                TestData.tu(0, 1, 1L, EN__IT, null),
-                TestData.tu(0, 2, 1L, FR__ES, null),
-                TestData.tu(0, 3, 1L, FR__ES, null)
+                addition(0, 0, 1L, tu(EN__IT)),
+                addition(0, 1, 1L, tu(EN__IT)),
+                addition(0, 2, 1L, tu(FR__ES)),
+                addition(0, 3, 1L, tu(FR__ES))
         );
-        List<TranslationUnitMessage> units2 = TestData.tuList(0, 4, 2, EN__IT, 10);
+        List<TranslationUnitMessage> units2 = additions(0, 4, 2, EN__IT, 10);
 
         Set<TranslationMemory.Entry> expectedEntries = TLuceneTranslationMemory.asEntrySet(units2);
 
@@ -77,8 +76,8 @@ public class TestLuceneTranslationMemory_onDelete {
 
     @Test
     public void multipleMemories() throws Throwable {
-        List<TranslationUnitMessage> units1 = TestData.tuList(0, 0, 1, EN__IT, 10);
-        List<TranslationUnitMessage> units2 = TestData.tuList(0, 10, 2, EN__IT, 10);
+        List<TranslationUnitMessage> units1 = additions(0, 0, 1, EN__IT, 10);
+        List<TranslationUnitMessage> units2 = additions(0, 10, 2, EN__IT, 10);
 
         memory.onDataReceived(units1);
         memory.onDataReceived(units2);
@@ -94,8 +93,8 @@ public class TestLuceneTranslationMemory_onDelete {
 
     @Test
     public void deleteContributions() throws Throwable {
-        List<TranslationUnitMessage> units1 = TestData.tuList(0, 0, 1, EN__IT, 10);
-        List<TranslationUnitMessage> units2 = TestData.tuList(0, 10, 2, EN__IT, 10);
+        List<TranslationUnitMessage> units1 = additions(0, 0, 1, EN__IT, 10);
+        List<TranslationUnitMessage> units2 = additions(0, 10, 2, EN__IT, 10);
 
         Set<TranslationMemory.Entry> expectedEntries = TLuceneTranslationMemory.asEntrySet(units2);
 
@@ -113,8 +112,8 @@ public class TestLuceneTranslationMemory_onDelete {
 
     @Test
     public void duplicateDelete() throws Throwable {
-        List<TranslationUnitMessage> units1 = TestData.tuList(1, 0, 1, EN__IT, 10);
-        List<TranslationUnitMessage> units2 = TestData.tuList(1, 10, 2, EN__IT, 10);
+        List<TranslationUnitMessage> units1 = additions(1, 0, 1, EN__IT, 10);
+        List<TranslationUnitMessage> units2 = additions(1, 10, 2, EN__IT, 10);
 
         Set<TranslationMemory.Entry> expectedEntries = new HashSet<>();
         expectedEntries.addAll(TLuceneTranslationMemory.asEntrySet(units1));

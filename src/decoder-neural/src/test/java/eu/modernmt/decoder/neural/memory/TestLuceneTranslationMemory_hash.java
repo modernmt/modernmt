@@ -35,11 +35,7 @@ public class TestLuceneTranslationMemory_hash {
     private TLuceneTranslationMemory memory;
 
     private Document create(LanguageDirection language, int memory, String sentence, String translation, String hash) {
-        TranslationUnit value = new TranslationUnit(null, language, sentence, translation, null);
-        TranslationUnitMessage unit = new TranslationUnitMessage((short) 0, 0, memory, null, value,
-                false, null, null,
-                language, new Sentence(TokensOutputStream.deserializeWords(sentence)), new Sentence(TokensOutputStream.deserializeWords(translation)), null);
-
+        TranslationUnitMessage unit = addition(0, 0, memory, tu(language, sentence, translation));
         DefaultDocumentBuilder builder = (DefaultDocumentBuilder) this.memory.getDocumentBuilder();
         return builder.create(unit, hash);
     }
@@ -89,11 +85,12 @@ public class TestLuceneTranslationMemory_hash {
 
     @Test
     public void overwriteNotExisting() throws Throwable {
-        TranslationUnitMessage original = tu(0, 0L, 1L, EN__IT, "hello world", "ciao mondo", null);
-        memory.onDataReceived(Collections.singletonList(original));
+        TranslationUnitMessage original = addition(0, 0L, 1L, tu(EN__IT, "hello world", "ciao mondo"));
+        memory.onDataReceived(original);
 
-        TranslationUnitMessage overwrite = tu(0, 1L, 1L, EN__IT, "test sentence", "frase di prova",
-                "hello world __", "ciao mondo __", null);
+        TranslationUnitMessage overwrite = overwrite(0, 1L, 1L,
+                tu(EN__IT, "test sentence", "frase di prova"),
+                "hello world __", "ciao mondo __");
         memory.onDataReceived(Collections.singletonList(overwrite));
 
         Set<TranslationMemory.Entry> expectedEntries = TLuceneTranslationMemory.asEntrySet(Arrays.asList(original, overwrite));
@@ -103,11 +100,12 @@ public class TestLuceneTranslationMemory_hash {
 
     @Test
     public void overwriteExisting() throws Throwable {
-        TranslationUnitMessage original = tu(0, 0L, 1L, EN__IT, "hello world", "ciao mondo", null);
+        TranslationUnitMessage original = addition(0, 0L, 1L, tu(EN__IT, "hello world", "ciao mondo"));
         memory.onDataReceived(Collections.singletonList(original));
 
-        TranslationUnitMessage overwrite = tu(0, 1L, 1L, EN__IT, "test sentence", "frase di prova",
-                "hello world", "ciao mondo", null);
+        TranslationUnitMessage overwrite = overwrite(0, 1L, 1L,
+                tu(EN__IT, "test sentence", "frase di prova"),
+                "hello world", "ciao mondo");
         memory.onDataReceived(Collections.singletonList(overwrite));
 
         Set<TranslationMemory.Entry> expectedEntries = TLuceneTranslationMemory.asEntrySet(Collections.singletonList(overwrite));
