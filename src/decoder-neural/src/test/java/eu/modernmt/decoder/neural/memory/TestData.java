@@ -101,6 +101,10 @@ public class TestData {
         return tu(1L, language, source, target, timestamp);
     }
 
+    public static TranslationUnitMessage tu(long memory, LanguageDirection language, String source, String target) {
+        return tu(0, 0, memory, language, source, target, new Date());
+    }
+
     public static TranslationUnitMessage tu(long memory, LanguageDirection language, String source, String target, Date timestamp) {
         return tu(0, 0, memory, language, source, target, timestamp);
     }
@@ -111,6 +115,10 @@ public class TestData {
 
     public static TranslationUnitMessage tu(int channel, long channelPosition, UUID owner, long memory, LanguageDirection language, String source, String target, Date timestamp) {
         return tu(channel, channelPosition, owner, memory, language, source, target, null, null, timestamp);
+    }
+
+    public static TranslationUnitMessage tu(int channel, long channelPosition, long memory, LanguageDirection language, String source, String target, String previousSource, String previousTarget) {
+        return tu(channel, channelPosition, null, memory, language, source, target, previousSource, previousTarget, new Date());
     }
 
     public static TranslationUnitMessage tu(int channel, long channelPosition, long memory, LanguageDirection language, String source, String target, String previousSource, String previousTarget, Date timestamp) {

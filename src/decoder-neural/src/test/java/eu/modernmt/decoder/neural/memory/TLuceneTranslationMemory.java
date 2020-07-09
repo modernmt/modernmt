@@ -45,6 +45,10 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
         return result;
     }
 
+    public static Set<TranslationMemory.Entry> asEntrySet(TranslationUnitMessage... units) {
+        return asEntrySet(Arrays.asList(units));
+    }
+
     public static Set<TranslationMemory.Entry> asEntrySet(Collection<TranslationUnitMessage> units) {
         HashSet<TranslationMemory.Entry> result = new HashSet<>(units.size());
 
@@ -77,6 +81,14 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
             }
 
         });
+    }
+
+    public void onDataReceived(TranslationUnitMessage... units) throws IOException {
+        onDataReceived(Arrays.asList(units));
+    }
+
+    public void onDataReceived(TranslationUnitMessage unit) throws IOException {
+        onDataReceived(Collections.singleton(unit));
     }
 
     public void onDataReceived(Collection<TranslationUnitMessage> units) throws IOException {
