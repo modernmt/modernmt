@@ -247,8 +247,9 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
 
             TranslationUnit tu;
             while ((tu = reader.read()) != null) {
-                TranslationUnitMessage unit = new TranslationUnitMessage((short) 0, position++, memory.getOwner(), tu.language, tu.language, memory.getId(),
-                        tu.source, tu.target, null, null, new Date(), null, null, null);
+                TranslationUnitMessage unit = new TranslationUnitMessage((short) 0, position++, memory.getId(), memory.getOwner(), tu,
+                        false, null, null,
+                        tu.language, null, null, null);
                 units.add(unit);
             }
         } finally {

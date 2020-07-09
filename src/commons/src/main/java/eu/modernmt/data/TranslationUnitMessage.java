@@ -3,8 +3,8 @@ package eu.modernmt.data;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
+import eu.modernmt.model.corpus.TranslationUnit;
 
-import java.util.Date;
 import java.util.UUID;
 
 /**
@@ -15,33 +15,29 @@ public class TranslationUnitMessage extends DataMessage {
     public final long memory;
     public final UUID owner;
 
-    //TODO: should have "tuid" and "update" parameters
-    public final LanguageDirection rawLanguage;  // this is the original language tag from the translation unit
-    public final LanguageDirection language;  // this is the language mapped by the engine's language index
-    public final String rawSentence;
-    public final String rawTranslation;
-    public final String rawPreviousSentence;
-    public final String rawPreviousTranslation;
-    public final Date timestamp;
+    public final TranslationUnit value;
+    public final boolean update;
+    public final String previousSentence;
+    public final String previousTranslation;
 
+    public final LanguageDirection language;  // this is the language mapped by the engine's language index
     public final Sentence sentence;
     public final Sentence translation;
     public final Alignment alignment;
 
-    public TranslationUnitMessage(short channel, long channelPosition, UUID owner, LanguageDirection rawLanguage, LanguageDirection language, long memory,
-                                  String rawSentence, String rawTranslation, String rawPreviousSentence, String rawPreviousTranslation,
-                                  Date timestamp, Sentence sentence, Sentence translation, Alignment alignment) {
+    public TranslationUnitMessage(short channel, long channelPosition, long memory, UUID owner, TranslationUnit value,
+                                  boolean update, String previousSentence, String previousTranslation,
+                                  LanguageDirection language, Sentence sentence, Sentence translation, Alignment alignment) {
         super(channel, channelPosition);
         this.memory = memory;
         this.owner = owner;
-        this.rawLanguage = rawLanguage;
-        this.language = language;
-        this.rawSentence = rawSentence;
-        this.rawTranslation = rawTranslation;
-        this.rawPreviousSentence = rawPreviousSentence;
-        this.rawPreviousTranslation = rawPreviousTranslation;
-        this.timestamp = timestamp;
 
+        this.value = value;
+        this.update = update;
+        this.previousSentence = previousSentence;
+        this.previousTranslation = previousTranslation;
+
+        this.language = language;
         this.sentence = sentence;
         this.translation = translation;
         this.alignment = alignment;
@@ -49,27 +45,14 @@ public class TranslationUnitMessage extends DataMessage {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append('<');
-        builder.append(memory);
-        builder.append(':');
-        builder.append(language);
-        builder.append(':');
-        builder.append(rawSentence);
-        builder.append(':');
-        builder.append(rawTranslation);
-
-        if (rawPreviousSentence != null) {
-            builder.append(':');
-            builder.append(rawPreviousSentence);
-            builder.append(':');
-            builder.append(rawPreviousTranslation);
-        }
-        builder.append(':');
-        builder.append(timestamp);
-
-        builder.append('>');
-
-        return builder.toString();
+        return "TranslationUnitMessage{" +
+                "memory=" + memory +
+                ", owner=" + owner +
+                ", value=" + value +
+                ", update=" + update +
+                ", previousSentence='" + previousSentence + '\'' +
+                ", previousTranslation='" + previousTranslation + '\'' +
+                ", language=" + language +
+                '}';
     }
 }

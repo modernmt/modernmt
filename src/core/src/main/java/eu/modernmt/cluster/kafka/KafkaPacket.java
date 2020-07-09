@@ -108,9 +108,12 @@ public class KafkaPacket {
         if (channel < 0 || position < 0)
             throw new IllegalStateException("Call setChannelInfo() before parsing methods.");
 
-        return new TranslationUnitMessage(channel, position, owner, this.direction, language, memory,
-                sentence, translation, previousSentence, previousTranslation, timestamp,
-                sSentence, sTranslation, alignment);
+        boolean update = (type == TYPE_OVERWRITE_BY_VALUE) || (type == TYPE_OVERWRITE_BY_TUID);
+        TranslationUnit tu = new TranslationUnit(this.tuid, this.direction, this.sentence, this.translation, this.timestamp);
+
+        return new TranslationUnitMessage(channel, position, memory, owner, tu,
+                update, previousSentence, previousTranslation,
+                language, sSentence, sTranslation, alignment);
     }
 
     public static KafkaPacket fromBytes(byte[] data) {

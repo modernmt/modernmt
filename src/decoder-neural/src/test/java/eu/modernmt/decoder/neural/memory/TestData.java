@@ -126,9 +126,11 @@ public class TestData {
     }
 
     public static TranslationUnitMessage tu(int channel, long channelPosition, UUID owner, long memory, LanguageDirection language, String source, String target, String previousSource, String previousTarget, Date timestamp) {
-        return new TranslationUnitMessage((short) channel, channelPosition, owner, language, language, memory,
-                source, target, previousSource, previousTarget, timestamp,
-                sentence(source), sentence(target), null);
+        boolean update = previousSource != null;
+        TranslationUnit tu = new TranslationUnit(null, language, source, target, timestamp);
+        return new TranslationUnitMessage((short) channel, channelPosition, memory, owner, tu,
+                update, previousSource, previousTarget,
+                language, sentence(source), sentence(target), null);
     }
 
     // Corpus
@@ -164,8 +166,7 @@ public class TestData {
                     public TranslationUnit read() {
                         if (index < units.size()) {
                             TranslationUnitMessage unit = units.get(index++);
-
-                            return new TranslationUnit(null, unit.language, unit.rawSentence, unit.rawTranslation);
+                            return unit.value;
                         } else {
                             return null;
                         }

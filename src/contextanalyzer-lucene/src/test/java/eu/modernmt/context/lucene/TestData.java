@@ -159,9 +159,10 @@ public class TestData {
     }
 
     public static TranslationUnitMessage tu(int channel, long channelPosition, UUID owner, long memory, LanguageDirection language, String source, String target, Date timestamp) {
-        return new TranslationUnitMessage((short) channel, channelPosition, owner, language, language, memory,
-                source, target, null, null, timestamp,
-                sentence(source), sentence(target), null);
+        TranslationUnit value = new TranslationUnit(null, language, source, target, timestamp);
+        return new TranslationUnitMessage((short) channel, channelPosition, memory, owner, value,
+                false, null, null,
+                language, sentence(source), sentence(target), null);
     }
 
     public static Set<String> tuGetTerms(List<TranslationUnitMessage> units, boolean source) throws IOException {
@@ -172,7 +173,7 @@ public class TestData {
         HashSet<String> terms = new HashSet<>();
         for (TranslationUnitMessage unit : units) {
             if (direction == null || unit.language.equals(direction)) {
-                String text = source ? unit.rawSentence : unit.rawTranslation;
+                String text = source ? unit.value.source : unit.value.target;
                 terms.addAll(Arrays.asList(text.split(" ")));
             }
         }
@@ -188,7 +189,7 @@ public class TestData {
         StringBuilder builder = new StringBuilder();
         for (TranslationUnitMessage unit : units) {
             if (direction == null || unit.language.equals(direction)) {
-                builder.append(source ? unit.rawSentence : unit.rawTranslation);
+                builder.append(source ? unit.value.source : unit.value.target);
                 builder.append('\n');
             }
         }

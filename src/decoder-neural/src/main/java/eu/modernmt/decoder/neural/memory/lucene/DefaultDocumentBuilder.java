@@ -39,7 +39,7 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
 
     @Override
     public Document create(TranslationUnitMessage unit) {
-        String hash = HashGenerator.hash(unit.rawLanguage, unit.rawSentence, unit.rawTranslation);
+        String hash = HashGenerator.hash(unit.value);
         return create(unit, hash);
     }
 
@@ -49,7 +49,7 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
         String translation = TokensOutputStream.serialize(unit.translation, false, true);
 
         return create(unit.memory, unit.language, sentence, translation, hash,
-                unit.rawLanguage, unit.rawSentence, unit.rawTranslation);
+                unit.value.language, unit.value.source, unit.value.target);
     }
 
     protected Document create(long memory, LanguageDirection language, String sentence, String translation, String hash,

@@ -316,11 +316,15 @@ public class LuceneTranslationMemory implements TranslationMemory {
             Long currentPosition = this.channels.get(unit.channel);
 
             if (currentPosition == null || currentPosition < unit.channelPosition) {
-                if (unit.rawPreviousSentence != null && unit.rawPreviousTranslation != null) {
-                    String hash = HashGenerator.hash(unit.rawLanguage, unit.rawPreviousSentence, unit.rawPreviousTranslation);
-                    Query hashQuery = this.queryBuilder.getByHash(documentBuilder, unit.memory, hash);
+                if (unit.update) {
+                    if (unit.previousSentence != null && unit.previousTranslation != null) {
+                        String hash = HashGenerator.hash(unit.value.language, unit.previousSentence, unit.previousTranslation);
+                        Query hashQuery = this.queryBuilder.getByHash(documentBuilder, unit.memory, hash);
 
-                    this.indexWriter.deleteDocuments(hashQuery);
+                        this.indexWriter.deleteDocuments(hashQuery);
+                    } else if (unit.value.tuid != null) {
+                        //TODO: delete existing document by "tuid"
+                    }
                 }
 
                 Document document = documentBuilder.create(unit);

@@ -9,6 +9,7 @@ import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.memory.TranslationMemory;
 import eu.modernmt.model.Sentence;
+import eu.modernmt.model.corpus.TranslationUnit;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -34,13 +35,12 @@ public class TestLuceneTranslationMemory_hash {
     private TLuceneTranslationMemory memory;
 
     private Document create(LanguageDirection language, int memory, String sentence, String translation, String hash) {
-        TranslationUnitMessage unit = new TranslationUnitMessage((short) 0, 0, null, language, language, memory,
-                sentence, sentence, null, null, null,
-                new Sentence(TokensOutputStream.deserializeWords(sentence)),
-                new Sentence(TokensOutputStream.deserializeWords(translation)),
-                null);
+        TranslationUnit value = new TranslationUnit(null, language, sentence, translation, null);
+        TranslationUnitMessage unit = new TranslationUnitMessage((short) 0, 0, memory, null, value,
+                false, null, null,
+                language, new Sentence(TokensOutputStream.deserializeWords(sentence)), new Sentence(TokensOutputStream.deserializeWords(translation)), null);
 
-        DefaultDocumentBuilder builder = (DefaultDocumentBuilder)this.memory.getDocumentBuilder();
+        DefaultDocumentBuilder builder = (DefaultDocumentBuilder) this.memory.getDocumentBuilder();
         return builder.create(unit, hash);
     }
 

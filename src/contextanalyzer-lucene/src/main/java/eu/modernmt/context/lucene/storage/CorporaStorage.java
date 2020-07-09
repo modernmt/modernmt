@@ -80,11 +80,11 @@ public class CorporaStorage implements LogDataListener, Closeable {
                 continue;
 
             Bucket fwdBucket = buckets.get(unit.memory, unit.language, unit.owner);
-            fwdBucket.getWriter().append(unit.rawSentence);
+            fwdBucket.getWriter().append(unit.value.source);
             pendingUpdatesBuckets.add(fwdBucket);
 
             Bucket bwdBucket = buckets.get(unit.memory, unit.language.reversed(), unit.owner);
-            bwdBucket.getWriter().append(unit.rawTranslation);
+            bwdBucket.getWriter().append(unit.value.target);
             pendingUpdatesBuckets.add(bwdBucket);
         }
 
