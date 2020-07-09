@@ -15,6 +15,7 @@ public class TranslationUnitMessage extends DataMessage {
     public final long memory;
     public final UUID owner;
 
+    //TODO: should have "tuid" and "update" parameters
     public final LanguageDirection rawLanguage;  // this is the original language tag from the translation unit
     public final LanguageDirection language;  // this is the language mapped by the engine's language index
     public final String rawSentence;

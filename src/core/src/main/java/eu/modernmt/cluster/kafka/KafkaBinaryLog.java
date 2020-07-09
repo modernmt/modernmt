@@ -292,7 +292,7 @@ public class KafkaBinaryLog implements BinaryLog {
             if (tu == null)
                 return null;
 
-            importEnd = importBegin = sendElement(KafkaPacket.createAddition(tu.language, memory.getOwner(), memory.getId(), tu.source, tu.target, tu.timestamp), true, channel);
+            importEnd = importBegin = sendElement(KafkaPacket.createAddition(memory.getOwner(), memory.getId(), tu), true, channel);
             size++;
 
             tu = reader.read();
@@ -302,9 +302,9 @@ public class KafkaBinaryLog implements BinaryLog {
                 tu = reader.read();
 
                 if (tu == null)
-                    importEnd = sendElement(KafkaPacket.createAddition(current.language, memory.getOwner(), memory.getId(), current.source, current.target, current.timestamp), true, channel);
+                    importEnd = sendElement(KafkaPacket.createAddition(memory.getOwner(), memory.getId(), current), true, channel);
                 else
-                    sendElement(KafkaPacket.createAddition(current.language, memory.getOwner(), memory.getId(), current.source, current.target, current.timestamp), false, channel);
+                    sendElement(KafkaPacket.createAddition(memory.getOwner(), memory.getId(), current), false, channel);
 
                 size++;
             }
@@ -336,8 +336,7 @@ public class KafkaBinaryLog implements BinaryLog {
     public ImportJob upload(Memory memory, TranslationUnit tu, LogChannel channel) throws BinaryLogException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
-        //TODO: createAddition() should support tuid
-        long offset = sendElement(KafkaPacket.createAddition(tu.language, memory.getOwner(), memory.getId(), tu.source, tu.target, tu.timestamp), true, channel);
+        long offset = sendElement(KafkaPacket.createAddition(memory.getOwner(), memory.getId(), tu), true, channel);
         return ImportJob.createEphemeralJob(memory.getId(), offset, channel.getId());
     }
 
@@ -348,8 +347,11 @@ public class KafkaBinaryLog implements BinaryLog {
 
     @Override
     public ImportJob replace(Memory memory, TranslationUnit tu, LogChannel channel) throws BinaryLogException {
-        //TODO: stub implementation
-        throw new UnsupportedOperationException();
+        if (this.producer == null)
+            throw new IllegalStateException("connect() not called");
+
+        long offset = sendElement(KafkaPacket.createOverwrite(memory.getOwner(), memory.getId(), tu), true, channel);
+        return ImportJob.createEphemeralJob(memory.getId(), offset, channel.getId());
     }
 
     @Override
@@ -362,8 +364,7 @@ public class KafkaBinaryLog implements BinaryLog {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 
-        //TODO: createOverwrite() should still support tuid
-        long offset = sendElement(KafkaPacket.createOverwrite(tu.language, memory.getOwner(), memory.getId(), tu.source, tu.target, previousSentence, previousTranslation, tu.timestamp), true, channel);
+        long offset = sendElement(KafkaPacket.createOverwrite(memory.getOwner(), memory.getId(), tu, previousSentence, previousTranslation), true, channel);
         return ImportJob.createEphemeralJob(memory.getId(), offset, channel.getId());
     }
 
