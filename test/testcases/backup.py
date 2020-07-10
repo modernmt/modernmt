@@ -30,8 +30,8 @@ class BackupTest(ModernMTTestCase):
             memory_id = int(memory['id'])
 
             job = None
-            with corpus.reader_with_languages() as reader:
-                for src_lang, tgt_lang, src_line, tgt_line in reader:
+            with corpus.reader_with_metadata() as reader:
+                for tuid, src_lang, tgt_lang, src_line, tgt_line in reader:
                     updated_tgt_line = self._update_of(tgt_line)
                     if updated_tgt_line is not None:
                         job = self.mmt.api.replace_in_memory(src_lang, tgt_lang, memory_id,
@@ -65,9 +65,9 @@ class BackupTest(ModernMTTestCase):
             memory = self.mmt.api.create_memory(corpus.name)
 
             job = None
-            with corpus.reader_with_languages() as reader:
-                for src_lang, tgt_lang, src_line, tgt_line in reader:
-                    job = self.mmt.api.append_to_memory(src_lang, tgt_lang, memory['id'], src_line, tgt_line)
+            with corpus.reader_with_metadata() as reader:
+                for tuid, src_lang, tgt_lang, src_line, tgt_line in reader:
+                    job = self.mmt.api.append_to_memory(src_lang, tgt_lang, memory['id'], src_line, tgt_line, tuid=tuid)
 
             if job is not None:
                 self.mmt.wait_import_job(job)
@@ -95,7 +95,8 @@ class BackupTest(ModernMTTestCase):
             self.assertIn(memory_id, translation_memory)
             content = translation_memory[memory_id]
 
-            with corpus.reader_with_languages() as reader:
-                for src_lang, tgt_lang, src_line, tgt_line in reader:
+            with corpus.reader_with_metadata() as reader:
+                for tuid, src_lang, tgt_lang, src_line, tgt_line in reader:
                     updated_tgt_line = self._update_of(tgt_line)
-                    self.assertIn((src_lang, tgt_lang, src_line, updated_tgt_line or tgt_line), content)
+                    tuid = None if updated_tgt_line is not None else tuid
+                    self.assertIn((tuid, src_lang, tgt_lang, src_line, updated_tgt_line or tgt_line), content)
