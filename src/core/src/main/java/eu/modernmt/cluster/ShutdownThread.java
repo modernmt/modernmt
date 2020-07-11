@@ -45,9 +45,6 @@ class ShutdownThread extends Thread {
 
         long elapsed = System.currentTimeMillis() - begin;
         logger.info("System halted in " + (elapsed / 1000) + "s");
-
-        // Stop log4j2
-        LogManager.shutdown();
     }
 
     private void halt(TranslationServiceProxy service) {

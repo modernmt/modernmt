@@ -1,6 +1,6 @@
 package eu.modernmt.cleaning;
 
-import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TranslationUnit;
 
 public interface MultilingualCorpusFilter {
 
@@ -8,14 +8,14 @@ public interface MultilingualCorpusFilter {
 
         void onBegin();
 
-        void onPair(MultilingualCorpus.StringPair pair, int index);
+        void onTranslationUnit(TranslationUnit tu, int index);
 
         void onEnd();
     }
 
     Initializer getInitializer();
 
-    boolean accept(MultilingualCorpus.StringPair pair, int index);
+    boolean accept(TranslationUnit tu, int index);
 
     void clear();
 

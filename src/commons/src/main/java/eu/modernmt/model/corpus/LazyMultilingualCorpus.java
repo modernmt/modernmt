@@ -1,9 +1,7 @@
-package eu.modernmt.training;
+package eu.modernmt.model.corpus;
 
 import eu.modernmt.lang.LanguageDirection;
-import eu.modernmt.model.corpus.Corpus;
-import eu.modernmt.model.corpus.MultilingualCorpus;
-import eu.modernmt.model.corpus.MultilingualCorpusWrapper;
+import eu.modernmt.model.corpus.*;
 
 import java.io.IOException;
 import java.util.Set;
@@ -11,11 +9,11 @@ import java.util.Set;
 /**
  * Created by davide on 29/08/17.
  */
-public class LazyWriterMultilingualCorpus implements MultilingualCorpusWrapper {
+public class LazyMultilingualCorpus implements MultilingualCorpusWrapper {
 
     private final MultilingualCorpus corpus;
 
-    public LazyWriterMultilingualCorpus(MultilingualCorpus corpus) {
+    public LazyMultilingualCorpus(MultilingualCorpus corpus) {
         this.corpus = corpus;
     }
 
@@ -40,21 +38,21 @@ public class LazyWriterMultilingualCorpus implements MultilingualCorpusWrapper {
     }
 
     @Override
-    public MultilingualLineReader getContentReader() throws IOException {
+    public TUReader getContentReader() throws IOException {
         return corpus.getContentReader();
     }
 
     @Override
-    public MultilingualLineWriter getContentWriter(boolean append) throws IOException {
-        return new MultilingualLineWriter() {
+    public TUWriter getContentWriter(boolean append) throws IOException {
+        return new TUWriter() {
 
-            private MultilingualLineWriter writer = null;
+            private TUWriter writer = null;
 
             @Override
-            public void write(StringPair pair) throws IOException {
+            public void write(TranslationUnit tu) throws IOException {
                 if (writer == null)
                     writer = corpus.getContentWriter(append);
-                writer.write(pair);
+                writer.write(tu);
             }
 
             @Override

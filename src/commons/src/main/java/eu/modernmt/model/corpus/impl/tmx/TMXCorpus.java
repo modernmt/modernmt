@@ -2,6 +2,8 @@ package eu.modernmt.model.corpus.impl.tmx;
 
 import eu.modernmt.io.FileProxy;
 import eu.modernmt.model.corpus.BaseMultilingualCorpus;
+import eu.modernmt.model.corpus.TUReader;
+import eu.modernmt.model.corpus.TUWriter;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
@@ -45,13 +47,13 @@ public class TMXCorpus extends BaseMultilingualCorpus {
     }
 
     @Override
-    public MultilingualLineReader getContentReader() throws IOException {
-        return new TMXLineReader(tmx);
+    public TUReader getContentReader() throws IOException {
+        return new TMXReader(tmx);
     }
 
     @Override
-    public MultilingualLineWriter getContentWriter(boolean append) throws IOException {
-        return new TMXLineWriter(tmx);
+    public TUWriter getContentWriter(boolean append) throws IOException {
+        return new TMXWriter(tmx);
     }
 
     @Override

@@ -7,12 +7,14 @@ import eu.modernmt.context.lucene.analysis.LuceneUtils;
 import eu.modernmt.context.lucene.storage.Bucket;
 import eu.modernmt.context.lucene.storage.CorporaStorage;
 import eu.modernmt.data.DataBatch;
-import eu.modernmt.data.Deletion;
-import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.data.DeletionMessage;
+import eu.modernmt.data.TranslationUnitMessage;
 import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TUReader;
+import eu.modernmt.model.corpus.TranslationUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.search.IndexSearcher;
@@ -179,16 +181,16 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
         return getStorage().getLatestChannelPositions();
     }
 
-    public void onDelete(final Deletion deletion) throws IOException {
+    public void onDelete(final DeletionMessage deletion) throws IOException {
         getStorage().onDataReceived(new DataBatch() {
 
             @Override
-            public Collection<TranslationUnit> getTranslationUnits() {
+            public Collection<TranslationUnitMessage> getTranslationUnits() {
                 return Collections.emptyList();
             }
 
             @Override
-            public Collection<Deletion> getDeletions() {
+            public Collection<DeletionMessage> getDeletions() {
                 return Collections.singleton(deletion);
             }
 
@@ -202,9 +204,9 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
         this.forceAnalysis();
     }
 
-    public void onDataReceived(Collection<TranslationUnit> units) throws IOException {
+    public void onDataReceived(Collection<TranslationUnitMessage> units) throws IOException {
         final HashMap<Short, Long> positions = new HashMap<>();
-        for (TranslationUnit unit : units) {
+        for (TranslationUnitMessage unit : units) {
             Long existingPosition = positions.get(unit.channel);
 
             if (existingPosition == null || existingPosition < unit.channelPosition)
@@ -213,12 +215,12 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
 
         getStorage().onDataReceived(new DataBatch() {
             @Override
-            public Collection<TranslationUnit> getTranslationUnits() {
+            public Collection<TranslationUnitMessage> getTranslationUnits() {
                 return units;
             }
 
             @Override
-            public Collection<Deletion> getDeletions() {
+            public Collection<DeletionMessage> getDeletions() {
                 return Collections.emptyList();
             }
 
@@ -238,15 +240,16 @@ public class TLuceneAnalyzer extends LuceneAnalyzer {
         else
             position++;
 
-        ArrayList<TranslationUnit> units = new ArrayList<>();
-        MultilingualCorpus.MultilingualLineReader reader = null;
+        ArrayList<TranslationUnitMessage> units = new ArrayList<>();
+        TUReader reader = null;
         try {
             reader = corpus.getContentReader();
 
-            MultilingualCorpus.StringPair pair;
-            while ((pair = reader.read()) != null) {
-                TranslationUnit unit = new TranslationUnit((short) 0, position++, memory.getOwner(), pair.language, pair.language, memory.getId(),
-                        pair.source, pair.target, null, null, new Date(), null, null, null);
+            TranslationUnit tu;
+            while ((tu = reader.read()) != null) {
+                TranslationUnitMessage unit = new TranslationUnitMessage((short) 0, position++, memory.getId(), memory.getOwner(), tu,
+                        false, null, null,
+                        tu.language, null, null, null);
                 units.add(unit);
             }
         } finally {

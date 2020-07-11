@@ -3,6 +3,8 @@ package eu.modernmt.model.corpus.impl.tmx;
 import eu.modernmt.io.FileProxy;
 import eu.modernmt.lang.Language;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TUWriter;
+import eu.modernmt.model.corpus.TranslationUnit;
 import eu.modernmt.xml.XMLUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -16,7 +18,7 @@ import java.util.TimeZone;
 /**
  * Created by davide on 01/12/16.
  */
-class TMXLineWriter implements MultilingualCorpus.MultilingualLineWriter {
+class TMXWriter implements TUWriter {
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(TMXCorpus.TMX_DATE_FORMAT);
 
@@ -25,7 +27,7 @@ class TMXLineWriter implements MultilingualCorpus.MultilingualLineWriter {
     private final OutputStream stream;
     private final XMLStreamWriter writer;
 
-    public TMXLineWriter(FileProxy tmx) throws IOException {
+    public TMXWriter(FileProxy tmx) throws IOException {
         this.dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 
         OutputStream stream = null;
@@ -46,22 +48,22 @@ class TMXLineWriter implements MultilingualCorpus.MultilingualLineWriter {
     }
 
     @Override
-    public void write(MultilingualCorpus.StringPair pair) throws IOException {
+    public void write(TranslationUnit tu) throws IOException {
         try {
             if (!headerWritten) {
                 headerWritten = true;
-                writeHeader(pair.language.source);
+                writeHeader(tu.language.source);
             }
 
             writer.writeStartElement("tu");
-            writer.writeAttribute("srclang", pair.language.source.toLanguageTag());
+            writer.writeAttribute("srclang", tu.language.source.toLanguageTag());
             writer.writeAttribute("datatype", "plaintext");
 
-            if (pair.timestamp != null)
-                writer.writeAttribute("creationdate", dateFormat.format(pair.timestamp));
+            if (tu.timestamp != null)
+                writer.writeAttribute("creationdate", dateFormat.format(tu.timestamp));
 
-            writeTuv(pair.language.source, pair.source);
-            writeTuv(pair.language.target, pair.target);
+            writeTuv(tu.language.source, tu.source);
+            writeTuv(tu.language.target, tu.target);
 
             writer.writeEndElement();
         } catch (XMLStreamException e) {
@@ -77,7 +79,6 @@ class TMXLineWriter implements MultilingualCorpus.MultilingualLineWriter {
         writer.writeEndElement();
         writer.writeEndElement();
     }
-
 
     @Override
     public void flush() throws IOException {

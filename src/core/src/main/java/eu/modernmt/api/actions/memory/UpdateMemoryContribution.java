@@ -11,6 +11,7 @@ import eu.modernmt.facade.ModernMT;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ImportJob;
+import eu.modernmt.model.corpus.TranslationUnit;
 import eu.modernmt.persistence.PersistenceException;
 
 /**
@@ -22,8 +23,10 @@ public class UpdateMemoryContribution extends ObjectAction<ImportJob> {
     @Override
     protected ImportJob execute(RESTRequest req, Parameters _params) throws BinaryLogException, PersistenceException {
         Params params = (Params) _params;
-        return ModernMT.memory.replace(params.direction, params.memory, params.sentence, params.translation,
-                params.previousSentence, params.previousTranslation);
+        if (params.previousSentence != null && params.previousTranslation != null)
+            return ModernMT.memory.replace(params.memory, params.tu, params.previousSentence, params.previousTranslation);
+        else
+            return ModernMT.memory.replace(params.memory, params.tu);
     }
 
     @Override
@@ -33,10 +36,8 @@ public class UpdateMemoryContribution extends ObjectAction<ImportJob> {
 
     public static class Params extends Parameters {
 
-        private final LanguageDirection direction;
         private final long memory;
-        private final String sentence;
-        private final String translation;
+        private final TranslationUnit tu;
         private final String previousSentence;
         private final String previousTranslation;
 
@@ -45,14 +46,22 @@ public class UpdateMemoryContribution extends ObjectAction<ImportJob> {
 
             memory = req.getPathParameterAsLong("id");
 
-            sentence = getString("sentence", false);
-            translation = getString("translation", false);
-            previousSentence = getString("old_sentence", false);
-            previousTranslation = getString("old_translation", false);
+            String sentence = getString("sentence", false);
+            String translation = getString("translation", false);
+            String tuid = getString("tuid", false, null);
+
+            if (tuid == null) {
+                previousSentence = getString("old_sentence", false);
+                previousTranslation = getString("old_translation", false);
+            } else {
+                previousSentence = null;
+                previousTranslation = null;
+            }
 
             Language sourceLanguage = getLanguage("source");
             Language targetLanguage = getLanguage("target");
-            direction = new LanguageDirection(sourceLanguage, targetLanguage);
+            LanguageDirection language = new LanguageDirection(sourceLanguage, targetLanguage);
+            tu = new TranslationUnit(tuid, language, sentence, translation);
         }
     }
 

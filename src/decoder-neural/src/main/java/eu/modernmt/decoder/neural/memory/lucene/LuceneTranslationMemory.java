@@ -1,9 +1,9 @@
 package eu.modernmt.decoder.neural.memory.lucene;
 
 import eu.modernmt.data.DataBatch;
-import eu.modernmt.data.Deletion;
+import eu.modernmt.data.DeletionMessage;
 import eu.modernmt.data.HashGenerator;
-import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.data.TranslationUnitMessage;
 import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.memory.TranslationMemory;
 import eu.modernmt.decoder.neural.memory.lucene.analysis.AnalyzerFactory;
@@ -311,16 +311,20 @@ public class LuceneTranslationMemory implements TranslationMemory {
         return false;
     }
 
-    private void onTranslationUnitsReceived(Collection<TranslationUnit> units) throws IOException {
-        for (TranslationUnit unit : units) {
+    private void onTranslationUnitsReceived(Collection<TranslationUnitMessage> units) throws IOException {
+        for (TranslationUnitMessage unit : units) {
             Long currentPosition = this.channels.get(unit.channel);
 
             if (currentPosition == null || currentPosition < unit.channelPosition) {
-                if (unit.rawPreviousSentence != null && unit.rawPreviousTranslation != null) {
-                    String hash = HashGenerator.hash(unit.rawLanguage, unit.rawPreviousSentence, unit.rawPreviousTranslation);
-                    Query hashQuery = this.queryBuilder.getByHash(documentBuilder, unit.memory, hash);
+                if (unit.update) {
+                    Query deleteQuery = null;
+                    if (unit.previousSentence != null && unit.previousTranslation != null)
+                        deleteQuery = this.queryBuilder.getByMatch(documentBuilder, unit.memory, unit.value.language, unit.previousSentence, unit.previousTranslation);
+                    else if (unit.value.tuid != null)
+                        deleteQuery = this.queryBuilder.getByTuid(documentBuilder, unit.memory, unit.value.language, unit.value.tuid);
 
-                    this.indexWriter.deleteDocuments(hashQuery);
+                    if (deleteQuery != null)
+                        this.indexWriter.deleteDocuments(deleteQuery);
                 }
 
                 Document document = documentBuilder.create(unit);
@@ -329,8 +333,8 @@ public class LuceneTranslationMemory implements TranslationMemory {
         }
     }
 
-    private void onDeletionsReceived(Collection<Deletion> deletions) throws IOException {
-        for (Deletion deletion : deletions) {
+    private void onDeletionsReceived(Collection<DeletionMessage> deletions) throws IOException {
+        for (DeletionMessage deletion : deletions) {
             Long currentPosition = this.channels.get(deletion.channel);
 
             if (currentPosition == null || currentPosition < deletion.channelPosition)

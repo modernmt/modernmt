@@ -64,9 +64,9 @@ class OnlineLearningLanguageTest(__OnlineLearningTest):
             memory = self.mmt.api.create_memory(corpus.name)
 
             job = None
-            with corpus.reader_with_languages() as reader:
-                for src_lang, tgt_lang, src_line, tgt_line in reader:
-                    job = self.mmt.api.append_to_memory(src_lang, tgt_lang, memory['id'], src_line, tgt_line)
+            with corpus.reader_with_metadata() as reader:
+                for tuid, src_lang, tgt_lang, src_line, tgt_line in reader:
+                    job = self.mmt.api.append_to_memory(src_lang, tgt_lang, memory['id'], src_line, tgt_line, tuid=tuid)
 
             if job is not None:
                 self.mmt.wait_import_job(job)
@@ -122,8 +122,8 @@ class OnlineLearningLanguageTest(__OnlineLearningTest):
             self.assertIn(memory_id, context_analyzer)
             content = context_analyzer[memory_id]
 
-            with corpus.reader_with_languages() as reader:
-                for src_lang, tgt_lang, src_line, tgt_line in reader:
+            with corpus.reader_with_metadata() as reader:
+                for tuid, src_lang, tgt_lang, src_line, tgt_line in reader:
                     self.assertIn((src_lang, tgt_lang, src_line), content)
                     self.assertIn((tgt_lang, src_lang, tgt_line), content)
 
@@ -137,19 +137,20 @@ class OnlineLearningLanguageTest(__OnlineLearningTest):
             self.assertIn(memory_id, translation_memory)
             content = translation_memory[memory_id]
 
-            with corpus.reader_with_languages() as reader:
-                for src_lang, tgt_lang, src_line, tgt_line in reader:
-                    self.assertIn((src_lang, tgt_lang, src_line, tgt_line), content)
+            with corpus.reader_with_metadata() as reader:
+                for tuid, src_lang, tgt_lang, src_line, tgt_line in reader:
+                    self.assertIn((tuid, src_lang, tgt_lang, src_line, tgt_line), content)
 
 
 class OnlineLearningChannelsTest(__OnlineLearningTest):
-    CONTENT = [('This is en__it example %d' % i, u'Questo è un esempio en__it %d' % i) for i in range(1, 9)]
+    CONTENT = [('tuid-%d' % i, 'This is en__it example %d' % i, u'Questo è un esempio en__it %d' % i)
+               for i in range(1, 9)]
 
     def _setup(self, context='full', memory='full'):
         def load(entries):
             job = None
-            for segment, translation in entries:
-                job = self.mmt.api.append_to_memory('en', 'it', 1, segment, translation)
+            for tuid, segment, translation in entries:
+                job = self.mmt.api.append_to_memory('en', 'it', 1, segment, translation, tuid=tuid)
             self.mmt.wait_import_job(job)
 
         def restore_model(lvl, path, path_bak):
@@ -169,14 +170,14 @@ class OnlineLearningChannelsTest(__OnlineLearningTest):
         memory_path_bak = memory_path + '.bak'
 
         self.mmt.api.create_memory('test')
-        load(self.CONTENT[:5])
+        load(self.CONTENT[:4])
         self.mmt.stop()
 
         os.rename(context_path, context_path_bak)
         os.rename(memory_path, memory_path_bak)
 
         self.mmt.start()
-        load(self.CONTENT[5:])
+        load(self.CONTENT[4:])
         self.mmt.stop()
 
         restore_model(context, context_path, context_path_bak)
@@ -194,7 +195,7 @@ class OnlineLearningChannelsTest(__OnlineLearningTest):
         self.assertIn(1, context_analyzer)
         content = context_analyzer[1]
 
-        for src_line, tgt_line in self.CONTENT:
+        for _, src_line, tgt_line in self.CONTENT:
             self.assertIn(('en', 'it', src_line), content)
             self.assertIn(('it', 'en', tgt_line), content)
 
@@ -203,8 +204,8 @@ class OnlineLearningChannelsTest(__OnlineLearningTest):
         self.assertIn(1, translation_memory)
         content = translation_memory[1]
 
-        for src_line, tgt_line in self.CONTENT:
-            self.assertIn(('en', 'it', src_line, tgt_line), content)
+        for tuid, src_line, tgt_line in self.CONTENT:
+            self.assertIn((tuid, 'en', 'it', src_line, tgt_line), content)
 
     # Tests
 
@@ -229,7 +230,7 @@ class OnlineLearningChannelsTest(__OnlineLearningTest):
         # Verify Memory content
         self.assertEqual(1, len(translation_memory))
         self.assertIn(1, translation_memory)
-        self.assertIn(('en', 'it', 'Hello world', 'Ciao mondo'), translation_memory[1])
+        self.assertIn((None, 'en', 'it', 'Hello world', 'Ciao mondo'), translation_memory[1])
 
     def test_upload_memory(self):
         self.mmt.api.create_memory('test')
@@ -288,3 +289,103 @@ class OnlineLearningChannelsTest(__OnlineLearningTest):
         self.mmt.start()
         self.assertEqual({0: 0, 1: 7}, self.mmt.get_channels())
         self._verify_index_integrity()
+
+
+class OnlineLearningUpdateTest(__OnlineLearningTest):
+    def _setup(self):
+        memory_a = self.mmt.api.create_memory('Memory A')
+        self.mmt.api.append_to_memory('en', 'it', memory_a['id'], 'Test A1', 'Prova A1', tuid='tuid-001')
+        self.mmt.api.append_to_memory('en', 'it', memory_a['id'], 'Test A2', 'Prova A2', tuid='tuid-002')
+        self.mmt.api.append_to_memory('en', 'fr', memory_a['id'], 'Test A1', 'Essai A1', tuid='tuid-001')
+
+        memory_b = self.mmt.api.create_memory('Memory B')
+        self.mmt.api.append_to_memory('en', 'it', memory_b['id'], 'Test B1', 'Prova B1', tuid='tuid-001')
+        self.mmt.api.append_to_memory('en', 'it', memory_b['id'], 'Test B2', 'Prova B2', tuid='tuid-002')
+        job = self.mmt.api.append_to_memory('en', 'fr', memory_b['id'], 'Test B1', 'Essai B1', tuid='tuid-001')
+
+        self.mmt.wait_import_job(job)
+
+        return memory_a['id'], memory_b['id']
+
+    def test_add(self):
+        memory_a, memory_b = self._setup()
+
+        self.mmt.stop()
+
+        translation_memory = self.mmt.dump_translation_memory()
+
+        self.assertEqual(2, len(translation_memory))
+        self.assertIn(memory_a, translation_memory)
+        self.assertIn(memory_b, translation_memory)
+
+        content_a = translation_memory[memory_a]
+        self.assertIn(('tuid-001', 'en', 'it', 'Test A1', 'Prova A1'), content_a)
+        self.assertIn(('tuid-002', 'en', 'it', 'Test A2', 'Prova A2'), content_a)
+        self.assertIn(('tuid-001', 'en', 'fr', 'Test A1', 'Essai A1'), content_a)
+
+        content_b = translation_memory[memory_b]
+        self.assertIn(('tuid-001', 'en', 'it', 'Test B1', 'Prova B1'), content_b)
+        self.assertIn(('tuid-002', 'en', 'it', 'Test B2', 'Prova B2'), content_b)
+        self.assertIn(('tuid-001', 'en', 'fr', 'Test B1', 'Essai B1'), content_b)
+
+    def test_replace_by_match(self):
+        memory_a, memory_b = self._setup()
+
+        self.mmt.api.replace_in_memory('en', 'it', memory_a, 'NEW Test A1', 'NEW Prova A1', 'Test A1', 'Prova A1')
+        self.mmt.api.replace_in_memory('en', 'it', memory_a, 'NEW Test A2', 'NEW Prova A2', 'Test A2', 'Prova A2')
+        self.mmt.api.replace_in_memory('en', 'fr', memory_a, 'NEW Test A1', 'NEW Essai A1', 'Test A1', 'Essai A1')
+
+        self.mmt.api.replace_in_memory('en', 'it', memory_b, 'NEW Test B1', 'NEW Prova B1', 'Test B1', 'Prova B1')
+        self.mmt.api.replace_in_memory('en', 'it', memory_b, 'NEW Test B2', 'NEW Prova B2', 'Test B2', 'Prova B2')
+        job = self.mmt.api.replace_in_memory('en', 'fr', memory_b, 'NEW Test B1', 'NEW Essai B1', 'Test B1', 'Essai B1')
+
+        self.mmt.wait_import_job(job)
+
+        self.mmt.stop()
+
+        translation_memory = self.mmt.dump_translation_memory()
+
+        self.assertEqual(2, len(translation_memory))
+        self.assertIn(memory_a, translation_memory)
+        self.assertIn(memory_b, translation_memory)
+
+        content_a = translation_memory[memory_a]
+        self.assertIn((None, 'en', 'it', 'NEW Test A1', 'NEW Prova A1'), content_a)
+        self.assertIn((None, 'en', 'it', 'NEW Test A2', 'NEW Prova A2'), content_a)
+        self.assertIn((None, 'en', 'fr', 'NEW Test A1', 'NEW Essai A1'), content_a)
+
+        content_b = translation_memory[memory_b]
+        self.assertIn((None, 'en', 'it', 'NEW Test B1', 'NEW Prova B1'), content_b)
+        self.assertIn((None, 'en', 'it', 'NEW Test B2', 'NEW Prova B2'), content_b)
+        self.assertIn((None, 'en', 'fr', 'NEW Test B1', 'NEW Essai B1'), content_b)
+
+    def test_replace_by_tuid(self):
+        memory_a, memory_b = self._setup()
+
+        self.mmt.api.replace_in_memory('en', 'it', memory_a, 'NEW Test A1', 'NEW Prova A1', tuid='tuid-001')
+        self.mmt.api.replace_in_memory('en', 'it', memory_a, 'NEW Test A2', 'NEW Prova A2', tuid='tuid-002')
+        self.mmt.api.replace_in_memory('en', 'fr', memory_a, 'NEW Test A1', 'NEW Essai A1', tuid='tuid-001')
+
+        self.mmt.api.replace_in_memory('en', 'it', memory_b, 'NEW Test B1', 'NEW Prova B1', tuid='tuid-001')
+        self.mmt.api.replace_in_memory('en', 'it', memory_b, 'NEW Test B2', 'NEW Prova B2', tuid='tuid-002')
+        job = self.mmt.api.replace_in_memory('en', 'fr', memory_b, 'NEW Test B1', 'NEW Essai B1', tuid='tuid-001')
+
+        self.mmt.wait_import_job(job)
+
+        self.mmt.stop()
+
+        translation_memory = self.mmt.dump_translation_memory()
+
+        self.assertEqual(2, len(translation_memory))
+        self.assertIn(memory_a, translation_memory)
+        self.assertIn(memory_b, translation_memory)
+
+        content_a = translation_memory[memory_a]
+        self.assertIn(('tuid-001', 'en', 'it', 'NEW Test A1', 'NEW Prova A1'), content_a)
+        self.assertIn(('tuid-002', 'en', 'it', 'NEW Test A2', 'NEW Prova A2'), content_a)
+        self.assertIn(('tuid-001', 'en', 'fr', 'NEW Test A1', 'NEW Essai A1'), content_a)
+
+        content_b = translation_memory[memory_b]
+        self.assertIn(('tuid-001', 'en', 'it', 'NEW Test B1', 'NEW Prova B1'), content_b)
+        self.assertIn(('tuid-002', 'en', 'it', 'NEW Test B2', 'NEW Prova B2'), content_b)
+        self.assertIn(('tuid-001', 'en', 'fr', 'NEW Test B1', 'NEW Essai B1'), content_b)

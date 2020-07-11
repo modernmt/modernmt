@@ -11,6 +11,7 @@ import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TranslationUnit;
 import eu.modernmt.persistence.*;
 import org.apache.commons.io.IOUtils;
 
@@ -115,18 +116,16 @@ public class MemoryFacade {
         return true;
     }
 
-    public ImportJob add(LanguageDirection direction, long memoryId, String source, String target) throws BinaryLogException, PersistenceException {
+    public ImportJob add(long memoryId, TranslationUnit tu) throws BinaryLogException, PersistenceException {
+        if (tu.timestamp == null)
+            tu.timestamp = new Date();
+
         // Normalizing
-        MultilingualCorpus.StringPair pair = new MultilingualCorpus.StringPair(direction, source, target);
-        contributionFilter.normalize(pair);
+        contributionFilter.normalize(tu);
 
         // Filtering
-        if (!contributionFilter.accept(pair, 0))
+        if (!contributionFilter.accept(tu, 0))
             return ImportJob.createEphemeralJob(memoryId, 0, BinaryLog.CONTRIBUTIONS_CHANNEL_ID);
-
-        direction = pair.language;
-        source = pair.source;
-        target = pair.target;
 
         // Adding
         Connection connection = null;
@@ -142,7 +141,7 @@ public class MemoryFacade {
                 return null;
 
             BinaryLog binlog = ModernMT.getNode().getBinaryLog();
-            ImportJob job = binlog.upload(direction, memory, source, target, new Date(), BinaryLog.CONTRIBUTIONS_CHANNEL_ID);
+            ImportJob job = binlog.upload(memory, tu, BinaryLog.CONTRIBUTIONS_CHANNEL_ID);
 
             if (job == null)
                 return null;
@@ -155,24 +154,27 @@ public class MemoryFacade {
         }
     }
 
-    public ImportJob replace(LanguageDirection direction, long memoryId, String sentence, String translation,
-                             String previousSentence, String previousTranslation)
+    public ImportJob replace(long memoryId, TranslationUnit tu)
+            throws BinaryLogException, PersistenceException {
+        return replace(memoryId, tu, null);
+    }
+
+    public ImportJob replace(long memoryId, TranslationUnit tu, String previousSentence, String previousTranslation)
+            throws BinaryLogException, PersistenceException {
+        TranslationUnit previous = new TranslationUnit(tu.tuid, tu.language, previousSentence, previousTranslation);
+        return replace(memoryId, tu, previous);
+    }
+
+    private ImportJob replace(long memoryId, TranslationUnit current, TranslationUnit previous)
             throws BinaryLogException, PersistenceException {
         // Normalizing
-        MultilingualCorpus.StringPair previous = new MultilingualCorpus.StringPair(direction, previousSentence, previousTranslation);
-        MultilingualCorpus.StringPair current = new MultilingualCorpus.StringPair(direction, sentence, translation);
-        contributionFilter.normalize(previous);
+        if (previous != null)
+            contributionFilter.normalize(previous);
         contributionFilter.normalize(current);
 
         // Filtering
         if (!contributionFilter.accept(current, 0))
             return ImportJob.createEphemeralJob(memoryId, 0, BinaryLog.CONTRIBUTIONS_CHANNEL_ID);
-
-        direction = current.language;
-        sentence = current.source;
-        translation = current.target;
-        previousSentence = previous.source;
-        previousTranslation = previous.target;
 
         // Replacing
         Connection connection = null;
@@ -188,8 +190,11 @@ public class MemoryFacade {
                 return null;
 
             BinaryLog binlog = ModernMT.getNode().getBinaryLog();
-            ImportJob job = binlog.replace(direction, memory, sentence, translation,
-                    previousSentence, previousTranslation, new Date(), BinaryLog.CONTRIBUTIONS_CHANNEL_ID);
+            ImportJob job;
+            if (previous == null)
+                job = binlog.replace(memory, current, BinaryLog.CONTRIBUTIONS_CHANNEL_ID);
+            else
+                job = binlog.replace(memory, current, previous.source, previous.target, BinaryLog.CONTRIBUTIONS_CHANNEL_ID);
 
             if (job == null)
                 return null;

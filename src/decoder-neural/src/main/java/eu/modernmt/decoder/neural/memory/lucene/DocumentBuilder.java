@@ -1,6 +1,6 @@
 package eu.modernmt.decoder.neural.memory.lucene;
 
-import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.data.TranslationUnitMessage;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.memory.ScoreEntry;
@@ -17,9 +17,9 @@ public interface DocumentBuilder {
 
     // Factory methods
 
-    Document create(TranslationUnit unit);
+    Document create(TranslationUnitMessage unit);
 
-    Document create(TranslationUnit unit, String hash);
+    Document create(TranslationUnitMessage unit, String hash);
 
     Document create(Map<Short, Long> channels);
 
@@ -44,6 +44,8 @@ public interface DocumentBuilder {
     // Term constructors
 
     Term makeHashTerm(String h);
+
+    Term makeTuidHashTerm(String hash);
 
     Term makeMemoryTerm(long memory);
 

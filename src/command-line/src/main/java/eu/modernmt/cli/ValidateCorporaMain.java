@@ -5,6 +5,7 @@ import eu.modernmt.io.Corpora;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TUReader;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.Level;
@@ -63,7 +64,7 @@ public class ValidateCorporaMain {
         try {
             for (MultilingualCorpus corpus : corpora) {
                 service.submit(() -> {
-                    MultilingualCorpus.MultilingualLineReader reader = null;
+                    TUReader reader = null;
 
                     try {
                         long count = 0;

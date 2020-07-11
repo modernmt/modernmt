@@ -1,6 +1,6 @@
 package eu.modernmt.context.lucene;
 
-import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.data.TranslationUnitMessage;
 import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import org.junit.After;
@@ -101,8 +101,8 @@ public class TestLuceneAnalyzer_onDelete {
 
     @Test
     public void deleteContributions() throws Throwable {
-        List<TranslationUnit> units1 = TestData.tuList(0, 0, 1, EN__IT, 10);
-        List<TranslationUnit> units2 = TestData.tuList(0, 10, 2, EN__IT, 10);
+        List<TranslationUnitMessage> units1 = TestData.tuList(0, 0, 1, EN__IT, 10);
+        List<TranslationUnitMessage> units2 = TestData.tuList(0, 10, 2, EN__IT, 10);
 
         analyzer.onDataReceived(units1);
         analyzer.onDataReceived(units2);
@@ -124,8 +124,8 @@ public class TestLuceneAnalyzer_onDelete {
 
     @Test
     public void duplicateDelete() throws Throwable {
-        List<TranslationUnit> units1 = TestData.tuList(1, 0, 1, EN__IT, 10);
-        List<TranslationUnit> units2 = TestData.tuList(1, 10, 2, EN__IT, 10);
+        List<TranslationUnitMessage> units1 = TestData.tuList(1, 0, 1, EN__IT, 10);
+        List<TranslationUnitMessage> units2 = TestData.tuList(1, 10, 2, EN__IT, 10);
 
         analyzer.onDataReceived(units1);
         analyzer.onDataReceived(units2);

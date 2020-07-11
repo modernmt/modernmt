@@ -4,6 +4,7 @@ import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TranslationUnit;
 
 import java.io.Closeable;
 import java.util.Date;
@@ -36,13 +37,17 @@ public interface BinaryLog extends Closeable {
 
     ImportJob upload(Memory memory, MultilingualCorpus corpus, LogChannel channel) throws BinaryLogException;
 
-    ImportJob upload(LanguageDirection direction, Memory memory, String sentence, String translation, Date timestamp, short channel) throws BinaryLogException;
+    ImportJob upload(Memory memory, TranslationUnit tu, short channel) throws BinaryLogException;
 
-    ImportJob upload(LanguageDirection direction, Memory memory, String sentence, String translation, Date timestamp, LogChannel channel) throws BinaryLogException;
+    ImportJob upload(Memory memory, TranslationUnit tu, LogChannel channel) throws BinaryLogException;
 
-    ImportJob replace(LanguageDirection direction, Memory memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, short channel) throws BinaryLogException;
+    ImportJob replace(Memory memory, TranslationUnit tu, short channel) throws BinaryLogException;
 
-    ImportJob replace(LanguageDirection direction, Memory memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, LogChannel channel) throws BinaryLogException;
+    ImportJob replace(Memory memory, TranslationUnit tu, LogChannel channel) throws BinaryLogException;
+
+    ImportJob replace(Memory memory, TranslationUnit tu, String previousSentence, String previousTranslation, short channel) throws BinaryLogException;
+
+    ImportJob replace(Memory memory, TranslationUnit tu, String previousSentence, String previousTranslation, LogChannel channel) throws BinaryLogException;
 
     void delete(long memory) throws BinaryLogException;
 

@@ -1,7 +1,7 @@
 package eu.modernmt.decoder.neural.memory.lucene;
 
 import eu.modernmt.data.HashGenerator;
-import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.data.TranslationUnitMessage;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.lang.Language;
@@ -25,8 +25,10 @@ import java.util.Map;
 public class DefaultDocumentBuilder implements DocumentBuilder {
 
     private static final String CHANNELS_FIELD = "channels";
+    private static final String TUID_FIELD = "tuid";
     private static final String MEMORY_FIELD = "memory";
     private static final String HASH_FIELD = "hash";
+    private static final String TUID_HASH_FIELD = "hash_tuid";
     private static final String LANGUAGE_PREFIX_FIELD = "lang_";
     private static final String CONTENT_PREFIX_FIELD = "content_";
 
@@ -38,21 +40,22 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
     // Factory methods
 
     @Override
-    public Document create(TranslationUnit unit) {
-        String hash = HashGenerator.hash(unit.rawLanguage, unit.rawSentence, unit.rawTranslation);
+    public Document create(TranslationUnitMessage unit) {
+        String hash = HashGenerator.hash(unit.value);
         return create(unit, hash);
     }
 
     @Override
-    public Document create(TranslationUnit unit, String hash) {
+    public Document create(TranslationUnitMessage unit, String hash) {
+        String tuidHash = unit.value.tuid == null ? null : HashGenerator.hash(unit.value.language, unit.value.tuid);
         String sentence = TokensOutputStream.serialize(unit.sentence, false, true);
         String translation = TokensOutputStream.serialize(unit.translation, false, true);
 
-        return create(unit.memory, unit.language, sentence, translation, hash,
-                unit.rawLanguage, unit.rawSentence, unit.rawTranslation);
+        return create(unit.memory, unit.value.tuid, tuidHash, unit.language, sentence, translation, hash,
+                unit.value.language, unit.value.source, unit.value.target);
     }
 
-    protected Document create(long memory, LanguageDirection language, String sentence, String translation, String hash,
+    protected Document create(long memory, String tuid, String tuidHash, LanguageDirection language, String sentence, String translation, String hash,
                               LanguageDirection rawLanguage, String rawSentence, String rawTranslation) {
         Document document = new Document();
         document.add(new LongField(MEMORY_FIELD, memory, Field.Store.YES));
@@ -67,6 +70,11 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
         document.add(new StoredField(TARGET_LANGUAGE_FIELD, rawLanguage.target.toLanguageTag()));
         document.add(new StoredField(SENTENCE_FIELD, rawSentence.getBytes(UTF8Charset.get())));
         document.add(new StoredField(TRANSLATION_FIELD, rawTranslation.getBytes(UTF8Charset.get())));
+
+        if (tuid != null) {
+            document.add(new HashField(TUID_HASH_FIELD, tuidHash, Field.Store.NO));
+            document.add(new StoredField(TUID_FIELD, tuid));
+        }
 
         return document;
     }
@@ -182,8 +190,9 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
         Language target = Language.fromString(self.get(TARGET_LANGUAGE_FIELD));
         String sentence = self.getBinaryValue(SENTENCE_FIELD).utf8ToString();
         String translation = self.getBinaryValue(TRANSLATION_FIELD).utf8ToString();
+        String tuid = self.get(TUID_FIELD);
 
-        return new TranslationMemory.Entry(memory, new LanguageDirection(source, target), sentence, translation);
+        return new TranslationMemory.Entry(tuid, memory, new LanguageDirection(source, target), sentence, translation);
     }
 
     @Override
@@ -210,6 +219,11 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
     }
 
     @Override
+    public Term makeTuidHashTerm(String h) {
+        return new Term(TUID_HASH_FIELD, h);
+    }
+
+    @Override
     public Term makeMemoryTerm(long memory) {
         return makeLongTerm(memory, MEMORY_FIELD);
     }
@@ -228,7 +242,7 @@ public class DefaultDocumentBuilder implements DocumentBuilder {
 
     @Override
     public boolean isHashField(String field) {
-        return HASH_FIELD.equals(field);
+        return HASH_FIELD.equals(field) || TUID_HASH_FIELD.equals(field);
     }
 
     @Override

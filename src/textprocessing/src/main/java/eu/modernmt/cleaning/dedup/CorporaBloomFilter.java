@@ -1,4 +1,4 @@
-package eu.modernmt.training.bloomfilter;
+package eu.modernmt.cleaning.dedup;
 
 import com.google.common.hash.BloomFilter;
 import com.google.common.hash.Funnel;
@@ -6,6 +6,7 @@ import com.google.common.hash.PrimitiveSink;
 import eu.modernmt.io.UTF8Charset;
 import eu.modernmt.model.corpus.Corpus;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TranslationUnit;
 
 public class CorporaBloomFilter {
 
@@ -19,10 +20,10 @@ public class CorporaBloomFilter {
         this.bloomFilter = BloomFilter.create(new StringFunnel(), expectedEntries, fpp);
     }
 
-    public boolean put(MultilingualCorpus.StringPair pair) {
+    public boolean put(TranslationUnit tu) {
         synchronized (bloomFilter) {
             // This is not thread safe, even in v24
-            return bloomFilter.put(CorporaBloomFilter.StringFunnel.toString(pair));
+            return bloomFilter.put(CorporaBloomFilter.StringFunnel.toString(tu));
         }
     }
 
@@ -33,10 +34,10 @@ public class CorporaBloomFilter {
         }
     }
 
-    public boolean contains(MultilingualCorpus.StringPair pair) {
+    public boolean contains(TranslationUnit tu) {
         synchronized (bloomFilter) {
             // This is not thread safe, even in v24
-            return bloomFilter.mightContain(CorporaBloomFilter.StringFunnel.toString(pair));
+            return bloomFilter.mightContain(CorporaBloomFilter.StringFunnel.toString(tu));
         }
     }
 
@@ -47,12 +48,12 @@ public class CorporaBloomFilter {
         }
     }
 
-    boolean accept(MultilingualCorpus.StringPair pair, int lengthThreshold) {
+    boolean accept(TranslationUnit tu, int lengthThreshold) {
         if (lengthThreshold > 0 &&
-                pair.source.length() < lengthThreshold && pair.target.length() < lengthThreshold) {
+                tu.source.length() < lengthThreshold && tu.target.length() < lengthThreshold) {
             return true;
         } else {
-            return put(pair);
+            return put(tu);
         }
     }
 
@@ -74,10 +75,10 @@ public class CorporaBloomFilter {
 
     static final class StringFunnel implements Funnel<String> {
 
-        public static String toString(MultilingualCorpus.StringPair pair) {
-            return pair.language.toString() + '\n' +
-                    pair.source.replace('\n', ' ') + '\n' +
-                    pair.target.replace('\n', ' ');
+        public static String toString(TranslationUnit tu) {
+            return tu.language.toString() + '\n' +
+                    tu.source.replace('\n', ' ') + '\n' +
+                    tu.target.replace('\n', ' ');
         }
 
         @Override

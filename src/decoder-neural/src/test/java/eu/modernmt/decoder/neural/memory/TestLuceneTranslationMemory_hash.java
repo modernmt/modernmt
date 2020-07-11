@@ -1,14 +1,16 @@
 package eu.modernmt.decoder.neural.memory;
 
-import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.data.TranslationUnitMessage;
 import eu.modernmt.decoder.neural.memory.lucene.DefaultDocumentBuilder;
 import eu.modernmt.decoder.neural.memory.lucene.DocumentBuilder;
+import eu.modernmt.decoder.neural.memory.lucene.query.DefaultQueryBuilder;
 import eu.modernmt.decoder.neural.memory.lucene.query.QueryBuilder;
 import eu.modernmt.io.TokensOutputStream;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.memory.TranslationMemory;
 import eu.modernmt.model.Sentence;
+import eu.modernmt.model.corpus.TranslationUnit;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -34,13 +36,8 @@ public class TestLuceneTranslationMemory_hash {
     private TLuceneTranslationMemory memory;
 
     private Document create(LanguageDirection language, int memory, String sentence, String translation, String hash) {
-        TranslationUnit unit = new TranslationUnit((short) 0, 0, null, language, language, memory,
-                sentence, sentence, null, null, null,
-                new Sentence(TokensOutputStream.deserializeWords(sentence)),
-                new Sentence(TokensOutputStream.deserializeWords(translation)),
-                null);
-
-        DefaultDocumentBuilder builder = (DefaultDocumentBuilder)this.memory.getDocumentBuilder();
+        TranslationUnitMessage unit = addition(0, 0, memory, tu(language, sentence, translation));
+        DefaultDocumentBuilder builder = (DefaultDocumentBuilder) this.memory.getDocumentBuilder();
         return builder.create(unit, hash);
     }
 
@@ -59,7 +56,7 @@ public class TestLuceneTranslationMemory_hash {
     public void queryWithMisleadingHashes() throws Throwable {
         IndexWriter indexWriter = memory.getIndexWriter();
         DocumentBuilder documentBuilder = memory.getDocumentBuilder();
-        QueryBuilder queryBuilder = memory.getQueryBuilder();
+        DefaultQueryBuilder queryBuilder = (DefaultQueryBuilder) memory.getQueryBuilder();
 
         indexWriter.addDocument(create(EN__IT, 2, "2-1", "2-1", "A B C D"));
         indexWriter.addDocument(create(EN__IT, 1, "1-1", "1-1", "A B C D"));
@@ -68,7 +65,7 @@ public class TestLuceneTranslationMemory_hash {
         indexWriter.addDocument(create(EN__IT, 1, "1-3", "1-3", "D C B Z"));
         indexWriter.commit();
 
-        Query query = queryBuilder.getByHash(documentBuilder, 1, "A B C D");
+        Query query = queryBuilder.getByMatchHash(documentBuilder, 1, "A B C D");
 
         IndexSearcher searcher = memory.getIndexSearcher();
         ScoreDoc[] result = searcher.search(query, 10).scoreDocs;
@@ -89,25 +86,27 @@ public class TestLuceneTranslationMemory_hash {
 
     @Test
     public void overwriteNotExisting() throws Throwable {
-        TranslationUnit original = tu(0, 0L, 1L, EN__IT, "hello world", "ciao mondo", null);
-        memory.onDataReceived(Collections.singletonList(original));
+        TranslationUnitMessage original = addition(0, 0L, 1L, tu(EN__IT, "hello world", "ciao mondo"));
+        memory.onDataReceived(original);
 
-        TranslationUnit overwrite = tu(0, 1L, 1L, EN__IT, "test sentence", "frase di prova",
-                "hello world __", "ciao mondo __", null);
-        memory.onDataReceived(Collections.singletonList(overwrite));
+        TranslationUnitMessage overwrite = overwrite(0, 1L, 1L,
+                tu(EN__IT, "test sentence", "frase di prova"),
+                "hello world __", "ciao mondo __");
+        memory.onDataReceived(overwrite);
 
-        Set<TranslationMemory.Entry> expectedEntries = TLuceneTranslationMemory.asEntrySet(Arrays.asList(original, overwrite));
+        Set<TranslationMemory.Entry> expectedEntries = TLuceneTranslationMemory.asEntrySet(original, overwrite);
 
         assertEquals(expectedEntries, memory.entrySet());
     }
 
     @Test
     public void overwriteExisting() throws Throwable {
-        TranslationUnit original = tu(0, 0L, 1L, EN__IT, "hello world", "ciao mondo", null);
+        TranslationUnitMessage original = addition(0, 0L, 1L, tu(EN__IT, "hello world", "ciao mondo"));
         memory.onDataReceived(Collections.singletonList(original));
 
-        TranslationUnit overwrite = tu(0, 1L, 1L, EN__IT, "test sentence", "frase di prova",
-                "hello world", "ciao mondo", null);
+        TranslationUnitMessage overwrite = overwrite(0, 1L, 1L,
+                tu(EN__IT, "test sentence", "frase di prova"),
+                "hello world", "ciao mondo");
         memory.onDataReceived(Collections.singletonList(overwrite));
 
         Set<TranslationMemory.Entry> expectedEntries = TLuceneTranslationMemory.asEntrySet(Collections.singletonList(overwrite));

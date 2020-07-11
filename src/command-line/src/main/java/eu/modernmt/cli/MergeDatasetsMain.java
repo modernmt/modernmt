@@ -5,13 +5,11 @@ import eu.modernmt.io.Corpora;
 import eu.modernmt.io.FileProxy;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
-import eu.modernmt.model.corpus.MaskedMultilingualCorpus;
-import eu.modernmt.model.corpus.MultilingualCorpus;
-import eu.modernmt.model.corpus.MultilingualCorpusWrapper;
+import eu.modernmt.model.corpus.*;
 import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
-import eu.modernmt.training.bloomfilter.CorporaBloomFilter;
+import eu.modernmt.cleaning.dedup.CorporaBloomFilter;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.Level;
@@ -152,20 +150,20 @@ public class MergeDatasetsMain {
         CorporaBloomFilter bloomFilter = new CorporaBloomFilter(lines);
 
         MultilingualCorpus out = Corpora.rename(c1, output);
-        try (MultilingualCorpus.MultilingualLineWriter writer = out.getContentWriter(false)) {
-            try (MultilingualCorpus.MultilingualLineReader reader = c1.getContentReader()) {
-                MultilingualCorpus.StringPair pair;
-                while ((pair = reader.read()) != null) {
-                    bloomFilter.put(pair);
-                    writer.write(pair);
+        try (TUWriter writer = out.getContentWriter(false)) {
+            try (TUReader reader = c1.getContentReader()) {
+                TranslationUnit tu;
+                while ((tu = reader.read()) != null) {
+                    bloomFilter.put(tu);
+                    writer.write(tu);
                 }
             }
 
-            try (MultilingualCorpus.MultilingualLineReader reader = c2.getContentReader()) {
-                MultilingualCorpus.StringPair pair;
-                while ((pair = reader.read()) != null) {
-                    if (!bloomFilter.contains(pair))
-                        writer.write(pair);
+            try (TUReader reader = c2.getContentReader()) {
+                TranslationUnit tu;
+                while ((tu = reader.read()) != null) {
+                    if (!bloomFilter.contains(tu))
+                        writer.write(tu);
                 }
             }
         }

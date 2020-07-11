@@ -264,13 +264,26 @@ class _RestApi(object):
     def delete_memory(self, memory_id):
         return self._delete('memories/' + str(memory_id))
 
-    def append_to_memory(self, source, target, memory, sentence, translation):
+    def append_to_memory(self, source, target, memory, sentence, translation, tuid=None):
         params = {'sentence': sentence, 'translation': translation, 'source': source, 'target': target}
+        if tuid is not None:
+            params['tuid'] = tuid
         return self._post('memories/' + str(memory) + '/corpus', params=params)
 
-    def replace_in_memory(self, source, target, memory, sentence, translation, old_sentence, old_translation):
-        params = {'sentence': sentence, 'translation': translation, 'source': source, 'target': target,
-                  'old_sentence': old_sentence, 'old_translation': old_translation}
+    def replace_in_memory(self, source, target, memory, sentence, translation,
+                          old_sentence=None, old_translation=None, tuid=None):
+        if tuid is None:
+            assert old_sentence is not None and old_translation is not None
+        else:
+            assert old_sentence is None and old_translation is None
+
+        params = {'sentence': sentence, 'translation': translation, 'source': source, 'target': target}
+        if tuid is not None:
+            params['tuid'] = tuid
+        else:
+            params['old_sentence'] = old_sentence
+            params['old_translation'] = old_translation
+
         return self._put('memories/' + str(memory) + '/corpus', params=params)
 
     def import_into_memory(self, memory, tmx=None, compact=None,

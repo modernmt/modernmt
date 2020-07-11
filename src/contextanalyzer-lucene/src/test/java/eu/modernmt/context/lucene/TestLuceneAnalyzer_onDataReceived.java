@@ -1,6 +1,6 @@
 package eu.modernmt.context.lucene;
 
-import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.data.TranslationUnitMessage;
 import eu.modernmt.model.Memory;
 import org.junit.After;
 import org.junit.Before;
@@ -31,7 +31,7 @@ public class TestLuceneAnalyzer_onDataReceived {
         this.analyzer = null;
     }
 
-    private void test(List<TranslationUnit> units, boolean reversed) throws Throwable {
+    private void test(List<TranslationUnitMessage> units, boolean reversed) throws Throwable {
         analyzer.onDataReceived(units);
 
         Map<Short, Long> expectedChannels = TestData.channels(0, units.size() - 1);
@@ -66,19 +66,19 @@ public class TestLuceneAnalyzer_onDataReceived {
 
     @Test
     public void directMixedMemories() throws Throwable {
-        List<TranslationUnit> units1 = Arrays.asList(
+        List<TranslationUnitMessage> units1 = Arrays.asList(
                 TestData.tu(0, 0L, 1L, IT__EN, null),
                 TestData.tu(0, 1L, 1L, IT__EN, null),
                 TestData.tu(0, 2L, 1L, EN__FR, null),
                 TestData.tu(0, 3L, 1L, EN__FR, null)
         );
 
-        List<TranslationUnit> units2 = Arrays.asList(
+        List<TranslationUnitMessage> units2 = Arrays.asList(
                 TestData.tu(0, 4L, 2L, IT__EN, null),
                 TestData.tu(0, 5L, 2L, EN__FR, null)
         );
 
-        List<TranslationUnit> allUnits = new ArrayList<>();
+        List<TranslationUnitMessage> allUnits = new ArrayList<>();
         allUnits.addAll(units1);
         allUnits.addAll(units2);
 
@@ -110,7 +110,7 @@ public class TestLuceneAnalyzer_onDataReceived {
         DummyBilingualCorpus corpus = TestData.corpus("dummy", EN__IT);
         analyzer.onDataReceived(new Memory(1), corpus);
 
-        List<TranslationUnit> units = TestData.tuList(1, 0L, 1L, EN__IT, 4);
+        List<TranslationUnitMessage> units = TestData.tuList(1, 0L, 1L, EN__IT, 4);
         analyzer.onDataReceived(units);
 
         HashSet<String> expectedTerms = new HashSet<>();
@@ -130,12 +130,12 @@ public class TestLuceneAnalyzer_onDataReceived {
 
     @Test
     public void duplicateContribution() throws Throwable {
-        List<TranslationUnit> units = Arrays.asList(
+        List<TranslationUnitMessage> units = Arrays.asList(
                 TestData.tu(1, 0L, 1L, EN__IT, null),
                 TestData.tu(1, 1L, 1L, EN__IT, null)
         );
 
-        List<TranslationUnit> cloneUnits = Arrays.asList(
+        List<TranslationUnitMessage> cloneUnits = Arrays.asList(
                 TestData.tu(1, 0L, 2L, EN__FR, null),
                 TestData.tu(1, 1L, 2L, EN__FR, null)
         );

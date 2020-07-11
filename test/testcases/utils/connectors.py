@@ -184,16 +184,25 @@ class _ContextAnalyzerContent(object):
 
 class _MemoryContent(object):
     class Entry(object):
-        def __init__(self, src_lang, tgt_lang, src_line, tgt_line):
+        def __init__(self, tuid, src_lang, tgt_lang, src_line, tgt_line):
+            self._tuid = tuid
             self._src_lang = src_lang
             self._tgt_lang = tgt_lang
             self._src_line = src_line
             self._tgt_line = tgt_line
 
+            str_tuid = tuid if tuid is not None else '-'
+            str_src_line = src_line.replace(' ', '')
+            str_tgt_line = tgt_line.replace(' ', '')
+
             if src_lang < tgt_lang:
-                self._id = '%s %s %s %s' % (src_lang, tgt_lang, src_line.replace(' ', ''), tgt_line.replace(' ', ''))
+                self._id = '%s %s %s %s %s' % (str_tuid, src_lang, tgt_lang, str_src_line, str_tgt_line)
             else:  # reversed
-                self._id = '%s %s %s %s' % (tgt_lang, src_lang, tgt_line.replace(' ', ''), src_line.replace(' ', ''))
+                self._id = '%s %s %s %s %s' % (str_tuid, tgt_lang, src_lang, str_tgt_line, str_src_line)
+
+        @property
+        def tuid(self):
+            return self._tuid
 
         @property
         def src_lang(self):
@@ -215,7 +224,8 @@ class _MemoryContent(object):
             return (type(o) == type(self)) and (self._id == o._id)
 
         def __str__(self) -> str:
-            return '%s\t%s\t%s\t%s' % (self._src_lang, self._tgt_lang, self._src_line, self._tgt_line)
+            str_tuid = self._tuid if self._tuid is not None else '-'
+            return '%s\t%s\t%s\t%s\t%s' % (str_tuid, self._src_lang, self._tgt_lang, self._src_line, self._tgt_line)
 
         def __repr__(self) -> str:
             return str(self)
@@ -232,8 +242,10 @@ class _MemoryContent(object):
         self._content_by_memory = defaultdict(set)
 
         for line in std_out.splitlines(keepends=False):
-            memory, src_lang, tgt_lang, src_line, tgt_line = line.strip().split('\t')
-            self._content_by_memory[int(memory)].add(self.Entry(src_lang, tgt_lang, src_line, tgt_line))
+            tuid, memory, src_lang, tgt_lang, src_line, tgt_line = line.strip().split('\t')
+            if 'null' == tuid:
+                tuid = None
+            self._content_by_memory[int(memory)].add(self.Entry(tuid, src_lang, tgt_lang, src_line, tgt_line))
 
     def __len__(self):
         return len(self._content_by_memory)
@@ -254,8 +266,8 @@ class _MemoryContent(object):
                     yield entry
 
             def __contains__(self, _item):
-                src_lang, tgt_lang, src_line, tgt_line = _item
-                return _MemoryContent.Entry(src_lang, tgt_lang, src_line, tgt_line) in self._entries
+                tuid, src_lang, tgt_lang, src_line, tgt_line = _item
+                return _MemoryContent.Entry(tuid, src_lang, tgt_lang, src_line, tgt_line) in self._entries
 
         if item in self._content_by_memory:
             return __Memory(self._content_by_memory[item])

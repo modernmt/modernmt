@@ -1,15 +1,14 @@
 package eu.modernmt.context.lucene;
 
-import eu.modernmt.data.Deletion;
-import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.data.DeletionMessage;
+import eu.modernmt.data.TranslationUnitMessage;
 import eu.modernmt.io.LineReader;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.UnsupportedLanguageException;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Word;
-import eu.modernmt.model.corpus.BaseMultilingualCorpus;
-import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.corpus.*;
 import eu.modernmt.model.corpus.impl.StringCorpus;
 import org.apache.commons.io.IOUtils;
 
@@ -108,16 +107,16 @@ public class TestData {
 
     // Translation units
 
-    public static List<TranslationUnit> tuList(LanguageDirection language, int size) {
+    public static List<TranslationUnitMessage> tuList(LanguageDirection language, int size) {
         return tuList(1L, language, size);
     }
 
-    public static List<TranslationUnit> tuList(long memory, LanguageDirection language, int size) {
+    public static List<TranslationUnitMessage> tuList(long memory, LanguageDirection language, int size) {
         return tuList(0, 0L, memory, language, size);
     }
 
-    public static List<TranslationUnit> tuList(int channel, long channelPosition, long memory, LanguageDirection language, int size) {
-        ArrayList<TranslationUnit> units = new ArrayList<>(size);
+    public static List<TranslationUnitMessage> tuList(int channel, long channelPosition, long memory, LanguageDirection language, int size) {
+        ArrayList<TranslationUnitMessage> units = new ArrayList<>(size);
         for (int i = 0; i < size; i++) {
             String source = EXAMPLE_SENTENCES.get(language.source.getLanguage());
             String target = EXAMPLE_SENTENCES.get(language.target.getLanguage());
@@ -132,48 +131,49 @@ public class TestData {
         return units;
     }
 
-    public static TranslationUnit tu(LanguageDirection language, Date timestamp) {
+    public static TranslationUnitMessage tu(LanguageDirection language, Date timestamp) {
         return tu(1L, language, timestamp);
     }
 
-    public static TranslationUnit tu(long memory, LanguageDirection language, Date timestamp) {
+    public static TranslationUnitMessage tu(long memory, LanguageDirection language, Date timestamp) {
         return tu(0, 0L, memory, language, timestamp);
     }
 
-    public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguageDirection language, Date timestamp) {
+    public static TranslationUnitMessage tu(int channel, long channelPosition, long memory, LanguageDirection language, Date timestamp) {
         return tu(channel, channelPosition, memory, language,
                 EXAMPLE_SENTENCES.get(language.source.getLanguage()),
                 EXAMPLE_SENTENCES.get(language.target.getLanguage()),
                 timestamp);
     }
 
-    public static TranslationUnit tu(LanguageDirection language, String source, String target, Date timestamp) {
+    public static TranslationUnitMessage tu(LanguageDirection language, String source, String target, Date timestamp) {
         return tu(1L, language, source, target, timestamp);
     }
 
-    public static TranslationUnit tu(long memory, LanguageDirection language, String source, String target, Date timestamp) {
+    public static TranslationUnitMessage tu(long memory, LanguageDirection language, String source, String target, Date timestamp) {
         return tu(0, 0, memory, language, source, target, timestamp);
     }
 
-    public static TranslationUnit tu(int channel, long channelPosition, long memory, LanguageDirection language, String source, String target, Date timestamp) {
+    public static TranslationUnitMessage tu(int channel, long channelPosition, long memory, LanguageDirection language, String source, String target, Date timestamp) {
         return tu(channel, channelPosition, null, memory, language, source, target, timestamp);
     }
 
-    public static TranslationUnit tu(int channel, long channelPosition, UUID owner, long memory, LanguageDirection language, String source, String target, Date timestamp) {
-        return new TranslationUnit((short) channel, channelPosition, owner, language, language, memory,
-                source, target, null, null, timestamp,
-                sentence(source), sentence(target), null);
+    public static TranslationUnitMessage tu(int channel, long channelPosition, UUID owner, long memory, LanguageDirection language, String source, String target, Date timestamp) {
+        TranslationUnit value = new TranslationUnit(null, language, source, target, timestamp);
+        return new TranslationUnitMessage((short) channel, channelPosition, memory, owner, value,
+                false, null, null,
+                language, sentence(source), sentence(target), null);
     }
 
-    public static Set<String> tuGetTerms(List<TranslationUnit> units, boolean source) throws IOException {
+    public static Set<String> tuGetTerms(List<TranslationUnitMessage> units, boolean source) throws IOException {
         return tuGetTerms(units, source, null);
     }
 
-    public static Set<String> tuGetTerms(List<TranslationUnit> units, boolean source, LanguageDirection direction) throws IOException {
+    public static Set<String> tuGetTerms(List<TranslationUnitMessage> units, boolean source, LanguageDirection direction) throws IOException {
         HashSet<String> terms = new HashSet<>();
-        for (TranslationUnit unit : units) {
+        for (TranslationUnitMessage unit : units) {
             if (direction == null || unit.language.equals(direction)) {
-                String text = source ? unit.rawSentence : unit.rawTranslation;
+                String text = source ? unit.value.source : unit.value.target;
                 terms.addAll(Arrays.asList(text.split(" ")));
             }
         }
@@ -181,15 +181,15 @@ public class TestData {
         return terms;
     }
 
-    public static String tuGetContent(List<TranslationUnit> units, boolean source) {
+    public static String tuGetContent(List<TranslationUnitMessage> units, boolean source) {
         return tuGetContent(units, source, null);
     }
 
-    public static String tuGetContent(List<TranslationUnit> units, boolean source, LanguageDirection direction) {
+    public static String tuGetContent(List<TranslationUnitMessage> units, boolean source, LanguageDirection direction) {
         StringBuilder builder = new StringBuilder();
-        for (TranslationUnit unit : units) {
+        for (TranslationUnitMessage unit : units) {
             if (direction == null || unit.language.equals(direction)) {
-                builder.append(source ? unit.rawSentence : unit.rawTranslation);
+                builder.append(source ? unit.value.source : unit.value.target);
                 builder.append('\n');
             }
         }
@@ -214,12 +214,12 @@ public class TestData {
 
     // Deletion
 
-    public static Deletion deletion(long memory) {
-        return new Deletion((short) 1, 0, memory);
+    public static DeletionMessage deletion(long memory) {
+        return new DeletionMessage((short) 1, 0, memory);
     }
 
-    public static Deletion deletion(long channelPosition, long memory) {
-        return new Deletion((short) 1, channelPosition, memory);
+    public static DeletionMessage deletion(long channelPosition, long memory) {
+        return new DeletionMessage((short) 1, channelPosition, memory);
     }
 
     // Content
@@ -301,14 +301,14 @@ public class TestData {
         }
 
         @Override
-        public MultilingualLineReader getContentReader() throws IOException {
-            return new MultilingualLineReader() {
+        public TUReader getContentReader() {
+            return new TUReader() {
 
                 private final LineReader sourceReader = sourceCorpus.getContentReader();
                 private final LineReader targetReader = targetCorpus.getContentReader();
 
                 @Override
-                public StringPair read() throws IOException {
+                public TranslationUnit read() throws IOException {
                     String source = sourceReader.readLine();
                     String target = targetReader.readLine();
 
@@ -318,11 +318,11 @@ public class TestData {
                     if (source == null || target == null)
                         throw new IOException("Not-parallel string corpora");
 
-                    return new StringPair(language, source, target);
+                    return new TranslationUnit(null, language, source, target);
                 }
 
                 @Override
-                public void close() throws IOException {
+                public void close() {
                     IOUtils.closeQuietly(sourceReader);
                     IOUtils.closeQuietly(targetReader);
                 }
@@ -330,7 +330,7 @@ public class TestData {
         }
 
         @Override
-        public MultilingualLineWriter getContentWriter(boolean append) throws IOException {
+        public TUWriter getContentWriter(boolean append) {
             throw new UnsupportedOperationException();
         }
 
@@ -361,22 +361,22 @@ public class TestData {
         }
 
         @Override
-        public MultilingualLineWriter getContentWriter(boolean append) {
+        public TUWriter getContentWriter(boolean append) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public MultilingualLineReader getContentReader() {
-            return new MultilingualLineReader() {
+        public TUReader getContentReader() {
+            return new TUReader() {
 
                 private int index = 0;
-                private MultilingualLineReader reader = null;
+                private TUReader reader = null;
 
                 @Override
-                public StringPair read() throws IOException {
-                    StringPair pair = null;
+                public TranslationUnit read() throws IOException {
+                    TranslationUnit tu = null;
 
-                    while (pair == null) {
+                    while (tu == null) {
                         if (reader == null) {
                             if (index < corpora.length)
                                 reader = corpora[index++].getContentReader();
@@ -384,15 +384,15 @@ public class TestData {
                                 return null;
                         }
 
-                        pair = reader.read();
+                        tu = reader.read();
 
-                        if (pair == null) {
+                        if (tu == null) {
                             reader.close();
                             reader = null;
                         }
                     }
 
-                    return pair;
+                    return tu;
                 }
 
                 @Override

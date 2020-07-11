@@ -1,36 +1,36 @@
 This is en__zh example 1
 这是en__zh例子1
-1279257697000,en zh
+1279257697000,en zh,tuid-0001
 This is en__zh example 2
 这是en__zh例子2
-1279257697000,en zh-CN
+1279257697000,en zh-CN,tuid-0002
 This is en__zh example 3
 这是en__zh例子3
-1279257697000,en zh-XX
+1279257697000,en zh-XX,tuid-0003
 This is en__zh example 4
 这是en__zh例子4
-1279257697000,en zh-TW
+1279257697000,en zh-TW,tuid-0004
 This is en__zh example 5
 这是en__zh例子5
-1279257697000,en zh-HK
+1279257697000,en zh-HK,tuid-0005
 This is en__zh example 6
 这是en__zh例子6
-1279257697000,en-US zh-HK
+1279257697000,en-US zh-HK,tuid-0006
 这是en__zh例子7
 This is en__zh example 7
-1279257697000,zh en
+1279257697000,zh en,tuid-0007
 这是en__zh例子8
 This is en__zh example 8
-1279257697000,zh-CN en
+1279257697000,zh-CN en,tuid-0008
 这是en__zh例子9
 This is en__zh example 9
-1279257697000,zh-XX en
+1279257697000,zh-XX en,tuid-0009
 这是en__zh例子10
 This is en__zh example 10
-1279257697000,zh-TW en
+1279257697000,zh-TW en,tuid-0010
 这是en__zh例子11
 This is en__zh example 11
-1279257697000,zh-HK en
+1279257697000,zh-HK en,tuid-0011
 这是en__zh例子12
 This is en__zh example 12
-1279257697000,zh-HK en-US
+1279257697000,zh-HK en-US,tuid-0012

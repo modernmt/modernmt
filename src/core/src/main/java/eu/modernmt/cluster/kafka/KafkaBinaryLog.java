@@ -9,6 +9,8 @@ import eu.modernmt.lang.LanguageIndex;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TUReader;
+import eu.modernmt.model.corpus.TranslationUnit;
 import eu.modernmt.processing.Preprocessor;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -278,7 +280,7 @@ public class KafkaBinaryLog implements BinaryLog {
         if (logger.isDebugEnabled())
             logger.debug("Uploading memory " + memory);
 
-        MultilingualCorpus.MultilingualLineReader reader = null;
+        TUReader reader = null;
 
         long importBegin, importEnd;
         int size = 0;
@@ -286,23 +288,23 @@ public class KafkaBinaryLog implements BinaryLog {
         try {
             reader = corpus.getContentReader();
 
-            MultilingualCorpus.StringPair pair = reader.read();
-            if (pair == null)
+            TranslationUnit tu = reader.read();
+            if (tu == null)
                 return null;
 
-            importEnd = importBegin = sendElement(KafkaPacket.createAddition(pair.language, memory.getOwner(), memory.getId(), pair.source, pair.target, pair.timestamp), true, channel);
+            importEnd = importBegin = sendElement(KafkaPacket.createAddition(memory.getOwner(), memory.getId(), tu), true, channel);
             size++;
 
-            pair = reader.read();
+            tu = reader.read();
 
-            while (pair != null) {
-                MultilingualCorpus.StringPair current = pair;
-                pair = reader.read();
+            while (tu != null) {
+                TranslationUnit current = tu;
+                tu = reader.read();
 
-                if (pair == null)
-                    importEnd = sendElement(KafkaPacket.createAddition(current.language, memory.getOwner(), memory.getId(), current.source, current.target, current.timestamp), true, channel);
+                if (tu == null)
+                    importEnd = sendElement(KafkaPacket.createAddition(memory.getOwner(), memory.getId(), current), true, channel);
                 else
-                    sendElement(KafkaPacket.createAddition(current.language, memory.getOwner(), memory.getId(), current.source, current.target, current.timestamp), false, channel);
+                    sendElement(KafkaPacket.createAddition(memory.getOwner(), memory.getId(), current), false, channel);
 
                 size++;
             }
@@ -326,29 +328,43 @@ public class KafkaBinaryLog implements BinaryLog {
     }
 
     @Override
-    public ImportJob upload(LanguageDirection direction, Memory memory, String sentence, String translation, Date timestamp, short channel) throws BinaryLogException {
-        return upload(direction, memory, sentence, translation, timestamp, getLogChannel(channel));
+    public ImportJob upload(Memory memory, TranslationUnit tu, short channel) throws BinaryLogException {
+        return upload(memory, tu, getLogChannel(channel));
     }
 
     @Override
-    public ImportJob upload(LanguageDirection direction, Memory memory, String sentence, String translation, Date timestamp, LogChannel channel) throws BinaryLogException {
+    public ImportJob upload(Memory memory, TranslationUnit tu, LogChannel channel) throws BinaryLogException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
-        long offset = sendElement(KafkaPacket.createAddition(direction, memory.getOwner(), memory.getId(), sentence, translation, timestamp), true, channel);
+        long offset = sendElement(KafkaPacket.createAddition(memory.getOwner(), memory.getId(), tu), true, channel);
         return ImportJob.createEphemeralJob(memory.getId(), offset, channel.getId());
     }
 
     @Override
-    public ImportJob replace(LanguageDirection direction, Memory memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, short channel) throws BinaryLogException {
-        return replace(direction, memory, sentence, translation, previousSentence, previousTranslation, timestamp, getLogChannel(channel));
+    public ImportJob replace(Memory memory, TranslationUnit tu, short channel) throws BinaryLogException {
+        return replace(memory, tu, getLogChannel(channel));
     }
 
     @Override
-    public ImportJob replace(LanguageDirection direction, Memory memory, String sentence, String translation, String previousSentence, String previousTranslation, Date timestamp, LogChannel channel) throws BinaryLogException {
+    public ImportJob replace(Memory memory, TranslationUnit tu, LogChannel channel) throws BinaryLogException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 
-        long offset = sendElement(KafkaPacket.createOverwrite(direction, memory.getOwner(), memory.getId(), sentence, translation, previousSentence, previousTranslation, timestamp), true, channel);
+        long offset = sendElement(KafkaPacket.createOverwrite(memory.getOwner(), memory.getId(), tu), true, channel);
+        return ImportJob.createEphemeralJob(memory.getId(), offset, channel.getId());
+    }
+
+    @Override
+    public ImportJob replace(Memory memory, TranslationUnit tu, String previousSentence, String previousTranslation, short channel) throws BinaryLogException {
+        return replace(memory, tu, previousSentence, previousTranslation, getLogChannel(channel));
+    }
+
+    @Override
+    public ImportJob replace(Memory memory, TranslationUnit tu, String previousSentence, String previousTranslation, LogChannel channel) throws BinaryLogException {
+        if (this.producer == null)
+            throw new IllegalStateException("connect() not called");
+
+        long offset = sendElement(KafkaPacket.createOverwrite(memory.getOwner(), memory.getId(), tu, previousSentence, previousTranslation), true, channel);
         return ImportJob.createEphemeralJob(memory.getId(), offset, channel.getId());
     }
 

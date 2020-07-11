@@ -4,6 +4,7 @@ import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
+import java.util.Objects;
 
 /**
  * Created by davide on 12/02/18.
@@ -17,6 +18,7 @@ public class Dump {
         LuceneTranslationMemory memory = new LuceneTranslationMemory(new File(args[0]), 1);
         memory.dumpAll(entry -> {
             String str = StringUtils.join(new String[]{
+                    Objects.toString(entry.tuid),
                     Long.toString(entry.memory),
                     entry.language.source.toLanguageTag(),
                     entry.language.target.toLanguageTag(),

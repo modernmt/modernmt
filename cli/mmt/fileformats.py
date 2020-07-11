@@ -143,10 +143,10 @@ class ParallelFileFormat(FileFormat):
 
 class CompactFileFormat(FileFormat):
     class Reader(object):
-        def __init__(self, file_path, include_lang=False) -> None:
+        def __init__(self, file_path, include_meta=False) -> None:
             self._file_path = file_path
             self._stream = None
-            self._include_lang = include_lang
+            self._include_meta = include_meta
 
         def __enter__(self):
             self._stream = open(self._file_path, 'r', encoding='utf-8')
@@ -161,9 +161,11 @@ class CompactFileFormat(FileFormat):
                 tgt_line = self._stream.readline().rstrip('\n')
                 meta = self._stream.readline().strip()
 
-                if self._include_lang:
-                    src_lang, tgt_lang = meta.split(',')[1].split()
-                    yield src_lang, tgt_lang, src_line, tgt_line
+                if self._include_meta:
+                    meta = meta.split(',', maxsplit=2)
+                    src_lang, tgt_lang = meta[1].split()
+                    tuid = meta[2] if len(meta) > 2 else None
+                    yield tuid, src_lang, tgt_lang, src_line, tgt_line
                 else:
                     yield src_line, tgt_line
 
@@ -183,11 +185,17 @@ class CompactFileFormat(FileFormat):
         def __exit__(self, exc_type, exc_val, exc_tb):
             self._stream.close()
 
-        def write(self, src_line, tgt_line):
+        def write(self, src_line, tgt_line, tuid=None):
             src_line, tgt_line = src_line.rstrip('\n').replace('\n', ' '), tgt_line.rstrip('\n').replace('\n', ' ')
             self._stream.write(src_line + '\n')
             self._stream.write(tgt_line + '\n')
-            self._stream.write('0,%s %s\n' % (self._src_lang, self._tgt_lang))
+
+            if tuid is not None:
+                meta = '0,%s %s,%s\n' % (self._src_lang, self._tgt_lang, tuid)
+            else:
+                meta = '0,%s %s\n' % (self._src_lang, self._tgt_lang)
+
+            self._stream.write(meta)
 
     def __init__(self, src_lang, tgt_lang, file_path) -> None:
         self._src_lang = src_lang
@@ -212,10 +220,10 @@ class CompactFileFormat(FileFormat):
         return self._file_path
 
     def reader(self):
-        return self.Reader(self._file_path, include_lang=False)
+        return self.Reader(self._file_path, include_meta=False)
 
-    def reader_with_languages(self):
-        return self.Reader(self._file_path, include_lang=True)
+    def reader_with_metadata(self):
+        return self.Reader(self._file_path, include_meta=True)
 
     def writer(self, append=False):
         return self.Writer(self._src_lang, self._tgt_lang, self._file_path, append=append)

@@ -10,7 +10,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Collections;
 
-import static eu.modernmt.decoder.neural.memory.TestData.EN__IT;
+import static eu.modernmt.decoder.neural.memory.TestData.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -25,8 +25,8 @@ public class TestLuceneTranslationMemory_searchPrivacy {
     public void setup() throws Throwable {
         this.memory = new TLuceneTranslationMemory();
 
-        memory.onDataReceived(Collections.singleton(TestData.tu(0, 0L, null, 1L, EN__IT, "Hello world 1", "Ciao mondo 1", null)));
-        memory.onDataReceived(Collections.singleton(TestData.tu(0, 1L, null, 2L, EN__IT, "Hello world 2", "Ciao mondo 2", null)));
+        memory.onDataReceived(addition(0, 0L, 1L, tu(EN__IT, "Hello world 1", "Ciao mondo 1")));
+        memory.onDataReceived(addition(0, 1L, 2L, tu(EN__IT, "Hello world 2", "Ciao mondo 2")));
     }
 
     @After

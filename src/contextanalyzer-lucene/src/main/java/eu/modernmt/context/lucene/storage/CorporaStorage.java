@@ -1,9 +1,9 @@
 package eu.modernmt.context.lucene.storage;
 
 import eu.modernmt.data.DataBatch;
-import eu.modernmt.data.Deletion;
+import eu.modernmt.data.DeletionMessage;
 import eu.modernmt.data.LogDataListener;
-import eu.modernmt.data.TranslationUnit;
+import eu.modernmt.data.TranslationUnitMessage;
 import org.apache.commons.io.FileUtils;
 
 import java.io.Closeable;
@@ -75,20 +75,20 @@ public class CorporaStorage implements LogDataListener, Closeable {
 
         // Apply changes
 
-        for (TranslationUnit unit : batch.getTranslationUnits()) {
+        for (TranslationUnitMessage unit : batch.getTranslationUnits()) {
             if (skipData(unit.channel, unit.channelPosition))
                 continue;
 
             Bucket fwdBucket = buckets.get(unit.memory, unit.language, unit.owner);
-            fwdBucket.getWriter().append(unit.rawSentence);
+            fwdBucket.getWriter().append(unit.value.source);
             pendingUpdatesBuckets.add(fwdBucket);
 
             Bucket bwdBucket = buckets.get(unit.memory, unit.language.reversed(), unit.owner);
-            bwdBucket.getWriter().append(unit.rawTranslation);
+            bwdBucket.getWriter().append(unit.value.target);
             pendingUpdatesBuckets.add(bwdBucket);
         }
 
-        for (Deletion deletion : batch.getDeletions()) {
+        for (DeletionMessage deletion : batch.getDeletions()) {
             if (skipData(deletion.channel, deletion.channelPosition))
                 continue;
 

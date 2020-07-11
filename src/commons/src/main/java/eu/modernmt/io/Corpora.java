@@ -2,10 +2,7 @@ package eu.modernmt.io;
 
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
-import eu.modernmt.model.corpus.Corpus;
-import eu.modernmt.model.corpus.CorpusWrapper;
-import eu.modernmt.model.corpus.MultilingualCorpus;
-import eu.modernmt.model.corpus.MultilingualCorpusWrapper;
+import eu.modernmt.model.corpus.*;
 import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
 import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
@@ -282,15 +279,15 @@ public class Corpora {
     private static Map<LanguageDirection, Counter> doWordCount(MultilingualCorpus corpus) throws IOException {
         HashMap<LanguageDirection, Counter> counts = new HashMap<>();
 
-        MultilingualCorpus.MultilingualLineReader reader = null;
+        TUReader reader = null;
 
         try {
             reader = corpus.getContentReader();
 
-            MultilingualCorpus.StringPair pair;
-            while ((pair = reader.read()) != null) {
-                Counter counter = counts.computeIfAbsent(pair.language, key -> new Counter());
-                counter.value += WordCounter.count(pair.source);
+            TranslationUnit tu;
+            while ((tu = reader.read()) != null) {
+                Counter counter = counts.computeIfAbsent(tu.language, key -> new Counter());
+                counter.value += WordCounter.count(tu.source);
             }
 
             return counts;
@@ -337,18 +334,18 @@ public class Corpora {
         copy(source, destination, Long.MAX_VALUE);
     }
 
-    public static void copy(MultilingualCorpus source, MultilingualCorpus destination, long pairsLimit, boolean append) throws IOException {
-        MultilingualCorpus.MultilingualLineReader reader = null;
-        MultilingualCorpus.MultilingualLineWriter writer = null;
+    public static void copy(MultilingualCorpus source, MultilingualCorpus destination, long limit, boolean append) throws IOException {
+        TUReader reader = null;
+        TUWriter writer = null;
 
         try {
             reader = source.getContentReader();
             writer = destination.getContentWriter(append);
 
-            MultilingualCorpus.StringPair pair;
-            long pairs = 0;
-            while ((pair = reader.read()) != null && pairs++ < pairsLimit)
-                writer.write(pair);
+            TranslationUnit tu;
+            long entries = 0;
+            while ((tu = reader.read()) != null && entries++ < limit)
+                writer.write(tu);
         } finally {
             IOUtils.closeQuietly(reader);
             IOUtils.closeQuietly(writer);

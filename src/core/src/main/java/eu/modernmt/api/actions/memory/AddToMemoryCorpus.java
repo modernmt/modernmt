@@ -11,6 +11,7 @@ import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TranslationUnit;
 import eu.modernmt.model.corpus.impl.parallel.CompactFileCorpus;
 import eu.modernmt.model.corpus.impl.parallel.ParallelFileCorpus;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
@@ -28,8 +29,8 @@ public class AddToMemoryCorpus extends ObjectAction<ImportJob> {
     protected ImportJob execute(RESTRequest req, Parameters _params) throws BinaryLogException, PersistenceException {
         Params params = (Params) _params;
 
-        if (params.corpus == null)
-            return ModernMT.memory.add(params.direction, params.memory, params.source, params.target);
+        if (params.tu != null)
+            return ModernMT.memory.add(params.memory, params.tu);
         else
             return ModernMT.memory.add(params.memory, params.corpus);
     }
@@ -49,10 +50,8 @@ public class AddToMemoryCorpus extends ObjectAction<ImportJob> {
 
     public static class Params extends Parameters {
 
-        private final LanguageDirection direction;
         private final long memory;
-        private final String source;
-        private final String target;
+        private final TranslationUnit tu;
         private final MultilingualCorpus corpus;
 
         public Params(RESTRequest req) throws ParameterParsingException, TemplateException {
@@ -60,8 +59,8 @@ public class AddToMemoryCorpus extends ObjectAction<ImportJob> {
 
             memory = req.getPathParameterAsLong("id");
 
-            source = getString("sentence", false, null);
-            target = getString("translation", false, null);
+            String source = getString("sentence", false, null);
+            String target = getString("translation", false, null);
 
             if (source == null && target == null) {
                 FileType fileType = getEnum("content_type", FileType.class);
@@ -87,7 +86,7 @@ public class AddToMemoryCorpus extends ObjectAction<ImportJob> {
                         throw new ParameterParsingException("content_type");
                 }
 
-                direction = null;
+                tu = null;
             } else {
                 if (source == null)
                     throw new ParameterParsingException("sentence");
@@ -96,8 +95,10 @@ public class AddToMemoryCorpus extends ObjectAction<ImportJob> {
 
                 Language sourceLanguage = getLanguage("source");
                 Language targetLanguage = getLanguage("target");
-                direction = new LanguageDirection(sourceLanguage, targetLanguage);
+                LanguageDirection language = new LanguageDirection(sourceLanguage, targetLanguage);
+                String tuid = getString("tuid", false, null);
 
+                tu = new TranslationUnit(tuid, language, source, target);
                 corpus = null;
             }
         }

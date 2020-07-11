@@ -1,7 +1,6 @@
 package eu.modernmt.decoder.neural.memory;
 
-import eu.modernmt.data.TranslationUnit;
-import eu.modernmt.memory.ScoreEntry;
+import eu.modernmt.data.TranslationUnitMessage;
 import eu.modernmt.memory.TranslationMemory;
 import org.junit.After;
 import org.junit.Before;
@@ -34,7 +33,11 @@ public class TestLuceneTranslationMemory_onDataReceived {
         this.memory = null;
     }
 
-    private void test(List<TranslationUnit> units) throws IOException {
+    private void test(TranslationUnitMessage... units) throws IOException {
+        test(Arrays.asList(units));
+    }
+
+    private void test(List<TranslationUnitMessage> units) throws IOException {
         int size = units.size();
         Map<Short, Long> expectedChannels = TestData.channels(0, size - 1);
         Set<TranslationMemory.Entry> expectedEntries = TLuceneTranslationMemory.asEntrySet(units);
@@ -48,36 +51,34 @@ public class TestLuceneTranslationMemory_onDataReceived {
 
     @Test
     public void directContributions() throws Throwable {
-        test(TestData.tuList(EN__IT, 4));
+        test(additions(EN__IT, 4));
     }
 
     @Test
     public void reversedContributions() throws Throwable {
-        test(TestData.tuList(IT__EN, 4));
+        test(additions(IT__EN, 4));
     }
 
     @Test
     public void allDirectionsContributions() throws Throwable {
-        List<TranslationUnit> units = Arrays.asList(
-                TestData.tu(0, 0L, 1L, EN__IT, null),
-                TestData.tu(0, 1L, 2L, EN__IT, null),
-                TestData.tu(0, 2L, 1L, FR__ES, null),
-                TestData.tu(0, 3L, 1L, FR__ES, null)
+        test(
+                addition(0, 0L, 1L, tu(EN__IT)),
+                addition(0, 1L, 2L, tu(EN__IT)),
+                addition(0, 2L, 1L, tu(FR__ES)),
+                addition(0, 3L, 1L, tu(FR__ES))
         );
-
-        test(units);
     }
 
     @Test
     public void duplicateContribution() throws Throwable {
-        List<TranslationUnit> units = Arrays.asList(
-                TestData.tu(1, 0L, 1L, EN__IT, null),
-                TestData.tu(1, 1L, 1L, EN__IT, null)
+        List<TranslationUnitMessage> units = Arrays.asList(
+                addition(1, 0L, 1L, tu(EN__IT)),
+                addition(1, 1L, 1L, tu(EN__IT))
         );
 
-        List<TranslationUnit> cloneUnits = Arrays.asList(
-                TestData.tu(1, 0L, 2L, FR__ES, null),
-                TestData.tu(1, 1L, 2L, FR__ES, null)
+        List<TranslationUnitMessage> cloneUnits = Arrays.asList(
+                addition(1, 0L, 2L, tu(FR__ES)),
+                addition(1, 1L, 2L, tu(FR__ES))
         );
 
         Map<Short, Long> expectedChannels = TestData.channels(1, 1);

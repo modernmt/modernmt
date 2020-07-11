@@ -3,8 +3,7 @@ package eu.modernmt.model.corpus.impl.parallel;
 import eu.modernmt.io.*;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.lang.UnsupportedLanguageException;
-import eu.modernmt.model.corpus.BaseMultilingualCorpus;
-import eu.modernmt.model.corpus.Corpus;
+import eu.modernmt.model.corpus.*;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
@@ -71,13 +70,13 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
     }
 
     @Override
-    public MultilingualLineReader getContentReader() throws IOException {
+    public TUReader getContentReader() throws IOException {
         return new ParallelFileLineReader(language, source, target);
     }
 
     @Override
-    public MultilingualLineWriter getContentWriter(boolean append) throws IOException {
-        return new ParallelFileLineWriter(append, language, source, target);
+    public TUWriter getContentWriter(boolean append) throws IOException {
+        return new ParallelFileTUWriter(append, language, source, target);
     }
 
     @Override
@@ -104,7 +103,7 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
         return name + '[' + language.toString() + ']';
     }
 
-    private static class ParallelFileLineReader implements MultilingualLineReader {
+    private static class ParallelFileLineReader implements TUReader {
 
         private final LanguageDirection language;
         private final UnixLineReader sourceReader;
@@ -130,7 +129,7 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
         }
 
         @Override
-        public StringPair read() throws IOException {
+        public TranslationUnit read() throws IOException {
             String source = sourceReader.readLine();
             String target = targetReader.readLine();
 
@@ -138,7 +137,7 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
                 return null;
             } else if (source != null && target != null) {
                 this.index++;
-                return new StringPair(language, source, target);
+                return new TranslationUnit(null, language, source, target);
             } else {
                 throw new IOException("Invalid parallel corpus: unmatched line at " + (this.index + 1));
             }
@@ -151,13 +150,13 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
         }
     }
 
-    private static class ParallelFileLineWriter implements MultilingualLineWriter {
+    private static class ParallelFileTUWriter implements TUWriter {
 
         private final LanguageDirection language;
         private final LineWriter sourceWriter;
         private final LineWriter targetWriter;
 
-        private ParallelFileLineWriter(boolean append, LanguageDirection language, FileProxy source, FileProxy target) throws IOException {
+        private ParallelFileTUWriter(boolean append, LanguageDirection language, FileProxy source, FileProxy target) throws IOException {
             this.language = language;
 
             boolean success = false;
@@ -174,15 +173,15 @@ public class ParallelFileCorpus extends BaseMultilingualCorpus {
         }
 
         @Override
-        public void write(StringPair pair) throws IOException {
-            if (language.isEqualOrMoreGenericThan(pair.language)) {
-                sourceWriter.writeLine(pair.source);
-                targetWriter.writeLine(pair.target);
-            } else if (language.isEqualOrMoreGenericThan(pair.language.reversed())) {
-                sourceWriter.writeLine(pair.target);
-                targetWriter.writeLine(pair.source);
+        public void write(TranslationUnit tu) throws IOException {
+            if (language.isEqualOrMoreGenericThan(tu.language)) {
+                sourceWriter.writeLine(tu.source);
+                targetWriter.writeLine(tu.target);
+            } else if (language.isEqualOrMoreGenericThan(tu.language.reversed())) {
+                sourceWriter.writeLine(tu.target);
+                targetWriter.writeLine(tu.source);
             } else {
-                throw new IOException("Unsupported language: " + pair.language);
+                throw new IOException("Unsupported language: " + tu.language);
             }
         }
 

@@ -110,9 +110,8 @@ class TagProjectionTest(unittest.TestCase):
         tgt_file = os.path.join(TEST_RESOURCES, 'tag_projection_dataset', filename + '.' + tgt)
         alg_file = os.path.join(TEST_RESOURCES, 'tag_projection_dataset', filename + '.alg')
 
-        self.assertTrue(os.path.isfile(src_file))
-        self.assertTrue(os.path.isfile(tgt_file))
-        self.assertTrue(os.path.isfile(alg_file))
+        if not os.path.isfile(src_file) or not os.path.isfile(tgt_file) or not os.path.isfile(alg_file):
+            self.skipTest("external resource not available")
 
         java_cmd = mmt_java('eu.modernmt.processing.tags.cli.XMLProjectorTestMain', [src_file, tgt_file, alg_file])
 

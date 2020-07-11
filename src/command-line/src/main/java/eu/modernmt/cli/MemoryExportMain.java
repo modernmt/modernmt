@@ -4,6 +4,8 @@ import eu.modernmt.decoder.neural.memory.lucene.LuceneTranslationMemory;
 import eu.modernmt.io.RuntimeIOException;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TUWriter;
+import eu.modernmt.model.corpus.TranslationUnit;
 import eu.modernmt.model.corpus.impl.tmx.TMXCorpus;
 import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
@@ -48,12 +50,12 @@ public class MemoryExportMain {
         Args args = new Args(_args);
 
         FileUtils.forceMkdir(args.outputFolder);
-        HashMap<String, MultilingualCorpus.MultilingualLineWriter> writers = new HashMap<>();
+        HashMap<String, TUWriter> writers = new HashMap<>();
 
         LuceneTranslationMemory memory = new LuceneTranslationMemory(args.memoryFolder, 1);
         memory.dump(args.id, entry -> {
             String key = toKey(entry.language);
-            MultilingualCorpus.MultilingualLineWriter writer = writers.computeIfAbsent(key, k -> {
+            TUWriter writer = writers.computeIfAbsent(key, k -> {
                 TMXCorpus corpus = new TMXCorpus(getFilename(args.outputFolder, args.id, key));
                 try {
                     return corpus.getContentWriter(false);
@@ -62,15 +64,15 @@ public class MemoryExportMain {
                 }
             });
 
-            MultilingualCorpus.StringPair pair = new MultilingualCorpus.StringPair(entry.language, entry.sentence, entry.translation);
+            TranslationUnit tu = new TranslationUnit(entry.tuid, entry.language, entry.sentence, entry.translation);
             try {
-                writer.write(pair);
+                writer.write(tu);
             } catch (IOException e) {
                 throw new RuntimeIOException(e);
             }
         });
 
-        for (MultilingualCorpus.MultilingualLineWriter writer : writers.values()) {
+        for (TUWriter writer : writers.values()) {
             writer.close();
         }
     }

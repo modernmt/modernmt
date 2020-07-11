@@ -18,12 +18,14 @@ public interface TranslationMemory extends Closeable, LogDataListener {
 
     class Entry {
 
+        public final String tuid;
         public final long memory;
         public final LanguageDirection language;
         public final String sentence;
         public final String translation;
 
-        public Entry(long memory, LanguageDirection language, String sentence, String translation) {
+        public Entry(String tuid, long memory, LanguageDirection language, String sentence, String translation) {
+            this.tuid = tuid;
             this.memory = memory;
             this.language = language;
             this.sentence = sentence;
@@ -36,6 +38,7 @@ public interface TranslationMemory extends Closeable, LogDataListener {
             if (o == null || getClass() != o.getClass()) return false;
             Entry entry = (Entry) o;
             return memory == entry.memory &&
+                    Objects.equals(tuid, entry.tuid) &&
                     language.equals(entry.language) &&
                     sentence.equals(entry.sentence) &&
                     translation.equals(entry.translation);
@@ -43,13 +46,14 @@ public interface TranslationMemory extends Closeable, LogDataListener {
 
         @Override
         public int hashCode() {
-            return Objects.hash(memory, language, sentence, translation);
+            return Objects.hash(tuid, memory, language, sentence, translation);
         }
 
         @Override
         public String toString() {
             return "Entry{" +
-                    "memory=" + memory +
+                    "tuid='" + tuid + '\'' +
+                    ", memory=" + memory +
                     ", language=" + language +
                     ", sentence='" + sentence + '\'' +
                     ", translation='" + translation + '\'' +

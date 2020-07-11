@@ -3,6 +3,7 @@ package eu.modernmt.model.corpus.impl.tmx;
 import eu.modernmt.lang.Language;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TranslationUnit;
 import eu.modernmt.xml.XMLUtils;
 
 import javax.xml.stream.Location;
@@ -21,19 +22,19 @@ import java.util.TimeZone;
 /**
  * Created by davide on 14/03/16.
  */
-class TMXPairReader {
+class TMXTUReader {
 
     private final LanguageCache languageCache = new LanguageCache();
-    private final ArrayList<MultilingualCorpus.StringPair> resultCache = new ArrayList<>(8);
+    private final ArrayList<TranslationUnit> resultCache = new ArrayList<>(8);
 
     private final SimpleDateFormat dateFormat = new SimpleDateFormat(TMXCorpus.TMX_DATE_FORMAT);
     private Language headerSourceLanguage = null;
 
-    TMXPairReader() {
+    TMXTUReader() {
         dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
     }
 
-    public List<MultilingualCorpus.StringPair> read(XMLEventReader reader) throws XMLStreamException {
+    public List<TranslationUnit> read(XMLEventReader reader) throws XMLStreamException {
         while (reader.hasNext()) {
             XMLEvent event = reader.nextEvent();
 
@@ -58,10 +59,11 @@ class TMXPairReader {
         this.headerSourceLanguage = languageCache.get(XMLUtils.getAttributeValue(header, null, "srclang"));
     }
 
-    private List<MultilingualCorpus.StringPair> readTu(XMLEventReader reader, StartElement tu) throws XMLStreamException {
+    private List<TranslationUnit> readTu(XMLEventReader reader, StartElement tu) throws XMLStreamException {
         this.resultCache.clear();
 
         Date tuTimestamp = getTimestamp(tu);
+        String tuid = getTuid(tu);
         Language tuSourceLanguage = languageCache.get(XMLUtils.getAttributeValue(tu, null, "srclang"));
 
         Language sourceLanguage = tuSourceLanguage == null ? headerSourceLanguage : tuSourceLanguage;
@@ -94,7 +96,7 @@ class TMXPairReader {
                             sourceText = text;
                         } else {
                             LanguageDirection language = languageCache.get(sourceLanguage, lang);
-                            resultCache.add(new MultilingualCorpus.StringPair(language, null, text, timestamp));
+                            resultCache.add(new TranslationUnit(tuid, language, null, text, timestamp));
                         }
                     }
                     break;
@@ -105,8 +107,8 @@ class TMXPairReader {
                         if (resultCache.isEmpty())
                             throw new XMLStreamException(format("Not enough <tuv> elements found in <tu> element", event));
 
-                        for (MultilingualCorpus.StringPair pair : resultCache)
-                            pair.source = sourceText;
+                        for (TranslationUnit entry : resultCache)
+                            entry.source = sourceText;
 
                         return resultCache;
                     }
@@ -152,6 +154,10 @@ class TMXPairReader {
         }
 
         return timestamp;
+    }
+
+    private String getTuid(StartElement tu) {
+        return XMLUtils.getAttributeValue(tu, null, "tuid");
     }
 
     private static String format(String message, XMLEvent event) {

@@ -3,6 +3,7 @@ package eu.modernmt.cleaning.filters.draft;
 import eu.modernmt.cleaning.MultilingualCorpusFilter;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.corpus.MultilingualCorpus;
+import eu.modernmt.model.corpus.TranslationUnit;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -30,14 +31,14 @@ public class DraftFilter implements MultilingualCorpusFilter {
             }
 
             @Override
-            public void onPair(MultilingualCorpus.StringPair pair, int index) {
-                Date timestamp = pair.timestamp;
+            public void onTranslationUnit(TranslationUnit tu, int index) {
+                Date timestamp = tu.timestamp;
                 if (timestamp == null)
                     timestamp = new Date(lastTimestamp.getTime() + 60L * 1000L);
                 lastTimestamp = timestamp;
 
-                filters.computeIfAbsent(pair.language, k -> new DraftFilterData())
-                        .add(pair.source, new TranslationCandidate(index, timestamp));
+                filters.computeIfAbsent(tu.language, k -> new DraftFilterData())
+                        .add(tu.source, new TranslationCandidate(index, timestamp));
             }
 
             @Override
@@ -51,8 +52,8 @@ public class DraftFilter implements MultilingualCorpusFilter {
     }
 
     @Override
-    public boolean accept(MultilingualCorpus.StringPair pair, int index) {
-        return filters.get(pair.language).accept(pair.source, index);
+    public boolean accept(TranslationUnit tu, int index) {
+        return filters.get(tu.language).accept(tu.source, index);
     }
 
     @Override

@@ -16,7 +16,9 @@ public interface QueryBuilder {
 
     boolean isLongQuery(int queryLength);
 
-    Query getByHash(DocumentBuilder builder, long memory, String hash);
+    Query getByMatch(DocumentBuilder builder, long memory, LanguageDirection language, String previousSentence, String previousTranslation);
+
+    Query getByTuid(DocumentBuilder builder, long memory, LanguageDirection language, String tuid);
 
     Query getChannels(DocumentBuilder builder);
 
