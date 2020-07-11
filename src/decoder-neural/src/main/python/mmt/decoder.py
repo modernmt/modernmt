@@ -136,7 +136,9 @@ class MMTDecoder(object):
 
         self._checkpoints = checkpoints
         self._device = device
-        self._model = self._create_model(checkpoints, device=device, beam_size=beam_size, use_fp16=use_fp16)
+        self._model = self._fix_model_probs(
+            self._create_model(checkpoints, device=device, beam_size=beam_size, use_fp16=use_fp16)
+        )
         self._translator = self._create_translator(checkpoints, beam_size)
         self._tuner = self._create_tuner(checkpoints, self._model, tuning_ops, device)
         self._max_positions = fairseq.utils.resolve_max_positions(
@@ -149,10 +151,11 @@ class MMTDecoder(object):
         self._nn_needs_reset = True
         self._checkpoint = None
 
+    def _fix_model_probs(self, model):
         # Handling of multilingual engines with varying vocab sizes with resistance
         # to negative logits, for which we need to override `model.get_normalized_probs`
         # and keep track of the original vocabulary sizes of each model to do masking
-        _model_get_normalized_log_probs = self._model.get_normalized_probs
+        _model_get_normalized_log_probs = model.get_normalized_probs
 
         def _get_normalized_log_probs(*args, **kwargs):
             """
@@ -187,7 +190,8 @@ class MMTDecoder(object):
             )
             return padded_probs
 
-        self._model.get_normalized_probs = _get_normalized_log_probs
+        model.get_normalized_probs = _get_normalized_log_probs
+        return model
 
     # - High level functions -------------------------------------------------------------------------------------------
 
