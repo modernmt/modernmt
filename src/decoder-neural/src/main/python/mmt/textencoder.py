@@ -378,6 +378,7 @@ class SubwordDictionary(Dictionary):
         self._cache = cachetools.LRUCache(maxsize=2 ** 20)
         self._max_subtoken_len = 0
         self._alphabet = set()
+        self._original_size = None
 
         if subtokens is not None and len(subtokens) > 0:
             self._init_subtokens_from_list(subtokens)
@@ -397,8 +398,14 @@ class SubwordDictionary(Dictionary):
         self._alphabet = {c for token in tokens for c in token}
         self._alphabet |= _ESCAPE_CHARS
 
+    @property
+    def original_size(self):
+        return self._original_size or len(self)
+
     def force_length(self, new_length):
-        count = new_length - len(self)
+        self._original_size = len(self)
+
+        count = new_length - self._original_size
         if count < 0:
             raise ValueError('new length (%d) must be greater than current length (%d)' % (new_length, len(self)))
 

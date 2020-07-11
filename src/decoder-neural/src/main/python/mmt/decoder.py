@@ -10,7 +10,7 @@ import torch
 from fairseq.models.transformer import TransformerModel
 from fairseq.sequence_generator import SequenceGenerator
 
-from mmt import textencoder, SubwordDictionary
+from mmt import textencoder
 from mmt.alignment import make_alignment, clean_alignment
 from mmt.tuning import Tuner, TuningOptions
 
@@ -152,14 +152,42 @@ class MMTDecoder(object):
         # Handling of multilingual engines with varying vocab sizes with resistance
         # to negative logits, for which we need to override `model.get_normalized_probs`
         # and keep track of the original vocabulary sizes of each model to do masking
-        self._get_normalized_log_probs = self._model.get_normalized_probs
-        self._max_vocab_size = len(checkpoints.task.target_dictionary)
-        self._vocab_sizes = dict()
-        for pair, checkpoint in checkpoints._checkpoints.items():
-            dict_path = os.path.join(checkpoint._checkpoint_path, "model.vcb")
-            vocab_size = SubwordDictionary.size_of(dict_path)
-            language_pair = tuple(pair.split("__"))
-            self._vocab_sizes[language_pair] = vocab_size
+        _model_get_normalized_log_probs = self._model.get_normalized_probs
+
+        def _get_normalized_log_probs(*args, **kwargs):
+            """
+            Since we alter the vocabulary and embedding matrix sizes to make multiple models
+            of varying sizes compatible with the same instance of TransformerModel, we have
+            to do some hacky overriding to make sure that the additional words in our extended
+            output logits cannot be be predicted during BeamSearch decoding. At the same time we
+            have to make sure that we don't cause the softmax to behave differently.
+            We solve this by treating the extended tokens the same way <PAD> is treated by setting
+            their log probability to negative infinity, and ensuring they are removed before
+            softmax is applied.
+            """
+            sub_dict = self._checkpoint.subword_dictionary
+
+            # net_output can be both a tuple and a list, so we have to handle both
+            net_output, *args_rest = args
+            logits, *net_output_rest = net_output
+
+            # truncate log probs to actual vocab size for proper softmax distribution
+            fixed_logits = logits[:, :, :sub_dict.original_size]
+
+            # stitch *args tuple back together again with fixed_logits
+            fixed_args = ((fixed_logits, *net_output_rest), *args_rest)
+
+            # call the original _get_normalized_log_probs with fixed_logits
+            log_probs = _model_get_normalized_log_probs(*fixed_args, **kwargs)
+
+            # pad the probs to extended size (applied as left/right padding to last dim)
+            pad_size = len(sub_dict) - sub_dict.original_size
+            padded_probs = torch.nn.functional.pad(
+                log_probs, (0, pad_size), mode="constant", value=-math.inf
+            )
+            return padded_probs
+
+        self._model.get_normalized_probs = _get_normalized_log_probs
 
     # - High level functions -------------------------------------------------------------------------------------------
 
@@ -202,49 +230,12 @@ class MMTDecoder(object):
 
     # - Low level functions --------------------------------------------------------------------------------------------
 
-    def _set_normalized_probs_wrapper(self, source_lang, target_lang):
-        """
-        Since we alter the vocabulary and embedding matrix sizes to make multiple models
-        of varying sizes compatible with the same instance of TransformerModel, we have
-        to do some hacky overriding to make sure that the additional words in our extended
-        output logits cannot be be predicted during BeamSearch decoding. At the same time we
-        have to make sure that we don't cause the softmax to behave differently.
-        We solve this by treating the extended tokens the same way <PAD> is treated by setting
-        their log probability to negative infinity, and ensuring they are removed before
-        softmax is applied.
-        """
-        actual_vocab_size = self._vocab_sizes[source_lang, target_lang]
-        pad_size = self._max_vocab_size - actual_vocab_size
-
-        def wrapper(*args, **kwargs):
-            # net_output can be both a tuple and a list, so we have to handle both
-            net_output, *args_rest = args
-            logits, *net_output_rest = net_output
-
-            # truncate log probs to actual vocab size for proper softmax distribution
-            fixed_logits = logits[:, :, :actual_vocab_size]
-
-            # stitch *args tuple back together again with fixed_logits
-            fixed_args = ((fixed_logits, *net_output_rest), *args_rest)
-
-            # call the original _get_normalized_log_probs with fixed_logits
-            log_probs = self._get_normalized_log_probs(*fixed_args, **kwargs)
-
-            # pad the probs to extended size (applied as left/right padding to last dim)
-            padded_probs = torch.nn.functional.pad(
-                log_probs, (0, pad_size), mode="constant", value=-math.inf
-            )
-            return padded_probs
-
-        self._model.get_normalized_probs = wrapper
-
     def _reset_model(self, source_lang, target_lang):
         checkpoint = self._checkpoints.load(source_lang, target_lang)
 
         if self._nn_needs_reset or checkpoint != self._checkpoint:
             self._model.load_state_dict(checkpoint.state, strict=True)
             self._checkpoint = checkpoint
-            self._set_normalized_probs_wrapper(source_lang, target_lang)
             self._nn_needs_reset = False
 
     def _tune(self, suggestions, epochs=None, learning_rate=None):
