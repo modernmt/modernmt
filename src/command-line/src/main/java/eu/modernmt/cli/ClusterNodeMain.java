@@ -3,6 +3,7 @@ package eu.modernmt.cli;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import eu.modernmt.cli.log4j.Log4jConfiguration;
+import eu.modernmt.cli.unittest.ReloadNodeDaemon;
 import eu.modernmt.cluster.ClusterNode;
 import eu.modernmt.cluster.EmbeddedService;
 import eu.modernmt.config.*;
@@ -192,13 +193,18 @@ public class ClusterNodeMain {
             logger.error("Failed to start node", e);
             throw e;
         }
+
+        // Unit-testing model reset
+        String unitTestingFile = System.getenv("MMT_UNIT_TESTING_SENTINEL");
+        if (unitTestingFile != null)
+            new ReloadNodeDaemon(new File(unitTestingFile), args.config, listener).start();
     }
 
     /**
      * A FileStatusListener subscribes to a ClusterNode and,
      * when its properties change, updates the properties file
      */
-    private static class FileStatusListener implements ClusterNode.StatusListener {
+    public static class FileStatusListener implements ClusterNode.StatusListener {
 
         private final File file;
         private final JsonObject properties;
@@ -326,7 +332,7 @@ public class ClusterNodeMain {
         /**
          * Overwrite the node.properties file with the local properties
          */
-        private void store() {
+        public void store() {
             try {
                 FileUtils.write(file, this.properties.toString(), UTF8Charset.get(), false);
             } catch (IOException e) {

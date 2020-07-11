@@ -15,10 +15,10 @@ import eu.modernmt.cluster.kafka.KafkaBinaryLog;
 import eu.modernmt.cluster.services.TranslationService;
 import eu.modernmt.cluster.services.TranslationServiceProxy;
 import eu.modernmt.config.*;
-import eu.modernmt.data.LogDataListener;
-import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.data.BinaryLog;
+import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.data.HostUnreachableException;
+import eu.modernmt.data.LogDataListener;
 import eu.modernmt.decoder.DecoderListener;
 import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.engine.BootstrapException;
@@ -232,6 +232,9 @@ public class ClusterNode {
             try {
                 ClusterNode.this.shutdown();
                 ClusterNode.this.awaitTermination(1, TimeUnit.DAYS);
+
+                // Stop log4j2
+                LogManager.shutdown();
             } catch (Throwable e) {
                 // Ignore
             }

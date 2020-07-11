@@ -4,6 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.config.Configurator;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,9 +44,7 @@ public class Log4jConfiguration {
 
         try {
             FileUtils.write(configFile, config, false);
-            System.setProperty("log4j.configurationFile", configFile.getAbsolutePath());
-
-            LogManager.getLogger(Log4jConfiguration.class); // force log4j initialization
+            Configurator.initialize("mmt-log4j", configFile.getAbsolutePath());
         } finally {
             FileUtils.deleteQuietly(configFile);
         }
