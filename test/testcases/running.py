@@ -9,7 +9,7 @@ TRAIN_FOLDER = os.path.join(TEST_RESOURCES, 'training', 'data')
 class HealthCheckTest(ModernMTTestCase):
     mmt_engine_archive = os.path.join(TEST_RESOURCES, 'stub_en_it_engine.tar.gz')
 
-    def test_train_example(self):
+    def test_health_check(self):
         self.mmt.api.health_check()
 
         result = self.mmt.api.translate('en', 'it', 'hello world')

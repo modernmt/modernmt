@@ -168,6 +168,9 @@ class MMTDecoder(object):
             their log probability to negative infinity, and ensuring they are removed before
             softmax is applied.
             """
+            if self._checkpoint is None:
+                return _model_get_normalized_log_probs(*args, **kwargs)
+
             sub_dict = self._checkpoint.subword_dictionary
 
             # net_output can be both a tuple and a list, so we have to handle both
