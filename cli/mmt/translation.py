@@ -344,6 +344,9 @@ class ModernMTEnterpriseTranslate(TranslateEngine):
         return 'ModernMT Enterprise'
 
     def translate_text(self, text):
+        if len(text.strip()) == 0:
+            return text
+
         try:
             params = {'source': self.source_lang, 'target': self.target_lang, 'q': text, 'priority': self._priority}
             if self._context_vector is not None:
