@@ -19,6 +19,7 @@ import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.tags.format.InputFormat;
 
 import java.util.UUID;
+import java.util.Vector;
 
 /**
  * Created by davide on 17/12/15.
@@ -40,12 +41,15 @@ public class Translate extends ObjectAction<TranslationResponse> {
         processing.splitByNewline = params.splitByNewline;
 
         if (params.context != null) {
-            result.translation = ModernMT.translation.get(params.user, params.direction, processing, params.query, params.context, params.nbest, params.priority, params.timeout);
+            result.translation = ModernMT.translation.get(params.user, params.direction, processing, params.query, params.context, params.nbest, params.priority, params.timeout
+            	,params.s,params.t,params.w);
         } else if (params.contextString != null) {
             result.context = ModernMT.translation.getContextVector(params.user, params.direction, params.contextString, params.contextLimit);
-            result.translation = ModernMT.translation.get(params.user, params.direction, processing, params.query, result.context, params.nbest, params.priority, params.timeout);
+            result.translation = ModernMT.translation.get(params.user, params.direction, processing, params.query, result.context, params.nbest, params.priority, params.timeout
+            	,params.s,params.t,params.w);
         } else {
-            result.translation = ModernMT.translation.get(params.user, params.direction, processing, params.query, params.nbest, params.priority, params.timeout);
+            result.translation = ModernMT.translation.get(params.user, params.direction, processing, params.query, params.nbest, params.priority, params.timeout
+            	,params.s,params.t,params.w);
         }
 
 
@@ -74,6 +78,9 @@ public class Translate extends ObjectAction<TranslationResponse> {
         public final Priority priority;
         public final boolean verbose;
         public final long timeout;
+        public String[] s = null;
+        public String[] t = null;
+        public String[] w = null;
 
         public Params(RESTRequest req) throws ParameterParsingException {
             super(req);
@@ -101,6 +108,28 @@ public class Translate extends ObjectAction<TranslationResponse> {
             timeout = getLong("timeout", 0L);
 
             String weights = getString("context_vector", false, null);
+
+            int countST = 1;
+            Vector<String> sST = new Vector<String>();
+            Vector<String> tST = new Vector<String>();
+            Vector<String> wST = new Vector<String>();
+            while(true) {
+            	String sN = getString("s"+countST, false, null);
+            	if(sN == null) {
+            		break;
+            	}
+            	String tN = getString("t"+countST, false, null);
+            	String wN = getString("w"+countST, false, null);
+            	sST.add(sN);
+            	tST.add(tN);
+            	wST.add(wN);
+            	countST++;
+            }
+            if(sST.size() > 0) {
+            	s = sST.toArray(new String[] {});
+            	t = tST.toArray(new String[] {});
+            	w = wST.toArray(new String[] {});
+            }
 
             if (weights != null) {
                 context = ContextUtils.parseParameter("context_vector", weights);
