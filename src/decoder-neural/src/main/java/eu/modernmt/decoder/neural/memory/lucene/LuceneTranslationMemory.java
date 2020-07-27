@@ -163,6 +163,10 @@ public class LuceneTranslationMemory implements TranslationMemory {
         return this.indexWriter;
     }
 
+    public DocumentBuilder getDocumentBuilder() {
+        return documentBuilder;
+    }
+
     @Override
     public int size() {
         try {
