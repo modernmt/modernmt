@@ -27,9 +27,11 @@ public abstract class Decoder implements Closeable {
 
     public abstract boolean isLanguageSupported(LanguageDirection language);
 
-    public abstract Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, long expiration) throws DecoderException;
+    public abstract Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, long expiration
+    	,String[] s,String[] t,String[] w) throws DecoderException;
 
-    public abstract Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, ContextVector contextVector, long expiration) throws DecoderException;
+    public abstract Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, ContextVector contextVector, long expiration
+    	,String[] s,String[] t,String[] w) throws DecoderException;
 
     public abstract void test() throws DecoderException;
 
