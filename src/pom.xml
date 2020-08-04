@@ -31,7 +31,7 @@
 
         <lucene.version>4.10.4</lucene.version>
         <kafka.version>2.4.0</kafka.version>
-        <cassandra.version>3.11.6</cassandra.version>
+        <cassandra.version>3.11.7</cassandra.version>
 
         <mmt.version>4.7</mmt.version>
         <mmt.build.number>${maven.build.timestamp}</mmt.build.number>
