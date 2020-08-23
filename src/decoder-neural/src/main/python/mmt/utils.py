@@ -51,12 +51,13 @@ def mask_std_streams():
 
 
 class TranslationRequest(object):
-    def __init__(self, source_lang, target_lang, batch, suggestions=None, forced_translation=None):
+    def __init__(self, source_lang, target_lang, batch, suggestions=None, forced_translation=None, nbest=None):
         self.source_lang = source_lang
         self.target_lang = target_lang
         self.batch = batch
         self.suggestions = suggestions if suggestions is not None else []
         self.forced_translation = forced_translation
+        self.nbest = nbest
 
     @staticmethod
     def from_json_string(json_string):
@@ -86,8 +87,12 @@ class TranslationRequest(object):
 
                 suggestions.append(Suggestion(sugg_sl, sugg_tl, sugg_seg, sugg_tra, sugg_scr))
 
+        nbest = 1
+        if 'alternatives' in obj:
+            nbest += int(obj['alternatives'])
+
         return TranslationRequest(source_lang, target_lang, batch,
-                                  suggestions=suggestions, forced_translation=forced_translation)
+                                  suggestions=suggestions, forced_translation=forced_translation, nbest=nbest)
 
 
 class TranslationResponse(object):
@@ -107,24 +112,42 @@ class TranslationResponse(object):
         }).replace('\n', ' ')
 
     @staticmethod
-    def __translations_to_json_string(translations):
+    def __translations_to_json_string(nbest_translations):
         def __encode_alignment(a):
             return [[e[0] for e in a], [e[1] for e in a]] if a is not None else None
 
-        def __to_json(translation):
-            alignment = __encode_alignment(translation.alignment)
+        def __to_json(nbests):
+            best_translation = nbests[0]
+            alignment = __encode_alignment(best_translation.alignment)
 
-            payload = {'text': translation.text}
+            payload = {'text': best_translation.text}
             if alignment is not None:
                 payload['a'] = alignment
-            if translation.score is not None:
-                payload['s'] = round(translation.score, 4)
+            if best_translation.score is not None:
+                payload['s'] = round(best_translation.score, 4)
+
+            # This part outputs alternative translations;
+            # TODO: we could also outputs in this field (maybe renaming it as 'nbest') all translations including first best
+            if len(nbests) > 2:
+                payload['alternatives'] = []
+                k = 1
+                while k < len(nbests):
+                    k_translation = nbests[k]
+                    k_alignment = __encode_alignment(k_translation.alignment)
+
+                    k_payload = {'rank': k, 'text': k_translation.text}
+                    if k_alignment is not None:
+                        k_payload['a'] = k_alignment
+                    if k_translation.score is not None:
+                        k_payload['s'] = round(k_translation.score, 4)
+                    payload['alternatives'].append(k_payload)
+                    k += 1
 
             return payload
 
         return json.dumps({
             'success': True,
-            'data': [__to_json(translation) for translation in translations],
+            'data': [__to_json(nbests) for nbests in nbest_translations],
         }).replace('\n', ' ')
 
 
@@ -146,7 +169,8 @@ def serve_forever(stdin, stdout, decoder):
             else:
                 translations = decoder.translate(request.source_lang, request.target_lang, request.batch,
                                                  suggestions=request.suggestions,
-                                                 forced_translation=request.forced_translation)
+                                                 forced_translation=request.forced_translation,
+                                                 nbest=request.nbest)
 
             response = TranslationResponse.to_json_string(translations)
 
