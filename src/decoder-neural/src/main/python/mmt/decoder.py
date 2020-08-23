@@ -91,6 +91,31 @@ class ModelConfig(object):
 
         return result
 
+class MMTSequenceGenerator(SequenceGenerator):
+
+    @torch.no_grad()
+    def generate(
+        self,
+        models,
+        sample,
+        prefix_tokens=None,
+        bos_token=None,
+        **kwargs
+    ):
+        """Generate a batch of translations.
+
+        Args:
+            models (List[~fairseq.models.FairseqModel]): ensemble of models
+            sample (dict): batch
+            prefix_tokens (torch.LongTensor, optional): force decoder to begin
+                with these tokens
+        """
+
+        if 'beam_size' in kwargs:
+            self.beam_size = kwargs['beam_size']
+
+        return super().generate(models, sample, prefix_tokens=prefix_tokens, bos_token=bos_token)
+
 
 class MMTDecoder(object):
     @classmethod
@@ -119,7 +144,7 @@ class MMTDecoder(object):
 
     @classmethod
     def _create_translator(cls, checkpoints, beam_size):
-        return SequenceGenerator(
+        return MMTSequenceGenerator(
             checkpoints.task.target_dictionary, beam_size=beam_size,
             max_len_a=0, max_len_b=1, min_len=1,
             stop_early=True, normalize_scores=True,
@@ -135,12 +160,14 @@ class MMTDecoder(object):
     def __init__(self, checkpoints, device=None, beam_size=5, use_fp16=False, tuning_ops=None):
         torch.manual_seed(checkpoints.args.seed)
 
+        self._beam_size = beam_size
         self._checkpoints = checkpoints
         self._device = device
         self._model = self._fix_model_probs(
             self._create_model(checkpoints, device=device, beam_size=beam_size, use_fp16=use_fp16)
         )
-        self._translator = self._create_translator(checkpoints, beam_size)
+
+        self._translator = self._create_translator(checkpoints, self._beam_size)
         self._tuner = self._create_tuner(checkpoints, self._model, tuning_ops, device)
         self._max_positions = fairseq.utils.resolve_max_positions(
             checkpoints.task.max_positions(),
@@ -151,6 +178,7 @@ class MMTDecoder(object):
 
         self._nn_needs_reset = True
         self._checkpoint = None
+
 
     def _fix_model_probs(self, model):
         # Handling of multilingual engines with varying vocab sizes with resistance
@@ -276,7 +304,8 @@ class MMTDecoder(object):
 
         # Compute translation
         self._translator.max_len_b = self._checkpoint.decode_length(source_lang, target_lang, sentence_len)
-        translations = self._translator.generate([self._model], batch)
+        beam_size = max(nbest, self._beam_size) if nbest is not None else self._beam_size
+        translations = self._translator.generate([self._model], batch, beam_size=beam_size)
 
         # Decode translation
         sub_dict = self._checkpoint.subword_dictionary
