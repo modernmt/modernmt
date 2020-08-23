@@ -40,12 +40,12 @@ public class Translate extends ObjectAction<TranslationResponse> {
         processing.splitByNewline = params.splitByNewline;
 
         if (params.context != null) {
-            result.translation = ModernMT.translation.get(params.user, params.direction, processing, params.query, params.context, params.nbest, params.priority, params.timeout);
+            result.translation = ModernMT.translation.get(params.user, params.direction, processing, params.query, params.context, params.alternatives, params.priority, params.timeout);
         } else if (params.contextString != null) {
             result.context = ModernMT.translation.getContextVector(params.user, params.direction, params.contextString, params.contextLimit);
-            result.translation = ModernMT.translation.get(params.user, params.direction, processing, params.query, result.context, params.nbest, params.priority, params.timeout);
+            result.translation = ModernMT.translation.get(params.user, params.direction, processing, params.query, result.context, params.alternatives, params.priority, params.timeout);
         } else {
-            result.translation = ModernMT.translation.get(params.user, params.direction, processing, params.query, params.nbest, params.priority, params.timeout);
+            result.translation = ModernMT.translation.get(params.user, params.direction, processing, params.query, params.alternatives, params.priority, params.timeout);
         }
 
 
@@ -70,7 +70,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
         public final ContextVector context;
         public final String contextString;
         public final int contextLimit;
-        public final int nbest;
+        public final int alternatives;
         public final Priority priority;
         public final boolean verbose;
         public final long timeout;
@@ -94,7 +94,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
                     getLanguagePair("source", "target");
 
             contextLimit = getInt("context_limit", 10);
-            nbest = getInt("nbest", 0);
+            alternatives = getInt("alternatives", 0);
 
             priority = getEnum("priority", Priority.class, Priority.NORMAL);
             verbose = getBoolean("verbose", false);
