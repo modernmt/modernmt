@@ -2,6 +2,7 @@ import configparser
 import logging
 import math
 import os
+import random
 import time
 
 import fairseq
@@ -209,7 +210,7 @@ class MMTDecoder(object):
         self._logger.info('test_time = %.3f' % test_time)
 
     def translate(self, source_lang, target_lang, batch, suggestions=None,
-                  tuning_epochs=None, tuning_learning_rate=None, forced_translation=None):
+                  tuning_epochs=None, tuning_learning_rate=None, forced_translation=None, nbest=None):
         # (1) Reset model (if necessary)
         begin = time.time()
         self._reset_model(source_lang, target_lang)
@@ -226,7 +227,9 @@ class MMTDecoder(object):
         if forced_translation is not None:
             result = self._force_decode(target_lang, batch, forced_translation)
         else:
-            result = self._decode(source_lang, target_lang, batch)
+            if nbest is None or nbest < 1:
+                nbest = 1
+            result = self._decode(source_lang, target_lang, batch, nbest=nbest)
 
         decode_time = time.time() - begin
 
@@ -267,7 +270,7 @@ class MMTDecoder(object):
             self._tuner.tune(dataset, num_iterations=epochs, lr=learning_rate)
             self._nn_needs_reset = True
 
-    def _decode(self, source_lang, target_lang, segments):
+    def _decode(self, source_lang, target_lang, segments, nbest=None):
         prefix_lang = target_lang if self._checkpoint.multilingual_target else None
         batch, input_indexes, sentence_len = self._make_decode_batch(segments, prefix_lang=prefix_lang)
 
@@ -280,22 +283,32 @@ class MMTDecoder(object):
 
         results = []
         for i, hypo in enumerate(translations):
-            hypo = hypo[0]  # (top-1 best nbest)
-            hypo_score = math.exp(hypo['score'])
-            hypo_tokens = hypo['tokens']
-            hypo_indexes = sub_dict.indexes_of(hypo_tokens)
-            hypo_str = sub_dict.string(hypo_tokens)
-            hypo_attention = np.asarray(hypo['attention'].data.cpu())
 
-            # Make alignment
-            if len(hypo_indexes) > 0:
-                hypo_alignment = make_alignment(input_indexes[i], hypo_indexes, hypo_attention,
-                                                prefix_lang=prefix_lang is not None)
-                hypo_alignment = clean_alignment(hypo_alignment, segments[i], hypo_str)
-            else:
-                hypo_alignment = []
+            k = 0
+            max_k = 1
+            if nbest is not None:
+                max_k = min(len(translations[0]), int(nbest))
+            i_results = []
+            while k < max_k:
+                k_hypo = hypo[k]  # k_th best of the i_th segment
+                k_hypo_score = math.exp(k_hypo['score'])
+                k_hypo_tokens = k_hypo['tokens']
+                k_hypo_indexes = sub_dict.indexes_of(k_hypo_tokens)
+                k_hypo_str = sub_dict.string(k_hypo_tokens)
+                k_hypo_attention = np.asarray(k_hypo['attention'].data.cpu())
 
-            results.append(Translation(hypo_str, alignment=hypo_alignment, score=hypo_score))
+                # Make alignment
+                if len(k_hypo_indexes) > 0:
+                    k_hypo_alignment = make_alignment(input_indexes[i], k_hypo_indexes, k_hypo_attention,
+                                                    prefix_lang = prefix_lang is not None)
+                    k_hypo_alignment = clean_alignment(k_hypo_alignment, segments[i], k_hypo_str)
+                else:
+                    k_hypo_alignment = []
+
+                i_results.append(Translation(k_hypo_str, alignment=k_hypo_alignment, score=k_hypo_score))  # nbest_results[i][k]
+                k += 1
+
+            results.append(i_results)
 
         return results
 
@@ -322,6 +335,8 @@ class MMTDecoder(object):
 
         results = []
         for i, hypo_attention in enumerate(attn):  # for each entry of the original batch
+
+            i_results = []
             hypo_attention = hypo_attention.transpose(0, 1).cpu()
             hypo_attention = hypo_attention[hypo_attention.size(0) - (len(src_indexes[i]) + 1):,
                              hypo_attention.size(1) - (len(tgt_indexes[i]) + 1):]
@@ -332,8 +347,9 @@ class MMTDecoder(object):
 
             hypo_alignment = clean_alignment(hypo_alignment, segments[i], translations[i])
 
-            results.append(Translation(translations[i], alignment=hypo_alignment))
+            i_results.append(Translation(translations[i], alignment=hypo_alignment))
 
+            results.append(i_results)
         return results
 
     def _make_decode_batch(self, segments, prefix_lang=None):
