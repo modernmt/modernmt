@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
@@ -150,24 +151,24 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
 
     @Override
     public Translation[] translate(LanguageDirection direction, Sentence[] sentences, int nBest) throws DecoderException {
-        return this.translate(sentences, serialize(direction, sentences, null, null));
+        return this.translate(sentences, serialize(direction, sentences, null, null, nBest));
     }
 
     @Override
     public Translation[] translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, int nBest) throws DecoderException {
-        return this.translate(sentences, serialize(direction, sentences, suggestions, null));
+        return this.translate(sentences, serialize(direction, sentences, suggestions, null, nBest));
     }
 
     @Override
     public Translation align(LanguageDirection direction, Sentence sentence, String[] translation) throws DecoderException {
         Sentence[] sentences = new Sentence[]{sentence};
         String[][] translations = new String[][]{translation};
-        return this.translate(sentences, serialize(direction, new Sentence[]{sentence}, null, translations))[0];
+        return this.translate(sentences, serialize(direction, new Sentence[]{sentence}, null, translations, 0))[0];
     }
 
     @Override
     public Translation[] align(LanguageDirection direction, Sentence[] sentences, String[][] translations) throws DecoderException {
-        return this.translate(sentences, serialize(direction, sentences, null, translations));
+        return this.translate(sentences, serialize(direction, sentences, null, translations, 0));
     }
 
     private synchronized Translation[] translate(Sentence[] sentences, String payload) throws DecoderException {
@@ -197,7 +198,7 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
         }
     }
 
-    private String serialize(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, String[][] forcedTranslations) {
+    private String serialize(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, String[][] forcedTranslations, int alternatives) {
         String[] serialized = new String[sentences.length];
         for (int i = 0; i < serialized.length; i++)
             serialized[i] = TokensOutputStream.serialize(sentences[i], false, true);
@@ -207,6 +208,7 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
         json.addProperty("q", text);
         json.addProperty("sl", direction.source.toLanguageTag());
         json.addProperty("tl", direction.target.toLanguageTag());
+        json.addProperty("alternatives", alternatives);
 
         if (forcedTranslations != null) {
             String[] serializedForcedTranslations = new String[forcedTranslations.length];
@@ -236,6 +238,7 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
     }
 
     private Translation[] deserialize(String response, Sentence[] sentences) throws IOException, DecoderException {
+
         JsonObject json;
         try {
             json = parser.parse(response).getAsJsonObject();
@@ -257,6 +260,28 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
                 Alignment alignment = jsonAlignment == null ? null : parseAlignment(jsonAlignment.getAsJsonArray());
 
                 translations[i] = new Translation(words, sentences[i], alignment);
+                translations[i].setConfidence(e.get("s").getAsFloat());
+
+                //We read optional alternative translations (nbests)
+                if (e.has("alternatives")) {
+                    JsonArray jsonAlternatives = e.getAsJsonArray("alternatives");
+                    if (jsonAlternatives != null) {
+                        List<Translation> alternatives = new ArrayList<>(jsonAlternatives.size());
+
+                        for (int k = 0; k < jsonAlternatives.size(); k++) {
+
+                            JsonObject n = jsonAlternatives.get(k).getAsJsonObject();
+
+                            Word[] k_words = TokensOutputStream.deserializeWords(n.get("text").getAsString());
+                            JsonElement k_jsonAlignment = n.get("a");
+                            Alignment k_alignment = k_jsonAlignment == null ? null : parseAlignment(k_jsonAlignment.getAsJsonArray());
+
+                            alternatives.add(k, new Translation(k_words, sentences[i], k_alignment));
+                            alternatives.get(k).setConfidence(n.get("s").getAsFloat());
+                        }
+                        translations[i].setAlternatives(alternatives);
+                    }
+                }
             }
 
             return translations;
