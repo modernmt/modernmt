@@ -52,7 +52,7 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider, Deco
         this(model, config, new DefaultDecoderInitializer());
     }
 
-    protected NeuralDecoder(File model, DecoderConfig config, DecoderInitializer init) throws DecoderException {
+    private NeuralDecoder(File model, DecoderConfig config, DecoderInitializer init) throws DecoderException {
         super(model, config);
 
         // Load ModelConfig
@@ -186,13 +186,12 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider, Deco
 
                         String alternativeText = TokensOutputStream.serialize(alternative, false, true);
 
-                        StringBuilder alternativeLog = new StringBuilder(
-                                "   [\n" +
+                        String alternativeLog = "   [\n" +
                                 "       translation = " + alternativeText + "\n" +
                                 "       alignment = " + alternative.getWordAlignment() + "\n" +
                                 "       confidence = " + alternative.getConfidence() + "\n" +
-                                "   ]");
-                        log.append(alternativeLog.toString());
+                                "   ]";
+                        log.append(alternativeLog);
                     }
                 }
 
@@ -212,7 +211,7 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider, Deco
         return SentenceSplitter.split(sentence);
     }
 
-    protected ScoreEntry[] lookup(UUID user, LanguageDirection direction, Sentence text, ContextVector contextVector) throws DecoderException {
+    private ScoreEntry[] lookup(UUID user, LanguageDirection direction, Sentence text, ContextVector contextVector) throws DecoderException {
         ScoreEntry[] entries = null;
 
         if (text.hasWords() && contextVector != null && !contextVector.isEmpty()) {
