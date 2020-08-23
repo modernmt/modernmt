@@ -26,11 +26,12 @@ public class TranslationResponseSerializer implements JsonSerializer<Translation
             json.add("alignment", context.serialize(src.translation.getSentenceAlignment(), Alignment.class));
         }
 
-        if (src.translation.hasNbest()) {
+        if (src.translation.hasAlternatives()) {
             JsonArray array = new JsonArray();
-            for (Translation hypothesis : src.translation.getNbest())
-                array.add(serializeHypothesis(context, hypothesis, src.verbose));
-            json.add("nbest", array);
+            for (Translation alternative : src.translation.getAlternatives())
+                array.add(serializeHypothesis(context, alternative,  src.verbose));
+
+            json.add("alternatives", array);
         }
 
         if (src.context != null)
