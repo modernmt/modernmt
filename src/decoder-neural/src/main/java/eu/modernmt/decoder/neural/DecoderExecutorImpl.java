@@ -1,17 +1,13 @@
 package eu.modernmt.decoder.neural;
 
 import eu.modernmt.decoder.DecoderException;
-import eu.modernmt.decoder.TranslationTimeoutException;
-import eu.modernmt.decoder.neural.queue.DecoderQueue;
 import eu.modernmt.decoder.neural.queue.PythonDecoder;
-import eu.modernmt.decoder.neural.scheduler.Scheduler;
 import eu.modernmt.decoder.neural.scheduler.TranslationSplit;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -30,15 +26,15 @@ public class DecoderExecutorImpl implements DecoderExecutor {
     }
 
     @Override
-    public void translate(PythonDecoder decoder, LanguageDirection language, List<TranslationSplit> splits, Collection<ScoreEntry> suggestions) throws DecoderException {
+    public void translate(PythonDecoder decoder, LanguageDirection language, List<TranslationSplit> splits, Collection<ScoreEntry> suggestions, int alternatives) throws DecoderException {
         Sentence[] sentences = mergeSentences(splits);
         Translation[] translations;
 
         if (suggestions == null || suggestions.isEmpty()) {
-            translations = decoder.translate(language, sentences, 0);
+            translations = decoder.translate(language, sentences, alternatives);
         } else {
             ScoreEntry[] suggestionArray = suggestions.toArray(new ScoreEntry[0]);
-            translations = decoder.translate(language, sentences, suggestionArray, 0);
+            translations = decoder.translate(language, sentences, suggestionArray, alternatives);
         }
 
         int i = 0;

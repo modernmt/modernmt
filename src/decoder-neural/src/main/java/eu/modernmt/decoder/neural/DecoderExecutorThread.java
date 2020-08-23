@@ -52,7 +52,7 @@ public class DecoderExecutorThread extends Thread {
                     if (job.isAlignmentJob())
                         executor.align(decoder, language, splits);
                     else
-                        executor.translate(decoder, language, splits, job.getSuggestions());
+                        executor.translate(decoder, language, splits, job.getSuggestions(), job.getAlternatives());
                 } catch (Throwable e) {
                     for (TranslationSplit split : job.getTranslationSplits())
                         split.setException(e);
