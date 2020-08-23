@@ -22,7 +22,8 @@ public class Translation extends Sentence {
     protected final Sentence source;
     private Alignment wordAlignment;
     private Alignment sentenceAlignment = null;
-    private List<Translation> nbest;
+    private List<Translation> alternatives;
+    private float confidence;
 
     // Statistics
     private long memoryLookupTime;
@@ -31,13 +32,23 @@ public class Translation extends Sentence {
     private int queueLength;
 
     public Translation(Word[] words, Sentence source, Alignment wordAlignment) {
-        this(words, null, source, wordAlignment);
+        this(words, null, source, wordAlignment, null);
     }
 
     public Translation(Word[] words, Tag[] tags, Sentence source, Alignment wordAlignment) {
+        this(words, tags, source, wordAlignment, null);
+    }
+
+    public Translation(Word[] words, Sentence source, Alignment wordAlignment, List<Translation> alternatives) {
+        this(words, null, source, wordAlignment, alternatives);
+    }
+
+    public Translation(Word[] words, Tag[] tags, Sentence source, Alignment wordAlignment, List<Translation> alternatives) {
         super(words, tags);
         this.source = source;
         this.wordAlignment = wordAlignment;
+        this.alternatives = alternatives;
+        this.confidence = 0.0f;
         this.decodeTime = 0;
         this.queueTime = 0;
         this.queueLength = 0;
@@ -122,16 +133,16 @@ public class Translation extends Sentence {
         }
     }
 
-    public List<Translation> getNbest() {
-        return nbest;
+    public List<Translation> getAlternatives() {
+        return alternatives;
     }
 
-    public boolean hasNbest() {
-        return nbest != null && nbest.size() > 0;
+    public boolean hasAlternatives() {
+        return alternatives != null && alternatives.size() > 0;
     }
 
-    public void setNbest(List<Translation> nbest) {
-        this.nbest = nbest;
+    public void setAlternatives(List<Translation> alternatives) {
+        this.alternatives = alternatives;
     }
 
     public void fixWordSpacing() {
@@ -143,4 +154,11 @@ public class Translation extends Sentence {
         }
     }
 
+    public float getConfidence() {
+        return confidence;
+    }
+
+    public void setConfidence(float confidence) {
+        this.confidence = confidence;
+    }
 }
