@@ -127,8 +127,7 @@ class TranslationResponse(object):
                 payload['s'] = round(best_translation.score, 4)
 
             # This part outputs alternative translations;
-            # TODO: we could also outputs in this field (maybe renaming it as 'nbest') all translations including first best
-            if len(nbests) > 2:
+            if len(nbests) > 1:
                 payload['alternatives'] = []
                 k = 1
                 while k < len(nbests):
