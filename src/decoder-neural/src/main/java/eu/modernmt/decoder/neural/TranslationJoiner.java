@@ -6,19 +6,26 @@ import eu.modernmt.model.Alignment;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.*;
 
 public class TranslationJoiner {
 
-    public static Translation join(Sentence originalSentence, TranslationSplit[] splits) throws DecoderException {
+    public static Translation join(Sentence originalSentence, TranslationSplit[] splits, int alternatives) throws DecoderException {
         if (splits.length == 0) {
             return Translation.emptyTranslation(originalSentence);
         } else if (splits.length == 1) {
             TranslationSplit split = splits[0];
             Translation translation = split.getTranslation();
+
             Sentence sentence = translation.getSource();
 
-            if (originalSentence != sentence)
-                translation = new Translation(translation.getWords(), originalSentence, translation.getWordAlignment());
+            if (originalSentence != sentence) {
+                float confidence = translation.getConfidence();
+                translation = new Translation(translation.getWords(), originalSentence, translation.getWordAlignment(), translation.getAlternatives());
+                translation.setConfidence(confidence);
+            }
 
             translation.setQueueLength(split.getQueueSize());
             translation.setQueueTime(split.getQueueTime());
@@ -26,27 +33,79 @@ public class TranslationJoiner {
 
             return translation;
         } else {
-            return doJoin(originalSentence, splits);
+            return doJoin(originalSentence, splits, alternatives);
         }
     }
 
-    private static Translation doJoin(Sentence originalSentence, TranslationSplit[] splits) throws DecoderException {
+    private static Translation doJoin(Sentence originalSentence, TranslationSplit[] splits, int alternatives) throws DecoderException {
         int wordCount = wordCount(splits);
         int alignmentCount = alignmentCount(splits);
 
         WordsJoiner words = new WordsJoiner(wordCount);
         AlignmentJoiner alignment = alignmentCount > 0 ? new AlignmentJoiner(alignmentCount) : null;
 
+
+
+        int totalNbest = 1;
+        for (TranslationSplit split : splits) {
+            if (split.getTranslation().hasAlternatives())
+                totalNbest *= (split.getTranslation().getAlternatives().size() + 1);
+        }
+
+        List<NbestSplit> nbestList = new ArrayList<>(totalNbest);
+        for (int n = 0 ; n < totalNbest; n++)
+            nbestList.add(new NbestSplit(splits.length));
+
+        int step = totalNbest;
+        for (int splitIdx = 0 ; splitIdx < splits.length ; splitIdx++) {
+            Translation translation = splits[splitIdx].getTranslation();
+
+            if (translation.hasAlternatives())
+                step /= (translation.getAlternatives().size() + 1);
+
+            int n = 0;
+            while (n<totalNbest) {
+                for (int k = 0; k < step; k++) {
+                    nbestList.get(n).multiplyConfidence(translation.getConfidence());
+                    nbestList.get(n).addWordCount(translation.getWords().length);
+                    nbestList.get(n).addAlignmentCount(translation.getWordAlignment().size());
+                    nbestList.get(n).setAlternative(splitIdx, -1);
+                    n++;
+                }
+
+                if (translation.hasAlternatives()) {
+                    List<Translation> alternativeTranslations = translation.getAlternatives();
+                    for (int h = 0; h < alternativeTranslations.size(); h++) {
+                        Translation alternativeTranslation = alternativeTranslations.get(h);
+
+                        for (int k = 0; k < step; k++) {
+                            nbestList.get(n).multiplyConfidence(alternativeTranslation.getConfidence());
+                            nbestList.get(n).addWordCount(alternativeTranslation.getWords().length);
+                            nbestList.get(n).addAlignmentCount(alternativeTranslation.getWordAlignment().size());
+                            nbestList.get(n).setAlternative(splitIdx, h);
+                            n++;
+                        }
+                    }
+                }
+            }
+        }
+
+        for (NbestSplit nbest : nbestList)
+            nbest.setConfidence((float) Math.pow(nbest.getConfidence(), 1.0 / nbest.getSplit()));
+
+        ArrayList<NbestSplit> sortedNbestList  = new ArrayList<>(nbestList);
+
+        sortedNbestList.sort(NbestSplit::compareTo);
+
         for (TranslationSplit split : splits) {
             Translation translation = split.getTranslation();
-            Sentence sentence = split.sentence;
 
             // Target words
             words.append(translation.getWords());
 
             // Alignment
             if (alignment != null)
-                alignment.append(sentence, translation);
+                alignment.append(split.sentence, translation);
         }
 
         Translation translation;
@@ -54,6 +113,53 @@ public class TranslationJoiner {
             translation = new Translation(words.build(), originalSentence, null);
         else
             translation = new Translation(words.build(), originalSentence, alignment.build());
+        translation.setConfidence(sortedNbestList.get(0).getConfidence());
+
+        // Alternatives
+        List<Translation> alternativeTranslations = new ArrayList<>();
+        int n = 1;
+        while (n < alternatives) {
+            WordsJoiner alternativeWords = new WordsJoiner(sortedNbestList.get(n).getWordCount());
+            AlignmentJoiner alternativeAlignment = alignmentCount > 0 ? new AlignmentJoiner(sortedNbestList.get(n).getAlignmentCount()) : null;
+            for (int splitIdx = 0 ; splitIdx < splits.length ; splitIdx++) {
+                Translation trans = splits[splitIdx].getTranslation();
+                int altIdx = sortedNbestList.get(n).getAlternativeIdx(splitIdx);
+
+                Translation alternativeTranslation;
+
+                if (altIdx == -1) {
+                    alternativeTranslation = trans;
+                } else {
+                    if (trans.hasAlternatives()) {
+                        if (altIdx < trans.getAlternatives().size()) {
+                            alternativeTranslation = trans.getAlternatives().get(altIdx);
+                        } else {
+                            throw new DecoderException("wrong alternative index");
+                        }
+                    } else {
+                        throw new DecoderException("wrong alternative index (" + splitIdx+ "");
+                    }
+                }
+
+                // Target words
+                alternativeWords.append(alternativeTranslation.getWords());
+
+                // Alignment
+                if (alternativeAlignment != null)
+                    alternativeAlignment.append(splits[splitIdx].sentence, alternativeTranslation);
+            }
+
+            Translation alternativeTranslation;
+            if (alternativeAlignment == null)
+                alternativeTranslation = new Translation(alternativeWords.build(), originalSentence, null);
+            else
+                alternativeTranslation = new Translation(alternativeWords.build(), originalSentence, alternativeAlignment.build());
+
+            alternativeTranslation.setConfidence(sortedNbestList.get(n).getConfidence());
+            alternativeTranslations.add(alternativeTranslation);
+            n++;
+        }
+        translation.setAlternatives(alternativeTranslations);
 
         // Calculate stats
         int queueSize = getQueueSize(splits);
@@ -134,7 +240,7 @@ public class TranslationJoiner {
         private final Word[] words;
         private int index;
 
-        public WordsJoiner(int length) {
+        private WordsJoiner(int length) {
             this.words = new Word[length];
             this.index = 0;
         }
@@ -168,7 +274,7 @@ public class TranslationJoiner {
         private int tgtOffset = 0;
         private int algOffset = 0;
 
-        public AlignmentJoiner(int length) {
+        private AlignmentJoiner(int length) {
             this.src = new int[length];
             this.tgt = new int[length];
         }
@@ -200,6 +306,85 @@ public class TranslationJoiner {
 
         public Alignment build() {
             return new Alignment(src, tgt, score / scoreNorm);
+        }
+    }
+
+    private static class NbestSplit implements Comparable<NbestSplit> {
+        private final int[] alternativeIdx;
+        private final int split;
+        private int wordCount;
+        private int alignmentCount;
+        private float confidence;
+
+        NbestSplit(int split) {
+            this(split, 0, 0, 1.0f);
+        }
+
+        NbestSplit(int split, int wordCount, int alignmentCount, float confidence) {
+            this.split = split;
+            alternativeIdx = new int[split];
+            this.wordCount = wordCount;
+            this.alignmentCount = alignmentCount;
+            this.confidence = confidence;
+        }
+
+        private int getAlternativeIdx(int idx) {
+            assert (idx < split);
+            return alternativeIdx[idx];
+        }
+
+        public int getSplit() {
+            return split;
+        }
+
+        private int getWordCount() {
+            return wordCount;
+        }
+
+        private void addWordCount(int wordCount) {
+            this.wordCount += wordCount;
+        }
+
+        private int getAlignmentCount() {
+            return alignmentCount;
+        }
+
+        private void addAlignmentCount(int alignmentCount) {
+            this.alignmentCount += alignmentCount;
+        }
+
+        private float getConfidence() {
+            return confidence;
+        }
+
+        private void setConfidence(float confidence) {
+            this.confidence = confidence;
+        }
+
+        private void multiplyConfidence(float confidence) {
+            this.confidence *= confidence;
+        }
+
+        private void setAlternative(int idx, int val) {
+            alternativeIdx[idx] = val;
+        }
+
+        public String toString() {
+
+            StringBuilder builder = new StringBuilder();
+            builder.append(confidence).append(" ").append(wordCount);
+            for (int i = 0 ; i < split ; i++)
+                builder.append(" ").append(alternativeIdx[i]);
+
+            return builder.toString();
+        }
+
+        @Override
+        public int compareTo(@NotNull NbestSplit o) {
+            float diff = confidence - o.getConfidence();
+            if (diff > 0) return -1;
+            if (diff == 0) return 0;
+            return 1;
         }
     }
 }
