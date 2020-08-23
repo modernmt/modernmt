@@ -52,7 +52,7 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider, Deco
         this(model, config, new DefaultDecoderInitializer());
     }
 
-    private NeuralDecoder(File model, DecoderConfig config, DecoderInitializer init) throws DecoderException {
+    protected NeuralDecoder(File model, DecoderConfig config, DecoderInitializer init) throws DecoderException {
         super(model, config);
 
         // Load ModelConfig
@@ -211,7 +211,7 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider, Deco
         return SentenceSplitter.split(sentence);
     }
 
-    private ScoreEntry[] lookup(UUID user, LanguageDirection direction, Sentence text, ContextVector contextVector) throws DecoderException {
+    protected ScoreEntry[] lookup(UUID user, LanguageDirection direction, Sentence text, ContextVector contextVector) throws DecoderException {
         ScoreEntry[] entries = null;
 
         if (text.hasWords() && contextVector != null && !contextVector.isEmpty()) {
