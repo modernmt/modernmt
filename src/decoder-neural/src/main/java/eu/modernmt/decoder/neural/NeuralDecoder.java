@@ -6,7 +6,10 @@ import eu.modernmt.data.DataListenerProvider;
 import eu.modernmt.decoder.Decoder;
 import eu.modernmt.decoder.DecoderException;
 import eu.modernmt.decoder.DecoderListener;
-import eu.modernmt.decoder.neural.queue.*;
+import eu.modernmt.decoder.DecoderWithAlternatives;
+import eu.modernmt.decoder.neural.queue.DecoderQueue;
+import eu.modernmt.decoder.neural.queue.EchoServerDecoderQueue;
+import eu.modernmt.decoder.neural.queue.PythonDecoder;
 import eu.modernmt.decoder.neural.scheduler.Scheduler;
 import eu.modernmt.decoder.neural.scheduler.TranslationSplit;
 import eu.modernmt.io.TokensOutputStream;
@@ -31,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by davide on 22/05/17.
  */
-public class NeuralDecoder extends Decoder implements DataListenerProvider {
+public class NeuralDecoder extends Decoder implements DataListenerProvider, DecoderWithAlternatives {
 
     private final Logger logger = LogManager.getLogger(getClass());
 
@@ -107,11 +110,21 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
 
     @Override
     public Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, long timeout) throws DecoderException {
-        return translate(priority, user, direction, text, null, timeout);
+        return translate(priority, user, direction, text, null, 0, timeout);
     }
 
     @Override
     public Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, ContextVector context, long timeout) throws DecoderException {
+        return translate(priority, user, direction, text, context, 0, timeout);
+    }
+
+    @Override
+    public Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, int alternatives, long timeout) throws DecoderException {
+        return translate(priority, user, direction, text,null,  alternatives, timeout);
+    }
+
+    @Override
+    public Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, ContextVector context, int alternatives, long timeout) throws DecoderException {
         if (!isLanguageSupported(direction))
             throw new UnsupportedLanguageException(direction);
 
@@ -130,7 +143,7 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
         if (suggestions != null && suggestions[0].score == 1.f) {  // align
             TranslationSplit split = new TranslationSplit(priority, text, suggestions[0].translationTokens, timeout);
             splits = new TranslationSplit[]{split};
-            lock = scheduler.schedule(direction, split);
+            lock = scheduler.schedule(direction, split, alternatives);
         } else {
             List<Sentence> textSplits = split(text);
             splits = new TranslationSplit[textSplits.size()];
@@ -139,14 +152,14 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
             for (Sentence textSplit : textSplits)
                 splits[i++] = new TranslationSplit(priority, textSplit, timeout);
 
-            lock = scheduler.schedule(direction, splits, suggestions);
+            lock = scheduler.schedule(direction, splits, suggestions, alternatives);
         }
 
         // Wait for translation to be completed
         try {
             lock.await();
 
-            Translation translation = TranslationJoiner.join(text, splits);
+            Translation translation = TranslationJoiner.join(text, splits, alternatives);
             translation.setMemoryLookupTime(lookupTime);
 
             if (logger.isDebugEnabled()) {
@@ -157,11 +170,30 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
                         "   sentence = " + sourceText + "\n" +
                         "   translation = " + targetText + "\n" +
                         "   alignment = " + translation.getWordAlignment() + "\n" +
+                        "   confidence = " + translation.getConfidence() + "\n" +
                         "   suggestions = [\n");
 
                 if (suggestions != null) {
                     for (ScoreEntry entry : suggestions)
                         log.append("      ").append(entry).append('\n');
+                }
+
+                log.append("   ]\n");
+
+                log.append("  alternatives = [\n");
+                if (translation.hasAlternatives()) {
+                    for (Translation alternative : translation.getAlternatives()) {
+
+                        String alternativeText = TokensOutputStream.serialize(alternative, false, true);
+
+                        StringBuilder alternativeLog = new StringBuilder(
+                                "   [\n" +
+                                "       translation = " + alternativeText + "\n" +
+                                "       alignment = " + alternative.getWordAlignment() + "\n" +
+                                "       confidence = " + alternative.getConfidence() + "\n" +
+                                "   ]");
+                        log.append(alternativeLog.toString());
+                    }
                 }
 
                 log.append("   ]");
@@ -174,6 +206,7 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
             throw new DecoderException("Decoder interrupted", e);
         }
     }
+
 
     protected List<Sentence> split(Sentence sentence) {
         return SentenceSplitter.split(sentence);
