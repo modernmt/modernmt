@@ -31,7 +31,7 @@ public class TLuceneTranslationMemory extends LuceneTranslationMemory {
     }
 
     @Override
-    public int size() {
+    public long size() {
         try {
             return getIndexReader().numDocs();
         } catch (IOException e) {
