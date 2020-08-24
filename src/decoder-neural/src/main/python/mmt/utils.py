@@ -51,13 +51,13 @@ def mask_std_streams():
 
 
 class TranslationRequest(object):
-    def __init__(self, source_lang, target_lang, batch, suggestions=None, forced_translation=None, nbest=None):
+    def __init__(self, source_lang, target_lang, batch, suggestions=None, forced_translation=None, alternatives=None):
         self.source_lang = source_lang
         self.target_lang = target_lang
         self.batch = batch
         self.suggestions = suggestions if suggestions is not None else []
         self.forced_translation = forced_translation
-        self.nbest = nbest
+        self.alternatives = alternatives
 
     @staticmethod
     def from_json_string(json_string):
@@ -87,12 +87,10 @@ class TranslationRequest(object):
 
                 suggestions.append(Suggestion(sugg_sl, sugg_tl, sugg_seg, sugg_tra, sugg_scr))
 
-        nbest = 1
-        if 'alternatives' in obj:
-            nbest += int(obj['alternatives'])
+        alternatives = int(obj['alternatives']) if 'alternatives' in obj else 0
 
         return TranslationRequest(source_lang, target_lang, batch,
-                                  suggestions=suggestions, forced_translation=forced_translation, nbest=nbest)
+                                  suggestions=suggestions, forced_translation=forced_translation, alternatives=alternatives)
 
 
 class TranslationResponse(object):
@@ -169,7 +167,7 @@ def serve_forever(stdin, stdout, decoder):
                 translations = decoder.translate(request.source_lang, request.target_lang, request.batch,
                                                  suggestions=request.suggestions,
                                                  forced_translation=request.forced_translation,
-                                                 nbest=request.nbest)
+                                                 alternatives=request.alternatives)
 
             response = TranslationResponse.to_json_string(translations)
 
