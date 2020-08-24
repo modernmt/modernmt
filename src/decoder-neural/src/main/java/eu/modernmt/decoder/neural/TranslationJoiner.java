@@ -8,7 +8,8 @@ import eu.modernmt.model.Translation;
 import eu.modernmt.model.Word;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class TranslationJoiner {
 
@@ -118,7 +119,7 @@ public class TranslationJoiner {
         // Alternatives
         List<Translation> alternativeTranslations = new ArrayList<>();
         int n = 1;
-        while (n < alternatives) {
+        while (n <= alternatives) {
             WordsJoiner alternativeWords = new WordsJoiner(sortedNbestList.get(n).getWordCount());
             AlignmentJoiner alternativeAlignment = alignmentCount > 0 ? new AlignmentJoiner(sortedNbestList.get(n).getAlignmentCount()) : null;
             for (int splitIdx = 0 ; splitIdx < splits.length ; splitIdx++) {
