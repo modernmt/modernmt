@@ -238,7 +238,7 @@ class MMTDecoder(object):
         self._logger.info('test_time = %.3f' % test_time)
 
     def translate(self, source_lang, target_lang, batch, suggestions=None,
-                  tuning_epochs=None, tuning_learning_rate=None, forced_translation=None, nbest=None):
+                  tuning_epochs=None, tuning_learning_rate=None, forced_translation=None, alternatives=None):
         # (1) Reset model (if necessary)
         begin = time.time()
         self._reset_model(source_lang, target_lang)
@@ -255,8 +255,10 @@ class MMTDecoder(object):
         if forced_translation is not None:
             result = self._force_decode(target_lang, batch, forced_translation)
         else:
-            if nbest is None or nbest < 1:
+            if alternatives is None or alternatives < 1:
                 nbest = 1
+            else:
+                nbest = alternatives + 1
             result = self._decode(source_lang, target_lang, batch, nbest=nbest)
 
         decode_time = time.time() - begin
