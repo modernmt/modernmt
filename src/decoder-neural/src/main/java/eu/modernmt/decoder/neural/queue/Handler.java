@@ -69,39 +69,39 @@ class Handler implements PythonDecoder {
     }
 
     @Override
-    public synchronized Translation translate(LanguageDirection direction, Sentence sentence, int nBest) throws DecoderException {
+    public synchronized Translation translate(LanguageDirection direction, Sentence sentence, int alternatives) throws DecoderException {
         if (delegate == null)
             throw new DecoderUnavailableException("Decoder process is dead");
 
         checkpoint = checkpoints.get(direction);
-        return delegate.translate(direction, sentence, nBest);
+        return delegate.translate(direction, sentence, alternatives);
     }
 
     @Override
-    public synchronized Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException {
+    public synchronized Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, int alternatives) throws DecoderException {
         if (delegate == null)
             throw new DecoderUnavailableException("Decoder process is dead");
 
         checkpoint = checkpoints.get(direction);
-        return delegate.translate(direction, sentence, suggestions, nBest);
+        return delegate.translate(direction, sentence, suggestions, alternatives);
     }
 
     @Override
-    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, int nBest) throws DecoderException {
+    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, int alternatives) throws DecoderException {
         if (delegate == null)
             throw new DecoderUnavailableException("Decoder process is dead");
 
         checkpoint = checkpoints.get(direction);
-        return delegate.translate(direction, sentences, nBest);
+        return delegate.translate(direction, sentences, alternatives);
     }
 
     @Override
-    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, int nBest) throws DecoderException {
+    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, int alternatives) throws DecoderException {
         if (delegate == null)
             throw new DecoderUnavailableException("Decoder process is dead");
 
         checkpoint = checkpoints.get(direction);
-        return delegate.translate(direction, sentences, suggestions, nBest);
+        return delegate.translate(direction, sentences, suggestions, alternatives);
     }
 
     @Override

@@ -140,23 +140,23 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
     }
 
     @Override
-    public Translation translate(LanguageDirection direction, Sentence sentence, int nBest) throws DecoderException {
-        return this.translate(direction, new Sentence[]{sentence}, nBest)[0];
+    public Translation translate(LanguageDirection direction, Sentence sentence, int alternatives) throws DecoderException {
+        return this.translate(direction, new Sentence[]{sentence}, alternatives)[0];
     }
 
     @Override
-    public Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, int nBest) throws DecoderException {
-        return this.translate(direction, new Sentence[]{sentence}, suggestions, nBest)[0];
+    public Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, int alternatives) throws DecoderException {
+        return this.translate(direction, new Sentence[]{sentence}, suggestions, alternatives)[0];
     }
 
     @Override
-    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, int nBest) throws DecoderException {
-        return this.translate(sentences, serialize(direction, sentences, null, null, nBest));
+    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, int alternatives) throws DecoderException {
+        return this.translate(sentences, serialize(direction, sentences, null, null, alternatives));
     }
 
     @Override
-    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, int nBest) throws DecoderException {
-        return this.translate(sentences, serialize(direction, sentences, suggestions, null, nBest));
+    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, int alternatives) throws DecoderException {
+        return this.translate(sentences, serialize(direction, sentences, suggestions, null, alternatives));
     }
 
     @Override
