@@ -25,9 +25,10 @@ class TranslateError(Exception):
 
 
 class TranslateEngine(object):
-    def __init__(self, source_lang, target_lang):
+    def __init__(self, source_lang, target_lang, alternatives = None):
         self.source_lang = source_lang
         self.target_lang = target_lang
+        self.alternatives = alternatives
 
     @property
     def name(self):
@@ -36,7 +37,7 @@ class TranslateEngine(object):
     def _get_default_threads(self):
         raise NotImplementedError
 
-    def translate_text(self, text):
+    def translate_text(self, text, alternatives = None):
         raise NotImplementedError
 
     def translate_batch(self, generator, consumer, threads=None, suppress_errors=False):
@@ -64,7 +65,7 @@ class TranslateEngine(object):
 
         def _translate_text(text):
             try:
-                return self.translate_text(text)
+                return '{}\n{}'.format(self.translate_text(text)[0], self.translate_text(text)[1])
             except BaseException as e:
                 if suppress_errors:
                     print(str(e), file=sys.stderr)
@@ -116,14 +117,14 @@ class EchoTranslate(TranslateEngine):
     def _get_default_threads(self):
         return 16
 
-    def translate_text(self, text):
-        return text
+    def translate_text(self, text, alternatives = 0):
+        return text, None
 
 
 class ModernMTTranslate(TranslateEngine):
     def __init__(self, node, source_lang, target_lang, priority=None,
-                 context_vector=None, context_file=None, context_string=None, split_lines=False):
-        TranslateEngine.__init__(self, source_lang, target_lang)
+                 context_vector=None, context_file=None, context_string=None, split_lines=False, alternatives = None):
+        TranslateEngine.__init__(self, source_lang, target_lang, alternatives = alternatives)
         self._api = node.api
         self._priority = EngineNode.RestApi.PRIORITY_BACKGROUND if priority is None else priority
         self._context = None
@@ -174,15 +175,30 @@ class ModernMTTranslate(TranslateEngine):
         try:
             lines = text.split('\n') if self._split_lines else [text]
             translations = []
+            alternatives = []
 
             for line in lines:
                 if len(line.strip()) == 0:
                     translations.append(line)
                 else:
                     translation = self._api.translate(self.source_lang, self.target_lang, line,
-                                                      context=self._context, priority=self._priority)
+                                                      context=self._context, priority=self._priority, alternatives = self.alternatives)
                     translations.append(translation['translation'])
-            return '\n'.join(translations)
+
+                    if 'alternatives' in translation:
+                        # altIdx = 1
+                        a = ''
+                        for altIdx in range(len(translation['alternatives'])):
+                            a += '   alternative {}: {}\n'.format(altIdx, translation['alternatives'][altIdx]['translation'])
+                            # altIdx += 1
+                        alternatives.append(a)
+
+                if self.alternatives is not None and len(alternatives) > 0:
+                    return '\n'.join(translations), '\n'.join(alternatives)
+                else:
+                    return '\n'.join(translations), None
+
+            return '\n'.join(translations), '\n'.join(alternatives)
         except requests.exceptions.ConnectionError:
             raise TranslateError('Unable to connect to ModernMT. '
                                  'Please check if engine is running on port %d.' % self._api.port)
@@ -326,7 +342,7 @@ class GoogleTranslate(TranslateEngine):
         if not text_has_xml:
             translation = XMLEncoder.escape(translation)
 
-        return translation
+        return translation, None
 
 
 class ModernMTEnterpriseTranslate(TranslateEngine):
@@ -348,7 +364,7 @@ class ModernMTEnterpriseTranslate(TranslateEngine):
             return text
 
         try:
-            params = {'source': self.source_lang, 'target': self.target_lang, 'q': text, 'priority': self._priority}
+            params = {'source': self.source_lang, 'target': self.target_lang, 'q': text, 'priority': self._priority, 'alternatives': self.alternatives}
             if self._context_vector is not None:
                 params['context_vector'] = self._context_vector
 
@@ -370,6 +386,12 @@ class ModernMTEnterpriseTranslate(TranslateEngine):
                 raise TranslateError('HTTP request "%s" failed with code %d: %s' % (r.url, r.status_code, msg))
 
             content = r.json()
-            return content['data']['translation']
+            if len(content['data']['alternatives']) > 0:
+                alternatives = ''
+                for altIdx in range(len(content['data']['alternatives']['alternatives'])):
+                    alternatives += '   alternative {}: {}\n'.format(altIdx,content['data']['alternatives'][altIdx]['translation'])
+                return content['data']['translation'], alternatives
+            else:
+                return content['data']['translation'], None
         except requests.exceptions.ConnectionError as e:
             raise TranslateError('Unable to connect to ModernMT Enterprise: %s' % str(e))

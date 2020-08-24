@@ -89,9 +89,12 @@ class InteractiveTranslator(Translator):
                 if len(line) == 0:
                     continue
 
-                translation = self._engine.translate_text(line)
+                translation, alternatives = self._engine.translate_text(line)
                 out_stream.write(translation)
                 out_stream.write('\n')
+                if alternatives is not None:
+                    out_stream.write('{}'.format(alternatives))
+                    out_stream.write('\n')
                 out_stream.flush()
         except KeyboardInterrupt:
             pass
@@ -133,6 +136,7 @@ def parse_args(argv=None):
                              'running the actual translation.')
     parser.add_argument('--api-key', dest='api_key', default=None, help='Use ModernMT Enterprise service instead of '
                                                                         'local engine using the provided API Key')
+    parser.add_argument('--alternatives', dest='alternatives', default=None, type=int, help='amount of alternatives (default is no alternatives)')
 
     args = parser.parse_args(argv)
 
@@ -162,7 +166,7 @@ def main(argv=None):
 
         engine = ModernMTTranslate(node, args.source_lang, args.target_lang, context_string=args.context,
                                    context_file=args.context_file, context_vector=args.context_vector,
-                                   split_lines=args.split_lines)
+                                   split_lines=args.split_lines, alternatives=args.alternatives)
 
     if args.text is not None:
         print(engine.translate_text(args.text.strip()))

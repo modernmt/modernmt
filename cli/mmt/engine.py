@@ -240,7 +240,7 @@ class _RestApi(object):
     def health_check(self):
         return self._get('_health')
 
-    def translate(self, source, target, text, context=None, nbest=None, verbose=False, priority=None, user=None):
+    def translate(self, source, target, text, context=None, nbest=None, verbose=False, priority=None, user=None, alternatives = None):
         p = {'q': text, 'source': source, 'target': target}
         if nbest is not None:
             p['nbest'] = nbest
@@ -252,6 +252,8 @@ class _RestApi(object):
             p['priority'] = priority
         if user is not None:
             p['user'] = user
+        if alternatives is not None and alternatives > 0:
+            p['alternatives'] = alternatives
 
         return self._get('translate', params=p)
 
