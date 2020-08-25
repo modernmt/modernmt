@@ -13,8 +13,8 @@ import java.util.UUID;
  */
 public interface DecoderWithAlternatives {
 
-    Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, int alternatives, long expiration) throws DecoderException;
+    Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, Integer alternatives, long expiration) throws DecoderException;
 
-    Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, ContextVector contextVector, int alternatives, long expiration) throws DecoderException;
+    Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, ContextVector contextVector, Integer alternatives, long expiration) throws DecoderException;
 
 }

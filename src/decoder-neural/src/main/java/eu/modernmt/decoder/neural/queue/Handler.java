@@ -69,7 +69,7 @@ class Handler implements PythonDecoder {
     }
 
     @Override
-    public synchronized Translation translate(LanguageDirection direction, Sentence sentence, int alternatives) throws DecoderException {
+    public synchronized Translation translate(LanguageDirection direction, Sentence sentence, Integer alternatives) throws DecoderException {
         if (delegate == null)
             throw new DecoderUnavailableException("Decoder process is dead");
 
@@ -78,7 +78,7 @@ class Handler implements PythonDecoder {
     }
 
     @Override
-    public synchronized Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, int alternatives) throws DecoderException {
+    public synchronized Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, Integer alternatives) throws DecoderException {
         if (delegate == null)
             throw new DecoderUnavailableException("Decoder process is dead");
 
@@ -87,7 +87,7 @@ class Handler implements PythonDecoder {
     }
 
     @Override
-    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, int alternatives) throws DecoderException {
+    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, Integer[] alternatives) throws DecoderException {
         if (delegate == null)
             throw new DecoderUnavailableException("Decoder process is dead");
 
@@ -96,7 +96,7 @@ class Handler implements PythonDecoder {
     }
 
     @Override
-    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, int alternatives) throws DecoderException {
+    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, Integer[] alternatives) throws DecoderException {
         if (delegate == null)
             throw new DecoderUnavailableException("Decoder process is dead");
 

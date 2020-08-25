@@ -32,7 +32,7 @@ public class SentenceBatchScheduler extends AbstractScheduler<SentenceBatchSched
     }
 
     @Override
-    public TranslationLock schedule(LanguageDirection direction, TranslationSplit[] splits, ScoreEntry[] suggestions, int alternatives) throws DecoderUnavailableException {
+    public TranslationLock schedule(LanguageDirection direction, TranslationSplit[] splits, ScoreEntry[] suggestions, Integer[] alternatives) throws DecoderUnavailableException {
         CountDownTranslationLock lock = new CountDownTranslationLock(splits.length);
         for (TranslationSplit split : splits)
             split.setLock(lock);
@@ -43,7 +43,7 @@ public class SentenceBatchScheduler extends AbstractScheduler<SentenceBatchSched
     }
 
     @Override
-    public TranslationLock schedule(LanguageDirection direction, TranslationSplit split, int alternatives) throws DecoderUnavailableException {
+    public TranslationLock schedule(LanguageDirection direction, TranslationSplit split, Integer alternatives) throws DecoderUnavailableException {
         CountDownTranslationLock lock = new CountDownTranslationLock(1);
         split.setLock(lock);
 
@@ -59,17 +59,18 @@ public class SentenceBatchScheduler extends AbstractScheduler<SentenceBatchSched
         private final List<ScoreEntry> suggestions;
         private final Priority priority;
         private long timestamp;
-        private int alternatives;
+        private final List<Integer> alternatives;
 
-        JobImpl(LanguageDirection direction, TranslationSplit split, int alternatives) {
-            this(direction, Collections.singletonList(split), null, alternatives);
+        JobImpl(LanguageDirection direction, TranslationSplit split, Integer alternatives) {
+            this(direction, Collections.singletonList(split), null, Collections.singletonList(alternatives));
         }
 
-        JobImpl(LanguageDirection direction, TranslationSplit[] splits, ScoreEntry[] suggestions, int alternatives) {
-            this(direction, Arrays.asList(splits), suggestions != null && suggestions.length > 0 ? Arrays.asList(suggestions) : null, alternatives);
+        JobImpl(LanguageDirection direction, TranslationSplit[] splits, ScoreEntry[] suggestions, Integer[] alternatives) {
+            this(direction, Arrays.asList(splits), suggestions != null && suggestions.length > 0 ? Arrays.asList(suggestions) : null,
+                    alternatives != null && alternatives.length > 0 ? Arrays.asList(alternatives) : null);
         }
 
-        private JobImpl(LanguageDirection direction, List<TranslationSplit> splits, List<ScoreEntry> suggestions, int alternatives) {
+        private JobImpl(LanguageDirection direction, List<TranslationSplit> splits, List<ScoreEntry> suggestions, List<Integer> alternatives) {
             if (splits == null || splits.isEmpty())
                 throw new IllegalArgumentException("splits cannot be null or empty");
 
@@ -119,7 +120,7 @@ public class SentenceBatchScheduler extends AbstractScheduler<SentenceBatchSched
         }
 
         @Override
-        public int getAlternatives() {
+        public List<Integer> getAlternatives() {
             return alternatives;
         }
 

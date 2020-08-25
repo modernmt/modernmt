@@ -21,12 +21,12 @@ public class EchoPythonDecoder implements PythonDecoder {
     }
 
     @Override
-    public Translation translate(LanguageDirection direction, Sentence sentence, int alternatives) {
+    public Translation translate(LanguageDirection direction, Sentence sentence, Integer alternatives) {
         return translate(direction, sentence, null, alternatives);
     }
 
     @Override
-    public Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, int alternatives) {
+    public Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, Integer alternatives) {
         if (suggestions != null && suggestions.length > 0)
             return Translation.fromTokens(sentence, suggestions[0].translationTokens);
         else
@@ -34,21 +34,21 @@ public class EchoPythonDecoder implements PythonDecoder {
     }
 
     @Override
-    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, int alternatives) {
+    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, Integer[] alternatives) {
         Translation[] result = new Translation[sentences.length];
         for (int i = 0; i < result.length; i++)
-            result[i] = translate(direction, sentences[i], null, alternatives);
+            result[i] = translate(direction, sentences[i], null, alternatives[i]);
         return result;
     }
 
     @Override
-    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, int alternatives) {
+    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, Integer[] alternatives) {
         if (sentences.length > 1 && suggestions != null && suggestions.length > 0)
             throw new UnsupportedOperationException("Echo server does not support batching with suggestions");
 
         Translation[] result = new Translation[sentences.length];
         for (int i = 0; i < result.length; i++)
-            result[i] = translate(direction, sentences[i], suggestions, alternatives);
+            result[i] = translate(direction, sentences[i], suggestions, alternatives[i]);
         return result;
     }
 

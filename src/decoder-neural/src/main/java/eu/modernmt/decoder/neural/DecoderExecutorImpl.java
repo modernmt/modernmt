@@ -26,15 +26,15 @@ public class DecoderExecutorImpl implements DecoderExecutor {
     }
 
     @Override
-    public void translate(PythonDecoder decoder, LanguageDirection language, List<TranslationSplit> splits, Collection<ScoreEntry> suggestions, int alternatives) throws DecoderException {
+    public void translate(PythonDecoder decoder, LanguageDirection language, List<TranslationSplit> splits, Collection<ScoreEntry> suggestions, List<Integer> alternatives) throws DecoderException {
         Sentence[] sentences = mergeSentences(splits);
         Translation[] translations;
-
+        Integer[] alternativesArray = alternatives.toArray(new Integer[0]);
         if (suggestions == null || suggestions.isEmpty()) {
-            translations = decoder.translate(language, sentences, alternatives);
+            translations = decoder.translate(language, sentences, alternativesArray);
         } else {
             ScoreEntry[] suggestionArray = suggestions.toArray(new ScoreEntry[0]);
-            translations = decoder.translate(language, sentences, suggestionArray, alternatives);
+            translations = decoder.translate(language, sentences, suggestionArray, alternativesArray);
         }
 
         int i = 0;

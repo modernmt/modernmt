@@ -23,13 +23,13 @@ public interface PythonDecoder extends Closeable {
 
     boolean isAlive();
 
-    Translation translate(LanguageDirection direction, Sentence sentence, int alternatives) throws DecoderException;
+    Translation translate(LanguageDirection direction, Sentence sentence, Integer alternatives) throws DecoderException;
 
-    Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, int alternatives) throws DecoderException;
+    Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, Integer alternatives) throws DecoderException;
 
-    Translation[] translate(LanguageDirection direction, Sentence[] sentences, int alternatives) throws DecoderException;
+    Translation[] translate(LanguageDirection direction, Sentence[] sentences, Integer[] alternatives) throws DecoderException;
 
-    Translation[] translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, int alternatives) throws DecoderException;
+    Translation[] translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, Integer[] alternatives) throws DecoderException;
 
     Translation align(LanguageDirection direction, Sentence sentence, String[] translation) throws DecoderException;
 

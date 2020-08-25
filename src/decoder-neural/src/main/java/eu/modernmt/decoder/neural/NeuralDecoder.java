@@ -119,12 +119,12 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider, Deco
     }
 
     @Override
-    public Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, int alternatives, long timeout) throws DecoderException {
+    public Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, Integer alternatives, long timeout) throws DecoderException {
         return translate(priority, user, direction, text,null,  alternatives, timeout);
     }
 
     @Override
-    public Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, ContextVector context, int alternatives, long timeout) throws DecoderException {
+    public Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, ContextVector context, Integer alternatives, long timeout) throws DecoderException {
         if (!isLanguageSupported(direction))
             throw new UnsupportedLanguageException(direction);
 
@@ -139,20 +139,25 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider, Deco
         // Scheduling translation
         Scheduler.TranslationLock lock;
         TranslationSplit[] splits;
+        Integer[] alternativesArray;
 
         if (suggestions != null && suggestions[0].score == 1.f) {  // align
             TranslationSplit split = new TranslationSplit(priority, text, suggestions[0].translationTokens, timeout);
             splits = new TranslationSplit[]{split};
+            alternativesArray = new Integer[]{alternatives};
             lock = scheduler.schedule(direction, split, alternatives);
         } else {
             List<Sentence> textSplits = split(text);
             splits = new TranslationSplit[textSplits.size()];
+            alternativesArray = new Integer[textSplits.size()];
 
             int i = 0;
-            for (Sentence textSplit : textSplits)
-                splits[i++] = new TranslationSplit(priority, textSplit, timeout);
-
-            lock = scheduler.schedule(direction, splits, suggestions, alternatives);
+            for (Sentence textSplit : textSplits) {
+                splits[i] = new TranslationSplit(priority, textSplit, timeout);
+                alternativesArray[i] = alternatives;
+                i++;
+            }
+            lock = scheduler.schedule(direction, splits, suggestions, alternativesArray);
         }
 
         // Wait for translation to be completed

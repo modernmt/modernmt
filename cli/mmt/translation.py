@@ -117,7 +117,7 @@ class EchoTranslate(TranslateEngine):
     def _get_default_threads(self):
         return 16
 
-    def translate_text(self, text, alternatives = 0):
+    def translate_text(self, text, alternatives = None):
         return text, None
 
 

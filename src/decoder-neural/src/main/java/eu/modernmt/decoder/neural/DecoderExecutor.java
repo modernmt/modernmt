@@ -13,6 +13,6 @@ public interface DecoderExecutor {
 
     void align(PythonDecoder decoder, LanguageDirection language, List<TranslationSplit> splits) throws DecoderException;
 
-    void translate(PythonDecoder decoder, LanguageDirection language, List<TranslationSplit> splits, Collection<ScoreEntry> suggestions, int alternatives) throws DecoderException;
+    void translate(PythonDecoder decoder, LanguageDirection language, List<TranslationSplit> splits, Collection<ScoreEntry> suggestions, List<Integer> alternatives) throws DecoderException;
 
 }

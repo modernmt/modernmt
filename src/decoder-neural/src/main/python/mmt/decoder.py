@@ -255,10 +255,13 @@ class MMTDecoder(object):
         if forced_translation is not None:
             result = self._force_decode(target_lang, batch, forced_translation)
         else:
-            if alternatives is None or alternatives < 1:
-                nbest = 1
+            if alternatives is None:
+                nbest = [1 for _ in batch]
             else:
-                nbest = alternatives + 1
+                if len(batch) != len(alternatives):
+                    raise ValueError('Invalid size for alternatives: {} instead of {}'.format(len(alternatives), len(batch)))
+                nbest = [int(a) + 1 for a in alternatives]
+
             result = self._decode(source_lang, target_lang, batch, nbest=nbest)
 
         decode_time = time.time() - begin
@@ -306,7 +309,9 @@ class MMTDecoder(object):
 
         # Compute translation
         self._translator.max_len_b = self._checkpoint.decode_length(source_lang, target_lang, sentence_len)
-        beam_size = max(nbest, self._beam_size) if nbest is not None else self._beam_size
+
+        nbestMax = max(nbest)
+        beam_size = max(nbestMax, self._beam_size) if nbest is not None else self._beam_size
         translations = self._translator.generate([self._model], batch, beam_size=beam_size)
 
         # Decode translation
@@ -316,9 +321,7 @@ class MMTDecoder(object):
         for i, hypo in enumerate(translations):
 
             k = 0
-            max_k = 1
-            if nbest is not None:
-                max_k = min(len(translations[0]), int(nbest))
+            max_k = min(len(translations[0]), nbest[i])
             i_results = []
             while k < max_k:
                 k_hypo = hypo[k]  # k_th best of the i_th segment
