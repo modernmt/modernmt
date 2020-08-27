@@ -70,7 +70,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
         public final ContextVector context;
         public final String contextString;
         public final int contextLimit;
-        public final int alternatives;
+        public final Integer alternatives;
         public final Priority priority;
         public final boolean verbose;
         public final long timeout;
@@ -94,7 +94,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
                     getLanguagePair("source", "target");
 
             contextLimit = getInt("context_limit", 10);
-            alternatives = getInt("alternatives", 0);
+            alternatives = getInt("alternatives", null);
 
             priority = getEnum("priority", Priority.class, Priority.NORMAL);
             verbose = getBoolean("verbose", false);

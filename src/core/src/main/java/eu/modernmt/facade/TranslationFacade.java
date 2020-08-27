@@ -71,14 +71,14 @@ public class TranslationFacade {
         return get(user, direction, preprocessingOptions, text, translationContext, 0, priority, timeout);
     }
 
-    public Translation get(UUID user, LanguageDirection direction, Preprocessor.Options preprocessingOptions, String text, int alternatives, Priority priority, long timeout) throws ProcessingException, DecoderException {
+    public Translation get(UUID user, LanguageDirection direction, Preprocessor.Options preprocessingOptions, String text, Integer alternatives, Priority priority, long timeout) throws ProcessingException, DecoderException {
         return get(user, direction, preprocessingOptions, text, null, alternatives, priority, timeout);
     }
 
-    public Translation get(UUID user, LanguageDirection direction, Preprocessor.Options preprocessingOptions, String text, ContextVector translationContext, int alternatives, Priority priority, long timeout) throws ProcessingException, DecoderException {
+    public Translation get(UUID user, LanguageDirection direction, Preprocessor.Options preprocessingOptions, String text, ContextVector translationContext, Integer alternatives, Priority priority, long timeout) throws ProcessingException, DecoderException {
         direction = mapLanguage(direction);
 
-        if (alternatives > 0)
+        if (alternatives != null && alternatives > 0)
             ensureDecoderSupportsAlternatives();
 
         Engine engine = ModernMT.getNode().getEngine();
@@ -120,7 +120,7 @@ public class TranslationFacade {
         return translation;
     }
 
-    private Translation insecureGet(UUID user, LanguageDirection direction, Sentence sentence, ContextVector context, int alternatives, Priority priority, long expirationTimestamp) throws DecoderException {
+    private Translation insecureGet(UUID user, LanguageDirection direction, Sentence sentence, ContextVector context, Integer alternatives, Priority priority, long expirationTimestamp) throws DecoderException {
         if (expirationTimestamp > 0 && expirationTimestamp < System.currentTimeMillis())
             throw new TranslationTimeoutException();
 
@@ -219,11 +219,11 @@ public class TranslationFacade {
         private final LanguageDirection direction;
         private final Sentence sentence;
         private final ContextVector context;
-        private final int alternatives;
+        private final Integer alternatives;
 
         private final long expirationTimestamp;
 
-        TranslationTaskImpl(Priority priority, UUID user, LanguageDirection direction, Sentence sentence, ContextVector context, int alternatives, long expirationTimestamp) {
+        TranslationTaskImpl(Priority priority, UUID user, LanguageDirection direction, Sentence sentence, ContextVector context, Integer alternatives, long expirationTimestamp) {
             this.priority = priority;
             this.user = user;
             this.direction = direction;
@@ -245,7 +245,7 @@ public class TranslationFacade {
 
             Decoder decoder = ModernMT.getNode().getEngine().getDecoder();
 
-            if (alternatives > 0) {
+            if (alternatives != null && alternatives > 0) {
                 DecoderWithAlternatives DecoderWithAlternatives = (DecoderWithAlternatives) decoder;
                 return DecoderWithAlternatives.translate(priority, user, direction, sentence, context, alternatives, expirationTimestamp);
             } else {
