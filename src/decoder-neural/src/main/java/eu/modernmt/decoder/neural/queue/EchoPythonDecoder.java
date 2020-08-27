@@ -35,10 +35,7 @@ public class EchoPythonDecoder implements PythonDecoder {
 
     @Override
     public Translation[] translate(LanguageDirection direction, Sentence[] sentences, Integer[] alternatives) {
-        Translation[] result = new Translation[sentences.length];
-        for (int i = 0; i < result.length; i++)
-            result[i] = translate(direction, sentences[i], null, alternatives[i]);
-        return result;
+        return translate(direction, sentences, null, alternatives);
     }
 
     @Override
@@ -48,7 +45,7 @@ public class EchoPythonDecoder implements PythonDecoder {
 
         Translation[] result = new Translation[sentences.length];
         for (int i = 0; i < result.length; i++)
-            result[i] = translate(direction, sentences[i], suggestions, alternatives[i]);
+            result[i] = translate(direction, sentences[i], suggestions, alternatives != null && alternatives.length >0 ? alternatives[i] : null);
         return result;
     }
 

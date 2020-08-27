@@ -209,16 +209,8 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
         json.addProperty("sl", direction.source.toLanguageTag());
         json.addProperty("tl", direction.target.toLanguageTag());
 
-        String alternativesString = "";
-        if (alternatives != null && alternatives.length > 0) {
-            alternativesString = StringUtils.join(alternatives, "\n");
-            json.addProperty("alternatives", alternativesString);
-        }
-//        int alternativesMax = 0;
-//            String alternativesString = alternatives[i];
-//            for (Integer alternative : alternatives)
-//                alternativesMax = Math.max(alternativesMax, alternative);
-//        json.addProperty("alternatives", alternativesMax);
+        if (alternatives != null && alternatives.length > 0)
+            json.addProperty("alternatives", StringUtils.join(alternatives, "\n"));
 
         if (forcedTranslations != null) {
             String[] serializedForcedTranslations = new String[forcedTranslations.length];

@@ -29,7 +29,7 @@ public class DecoderExecutorImpl implements DecoderExecutor {
     public void translate(PythonDecoder decoder, LanguageDirection language, List<TranslationSplit> splits, Collection<ScoreEntry> suggestions, List<Integer> alternatives) throws DecoderException {
         Sentence[] sentences = mergeSentences(splits);
         Translation[] translations;
-        Integer[] alternativesArray = alternatives.toArray(new Integer[0]);
+        Integer[] alternativesArray = alternatives != null && alternatives.size() > 0 ? alternatives.toArray(new Integer[0]) : null;
         if (suggestions == null || suggestions.isEmpty()) {
             translations = decoder.translate(language, sentences, alternativesArray);
         } else {
