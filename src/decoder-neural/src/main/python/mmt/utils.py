@@ -44,8 +44,8 @@ def mask_std_streams():
     stdout = sys.stdout
     stderr = sys.stderr
 
-    # sys.stdout = dev_null
-    # sys.stderr = dev_null
+    sys.stdout = dev_null
+    sys.stderr = dev_null
 
     return stdout, stderr
 
@@ -87,7 +87,7 @@ class TranslationRequest(object):
 
                 suggestions.append(Suggestion(sugg_sl, sugg_tl, sugg_seg, sugg_tra, sugg_scr))
 
-        alternatives = obj['alternatives'].split('\n') if 'alternatives' in obj else [0]
+        alternatives = obj['alternatives'].split('\n') if 'alternatives' in obj else None
 
         return TranslationRequest(source_lang, target_lang, batch,
                                   suggestions=suggestions, forced_translation=forced_translation, alternatives=alternatives)
