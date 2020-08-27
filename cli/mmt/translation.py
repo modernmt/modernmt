@@ -65,7 +65,10 @@ class TranslateEngine(object):
 
         def _translate_text(text):
             try:
-                return '{}\n{}'.format(self.translate_text(text)[0], self.translate_text(text)[1])
+                if self.translate_text(text)[1] is None:
+                    return '{}'.format(self.translate_text(text)[0])
+                else:
+                    return '{}\n{}'.format(self.translate_text(text)[0], self.translate_text(text)[1])
             except BaseException as e:
                 if suppress_errors:
                     print(str(e), file=sys.stderr)
@@ -186,11 +189,9 @@ class ModernMTTranslate(TranslateEngine):
                     translations.append(translation['translation'])
 
                     if 'alternatives' in translation:
-                        # altIdx = 1
                         a = ''
                         for altIdx in range(len(translation['alternatives'])):
-                            a += '   alternative {}: {}\n'.format(altIdx, translation['alternatives'][altIdx]['translation'])
-                            # altIdx += 1
+                            a += '   alternative {}: {}\n'.format(altIdx + 1, translation['alternatives'][altIdx]['translation'])
                         alternatives.append(a)
 
                 if self.alternatives is not None and len(alternatives) > 0:
