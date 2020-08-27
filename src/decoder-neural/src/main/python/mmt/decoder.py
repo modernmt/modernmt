@@ -160,6 +160,8 @@ class MMTDecoder(object):
     def __init__(self, checkpoints, device=None, beam_size=5, use_fp16=False, tuning_ops=None):
         torch.manual_seed(checkpoints.args.seed)
 
+        self._DEFAUlT_MAX_BEAM_SIZE = 21 # Max alternatives + 1
+
         self._beam_size = beam_size
         self._checkpoints = checkpoints
         self._device = device
@@ -312,6 +314,7 @@ class MMTDecoder(object):
 
         nbestMax = max(nbest)
         beam_size = max(nbestMax, self._beam_size) if nbest is not None else self._beam_size
+        beam_size = min(self._DEFAUlT_MAX_BEAM_SIZE, beam_size)
         translations = self._translator.generate([self._model], batch, beam_size=beam_size)
 
         # Decode translation
