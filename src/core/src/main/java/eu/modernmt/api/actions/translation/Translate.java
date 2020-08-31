@@ -48,9 +48,8 @@ public class Translate extends ObjectAction<TranslationResponse> {
             result.translation = ModernMT.translation.get(params.user, params.direction, processing, params.query, params.nbest, params.priority, params.timeout);
         }
 
-
-        if (result.context != null)
-            ContextUtils.resolve(result.context);
+//        if (result.context != null)
+//            ContextUtils.resolve(result.context);
 
         return result;
     }
