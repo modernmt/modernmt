@@ -168,7 +168,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     @Override
-    public int size() {
+    public long size() {
         try {
             IndexReader reader = getIndexReader();
             return Math.max(reader.numDocs(), reader.maxDoc() - 1);

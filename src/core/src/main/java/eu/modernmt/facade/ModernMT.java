@@ -69,7 +69,7 @@ public class ModernMT {
 
         Collection<NodeInfo> nodes = localhostOnly ? Collections.singleton(node.getLocalNode()) : node.getClusterNodes();
 
-        int memorySize = 0;
+        long memorySize = 0;
         if (engine != null) {
             try {
                 Decoder decoder = engine.getDecoder();

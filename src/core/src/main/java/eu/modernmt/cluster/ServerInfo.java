@@ -30,9 +30,9 @@ public class ServerInfo {
 
     private final ClusterInfo cluster;
     private final BuildInfo build;
-    private final int memorySize;
+    private final long memorySize;
 
-    public ServerInfo(ClusterInfo cluster, BuildInfo build, int memorySize) {
+    public ServerInfo(ClusterInfo cluster, BuildInfo build, long memorySize) {
         this.cluster = cluster;
         this.build = build;
         this.memorySize = memorySize;

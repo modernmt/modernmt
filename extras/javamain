@@ -14,6 +14,11 @@ else
 fi
 shift
 MMT_HOME=$(cd $SCRIPT_HOME/../ ; pwd -P)
-JAR=`ls -t ${MMT_HOME}/build/mmt-*.jar | head -n 1`
+JARS=`ls -t ${MMT_HOME}/build/mmt-*.jar | head -n 1`
+PLUGIN_JARS=`ls ${MMT_HOME}/build/plugins/*.jar | paste -sd ":" -`
 
-exec java -Dmmt.home=$MMT_HOME -Djava.library.path=$MMT_HOME/build/lib -cp $JAR $CLASS $@
+if [[ "$PLUGIN_JARS" != "" ]]; then
+  JARS="$JARS:$PLUGIN_JARS"
+fi
+
+exec java -Dmmt.home=${MMT_HOME} -Djava.library.path=${MMT_HOME}/build/lib -cp ${JARS} ${CLASS} $@
