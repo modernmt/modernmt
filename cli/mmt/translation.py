@@ -37,7 +37,7 @@ class TranslateEngine(object):
     def _get_default_threads(self):
         raise NotImplementedError
 
-    def translate_text(self, text, alternatives = None):
+    def translate_text(self, text):
         raise NotImplementedError
 
     def translate_batch(self, generator, consumer, threads=None, suppress_errors=False):
@@ -120,7 +120,7 @@ class EchoTranslate(TranslateEngine):
     def _get_default_threads(self):
         return 16
 
-    def translate_text(self, text, alternatives = None):
+    def translate_text(self, text):
         return text, None
 
 
