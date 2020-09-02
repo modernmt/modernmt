@@ -4,6 +4,8 @@ import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.model.Priority;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
@@ -53,6 +55,7 @@ public class SentenceBatchScheduler extends AbstractScheduler<SentenceBatchSched
     }
 
     public static class JobImpl implements Scheduler.Job, Comparable<JobImpl> {
+        private final Logger logger = LogManager.getLogger(getClass());
 
         private final LanguageDirection direction;
         private final List<TranslationSplit> splits;
@@ -78,7 +81,12 @@ public class SentenceBatchScheduler extends AbstractScheduler<SentenceBatchSched
             this.splits = splits;
             this.suggestions = suggestions;
             this.alternatives = alternatives;
-
+            for (int j = 0; j < splits.size(); j++) {
+                logger.info("JobImpl constructor splits[" + j + "]:" + splits.get(j).getSentence());
+            }
+            for (int j = 0; j < alternatives.size(); j++) {
+                logger.info("JobImpl constructor alternativesArray[" + j + "]:" + alternatives.get(j));
+            }
             Priority priority = null;
             for (TranslationSplit split : splits) {
                 if (priority == null || priority.intValue > split.priority.intValue)

@@ -131,6 +131,9 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider, Deco
         if (!text.hasWords())
             return Translation.emptyTranslation(text);
 
+        logger.info("Translation translate text:" + text);
+        logger.info("Translation translate alternatives:" + alternatives);
+
         // Search for suggestions
         long lookupBegin = System.currentTimeMillis();
         ScoreEntry[] suggestions = lookup(user, direction, text, context);
@@ -144,18 +147,27 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider, Deco
         if (suggestions != null && suggestions[0].score == 1.f) {  // align
             TranslationSplit split = new TranslationSplit(priority, text, suggestions[0].translationTokens, timeout);
             splits = new TranslationSplit[]{split};
-            alternativesArray = new Integer[]{alternatives};
             lock = scheduler.schedule(direction, split, alternatives);
         } else {
             List<Sentence> textSplits = split(text);
             splits = new TranslationSplit[textSplits.size()];
             alternativesArray = new Integer[textSplits.size()];
-
+//TODO: check if split(text) equivale allo split per alternativesArray
             int i = 0;
             for (Sentence textSplit : textSplits) {
                 splits[i] = new TranslationSplit(priority, textSplit, timeout);
                 alternativesArray[i] = alternatives;
                 i++;
+            }
+            logger.info("Translation translate splits.length:" + splits.length + " alternativesArray.length:" + alternativesArray.length);
+            for (int j = 0; j < splits.length; j++) {
+                logger.info("Translation translate splits[" + j + "]:" + splits[j]);
+            }
+            for (int j = 0; j < splits.length; j++) {
+                logger.info("Translation translate splits[" + j + "].getSentence():" + splits[j].getSentence());
+            }
+            for (int j = 0; j < alternativesArray.length; j++) {
+                logger.info("Translation translate alternativesArray[" + j + "]:" + alternativesArray[j]);
             }
             lock = scheduler.schedule(direction, splits, suggestions, alternativesArray);
         }

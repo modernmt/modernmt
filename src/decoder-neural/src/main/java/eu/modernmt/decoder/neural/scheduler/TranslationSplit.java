@@ -23,6 +23,10 @@ public class TranslationSplit {
 
     private Scheduler.TranslationLock lock;
 
+    public Sentence getSentence() {
+        return sentence;
+    }
+
     public TranslationSplit(Priority priority, Sentence sentence, long expiration) {
         this(priority, sentence, null, expiration);
     }

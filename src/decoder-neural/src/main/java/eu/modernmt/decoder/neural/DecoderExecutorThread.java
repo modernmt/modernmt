@@ -7,11 +7,14 @@ import eu.modernmt.decoder.neural.scheduler.Scheduler;
 import eu.modernmt.decoder.neural.scheduler.TranslationSplit;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class DecoderExecutorThread extends Thread {
+    private final Logger logger = LogManager.getLogger(getClass());
 
     private final Scheduler scheduler;
     private final DecoderQueue queue;
@@ -47,7 +50,16 @@ public class DecoderExecutorThread extends Thread {
                     long timestamp = System.currentTimeMillis();
                     for (TranslationSplit split : splits)
                         split.onTranslationBegin(timestamp);
-
+                    logger.info("DecoderExecutorThread run decoder:" + decoder);
+                    logger.info("DecoderExecutorThread run executor:" + executor);
+                    logger.info("DecoderExecutorThread run splits.size():" + splits.size());
+                    logger.info("DecoderExecutorThread run job.getAlternatives().size():" + job.getAlternatives().size());
+                    for (int j = 0; j < splits.size(); j++) {
+                        logger.info("DecoderExecutorThread run splits[" + j + "].getSentence():" + splits.get(j).getSentence());
+                    }
+                    for (int j = 0; j < job.getAlternatives().size(); j++) {
+                        logger.info("DecoderExecutorThread run alternativesArray[" + j + "]:" + job.getAlternatives().get(j));
+                    }
                     LanguageDirection language = job.getLanguageDirection();
                     if (job.isAlignmentJob())
                         executor.align(decoder, language, splits);

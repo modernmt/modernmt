@@ -141,21 +141,25 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
 
     @Override
     public Translation translate(LanguageDirection direction, Sentence sentence, Integer alternatives) throws DecoderException {
+        logger.info("PythonDecoderImpl translate(LanguageDirection direction, Sentence sentence, Integer alternatives)");
         return this.translate(direction, new Sentence[]{sentence}, new Integer[]{alternatives})[0];
     }
 
     @Override
     public Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, Integer alternatives) throws DecoderException {
+        logger.info("PythonDecoderImpl translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, Integer alternatives)");
         return this.translate(direction, new Sentence[]{sentence}, suggestions, new Integer[]{alternatives})[0];
     }
 
     @Override
     public Translation[] translate(LanguageDirection direction, Sentence[] sentences, Integer[] alternatives) throws DecoderException {
+        logger.info("PythonDecoderImpl translate(LanguageDirection direction, Sentence[] sentences, Integer[] alternatives)");
         return this.translate(sentences, serialize(direction, sentences, null, null, alternatives));
     }
 
     @Override
     public Translation[] translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, Integer[] alternatives) throws DecoderException {
+        logger.info("PythonDecoderImpl translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, Integer[] alternatives)");
         return this.translate(sentences, serialize(direction, sentences, suggestions, null, alternatives));
     }
 
@@ -174,6 +178,7 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
     private synchronized Translation[] translate(Sentence[] sentences, String payload) throws DecoderException {
         if (!isAlive())
             throw new DecoderUnavailableException("Neural decoder process not available");
+        logger.info("PythonDecoderImpl translate(Sentence[] sentences, String payload)   payload:" + payload);
 
         boolean success = false;
 
@@ -209,9 +214,16 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
         json.addProperty("sl", direction.source.toLanguageTag());
         json.addProperty("tl", direction.target.toLanguageTag());
 
-        if (alternatives != null && alternatives.length > 0)
-            json.addProperty("alternatives", StringUtils.join(alternatives, "\n"));
+        logger.info("String serialize sentences.length:" + sentences.length + " text:" + text);
+        for (int j=0; j < sentences.length; j++)
+            logger.info("String serialize sentences[j]:" + sentences[j].toString());
 
+        if (alternatives != null && alternatives.length > 0) {
+            logger.info("String serialize alternatives.length:" + alternatives.length + " alternatives:" + alternatives);
+            for (int j=0; j < alternatives.length; j++)
+                logger.info("String serialize alternatives[j]:" + alternatives[j]);
+            json.addProperty("alternatives", StringUtils.join(alternatives, "\n"));
+        }
         if (forcedTranslations != null) {
             String[] serializedForcedTranslations = new String[forcedTranslations.length];
             for (int i = 0; i < serializedForcedTranslations.length; i++)
