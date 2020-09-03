@@ -40,6 +40,7 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider, Deco
 
     private final boolean echoServer;
     private final int suggestionsLimit;
+    private final int alternativesLimit;
     private final TranslationMemory memory;
     private final Set<LanguageDirection> directions;
     private final Scheduler scheduler;
@@ -47,6 +48,7 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider, Deco
     private final DecoderQueue decoderQueue;
 
     private volatile long lastSuccessfulTranslation = 0L;
+
 
     public NeuralDecoder(File model, DecoderConfig config) throws DecoderException {
         this(model, config, new DefaultDecoderInitializer());
@@ -64,6 +66,7 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider, Deco
         }
 
         this.suggestionsLimit = modelConfig.getSuggestionsLimit();
+        this.alternativesLimit = modelConfig.getAlternativesLimit();
         this.directions = new HashSet<>(modelConfig.getAvailableModels().keySet());
         this.echoServer = config.isEchoServer();
 
@@ -119,20 +122,19 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider, Deco
     }
 
     @Override
-    public Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, Integer alternatives, long timeout) throws DecoderException {
+    public Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, int alternatives, long timeout) throws DecoderException {
         return translate(priority, user, direction, text,null,  alternatives, timeout);
     }
 
     @Override
-    public Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, ContextVector context, Integer alternatives, long timeout) throws DecoderException {
+    public Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, ContextVector context, int alternatives, long timeout) throws DecoderException {
         if (!isLanguageSupported(direction))
             throw new UnsupportedLanguageException(direction);
 
         if (!text.hasWords())
             return Translation.emptyTranslation(text);
 
-        logger.info("Translation translate text:" + text);
-        logger.info("Translation translate alternatives:" + alternatives);
+        alternatives = Math.min(alternatives, alternativesLimit);
 
         // Search for suggestions
         long lookupBegin = System.currentTimeMillis();
@@ -142,34 +144,19 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider, Deco
         // Scheduling translation
         Scheduler.TranslationLock lock;
         TranslationSplit[] splits;
-        Integer[] alternativesArray;
 
         if (suggestions != null && suggestions[0].score == 1.f) {  // align
-            TranslationSplit split = new TranslationSplit(priority, text, suggestions[0].translationTokens, timeout);
+            TranslationSplit split = new TranslationSplit(priority, text, suggestions[0].translationTokens, timeout, alternatives);
             splits = new TranslationSplit[]{split};
-            lock = scheduler.schedule(direction, split, alternatives);
+            lock = scheduler.schedule(direction, split);
         } else {
             List<Sentence> textSplits = split(text);
             splits = new TranslationSplit[textSplits.size()];
-            alternativesArray = new Integer[textSplits.size()];
-//TODO: check if split(text) equivale allo split per alternativesArray
-            int i = 0;
-            for (Sentence textSplit : textSplits) {
-                splits[i] = new TranslationSplit(priority, textSplit, timeout);
-                alternativesArray[i] = alternatives;
-                i++;
-            }
-            logger.info("Translation translate splits.length:" + splits.length + " alternativesArray.length:" + alternativesArray.length);
-            for (int j = 0; j < splits.length; j++) {
-                logger.info("Translation translate splits[" + j + "]:" + splits[j]);
-            }
-            for (int j = 0; j < splits.length; j++) {
-                logger.info("Translation translate splits[" + j + "].getSentence():" + splits[j].getSentence());
-            }
-            for (int j = 0; j < alternativesArray.length; j++) {
-                logger.info("Translation translate alternativesArray[" + j + "]:" + alternativesArray[j]);
-            }
-            lock = scheduler.schedule(direction, splits, suggestions, alternativesArray);
+
+            for (int i = 0; i < textSplits.size(); i++)
+                splits[i] = new TranslationSplit(priority, textSplits.get(i), timeout, alternatives);
+
+            lock = scheduler.schedule(direction, splits, suggestions);
         }
 
         // Wait for translation to be completed

@@ -50,21 +50,11 @@ public class DecoderExecutorThread extends Thread {
                     long timestamp = System.currentTimeMillis();
                     for (TranslationSplit split : splits)
                         split.onTranslationBegin(timestamp);
-                    logger.info("DecoderExecutorThread run decoder:" + decoder);
-                    logger.info("DecoderExecutorThread run executor:" + executor);
-                    logger.info("DecoderExecutorThread run splits.size():" + splits.size());
-                    logger.info("DecoderExecutorThread run job.getAlternatives().size():" + job.getAlternatives().size());
-                    for (int j = 0; j < splits.size(); j++) {
-                        logger.info("DecoderExecutorThread run splits[" + j + "].getSentence():" + splits.get(j).getSentence());
-                    }
-                    for (int j = 0; j < job.getAlternatives().size(); j++) {
-                        logger.info("DecoderExecutorThread run alternativesArray[" + j + "]:" + job.getAlternatives().get(j));
-                    }
                     LanguageDirection language = job.getLanguageDirection();
                     if (job.isAlignmentJob())
                         executor.align(decoder, language, splits);
                     else
-                        executor.translate(decoder, language, splits, job.getSuggestions(), job.getAlternatives());
+                        executor.translate(decoder, language, splits, job.getSuggestions());
                 } catch (Throwable e) {
                     for (TranslationSplit split : job.getTranslationSplits())
                         split.setException(e);

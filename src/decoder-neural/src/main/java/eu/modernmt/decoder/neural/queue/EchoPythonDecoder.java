@@ -21,12 +21,12 @@ public class EchoPythonDecoder implements PythonDecoder {
     }
 
     @Override
-    public Translation translate(LanguageDirection direction, Sentence sentence, Integer alternatives) {
+    public Translation translate(LanguageDirection direction, Sentence sentence, int alternatives) {
         return translate(direction, sentence, null, alternatives);
     }
 
     @Override
-    public Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, Integer alternatives) {
+    public Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, int alternatives) {
         if (suggestions != null && suggestions.length > 0)
             return Translation.fromTokens(sentence, suggestions[0].translationTokens);
         else
@@ -34,12 +34,12 @@ public class EchoPythonDecoder implements PythonDecoder {
     }
 
     @Override
-    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, Integer[] alternatives) {
+    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, int[] alternatives) {
         return translate(direction, sentences, null, alternatives);
     }
 
     @Override
-    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, Integer[] alternatives) {
+    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, int[] alternatives) {
         if (sentences.length > 1 && suggestions != null && suggestions.length > 0)
             throw new UnsupportedOperationException("Echo server does not support batching with suggestions");
 

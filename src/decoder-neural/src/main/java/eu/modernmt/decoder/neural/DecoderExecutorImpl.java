@@ -7,14 +7,11 @@ import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.memory.ScoreEntry;
 import eu.modernmt.model.Sentence;
 import eu.modernmt.model.Translation;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.Collection;
 import java.util.List;
 
 public class DecoderExecutorImpl implements DecoderExecutor {
-    private final Logger logger = LogManager.getLogger(getClass());
 
     @Override
     public void align(PythonDecoder decoder, LanguageDirection language, List<TranslationSplit> splits) throws DecoderException {
@@ -29,25 +26,16 @@ public class DecoderExecutorImpl implements DecoderExecutor {
     }
 
     @Override
-    public void translate(PythonDecoder decoder, LanguageDirection language, List<TranslationSplit> splits, Collection<ScoreEntry> suggestions, List<Integer> alternatives) throws DecoderException {
+    public void translate(PythonDecoder decoder, LanguageDirection language, List<TranslationSplit> splits, Collection<ScoreEntry> suggestions) throws DecoderException {
         Sentence[] sentences = mergeSentences(splits);
         Translation[] translations;
-        Integer[] alternativesArray = alternatives != null && alternatives.size() > 0 ? alternatives.toArray(new Integer[0]) : null;
-
-
-        logger.info("DecoderExecutorImpl translate splits.length:" + sentences.length + " alternativesArray.length:" + alternativesArray.length);
-        for (int j = 0; j < sentences.length; j++) {
-            logger.info("Translation translate splits[" + j + "]:" + sentences[j]);
-        }
-        for (int j = 0; j < alternativesArray.length; j++) {
-            logger.info("Translation translate alternativesArray[" + j + "]:" + alternativesArray[j]);
-        }
+        int[] alternatives = mergeAlternatives(splits);
 
         if (suggestions == null || suggestions.isEmpty()) {
-            translations = decoder.translate(language, sentences, alternativesArray);
+            translations = decoder.translate(language, sentences, alternatives);
         } else {
             ScoreEntry[] suggestionArray = suggestions.toArray(new ScoreEntry[0]);
-            translations = decoder.translate(language, sentences, suggestionArray, alternativesArray);
+            translations = decoder.translate(language, sentences, suggestionArray, alternatives);
         }
 
         int i = 0;
@@ -68,6 +56,15 @@ public class DecoderExecutorImpl implements DecoderExecutor {
         int i = 0;
         for (TranslationSplit split : splits)
             result[i++] = split.reference;
+
+        return result;
+    }
+    private static int[] mergeAlternatives(List<TranslationSplit> splits) {
+        int[] result = new int[splits.size()];
+
+        int i = 0;
+        for (TranslationSplit split : splits)
+            result[i++] = split.alternatives;
 
         return result;
     }

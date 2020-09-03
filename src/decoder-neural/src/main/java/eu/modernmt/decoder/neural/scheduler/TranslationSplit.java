@@ -11,6 +11,7 @@ public class TranslationSplit {
     public final Priority priority;
     public final Sentence sentence;
     public final String[] reference;
+    public final int alternatives;
 
     private Translation translation;
     private Throwable exception;
@@ -27,15 +28,25 @@ public class TranslationSplit {
         return sentence;
     }
 
+
     public TranslationSplit(Priority priority, Sentence sentence, long expiration) {
         this(priority, sentence, null, expiration);
     }
 
+    public TranslationSplit(Priority priority, Sentence sentence, long expiration, int alternatives) {
+        this(priority, sentence, null, expiration, alternatives);
+    }
+
     public TranslationSplit(Priority priority, Sentence sentence, String[] reference, long expiration) {
+        this(priority, sentence, null, expiration, 0);
+    }
+
+    public TranslationSplit(Priority priority, Sentence sentence, String[] reference, long expiration, int alternatives) {
         this.priority = priority;
         this.sentence = sentence;
         this.reference = reference;
         this.expiration = expiration;
+        this.alternatives = alternatives;
     }
 
     public void setLock(Scheduler.TranslationLock lock) {

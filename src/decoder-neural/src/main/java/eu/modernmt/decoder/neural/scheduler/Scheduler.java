@@ -25,8 +25,6 @@ public interface Scheduler extends Closeable {
 
         LanguageDirection getLanguageDirection();
 
-        List<Integer> getAlternatives();
-
         boolean isAlignmentJob();
 
         List<TranslationSplit> getTranslationSplits();
@@ -42,22 +40,20 @@ public interface Scheduler extends Closeable {
      * @param direction    the language direction of the translation splits
      * @param splits       the translation splits to be translated
      * @param suggestions  the suggestions to use to tune the engine
-     * @param alternatives the maximum number of translation alternatives (besides the best one) to return
      * @return a {@link TranslationLock} that will unlock when all the translation splits have completed
      * @throws DecoderUnavailableException if there are too many pending translation jobs or the Scheduler has been closed
      */
-    TranslationLock schedule(LanguageDirection direction, TranslationSplit[] splits, ScoreEntry[] suggestions, Integer[] alternatives) throws DecoderUnavailableException;
+    TranslationLock schedule(LanguageDirection direction, TranslationSplit[] splits, ScoreEntry[] suggestions) throws DecoderUnavailableException;
 
     /**
      * Schedule a a single translation split to be aligned with the given translation at some point in the future.
      *
      * @param direction   the language direction of the translation split
      * @param split       the translation split to be aligned
-     * @param alternatives the maximum number of translation alternatives (besides the best one) to return
      * @return a {@link TranslationLock} that will unlock when alignment is completed
      * @throws DecoderUnavailableException if there are too many pending translation jobs or the Scheduler has been closed
      */
-    TranslationLock schedule(LanguageDirection direction, TranslationSplit split, Integer alternatives) throws DecoderUnavailableException;
+    TranslationLock schedule(LanguageDirection direction, TranslationSplit split) throws DecoderUnavailableException;
 
     /**
      * Take the next {@link Job} available for queue, waiting if necessary for one to be available.

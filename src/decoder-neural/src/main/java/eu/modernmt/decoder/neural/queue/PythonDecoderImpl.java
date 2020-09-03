@@ -140,26 +140,22 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
     }
 
     @Override
-    public Translation translate(LanguageDirection direction, Sentence sentence, Integer alternatives) throws DecoderException {
-        logger.info("PythonDecoderImpl translate(LanguageDirection direction, Sentence sentence, Integer alternatives)");
-        return this.translate(direction, new Sentence[]{sentence}, new Integer[]{alternatives})[0];
+    public Translation translate(LanguageDirection direction, Sentence sentence, int alternatives) throws DecoderException {
+        return this.translate(direction, new Sentence[]{sentence}, new int[]{alternatives})[0];
     }
 
     @Override
-    public Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, Integer alternatives) throws DecoderException {
-        logger.info("PythonDecoderImpl translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, Integer alternatives)");
-        return this.translate(direction, new Sentence[]{sentence}, suggestions, new Integer[]{alternatives})[0];
+    public Translation translate(LanguageDirection direction, Sentence sentence, ScoreEntry[] suggestions, int alternatives) throws DecoderException {
+        return this.translate(direction, new Sentence[]{sentence}, suggestions, new int[]{alternatives})[0];
     }
 
     @Override
-    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, Integer[] alternatives) throws DecoderException {
-        logger.info("PythonDecoderImpl translate(LanguageDirection direction, Sentence[] sentences, Integer[] alternatives)");
+    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, int[] alternatives) throws DecoderException {
         return this.translate(sentences, serialize(direction, sentences, null, null, alternatives));
     }
 
     @Override
-    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, Integer[] alternatives) throws DecoderException {
-        logger.info("PythonDecoderImpl translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, Integer[] alternatives)");
+    public Translation[] translate(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, int[] alternatives) throws DecoderException {
         return this.translate(sentences, serialize(direction, sentences, suggestions, null, alternatives));
     }
 
@@ -178,7 +174,6 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
     private synchronized Translation[] translate(Sentence[] sentences, String payload) throws DecoderException {
         if (!isAlive())
             throw new DecoderUnavailableException("Neural decoder process not available");
-        logger.info("PythonDecoderImpl translate(Sentence[] sentences, String payload)   payload:" + payload);
 
         boolean success = false;
 
@@ -203,7 +198,7 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
         }
     }
 
-    private String serialize(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, String[][] forcedTranslations, Integer[] alternatives) {
+    private String serialize(LanguageDirection direction, Sentence[] sentences, ScoreEntry[] suggestions, String[][] forcedTranslations, int[] alternatives) {
         String[] serialized = new String[sentences.length];
         for (int i = 0; i < serialized.length; i++)
             serialized[i] = TokensOutputStream.serialize(sentences[i], false, true);
@@ -214,16 +209,14 @@ public class PythonDecoderImpl extends PythonProcess implements PythonDecoder {
         json.addProperty("sl", direction.source.toLanguageTag());
         json.addProperty("tl", direction.target.toLanguageTag());
 
-        logger.info("String serialize sentences.length:" + sentences.length + " text:" + text);
-        for (int j=0; j < sentences.length; j++)
-            logger.info("String serialize sentences[j]:" + sentences[j].toString());
-
         if (alternatives != null && alternatives.length > 0) {
-            logger.info("String serialize alternatives.length:" + alternatives.length + " alternatives:" + alternatives);
-            for (int j=0; j < alternatives.length; j++)
-                logger.info("String serialize alternatives[j]:" + alternatives[j]);
-            json.addProperty("alternatives", StringUtils.join(alternatives, "\n"));
+            StringBuilder altString = new StringBuilder(String.valueOf(alternatives[0]));
+            for (int j = 1; j < alternatives.length; j++) {
+                altString.append("\n").append(String.valueOf(alternatives[j]));
+            }
+            json.addProperty("alternatives", altString.toString());
         }
+
         if (forcedTranslations != null) {
             String[] serializedForcedTranslations = new String[forcedTranslations.length];
             for (int i = 0; i < serializedForcedTranslations.length; i++)
