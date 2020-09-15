@@ -13,6 +13,7 @@ import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.UUID;
 
 public class MemoryExportMain {
 
@@ -22,15 +23,18 @@ public class MemoryExportMain {
 
         static {
             Option id = Option.builder().longOpt("id").hasArg().required().build();
+            Option owner = Option.builder().longOpt("owner").hasArg().build();
             Option memory = Option.builder().longOpt("memory").hasArg().required().build();
             Option output = Option.builder().longOpt("output").hasArg().required().build();
 
             cliOptions = new Options();
             cliOptions.addOption(id);
+            cliOptions.addOption(owner);
             cliOptions.addOption(memory);
             cliOptions.addOption(output);
         }
 
+        public final UUID owner;
         public final long id;
         public final File memoryFolder;
         public final File outputFolder;
@@ -39,6 +43,7 @@ public class MemoryExportMain {
             CommandLineParser parser = new DefaultParser();
             CommandLine cli = parser.parse(cliOptions, args);
 
+            owner = cli.hasOption("owner") ? UUID.fromString(cli.getOptionValue("owner")) : null;
             id = Long.parseLong(cli.getOptionValue("id"));
             memoryFolder = new File(cli.getOptionValue("memory"));
             outputFolder = new File(cli.getOptionValue("output"));
@@ -53,7 +58,7 @@ public class MemoryExportMain {
         HashMap<String, TUWriter> writers = new HashMap<>();
 
         LuceneTranslationMemory memory = new LuceneTranslationMemory(args.memoryFolder, 1);
-        memory.dump(args.id, entry -> {
+        memory.dump(args.owner, args.id, entry -> {
             String key = toKey(entry.language);
             TUWriter writer = writers.computeIfAbsent(key, k -> {
                 TMXCorpus corpus = new TMXCorpus(getFilename(args.outputFolder, args.id, key));

@@ -179,7 +179,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     @Override
-    public void dump(long memory, Consumer<Entry> consumer) throws IOException {
+    public void dump(UUID owner, long memory, Consumer<Entry> consumer) throws IOException {
         IndexSearcher searcher = getIndexSearcher();
         IndexReader reader = getIndexReader();
 
