@@ -98,10 +98,16 @@ public class MemoryFacade {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
+        Memory memory;
         try {
             connection = db.getConnection();
 
             MemoryDAO memoryDAO = db.getMemoryDAO(connection);
+            memory = memoryDAO.retrieve(id);
+
+            if (memory == null)
+                return false;
+
             boolean deleted = memoryDAO.delete(id);
 
             if (!deleted)
@@ -111,7 +117,7 @@ public class MemoryFacade {
         }
 
         BinaryLog binlog = ModernMT.getNode().getBinaryLog();
-        binlog.delete(id);
+        binlog.delete(memory);
 
         return true;
     }

@@ -369,12 +369,12 @@ public class KafkaBinaryLog implements BinaryLog {
     }
 
     @Override
-    public void delete(long memory) throws BinaryLogException {
+    public void delete(Memory memory) throws BinaryLogException {
         if (this.producer == null)
             throw new IllegalStateException("connect() not called");
 
         LogChannel channel = getLogChannel(BinaryLog.MEMORY_UPLOAD_CHANNEL_ID);
-        sendElement(KafkaPacket.createDeletion(memory), true, channel);
+        sendElement(KafkaPacket.createDeletion(memory.getOwner(), memory.getId()), true, channel);
     }
 
     private long sendElement(KafkaPacket packet, boolean sync, LogChannel channel) throws BinaryLogException {

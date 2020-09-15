@@ -1,13 +1,11 @@
 package eu.modernmt.data;
 
-import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ImportJob;
 import eu.modernmt.model.Memory;
 import eu.modernmt.model.corpus.MultilingualCorpus;
 import eu.modernmt.model.corpus.TranslationUnit;
 
 import java.io.Closeable;
-import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -49,7 +47,7 @@ public interface BinaryLog extends Closeable {
 
     ImportJob replace(Memory memory, TranslationUnit tu, String previousSentence, String previousTranslation, LogChannel channel) throws BinaryLogException;
 
-    void delete(long memory) throws BinaryLogException;
+    void delete(Memory memory) throws BinaryLogException;
 
     LogChannel getLogChannel(short id);
 

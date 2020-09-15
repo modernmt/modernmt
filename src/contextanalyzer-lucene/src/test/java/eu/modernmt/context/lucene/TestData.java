@@ -214,12 +214,12 @@ public class TestData {
 
     // Deletion
 
-    public static DeletionMessage deletion(long memory) {
-        return new DeletionMessage((short) 1, 0, memory);
+    public static DeletionMessage deletion(long memory, UUID owner) {
+        return new DeletionMessage((short) 1, 0, owner, memory);
     }
 
-    public static DeletionMessage deletion(long channelPosition, long memory) {
-        return new DeletionMessage((short) 1, channelPosition, memory);
+    public static DeletionMessage deletion(long channelPosition, long memory, UUID owner) {
+        return new DeletionMessage((short) 1, channelPosition, owner, memory);
     }
 
     // Content
