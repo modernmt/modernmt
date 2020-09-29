@@ -53,7 +53,7 @@ public class PostprocessorTest {
         Alignment alignment = Alignment.fromAlignmentPairs(alignText);
         Translation translation = new Translation(targetWords, source, alignment);
 
-        postprocessor.process(language,translation);
+        postprocessor.process(language,translation, new Postprocessor.Options(language.source, language.target));
 
         assertEquals(expected, translation.toString());
         assertEquals(expectedNoTag, translation.toString(false, false));

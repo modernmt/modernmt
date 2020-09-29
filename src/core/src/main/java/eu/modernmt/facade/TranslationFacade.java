@@ -25,6 +25,7 @@ import eu.modernmt.model.corpus.impl.parallel.FileCorpus;
 import eu.modernmt.processing.Postprocessor;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
+import eu.modernmt.processing.TextProcessor;
 import eu.modernmt.processing.tags.format.InputFormat;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,7 +75,7 @@ public class TranslationFacade {
     }
 
     public Translation get(UUID user, LanguageDirection direction, Preprocessor.Options preprocessingOptions, String text, ContextVector translationContext, int nbest, Priority priority, long timeout) throws ProcessingException, DecoderException {
-        direction = mapLanguage(direction);
+        LanguageDirection normalizedDirection = mapLanguage(direction);
         if (nbest > 0)
             ensureDecoderSupportsNBest();
 
@@ -83,14 +84,14 @@ public class TranslationFacade {
         Postprocessor postprocessor = engine.getPostprocessor();
 
         // Pre-processing text
-        Sentence sentence = preprocessor.process(direction, text, preprocessingOptions);
+        Sentence sentence = preprocessor.process(normalizedDirection, text, preprocessingOptions);
 
         // Translating
         Translation translation;
         long expirationTimestamp = timeout > 0 ? (System.currentTimeMillis() + timeout) : 0L;
 
         try {
-            translation = insecureGet(user, direction, sentence, translationContext, nbest, priority, expirationTimestamp);
+            translation = insecureGet(user, normalizedDirection, sentence, translationContext, nbest, priority, expirationTimestamp);
         } catch (DecoderException | HazelcastException e) {
             if (e instanceof TranslationTimeoutException)
                 throw e;
@@ -103,15 +104,16 @@ public class TranslationFacade {
                 // Ignore it
             }
 
-            translation = insecureGet(user, direction, sentence, translationContext, nbest, priority, expirationTimestamp);
+            translation = insecureGet(user, normalizedDirection, sentence, translationContext, nbest, priority, expirationTimestamp);
         }
 
         // Post-processing translation
-        postprocessor.process(direction, translation);
+        Postprocessor.Options postprocessingOptions = new Postprocessor.Options(direction.source, direction.target);
+        postprocessor.process(normalizedDirection, translation, postprocessingOptions);
 
         if (translation.hasNbest()) {
             for (Translation hypothesis : translation.getNbest())
-                postprocessor.process(direction, hypothesis);
+                postprocessor.process(normalizedDirection, hypothesis, postprocessingOptions);
         }
 
         return translation;
