@@ -9,6 +9,7 @@ import java.util.Set;
 
 public class XliffInputFormat implements InputFormat {
 
+//    OPENING_TAGS and CLOSING_TAGS cannot overlap
     private static final Set<String> OPENING_TAGS = Collections.singleton("bx");
     private static final Set<String> CLOSING_TAGS = Collections.singleton("ex");
     private static final Set<String> LEGAL_TAGS = new HashSet<>(Arrays.asList("g", "x", "ex", "bx", "bpt", "ept", "ph", "it", "mrk"));
@@ -23,11 +24,7 @@ public class XliffInputFormat implements InputFormat {
         for (Tag tag : tags) {
             if (OPENING_TAGS.contains(tag.getName())) {
                 tag.setType(Tag.Type.OPENING_TAG);
-            }
-        }
-
-        for (Tag tag : tags) {
-            if (CLOSING_TAGS.contains(tag.getName())) {
+            } else if (CLOSING_TAGS.contains(tag.getName())) {
                 tag.setType(Tag.Type.CLOSING_TAG);
             }
         }
