@@ -29,7 +29,7 @@ public class TagProjector {
                     translationSpans.project(sourceSpans, alignment, translationWords.length);
 
                     SpanTree translationTree = new SpanTree(translationSpans);
-                    translationTree.project(sourceTree, sourceSpans, alignment, translationWords.length);
+                    translationTree.project(sourceTree, sourceSpans);
                     translationTree.sort();
 
                     translationTags.populate(translationTree);

@@ -23,6 +23,8 @@ class SpanTree {
 
         void setParent(Node parent) {
             this.parent = parent;
+            if (parent != null)
+                this.getData().setLevel(parent.getData().getLevel()+1);
         }
 
         void addChild(Node child) {
@@ -181,33 +183,39 @@ class SpanTree {
         return root;
     }
 
-    protected void project(SpanTree sourceTree, SpanCollection sourceSpans, Alignment alignment, int targetWords) {
+    protected void project(SpanTree sourceTree, SpanCollection sourceSpans) {
         this.root = sourceTree.getRoot().clone(this.spans);
 
         Set<Node> nodeVisit = new HashSet<>();
-        fixNode(this.root, nodeVisit);
-        fixAnchors(this.root, sourceSpans, alignment, targetWords);
+        fixNode(this.root, nodeVisit, sourceSpans);
+        fixAnchors(this.root, sourceSpans);
     }
 
     Node getRoot() {
         return this.root;
     }
 
-    static private void fixAnchors(Node node, SpanCollection sourceSpans, Alignment alignment, int targetWords) {
+    static private void fixAnchors(Node node, SpanCollection sourceSpans) {
         Span targetSpan = node.getData();
-        targetSpan.setAnchor(computeAnchor(node, sourceSpans, alignment, targetWords));
+        targetSpan.setAnchor(computeAnchor(node, sourceSpans, true));
 
-        for (Node child : node.getChildren()) {
-            fixAnchors(child, sourceSpans, alignment, targetWords);
-        }
+        for (Node child : node.getChildren())
+            fixAnchors(child, sourceSpans);
     }
 
-    static private int computeAnchor(Node node, SpanCollection sourceSpans, Alignment alignment, int targetWords) {
+    static private int computeAnchor(Node node, SpanCollection sourceSpans, boolean move) {
         Span span = node.getData();
         int targetAnchor = span.getAnchor();
         if (span.getBeginTag() == null) {
 // there is no corresponding opening tag
-            targetAnchor = 0;
+//            targetAnchor = 0; //TODO: OLD VERSION
+
+            Coverage spanPositions = span.getPositions();
+            if (spanPositions.size() > 0) {
+                targetAnchor = spanPositions.getMin();
+            } else {
+                targetAnchor = node.getParent().getData().getAnchor();
+            }
         } else if (span.getEndTag() == null) {
 // there is no corresponding closing tag
             if (targetAnchor == -1) {
@@ -220,21 +228,40 @@ class SpanTree {
             }
         } else {
 // there are both opening and closing tags
-            if (targetAnchor == -1) {
+            if (targetAnchor == -1 || node.getData().getPositions().isEmpty()) {
+
                 Node parent = node.getParent();
                 Coverage parentPositions = parent.getData().getPositions();
 
-                if (parent.getData().getPositions().size() == 0) {
+                if (parentPositions.size() == 0) {
                     //the parent anchor has already been fixed.
                     targetAnchor = parent.getData().getAnchor();
                 } else {
-                    //the tag can float within the parent positions
+                    //the tag can float within the parent positions,
+                    //but cannot belong to its sibling (if any)
                     Coverage sourceParentPositions = sourceSpans.get(parent.getId()).getPositions();
+
                     assert(sourceParentPositions.size() > 0);
                     int sourceAnchor = sourceSpans.get(span.getId()).getAnchor();
-                    float ratio = (float) (sourceAnchor - sourceParentPositions.getMin()) / sourceParentPositions.size();
-                    targetAnchor = Math.round(parentPositions.getMin() + parentPositions.size() * ratio);
 
+                    if (targetAnchor == -1 ) {
+                        float ratio = (float) (sourceAnchor - sourceParentPositions.getMin()) / sourceParentPositions.size();
+                        targetAnchor = Math.round(parentPositions.getMin() + parentPositions.size() * ratio);
+                    }
+
+                    if (move) {
+                        //check if the guessed targetAnchor falls into a sibling spanning at least two positions
+                        //not in the first position; if it falls in the first position is means that it is position outside (on left)
+                        for (Node child : parent.getChildren()) {
+                            Coverage coverage = child.getData().getPositions();
+                            if ((coverage.size() >= 2) &&
+                                    coverage.contains(targetAnchor) &&
+                                    (targetAnchor > coverage.getMin())) {
+                                targetAnchor = coverage.getMax() + 1;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -251,8 +278,62 @@ class SpanTree {
         }
     }
 
-    static private void fixSiblings(Node childI, Node childJ) {
+    static private boolean isArtificial(Node node) {
+        return (node.getData().getBeginTag() == null) || (node.getData().getEndTag() == null);
+    }
 
+    static private void fixTwoArtificialSiblings(Node childI, Node childJ) {
+        if (isArtificial(childI) && isArtificial(childJ) )
+            fixSiblings(childI, childJ);
+    }
+
+
+    static private Node fixOneArtificialSiblings(Node childI, Node childJ, SpanCollection sourceSpans) {
+        if ( (isArtificial(childI) && isArtificial(childJ))
+             || (!isArtificial(childI) && !isArtificial(childJ)) )
+            return null;
+
+        Node childToRemove = null;
+
+        Node futureParent;
+        Node currentChild;
+
+        if ( isArtificial(childI) ) {
+            futureParent = childI;
+            currentChild = childJ;
+        } else {
+            futureParent = childJ;
+            currentChild = childI;
+        }
+
+        Span parentSpan = futureParent.getData();
+        Span childSpan = currentChild.getData();
+        Coverage parentPos = Coverage.contiguous(parentSpan.getPositions());
+        Coverage childPos = Coverage.contiguous(childSpan.getPositions());
+        Coverage positions = Coverage.intersection(parentPos, childPos);
+
+        int targetAnchor = childSpan.getAnchor();
+        if (targetAnchor == -1)
+            childSpan.setAnchor(computeAnchor(currentChild, sourceSpans, false));
+
+        if ((!positions.isEmpty() && Coverage.difference(childPos, positions).isEmpty())
+                || (childPos.isEmpty() && parentPos.contains(targetAnchor) && targetAnchor > parentPos.getMin())) {
+            // childPos are completely included in parentPos
+            // childPos is empty and the anchor in included in parentPos
+            // hence, make currentChild a child of futureParent
+            futureParent.addChild(new Node(childSpan));
+            childToRemove = currentChild;
+        }
+
+        return childToRemove;
+    }
+
+    static private void fixStandardSiblings(Node childI, Node childJ) {
+        if ( !isArtificial(childI) && !isArtificial(childI) )
+            fixSiblings(childI, childJ);
+    }
+
+    static private void fixSiblings(Node childI, Node childJ) {
         boolean modified = true;
 
         while (modified) {
@@ -274,6 +355,7 @@ class SpanTree {
                 }
                 if (posI.isEmpty()) {
                     childI.getData().setAnchor(-1);
+
                 } else {
                     childI.getData().setAnchor(posI.getMin());
                 }
@@ -286,7 +368,7 @@ class SpanTree {
         }
     }
 
-    static private void fixNode(Node node, Set<Node> nodeVisit) {
+    static private void fixNode(Node node, Set<Node> nodeVisit, SpanCollection sourceSpans) {
         if (nodeVisit.contains(node)) {
             //do nothing
             return;
@@ -295,41 +377,87 @@ class SpanTree {
             //do nothing; just label as visited
             nodeVisit.add(node);
         } else {
-            for (Node child : node.getChildren()) {
-                //remove position of child not included in node
+            for (Node child : node.getChildren())
+                //remove from child the positions of child not included in node
                 fixPositions(node, child);
-            }
+
             if (node.getChildren().size() > 1) { // there are at least two children
-                Iterator<Node> iteratorI = node.getChildren().iterator();
                 Node childI, childJ;
+
+                Iterator<Node> iteratorI = node.getChildren().iterator();
                 while (iteratorI.hasNext()) {
                     childI = iteratorI.next();
 
-                    if (nodeVisit.contains(childI)) {
-                        continue;   //childI is already fixed
-                    }
+                    if (nodeVisit.contains(childI))
+                        //childI is already fixed
+                        continue;
 
                     for (Node value : node.getChildren()) {
                         childJ = value;
 
-                        if (childI.getId() >= childJ.getId()) { //childI and childJ are already considered
+                        if (childI.getId() >= childJ.getId() || nodeVisit.contains(childJ))
+                            //childI and childJ are already considered or childJ is already fixed
                             continue;
-                        }
 
-                        if (nodeVisit.contains(childJ)) {
-                            continue;   //childJ is already fixed
-                        }
+                        fixTwoArtificialSiblings(childI, childJ);
+                    }
+                }
 
-                        fixSiblings(childI, childJ);
+                Set<Node> childrenToRemove = new HashSet<>();
+                iteratorI = node.getChildren().iterator();
+                while (iteratorI.hasNext()) {
+                    childI = iteratorI.next();
+
+                    if (nodeVisit.contains(childI) || childrenToRemove.contains(childI))
+                        //childI is already fixed
+                        continue;
+
+                    for (Node value : node.getChildren()) {
+                        childJ = value;
+
+                        if (childI.getId() >= childJ.getId() || nodeVisit.contains(childJ) || childrenToRemove.contains(childJ))
+                            //childI and childJ are already considered or childJ is already fixed ir childJ has to be removed from the chilren
+                            continue;
+
+                        Node childToRemove = fixOneArtificialSiblings(childI, childJ, sourceSpans);
+                        if (childToRemove != null)
+                            childrenToRemove.add(childToRemove);
+                    }
+                }
+
+                for (Node child : childrenToRemove) {
+                    //remove all children which became children of a child
+                    node.removeChild(child);
+                }
+
+                iteratorI = node.getChildren().iterator();
+                while (iteratorI.hasNext()) {
+                    childI = iteratorI.next();
+
+                    if (nodeVisit.contains(childI))
+                        //childI is already fixed
+                        continue;
+
+                    for (Node value : node.getChildren()) {
+                        childJ = value;
+
+                        if (childI.getId() >= childJ.getId() || nodeVisit.contains(childJ))
+                            //childI and childJ are already considered or childJ is already fixed
+                            continue;
+
+                        fixStandardSiblings(childI, childJ);
+
                     }
                 }
             }
+
+            fixAnchors(node, sourceSpans);
 
             // all children are fixed; label as visited
             nodeVisit.add(node);
             for (Node child : node.getChildren()) {
                 //perform fixing on all children
-                fixNode(child, nodeVisit);
+                fixNode(child, nodeVisit, sourceSpans);
             }
         }
     }
