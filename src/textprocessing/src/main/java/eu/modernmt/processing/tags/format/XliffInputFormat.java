@@ -23,9 +23,9 @@ public class XliffInputFormat implements InputFormat {
     public void transform(Tag[] tags) {
         for (Tag tag : tags) {
             if (OPENING_TAGS.contains(tag.getName())) {
-                tag.setType(Tag.Type.OPENING_TAG);
+                tag.setType(Tag.Type.SEPARATOR_TAG);
             } else if (CLOSING_TAGS.contains(tag.getName())) {
-                tag.setType(Tag.Type.CLOSING_TAG);
+                tag.setType(Tag.Type.SEPARATOR_TAG);
             }
         }
     }

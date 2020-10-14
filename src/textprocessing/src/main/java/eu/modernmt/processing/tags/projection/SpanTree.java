@@ -117,6 +117,7 @@ class SpanTree {
     protected void create() {
         List<Integer> spanVisit = new ArrayList<>();
         this.root = create(ROOT_INDEX, spanVisit);
+        fixChildrenPositions(this.root);
         this.sort();
     }
 
@@ -270,10 +271,18 @@ class SpanTree {
         return targetAnchor;
     }
 
-    static private void fixPositions(Node node, Node child) {
-        Coverage positions = Coverage.difference(child.getData().getPositions(), node.getData().getPositions());
+    static private void fixChildrenPositions(Node parent) {
+        //recursive fixing of children positions
+        for (Node child : parent.getChildren()) {
+            fixChildrenPositions(parent, child);
+            fixChildrenPositions(child);
+        }
+    }
+
+    static private void fixChildrenPositions(Node parent, Node child) {
+        Coverage positions = Coverage.difference(child.getData().getPositions(), parent.getData().getPositions());
         for (Integer pos : positions) {
-            // remove the positions from child not included in the node (because already removed)
+            // remove the positions from child not included in the parent (because already removed)
             child.getData().getPositions().remove(pos);
         }
     }
@@ -286,7 +295,6 @@ class SpanTree {
         if (isArtificial(childI) && isArtificial(childJ) )
             fixSiblings(childI, childJ);
     }
-
 
     static private Node fixOneArtificialSiblings(Node childI, Node childJ, SpanCollection sourceSpans) {
         if ( (isArtificial(childI) && isArtificial(childJ))
@@ -377,9 +385,8 @@ class SpanTree {
             //do nothing; just label as visited
             nodeVisit.add(node);
         } else {
-            for (Node child : node.getChildren())
-                //remove from child the positions of child not included in node
-                fixPositions(node, child);
+            //remove (recursively) positions of node's children not included in node
+            fixChildrenPositions(node);
 
             if (node.getChildren().size() > 1) { // there are at least two children
                 Node childI, childJ;
