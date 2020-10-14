@@ -6,6 +6,7 @@ abstract public class Tag extends Token implements Comparable<Tag>, Cloneable {
         OPENING_TAG,
         CLOSING_TAG,
         EMPTY_TAG,
+        SEPARATOR_TAG,
     }
 
     protected Type type; /* tag type */
@@ -43,6 +44,10 @@ abstract public class Tag extends Token implements Comparable<Tag>, Cloneable {
         return name;
     }
 
+    public boolean isSeparatorTag() {
+        return this.type == Type.SEPARATOR_TAG;
+    }
+
     public boolean isEmptyTag() {
         return this.type == Type.EMPTY_TAG;
     }
@@ -56,11 +61,11 @@ abstract public class Tag extends Token implements Comparable<Tag>, Cloneable {
     }
 
     public boolean closes(Tag other) {
-        return this.type == Type.CLOSING_TAG && other.type == Type.OPENING_TAG && nameEquals(this.name, other.name);
+        return this.isClosingTag() && other.isOpeningTag() && nameEquals(this.name, other.name);
     }
 
     public boolean opens(Tag other) {
-        return this.type == Type.OPENING_TAG && other.type == Type.CLOSING_TAG && nameEquals(this.name, other.name);
+        return this.isOpeningTag() && other.isClosingTag() && nameEquals(this.name, other.name);
     }
 
     private static boolean nameEquals(String n1, String n2) {
