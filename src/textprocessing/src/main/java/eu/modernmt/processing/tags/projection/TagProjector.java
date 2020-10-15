@@ -7,22 +7,9 @@ public class TagProjector {
 
     public Translation project(Translation translation) {
         Sentence source = translation.getSource();
-        System.out.println("SOURCE:" + source);
 
-        System.out.println("SOURCE WORDS");
-        int i = 0;
-        for (Word word : source.getWords())
-            System.out.println("i:" + i++ + " word:" + word);
-
-        System.out.println("TARGET WORDS");
-        i=0;
-        for (Word word : translation.getWords())
-            System.out.println("i:" + i++ + " word:" + word);
         if (source.hasTags()) {
             TagCollection sourceTags = new TagCollection(source.getTags(), true);
-            System.out.println("SOURCE TAGS");
-            for (Tag tag : sourceTags)
-                System.out.println(tag + " " + " type:" + tag.getType());
 
             if (source.hasWords()) {
                 if (translation.hasAlignment()) {
@@ -32,29 +19,17 @@ public class TagProjector {
                     Word[] translationWords = translation.getWords();
                     TagCollection translationTags = new TagCollection();
                     SpanCollection sourceSpans = new SpanCollection(sourceTags.getTags(), sourceWords.length);
-                    System.out.println("SOURCE SPANS");
-                    for (Span span : sourceSpans)
-                        System.out.println(span);
-
 
                     SpanTree sourceTree = new SpanTree(sourceSpans);
                     sourceTree.create();
-                    System.out.println("SOURCE TREE\n" + sourceTree);
                     Alignment alignment = new Alignment(translation.getWordAlignment(), sourceWords.length, translationWords.length);
-                    System.out.println("ALIGNMENT\n" + translation.getWordAlignment());
 
                     SpanCollection translationSpans = new SpanCollection();
                     translationSpans.project(sourceSpans, alignment, translationWords.length);
-                    System.out.println("TARGET SPANS");
-                    for (Span span : translationSpans)
-                        System.out.println(span);
 
                     SpanTree translationTree = new SpanTree(translationSpans);
                     translationTree.project(sourceTree, sourceSpans);
-//                    System.out.println("TARGET TREE\n" + translationTree);
                     translationTree.sort();
-                    System.out.println("TARGET TREE\n" + translationTree);
-
                     translationTags.populate(translationTree);
 
                     translation.setTags(translationTags.toArray());
