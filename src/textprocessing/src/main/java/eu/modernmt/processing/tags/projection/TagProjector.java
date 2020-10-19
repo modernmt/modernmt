@@ -2,6 +2,7 @@ package eu.modernmt.processing.tags.projection;
 
 import eu.modernmt.model.*;
 
+import java.util.regex.Pattern;
 
 public class TagProjector {
 
@@ -22,6 +23,7 @@ public class TagProjector {
 
                     SpanTree sourceTree = new SpanTree(sourceSpans);
                     sourceTree.create();
+
                     Alignment alignment = new Alignment(translation.getWordAlignment(), sourceWords.length, translationWords.length);
 
                     SpanCollection translationSpans = new SpanCollection();
@@ -38,6 +40,23 @@ public class TagProjector {
             } else { //there are no source words; just copy the source tags in the target tags
                 translation.setTags(sourceTags.toArray());
             }
+        }
+
+        //ad-hoc fixings
+
+        //ISSUE: newlines are sometimes put before a puntuation mark
+        //in these case, we move punctuation mark just before the "newline"
+        Token previousToken = null;
+        for (Token token : translation) {
+            if ( (previousToken != null)
+                && (previousToken instanceof Tag)
+                && (((Tag) previousToken).getType() == Tag.Type.SEPARATOR_TAG)
+                && (token instanceof Word)
+                && isPunctuation((Word) token) ) {
+                ((Tag) previousToken).setPosition(((Tag) previousToken).getPosition() + 1);
+                token.setRightSpace(previousToken.getLeftSpace());
+            }
+            previousToken = token;
         }
 
         return translation;
@@ -76,12 +95,14 @@ public class TagProjector {
                     spaceAfterPreviousWord = Sentence.combineSpace(spaceAfterPreviousWord, currentToken);
                 } else { // X-Word
                     if (previousToken instanceof Tag) {// Tag-Word
-                        //This Word requires a space on the left,
-                        //but no Token between the last Word and this Word has any space (ex. "previousWord<tag1><tag2>thisWord");
-                        //hence force a space before this Word
-                        if (spaceAfterPreviousWord == null && ((Word) currentToken).isLeftSpaceRequired() && !((Word) currentToken).hasHiddenLeftSpace()) {
-                            previousToken.setRightSpace(" ");
-                            currentToken.setLeftSpace(" ");
+                        if (((Tag) previousToken).getType() != Tag.Type.SEPARATOR_TAG) {
+                            //This Word requires a space on the left,
+                            //but no Token between the last Word and this Word has any space (ex. "previousWord<tag1><tag2>thisWord");
+                            //hence force a space before this Word
+                            if (spaceAfterPreviousWord == null && ((Word) currentToken).isLeftSpaceRequired() && !((Word) currentToken).hasHiddenLeftSpace()) {
+                                previousToken.setRightSpace(" ");
+                                currentToken.setLeftSpace(" ");
+                            }
                         }
                     }
                     spaceAfterPreviousWord = null;
@@ -102,4 +123,9 @@ public class TagProjector {
 
     }
 
+    private static Pattern PUNCTUATION_WORD = Pattern.compile("^[.,;:?!,.?;:!！？｡：；，？、。：;！.!،؛؟:]+$", Pattern.UNICODE_CHARACTER_CLASS);
+
+    public static boolean isPunctuation(Word word) {
+        return PUNCTUATION_WORD.matcher(word.getPlaceholder()).matches();
+    }
 }
