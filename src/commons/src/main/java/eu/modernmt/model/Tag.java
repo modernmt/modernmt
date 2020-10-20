@@ -2,6 +2,21 @@ package eu.modernmt.model;
 
 abstract public class Tag extends Token implements Comparable<Tag>, Cloneable {
 
+    /*
+        Tag description:
+        - an opening tag is expected to have a corresponding closing tag (ex. "<a>")
+        - a closing tag is expected to have a corresponding opening tag (ex. "</a>")
+        - an empty tag is self-closing (ex. "<a />"), i.e. it is like an atomic opening/closing tag pair
+        - a separator tag is an ad-hoc closing tag (ex. "\n"), which has a "virtual" corresponding opening tag at the most-left compliant position in the text
+
+        Note that tags have to satisfy xml requirement that
+        - an opening/closing tag pair can contain an other pair or an empty tag (ex. "<a> x y <b> <c/> z </b> </a>" is correct)
+        - an empty tag cannot contain any tag
+        - two opening/closing tags cannot overlap (ex. "<a> x y <b> z </a> </b>" is not correct)
+        - a separator tag could be transformed into a pair:
+          ex. "<a> x y \n z</a>" is equivalent to "<a><c> x y </c> z</a>"
+          where "<c>" is an hidden string put on the left most position inside the container tag ("<a>" "</a>") and "</c>" is actually "\n"
+    */
     public enum Type {
         OPENING_TAG,
         CLOSING_TAG,
