@@ -1,6 +1,7 @@
 package eu.modernmt.processing.tags.format;
 
 import eu.modernmt.model.Tag;
+import eu.modernmt.model.XMLTag;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -10,7 +11,7 @@ import java.util.Set;
 public class HtmlInputFormat implements InputFormat {
 
     private static final float ACCEPTANCE_RATE = 0.5f;
-    private static final Set<String> EMPTY_TAGS = Collections.singleton("br");
+    private static final Set<String> SEPARATORS_TAGS = Collections.singleton("br"); //TODO: should be add also "p"?
     private static final Set<String> LEGAL_TAGS = new HashSet<>(
             Arrays.asList("a", "abbr", "address", "area", "article", "aside", "audio", "b", "base", "bdi",
                     "bdo", "blockquote", "body", "br", "button", "canvas", "caption", "cite", "code", "col", "colgroup",
@@ -23,7 +24,7 @@ public class HtmlInputFormat implements InputFormat {
                     "style", "sub", "summary", "sup", "table", "tbody", "td", "template", "textarea", "tfoot", "th",
                     "thead", "time", "title", "tr", "track", "u", "ul", "var", "video", "wbr"));
 
-    public static boolean isCompliant(Tag[] tags) {
+    public static boolean isCompliant(XMLTag[] tags) {
         int occurrences = (int) Arrays.stream(tags).filter(tag -> LEGAL_TAGS.contains(tag.getName())).count();
         return ((float) occurrences / tags.length) >= ACCEPTANCE_RATE;
     }
@@ -31,8 +32,8 @@ public class HtmlInputFormat implements InputFormat {
     @Override
     public void transform(Tag[] tags) {
         for (Tag tag : tags) {
-            if (EMPTY_TAGS.contains(tag.getName())) {
-                tag.setType(Tag.Type.EMPTY_TAG);
+            if (SEPARATORS_TAGS.contains(tag.getName())) {
+                tag.setType(Tag.Type.SEPARATOR_TAG);
             }
         }
     }
