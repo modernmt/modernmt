@@ -329,8 +329,14 @@ class SpanTree {
             // childPos are completely included in parentPos
             // childPos is empty and the anchor in included in parentPos
             // hence, make currentChild a child of futureParent
-            futureParent.addChild(new Node(childSpan));
+            Node futureNode = new Node(childSpan);
+            for (Node child : currentChild.getChildren())
+                futureNode.addChild(child);
+            futureNode.setParent(futureParent);
+            futureParent.addChild(futureNode);
             childToRemove = currentChild;
+        } else {
+            fixSiblings(childI, childJ);
         }
 
         return childToRemove;
