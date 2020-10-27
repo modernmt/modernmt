@@ -9,6 +9,9 @@ import org.apache.commons.io.FileUtils;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 public class CorporaStorage implements LogDataListener, Closeable {
@@ -64,6 +67,35 @@ public class CorporaStorage implements LogDataListener, Closeable {
         }
 
         return channels;
+    }
+
+    public void prune() throws IOException {
+        try (DirectoryStream<Path> roots = Files.newDirectoryStream(this.path.toPath())) {
+            for (Path root : roots) {
+                if (!Files.isDirectory(root)) continue;
+
+                try (DirectoryStream<Path> memories = Files.newDirectoryStream(root)) {
+                    for (Path memory : memories) {
+                        if (!Files.isDirectory(memory)) continue;
+                        if (isEmpty(memory))
+                            Files.delete(memory);
+                    }
+                }
+
+                if (isEmpty(root))
+                    Files.delete(root);
+            }
+        }
+    }
+
+    private static boolean isEmpty(Path path) throws IOException {
+        if (Files.isDirectory(path)) {
+            try (DirectoryStream<Path> directory = Files.newDirectoryStream(path)) {
+                return !directory.iterator().hasNext();
+            }
+        }
+
+        return false;
     }
 
     @Override
