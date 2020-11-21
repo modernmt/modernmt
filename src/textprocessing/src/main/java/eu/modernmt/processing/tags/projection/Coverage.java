@@ -45,9 +45,6 @@ public class Coverage implements Iterable<Integer> {
         this.positions.clear();
     }
 
-    void addAll(Coverage c) {
-        this.positions.addAll(c.getPositions());
-    }
 
     static Coverage intersection(Coverage c1, Coverage c2) {
         // create the intersection between c1 and c2
@@ -156,13 +153,13 @@ public class Coverage implements Iterable<Integer> {
         return this.positions.toString();
     }
 
-    public int first() {
-        return this.positions.get(0);
-    }
-
-    public int last() {
-        return this.positions.get(size() - 1);
-    }
+//    public int first() {
+//        return this.positions.get(0);
+//    }
+//
+//    public int last() {
+//        return this.positions.get(size() - 1);
+//    }
 
     void uniq() {
         Set<Integer> set = new LinkedHashSet<>(this.positions);
@@ -175,7 +172,15 @@ public class Coverage implements Iterable<Integer> {
         this.positions.addAll(set);
     }
 
+    void addAll(Coverage c) {
+        this.positions.addAll(c.getPositions());
+    }
+
     void retainAll(Coverage c) {
         this.positions.retainAll(c.getPositions());
+    }
+
+    void removeAll(Coverage c) {
+        this.positions.removeAll(c.getPositions());
     }
 }
