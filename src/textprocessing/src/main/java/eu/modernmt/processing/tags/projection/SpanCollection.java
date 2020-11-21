@@ -239,14 +239,16 @@ class SpanCollection implements Iterable<Span> {
                 if (sourceSpan.getBeginTag() == null) {
                     //this should cover from the beginning of the sentence
                     if (newPositions.size() > 0) {
-                        for (int i = newPositions.last() - 1; i >= 0; i--) {
+//                        for (int i = newPositions.last() - 1; i >= 0; i--) {
+                        for (int i = newPositions.getMax(); i >= 0; i--) {
                             newPositions.add(i);
                         }
                     }
                 } else if (sourceSpan.getEndTag() == null) {
                     //this should cover till the end of the sentence
                     if (newPositions.size() > 0) {
-                        for (int i = newPositions.last(); i < targetWords; i++) {
+//                        for (int i = newPositions.last(); i < targetWords; i++) {
+                        for (int i = newPositions.getMax(); i < targetWords; i++) {
                             newPositions.add(i);
                         }
                     }
@@ -263,7 +265,8 @@ class SpanCollection implements Iterable<Span> {
                 } else {
                     int sourceAnchor = sourceSpan.getAnchor();
                     if (alignment.get(sourceAnchor).size() > 0) {
-                        targetSpan.setAnchor(alignment.get(sourceAnchor).first());
+//                        targetSpan.setAnchor(alignment.get(sourceAnchor).first());
+                        targetSpan.setAnchor(alignment.get(sourceAnchor).getMin());
                     } else {
                         targetSpan.setAnchor(-1);
                     }
