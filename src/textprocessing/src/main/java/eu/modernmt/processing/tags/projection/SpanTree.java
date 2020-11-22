@@ -207,17 +207,19 @@ class SpanTree {
     static private int computeAnchor(Node node, SpanCollection sourceSpans, boolean move) {
         Span span = node.getData();
         int targetAnchor = span.getAnchor();
-        if (span.getBeginTag() == null) {
+        if (isLeftArtificial(node)) {
 // there is no corresponding opening tag
 //            targetAnchor = 0; //TODO: OLD VERSION
 
-            Coverage spanPositions = span.getPositions();
-            if (spanPositions.size() > 0) {
-                targetAnchor = spanPositions.getMin();
-            } else {
-                targetAnchor = node.getParent().getData().getAnchor();
+            if (targetAnchor == -1) {
+                Coverage spanPositions = span.getPositions();
+                if (spanPositions.size() > 0) {
+                    targetAnchor = spanPositions.getMin();
+                } else {
+                    targetAnchor = node.getParent().getData().getAnchor();
+                }
             }
-        } else if (span.getEndTag() == null) {
+        } else if (isRightArtificial(node)) {
 // there is no corresponding closing tag
             if (targetAnchor == -1) {
                 Coverage spanPositions = span.getPositions();
@@ -229,7 +231,7 @@ class SpanTree {
             }
         } else {
 // there are both opening and closing tags
-            if (targetAnchor == -1 || node.getData().getPositions().isEmpty()) {
+            if (targetAnchor == -1 || span.getPositions().isEmpty()) {
 
                 Node parent = node.getParent();
                 Coverage parentPositions = parent.getData().getPositions();
@@ -252,7 +254,7 @@ class SpanTree {
 
                     if (move) {
                         //check if the guessed targetAnchor falls into a sibling spanning at least two positions
-                        //not in the first position; if it falls in the first position is means that it is position outside (on left)
+                        //not in the first position; if it falls in the first position it means that it is position outside (on left)
                         for (Node child : parent.getChildren()) {
                             Coverage coverage = child.getData().getPositions();
                             if ((coverage.size() >= 2) &&
@@ -287,13 +289,84 @@ class SpanTree {
         }
     }
 
-    static private boolean isArtificial(Node node) {
-        return (node.getData().getBeginTag() == null) || (node.getData().getEndTag() == null);
+
+    static private boolean isLeftArtificial(Node node) {
+        return (node.getData().getBeginTag() == null);
     }
 
-    static private void fixTwoArtificialSiblings(Node childI, Node childJ) {
+    static private boolean isRightArtificial(Node node) {
+        return (node.getData().getEndTag() == null);
+    }
+
+    static private boolean isArtificial(Node node) {
+        return isLeftArtificial(node) || isRightArtificial(node);
+    }
+
+    static private void fixTwoArtificialSiblings_ORIGINAL(Node childI, Node childJ) {
+        if (!isArtificial(childI) || !isArtificial(childJ) )
+            return;
+
         if (isArtificial(childI) && isArtificial(childJ) )
             fixSiblings(childI, childJ);
+    }
+
+    static private void fixTwoArtificialSiblings_BASIC(Node childI, Node childJ) {
+    }
+
+    static private void fixTwoArtificialSiblings_COMPLEX(Node childI, Node childJ) {
+
+        if (!isArtificial(childI) || !isArtificial(childJ) )
+            return;
+
+        Coverage posI = childI.getData().getPositions();
+        Coverage posJ = childJ.getData().getPositions();
+
+        if (posI.isEmpty() || posJ.isEmpty())
+            return;
+
+        int maxI = posI.getMax();
+        int maxJ = posJ.getMax();
+        int minI = posI.getMin();
+        int minJ = posJ.getMin();
+        if ( isLeftArtificial(childI) ) {
+            if ( isLeftArtificial(childJ) ) { //childI is LeftArtificial and childJ is LeftArtificial
+                if (maxI <= maxJ) {
+                    posJ.removeAll(posI);
+                    childJ.getData().setAnchor(maxI + 1);
+                } else {
+                    posI.removeAll(posJ);
+                    childI.getData().setAnchor(maxJ + 1);
+                }
+            } else { //childI is LeftArtificial and childJ is RightArtificial
+                if (maxI <= minJ) { //there is overlap between childI and childJ; clear childJ
+                    posJ.clear();
+                    childJ.getData().setAnchor(minJ + 1);
+                }
+            }
+        } else {
+            if ( isLeftArtificial(childJ) ) { //childI is RightArtificial and childJ is LeftArtificial
+                if (maxJ <= minI) { //there is overlap between childI and childJ; clear childI
+                    posI.clear();
+                    childI.getData().setAnchor(minI + 1);
+                }
+            } else { //childI is RightArtificial and childJ is RightArtificial
+                if (minI <= minJ) {
+                    posI.removeAll(posJ);
+                    childJ.getData().setAnchor(minJ);
+                } else {
+                    posJ.removeAll(posI);
+                    childI.getData().setAnchor(minJ);
+                }
+            }
+        }
+    }
+
+
+
+    static private void fixTwoArtificialSiblings(Node childI, Node childJ) {
+//        fixTwoArtificialSiblings_ORIGINAL(childI, childJ);
+//        fixTwoArtificialSiblings_BASIC(childI, childJ);
+        fixTwoArtificialSiblings_COMPLEX(childI, childJ);
     }
 
     static private Node fixOneArtificialSiblings(Node childI, Node childJ, SpanCollection sourceSpans) {
@@ -464,7 +537,7 @@ class SpanTree {
                 }
             }
 
-            fixAnchors(node, sourceSpans);
+//            fixAnchors(node, sourceSpans);
 
             // all children are fixed; label as visited
             nodeVisit.add(node);
