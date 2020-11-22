@@ -95,8 +95,6 @@ class SpanTree {
         }
     }
 
-    private static int ROOT_INDEX = 0;
-
     private SpanCollection spans;
     private Node root;
 
@@ -116,7 +114,7 @@ class SpanTree {
 
     protected void create() {
         List<Integer> spanVisit = new ArrayList<>();
-        this.root = create(ROOT_INDEX, spanVisit);
+        this.root = create(0, spanVisit);
         fixChildrenPositions(this.root);
         this.sort();
     }
@@ -209,7 +207,6 @@ class SpanTree {
         int targetAnchor = span.getAnchor();
         if (isLeftArtificial(node)) {
 // there is no corresponding opening tag
-//            targetAnchor = 0; //TODO: OLD VERSION
 
             if (targetAnchor == -1) {
                 Coverage spanPositions = span.getPositions();
@@ -302,18 +299,7 @@ class SpanTree {
         return isLeftArtificial(node) || isRightArtificial(node);
     }
 
-    static private void fixTwoArtificialSiblings_ORIGINAL(Node childI, Node childJ) {
-        if (!isArtificial(childI) || !isArtificial(childJ) )
-            return;
-
-        if (isArtificial(childI) && isArtificial(childJ) )
-            fixSiblings(childI, childJ);
-    }
-
-    static private void fixTwoArtificialSiblings_BASIC(Node childI, Node childJ) {
-    }
-
-    static private void fixTwoArtificialSiblings_COMPLEX(Node childI, Node childJ) {
+    static private void fixTwoArtificialSiblings(Node childI, Node childJ) {
 
         if (!isArtificial(childI) || !isArtificial(childJ) )
             return;
@@ -361,13 +347,6 @@ class SpanTree {
         }
     }
 
-
-
-    static private void fixTwoArtificialSiblings(Node childI, Node childJ) {
-//        fixTwoArtificialSiblings_ORIGINAL(childI, childJ);
-//        fixTwoArtificialSiblings_BASIC(childI, childJ);
-        fixTwoArtificialSiblings_COMPLEX(childI, childJ);
-    }
 
     static private Node fixOneArtificialSiblings(Node childI, Node childJ, SpanCollection sourceSpans) {
         if ( (isArtificial(childI) && isArtificial(childJ))
@@ -536,8 +515,6 @@ class SpanTree {
                     }
                 }
             }
-
-//            fixAnchors(node, sourceSpans);
 
             // all children are fixed; label as visited
             nodeVisit.add(node);
