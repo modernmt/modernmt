@@ -105,7 +105,7 @@ public class Coverage implements Iterable<Integer> {
         return Collections.max(this.positions);
     }
 
-    private static int choosePosition(Coverage c1, Coverage c2) {
+    public static int choosePosition(Coverage c1, Coverage c2) {
         //there is at least one point in the overlap
         //choose a point to remove from either c1 or c2
         int min1 = c1.getMin();
