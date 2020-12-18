@@ -6,6 +6,8 @@ import torch
 from fairseq import optim, utils
 from fairseq.data import LanguagePairDataset
 
+from mmt import is_fairseq_0_10
+
 
 class TuningOptions(object):
     def __init__(self):
@@ -48,20 +50,6 @@ class TuningDataset(torch.utils.data.Dataset):
 
 
 class Tuner(object):
-    @classmethod
-    def dataset(cls, src_samples, tgt_samples, dictionary):
-        src_dataset = TuningDataset(src_samples, dictionary)
-        tgt_dataset = TuningDataset(tgt_samples, dictionary)
-
-        return LanguagePairDataset(
-            src_dataset, src_dataset.sizes, dictionary,
-            tgt_dataset, tgt_dataset.sizes, dictionary,
-            left_pad_source=True,
-            left_pad_target=False,
-            max_source_positions=4096,
-            max_target_positions=4096,
-        )
-
     def __init__(self, args, task, model, tuning_ops, device=None):
         self._logger = logging.getLogger('Tuner')
 
@@ -75,6 +63,25 @@ class Tuner(object):
         self._criterion = task.build_criterion(args)
         if self._cuda:
             self._criterion = self._criterion.cuda()
+
+        self.__train_step_kwargs = {'ignore_grad': False}
+        self.__dataset_kwargs = {'left_pad_source': True, 'left_pad_target': False}
+
+        if is_fairseq_0_10():
+            self.__train_step_kwargs['update_num'] = 1
+        else:
+            self.__dataset_kwargs['max_source_positions'] = 4096
+            self.__dataset_kwargs['max_target_positions'] = 4096
+
+    def dataset(self, src_samples, tgt_samples, dictionary):
+        src_dataset = TuningDataset(src_samples, dictionary)
+        tgt_dataset = TuningDataset(tgt_samples, dictionary)
+
+        return LanguagePairDataset(
+            src_dataset, src_dataset.sizes, dictionary,
+            tgt_dataset, tgt_dataset.sizes, dictionary,
+            **self.__dataset_kwargs
+        )
 
     def _build_optimizer(self):
         params = list(filter(lambda p: p.requires_grad, self._model.parameters()))
@@ -134,7 +141,8 @@ class Tuner(object):
                 if len(sample) == 0:
                     continue
 
-                sample = utils.move_to_cuda(sample)
+                if self._cuda:
+                    sample = utils.move_to_cuda(sample)
                 optimizer.set_lr(lr)
                 self._train_step(optimizer, sample, step)
                 del sample
@@ -154,7 +162,7 @@ class Tuner(object):
 
         try:
             # forward and backward
-            self._task.train_step(sample, self._model, self._criterion, optimizer, ignore_grad=False)
+            self._task.train_step(sample, self._model, self._criterion, optimizer, **self.__train_step_kwargs)
         except RuntimeError as e:
             if 'out of memory' in str(e):
                 self._logger.warning('ran out of memory, skipping batch')

@@ -1,0 +1,7 @@
+regex
+sacrebleu==1.4.14
+requests
+cachetools
+tensorboardX==2.1
+torch==1.7.1+cu110
+fairseq==0.10.1

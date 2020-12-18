@@ -10,7 +10,7 @@ import torch
 from fairseq.models.transformer import TransformerModel
 from fairseq.sequence_generator import SequenceGenerator
 
-from mmt import textencoder
+from mmt import textencoder, is_fairseq_0_10
 from mmt.alignment import make_alignment, clean_alignment
 from mmt.tuning import Tuner, TuningOptions
 
@@ -117,29 +117,45 @@ class MMTDecoder(object):
         return model
 
     @classmethod
-    def _create_translator(cls, checkpoints, beam_size):
-        return SequenceGenerator(
-            checkpoints.task.target_dictionary, beam_size=beam_size,
-            max_len_a=0, max_len_b=1, min_len=1,
-            stop_early=True, normalize_scores=True,
-            len_penalty=1, unk_penalty=0,
-            sampling=False, sampling_topk=-1, temperature=1,
-            diverse_beam_groups=1, diverse_beam_strength=0.5
-        )
+    def _create_translator(cls, models, checkpoints, beam_size):
+        args = [checkpoints.task.target_dictionary]
+        kwargs = {'beam_size': beam_size, 'max_len_a': 0, 'max_len_b': 1, 'min_len': 1, 'normalize_scores': True,
+                  'len_penalty': 1, 'unk_penalty': 0, 'temperature': 1}
+
+        if is_fairseq_0_10():
+            args.insert(0, models)
+        else:
+            kwargs.update({'stop_early': True, 'sampling': False, 'sampling_topk': -1,
+                           'diverse_beam_groups': 1, 'diverse_beam_strength': .5})
+
+        return SequenceGenerator(*args, **kwargs)
 
     @classmethod
     def _create_tuner(cls, checkpoints, model, tuning_ops, device):
         return Tuner(checkpoints.args, checkpoints.task, model, tuning_ops=tuning_ops, device=device)
 
+    @classmethod
+    def port_to_fairseq_0_10(cls, checkpoint):
+        missing_default_params = {'decoder_layers_to_keep': None, 'encoder_layers_to_keep': None,
+                                  'encoder_layerdrop': 0, 'decoder_layerdrop': 0, 'quant_noise_pq': 0}
+        for missing in missing_default_params.keys():
+            if missing not in checkpoint.args:
+                setattr(checkpoint.args, missing, missing_default_params[missing])
+
     def __init__(self, checkpoints, device=None, beam_size=5, use_fp16=False, tuning_ops=None):
         torch.manual_seed(checkpoints.args.seed)
 
         self._checkpoints = checkpoints
+        self._checkpoints.args.fp16 = use_fp16
+
+        if is_fairseq_0_10():
+            self.port_to_fairseq_0_10(self._checkpoints)
+
         self._device = device
         self._model = self._fix_model_probs(
             self._create_model(checkpoints, device=device, beam_size=beam_size, use_fp16=use_fp16)
         )
-        self._translator = self._create_translator(checkpoints, beam_size)
+        self._translator = self._create_translator([self._model], checkpoints, beam_size)
         self._tuner = self._create_tuner(checkpoints, self._model, tuning_ops, device)
         self._max_positions = fairseq.utils.resolve_max_positions(
             checkpoints.task.max_positions(),
@@ -319,6 +335,8 @@ class MMTDecoder(object):
         _, attn = self._model(src_tokens, src_lengths, tgt_tokens)
         if type(attn) is dict:
             attn = attn['attn']
+        if type(attn) is list:
+            attn = attn[0]
 
         results = []
         for i, hypo_attention in enumerate(attn):  # for each entry of the original batch
