@@ -105,7 +105,7 @@ With `evaluate` command, these sentences are used to compute the BLEU Score and 
 With your engine running, just type:
 
 ```bash
-./mmt evaluate
+./mmt evaluate --gt-key YOUR_GOOGLE_TRANSLATE_API_KEY
 ```
 
 The typical output will be like the following:
@@ -138,16 +138,10 @@ Translation Speed:
 
 If you want to test on a different test-set just type:
 ```bash
-./mmt evaluate --path path/to/your/test-set
+./mmt evaluate --gt-key YOUR_GT_API_KEY --path path/to/your/test-set
 ```
 
-*Notes:* To run `evaluate` you need internet connection for Google Translate API and the Matecat Post-Editing Score API.
-ModernMT comes with a limited Google Translate API key, Matecat kindly provides unlimited-fair-usage, access to their API to ModernMT users.
-
-You can select your own Google Translate API key by typing:
-```bash
-./mmt evaluate --gt-key YOUR_GOOGLE_TRANSLATE_API_KEY
-```
+*Notes:* To run `evaluate` you need a Google Translate API key and an internet connection for Google Translate API and the Matecat Post-Editing Score API.
 
 ## What's next?
 
