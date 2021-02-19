@@ -220,11 +220,9 @@ class GoogleServerError(TranslateError):
 
 
 class GoogleTranslate(TranslateEngine):
-    DEFAULT_GOOGLE_KEY = 'AIzaSyBl9WAoivTkEfRdBBSCs4CruwnGL_aV74c'
-
-    def __init__(self, source_lang, target_lang, key=None):
+    def __init__(self, source_lang, target_lang, key):
         TranslateEngine.__init__(self, source_lang, target_lang)
-        self._key = key if key is not None else self.DEFAULT_GOOGLE_KEY
+        self._key = key
         self._delay = 0
         self._url = 'https://translation.googleapis.com/language/translate/v2'
 
