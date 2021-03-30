@@ -23,6 +23,60 @@
   </tr>
 </table>
 
+# ModernMT on RTX 30XX
+
+There are some known speed issues on running ModernMT on RTX 30XX GPUs. This are due to the new version of fairseq (0.10) required for compatibility issues with the newest NVIDIA drivers that support these GPUs.
+
+_(Thanks to Loek van Kooten for this guide)_
+
+### 1. Install **NVIDIA drivers**:
+You need to install `nvidia-driver-455`. There's a possibility this doesn't work. In that case, you need to manually download the driver from NVIDIA's website and install it from there. Make sure you have deleted all NVIDIA drivers, CUDA files and cuDNN files from your system first. Do a complete purge (just make sure the nouveau driver stays alive). Or better: start from a clean system if you want to make absolutely sure.
+
+```bash
+sudo add-apt-repository -y ppa:graphics-drivers
+sudo apt update
+sudo apt install -y nvidia-driver-455
+```
+
+### 2. Install ModernMT with custom requirements.txt
+
+Follow the instructions [Install ModernMT from source](#install-modernmt-from-source) but, **before running `python3 setup.py`**, delete `requirements.txt` and rename `requirements_cuda-11.txt` to `requirements.txt`. This is what it should look like:
+```
+regex
+sacrebleu==1.4.14
+requests
+cachetools
+tensorboardX==2.1
+torch==1.7.1+cu110
+fairseq==0.10.1
+```
+
+After that, continue installing ModernMT as indicated.
+
+### 3. Fix Fairseq
+
+Finally, we need to manually edit a `fairseq` file to fix a known issue.
+Edit the file `~/.local/lib/python3.8/site-packages/fairseq/utils.py` changing the lines 441-444 from:
+
+```python
+            fairseq_rel_path = os.path.join(os.path.dirname(__file__), args.user_dir)
+            if os.path.exists(fairseq_rel_path):
+                module_path = fairseq_rel_path
+            else:
+```
+
+to:
+
+```python
+            fairseq_rel_path = os.path.join(os.path.dirname(__file__), args.user_dir)
+            module_parent, module_name = os.path.split(module_path)
+            if os.path.exists(fairseq_rel_path):
+                module_path = fairseq_rel_path
+            elif not os.path.exists(module_parent):
+```
+
+Use a Python editor or make very sure you use indents, spaces and tabs consistently, else Python will throw an error.
+
 # Install ModernMT via Docker
 
 If you are familiar with Docker, this is usually the easiest option to use ModernMT. This section assumes you have already a running instance of Docker, if this is not the case please [follow these instructions](https://docs.docker.com/install/linux/docker-ce/ubuntu/) in order to properly install Docker.
