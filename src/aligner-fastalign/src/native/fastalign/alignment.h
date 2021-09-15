@@ -5,6 +5,7 @@
 #ifndef MMT_FASTALIGN_ALIGNMENT_H
 #define MMT_FASTALIGN_ALIGNMENT_H
 
+#include <string>
 #include <cstdint>
 #include <vector>
 #include <unordered_map>
