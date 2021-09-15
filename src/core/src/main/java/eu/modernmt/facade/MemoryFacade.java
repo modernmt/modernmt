@@ -98,10 +98,16 @@ public class MemoryFacade {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
+        Memory memory;
         try {
             connection = db.getConnection();
 
             MemoryDAO memoryDAO = db.getMemoryDAO(connection);
+            memory = memoryDAO.retrieve(id);
+
+            if (memory == null)
+                return false;
+
             boolean deleted = memoryDAO.delete(id);
 
             if (!deleted)
@@ -111,7 +117,7 @@ public class MemoryFacade {
         }
 
         BinaryLog binlog = ModernMT.getNode().getBinaryLog();
-        binlog.delete(id);
+        binlog.delete(memory);
 
         return true;
     }
@@ -211,23 +217,28 @@ public class MemoryFacade {
         Connection connection = null;
         Database db = ModernMT.getNode().getDatabase();
 
+        Memory memory;
         try {
             connection = db.getConnection();
 
             MemoryDAO memoryDAO = db.getMemoryDAO(connection);
-            Memory memory = memoryDAO.retrieve(memoryId);
+            memory = memoryDAO.retrieve(memoryId);
 
-            if (memory == null)
-                return null;
+            if (memory == null) return null;
+        } finally {
+            IOUtils.closeQuietly(connection);
+        }
 
-            corpus = CorporaCleaning.wrap(corpus, CorporaCleaning.Options.defaultOptionsForMemoryImport());
+        corpus = CorporaCleaning.wrap(corpus, CorporaCleaning.Options.defaultOptionsForMemoryImport());
 
-            BinaryLog binlog = ModernMT.getNode().getBinaryLog();
-            ImportJob job = binlog.upload(memory, corpus, BinaryLog.MEMORY_UPLOAD_CHANNEL_ID);
+        BinaryLog binlog = ModernMT.getNode().getBinaryLog();
+        ImportJob job = binlog.upload(memory, corpus, BinaryLog.MEMORY_UPLOAD_CHANNEL_ID);
 
-            if (job == null)
-                throw new EmptyCorpusException();
+        if (job == null)
+            throw new EmptyCorpusException();
 
+        try {
+            connection = db.getConnection();
             ImportJobDAO jobDAO = db.getImportJobDAO(connection);
             job = jobDAO.store(job);
 

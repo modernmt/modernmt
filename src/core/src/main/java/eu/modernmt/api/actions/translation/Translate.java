@@ -13,7 +13,6 @@ import eu.modernmt.facade.ModernMT;
 import eu.modernmt.lang.LanguageDirection;
 import eu.modernmt.model.ContextVector;
 import eu.modernmt.model.Priority;
-import eu.modernmt.persistence.PersistenceException;
 import eu.modernmt.processing.Preprocessor;
 import eu.modernmt.processing.ProcessingException;
 import eu.modernmt.processing.tags.format.InputFormat;
@@ -30,7 +29,7 @@ public class Translate extends ObjectAction<TranslationResponse> {
     public static final int MAX_QUERY_LENGTH = 5000;
 
     @Override
-    protected TranslationResponse execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, PersistenceException, DecoderException, ProcessingException {
+    protected TranslationResponse execute(RESTRequest req, Parameters _params) throws ContextAnalyzerException, DecoderException, ProcessingException {
         Params params = (Params) _params;
 
         TranslationResponse result = new TranslationResponse(params.priority);
@@ -51,10 +50,6 @@ public class Translate extends ObjectAction<TranslationResponse> {
             result.translation = ModernMT.translation.get(params.user, params.direction, processing, params.query, params.nbest, params.priority, params.timeout
             	,params.s,params.t,params.w);
         }
-
-
-        if (result.context != null)
-            ContextUtils.resolve(result.context);
 
         return result;
     }

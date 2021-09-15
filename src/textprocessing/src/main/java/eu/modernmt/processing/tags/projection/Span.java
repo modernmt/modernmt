@@ -105,6 +105,9 @@ class Span implements Comparable<Span> {
 
     @Override
     public int compareTo(Span a) {
-        return this.anchor - a.getAnchor();
+        if (this.anchor == a.getAnchor())
+            return this.getPositions().size() - a.getPositions().size();
+        else
+            return this.anchor - a.getAnchor();
     }
 }

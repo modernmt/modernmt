@@ -23,6 +23,7 @@ class SpanCollection implements Iterable<Span> {
         Map<String, List<Integer>> openingTagSet = new HashMap<>();
         Map<String, List<Integer>> closingTagSet = new HashMap<>();
         Map<String, List<Integer>> emptyTagSet = new HashMap<>();
+        Map<String, List<Integer>> separatorTagSet = new HashMap<>();
 
         for (int tagIndex = 0; tagIndex < tags.size(); tagIndex++) {
             Tag tag = tags.get(tagIndex);
@@ -38,6 +39,10 @@ class SpanCollection implements Iterable<Span> {
             if (tag.getType() == Tag.Type.EMPTY_TAG) {
                 emptyTagSet.computeIfAbsent(name, k -> new ArrayList<>());
                 emptyTagSet.get(name).add(tagIndex);
+            }
+            if (tag.getType() == Tag.Type.SEPARATOR_TAG) {
+                separatorTagSet.computeIfAbsent(name, k -> new ArrayList<>());
+                separatorTagSet.get(name).add(tagIndex);
             }
 
         }
@@ -58,6 +63,11 @@ class SpanCollection implements Iterable<Span> {
                 minLevel = Math.min(minLevel, level);
             } else if (type == Tag.Type.CLOSING_TAG) {
                 level--;
+                tagLevel[t] = level;
+                minLevel = Math.min(minLevel, level);
+            } else if (type == Tag.Type.SEPARATOR_TAG) {
+                //TODO: this ia a very trick hack just for debugging
+                //do nothing
                 tagLevel[t] = level;
                 minLevel = Math.min(minLevel, level);
             }
@@ -162,6 +172,12 @@ class SpanCollection implements Iterable<Span> {
             }
         }
 
+        for (String name : separatorTagSet.keySet()) {
+            for (Integer separatorTagIdx : separatorTagSet.get(name)) {
+                tagVisit[separatorTagIdx] = true;
+                tagLink[separatorTagIdx] = -1;
+            }
+        }
 
         int spanIdx = ROOT_INDEX;
         Span span = new Span(spanIdx, 0, null, null, words);
@@ -186,6 +202,10 @@ class SpanCollection implements Iterable<Span> {
                     beginTag = tag;
                     endTag = null;
                 } else if (type == Tag.Type.CLOSING_TAG) {
+                    beginTag = null;
+                    endTag = tag;
+                } else if (type == Tag.Type.SEPARATOR_TAG) {
+                    //A SEPARATOR_TAG becomes a span with a beginTag equals to "null"; this means that it covers all left positions
                     beginTag = null;
                     endTag = tag;
                 }

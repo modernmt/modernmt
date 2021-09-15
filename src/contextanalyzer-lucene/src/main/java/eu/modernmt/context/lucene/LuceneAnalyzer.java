@@ -86,6 +86,7 @@ public class LuceneAnalyzer implements ContextAnalyzer, DataListenerProvider {
         long begin = System.currentTimeMillis();
         try {
             this.index.forceMerge();
+            this.storage.prune();
         } catch (IOException e) {
             throw new ContextAnalyzerException(e);
         }

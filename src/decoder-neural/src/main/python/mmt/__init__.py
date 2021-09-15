@@ -1,14 +1,21 @@
 import locale
 import os
 
+import fairseq
 from fairseq.models import register_model_architecture
 from fairseq.models.transformer import base_architecture
 from fairseq.tasks import register_task
 from fairseq.tasks.translation import TranslationTask
+
 from mmt.textencoder import SubwordDictionary
 
 if locale.getpreferredencoding().lower() != 'utf-8':
     raise UnicodeError('python locale preferred encoding is "%s", UTF-8 expected' % locale.getpreferredencoding())
+
+
+def is_fairseq_0_10():
+    version = [int(n) for n in fairseq.__version__.split('.')]
+    return version[1] >= 10
 
 
 @register_task('mmt_translation')

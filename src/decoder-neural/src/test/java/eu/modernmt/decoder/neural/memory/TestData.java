@@ -109,8 +109,8 @@ public class TestData {
         return new TranslationUnit(tuid, language, source, target, new Date());
     }
 
-    public static DeletionMessage deletion(int channel, long channelPosition, long memory) {
-        return new DeletionMessage((short) channel, channelPosition, memory);
+    public static DeletionMessage deletion(int channel, long channelPosition, long memory, UUID owner) {
+        return new DeletionMessage((short) channel, channelPosition, owner, memory);
     }
 
     public static TranslationUnitMessage addition(int channel, long channelPosition, long memory, TranslationUnit tu) {
@@ -219,11 +219,11 @@ public class TestData {
 
     // Deletion
 
-    public static DeletionMessage deletion(long memory) {
-        return new DeletionMessage((short) 1, 0, memory);
+    public static DeletionMessage deletion(long memory, UUID owner) {
+        return new DeletionMessage((short) 1, 0, owner, memory);
     }
 
-    public static DeletionMessage deletion(long channelPosition, long memory) {
-        return new DeletionMessage((short) 1, channelPosition, memory);
+    public static DeletionMessage deletion(long channelPosition, long memory, UUID owner) {
+        return new DeletionMessage((short) 1, channelPosition, owner, memory);
     }
 }

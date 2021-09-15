@@ -67,6 +67,10 @@ public class TagCollection implements Iterable<Tag> {
         for (Tag tag : this.list) {
             String name = tag.getName();
             Tag.Type type = tag.getType();
+
+            if (type == Tag.Type.SEPARATOR_TAG)
+                continue;
+
             if (type == Tag.Type.OPENING_TAG) {
                 inspectTags.add(tag);
             }

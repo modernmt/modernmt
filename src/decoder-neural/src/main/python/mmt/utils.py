@@ -2,7 +2,7 @@ import json
 import logging
 import sys
 
-from mmt.decoder import Translation, Suggestion
+from mmt.decoder import Suggestion
 
 
 class JSONLogFormatter(logging.Formatter):
@@ -19,12 +19,17 @@ class JSONLogFormatter(logging.Formatter):
 
 
 def setup_json_logging(log_level='INFO', stream=None):
-    handler = logging.StreamHandler(stream or sys.stderr)
-    handler.setFormatter(JSONLogFormatter())
+    stderr = logging.StreamHandler(stream or sys.stderr)
+    stderr.setFormatter(JSONLogFormatter())
 
     logger = logging.getLogger()
     logger.setLevel(logging.getLevelName(log_level.upper()))
-    logger.addHandler(handler)
+    for handler in logger.handlers:
+        logger.removeHandler(handler)
+    logger.addHandler(stderr)
+
+    # suppress fairseq logging
+    logging.getLogger('fairseq').setLevel(9999)
 
     return logger
 
@@ -34,6 +39,9 @@ def setup_basic_logging(log_level='INFO'):
 
     logger = logging.getLogger()
     logger.setLevel(logging.getLevelName(log_level.upper()))
+
+    # suppress fairseq logging
+    logging.getLogger('fairseq').setLevel(9999)
 
     return logger
 
@@ -71,8 +79,6 @@ class TranslationRequest(object):
         forced_translation = None
         if 'f' in obj:
             forced_translation = obj['f'].split('\n')
-            if (len(batch) != len(forced_translation)):
-                raise ValueError("Number of inputs ans forced translations differs ({} vs {}".format(len(batch), len(forced_translation)))
 
         suggestions = []
 

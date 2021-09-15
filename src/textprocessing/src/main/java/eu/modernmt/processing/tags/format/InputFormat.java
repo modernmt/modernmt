@@ -1,6 +1,9 @@
 package eu.modernmt.processing.tags.format;
 
 import eu.modernmt.model.Tag;
+import eu.modernmt.model.XMLTag;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 public interface InputFormat {
 
@@ -22,9 +25,10 @@ public interface InputFormat {
     }
 
     static InputFormat auto(Tag[] tags) {
-        if (XliffInputFormat.isCompliant(tags)) {
+        XMLTag[] xmlTags = Arrays.asList(tags).stream().filter(tag -> tag instanceof XMLTag).map(tag -> (XMLTag) tag).collect(Collectors.toList()).toArray(new XMLTag[0]);
+        if (XliffInputFormat.isCompliant(xmlTags)) {
             return new XliffInputFormat();
-        } else if (HtmlInputFormat.isCompliant(tags)) {
+        } else if (HtmlInputFormat.isCompliant(xmlTags)) {
             return new HtmlInputFormat();
         } else {
             return new NoopInputFormat();

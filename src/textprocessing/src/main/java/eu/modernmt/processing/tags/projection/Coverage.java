@@ -110,7 +110,7 @@ public class Coverage implements Iterable<Integer> {
 
     public static int choosePosition(Coverage c1, Coverage c2) {
         //there is at least one point in the overlap
-        //choose a point to remove form wither c1 or c2
+        //choose a point to remove from either c1 or c2
         int min1 = c1.getMin();
         int min2 = c2.getMin();
         int max1 = c1.getMax();
@@ -175,7 +175,7 @@ public class Coverage implements Iterable<Integer> {
         this.positions.addAll(set);
     }
 
-    void retainAll(Coverage targetRightToken) {
-        this.positions.retainAll(targetRightToken.getPositions());
+    void retainAll(Coverage c) {
+        this.positions.retainAll(c.getPositions());
     }
 }

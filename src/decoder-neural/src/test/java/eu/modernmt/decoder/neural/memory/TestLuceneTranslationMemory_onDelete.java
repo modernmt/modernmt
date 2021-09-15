@@ -44,7 +44,7 @@ public class TestLuceneTranslationMemory_onDelete {
         memory.onDataReceived(units2);
         assertEquals(20 + 1, memory.size());
 
-        memory.onDelete(TestData.deletion(1));
+        memory.onDelete(TestData.deletion(1, null));
 
         assertEquals(10 + 1, memory.size());
         assertEquals(TestData.channels(19L, 0L), memory.getLatestChannelPositions());
@@ -67,7 +67,7 @@ public class TestLuceneTranslationMemory_onDelete {
         memory.onDataReceived(units2);
         assertEquals(14 + 1, memory.size());
 
-        memory.onDelete(TestData.deletion(1));
+        memory.onDelete(TestData.deletion(1, null));
 
         assertEquals(10 + 1, memory.size());
         assertEquals(TestData.channels(13L, 0L), memory.getLatestChannelPositions());
@@ -83,8 +83,8 @@ public class TestLuceneTranslationMemory_onDelete {
         memory.onDataReceived(units2);
         assertEquals(20 + 1, memory.size());
 
-        memory.onDelete(TestData.deletion(0, 1));
-        memory.onDelete(TestData.deletion(1, 2));
+        memory.onDelete(TestData.deletion(0, 1, null));
+        memory.onDelete(TestData.deletion(1, 2, null));
 
         assertEquals(1, memory.size());
         assertEquals(TestData.channels(19L, 1L), memory.getLatestChannelPositions());
@@ -102,7 +102,7 @@ public class TestLuceneTranslationMemory_onDelete {
         memory.onDataReceived(units2);
         assertEquals(20 + 1, memory.size());
 
-        memory.onDelete(TestData.deletion(0, 1));
+        memory.onDelete(TestData.deletion(0, 1, null));
 
         assertEquals(10 + 1, memory.size());
         assertEquals(19, (long) memory.getLatestChannelPositions().get((short) 0));
@@ -123,7 +123,7 @@ public class TestLuceneTranslationMemory_onDelete {
         memory.onDataReceived(units2);
         assertEquals(20 + 1, memory.size());
 
-        memory.onDelete(TestData.deletion(0, 1));
+        memory.onDelete(TestData.deletion(0, 1, null));
 
         assertEquals(20 + 1, memory.size());
         assertEquals(TestData.channels(1, 19), memory.getLatestChannelPositions());

@@ -2,6 +2,7 @@ package eu.modernmt.api.framework.actions;
 
 import com.google.gson.JsonElement;
 import eu.modernmt.cluster.error.SystemShutdownException;
+import eu.modernmt.data.EmptyCorpusException;
 import eu.modernmt.decoder.DecoderUnavailableException;
 import eu.modernmt.facade.exceptions.AuthenticationException;
 import eu.modernmt.facade.exceptions.TestFailedException;
@@ -41,6 +42,10 @@ public abstract class JSONAction implements Action {
             resp.unavailable(e);
         } catch (DecoderUnavailableException | TestFailedException e) {
             resp.unavailable(e);
+        } catch (EmptyCorpusException e) {
+            if (logger.isDebugEnabled())
+                logger.debug("Failed to import empty or poor quality corpus", e);
+            resp.badRequest(e);
         } catch (Throwable e) {
             logger.error("Unexpected error: ", e);
             resp.unexpectedError(e);

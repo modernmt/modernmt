@@ -12,6 +12,9 @@ import java.util.Map;
  */
 public abstract class TextProcessor<P, R> {
 
+    public static final String SOURCE_LANG_KEY = "TextProcessor.SOURCE_LANG_KEY";
+    public static final String TARGET_LANG_KEY = "TextProcessor.TARGET_LANG_KEY";
+
     public static <T extends TextProcessor> T newInstance(Class<T> cls, Language sourceLanguage, Language targetLanguage) {
         boolean defaultConstructor = false;
         Constructor<? extends T> constructor;

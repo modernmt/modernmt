@@ -35,8 +35,8 @@ public class KafkaPacket {
     private final String previousSentence;
     private final String previousTranslation;
 
-    public static KafkaPacket createDeletion(long memory) {
-        return new KafkaPacket(TYPE_DELETION, null, memory, null, null, null, null, null, null, null);
+    public static KafkaPacket createDeletion(UUID owner, long memory) {
+        return new KafkaPacket(TYPE_DELETION, owner, memory, null, null, null, null, null, null, null);
     }
 
     public static KafkaPacket createAddition(UUID owner, long memory, TranslationUnit tu) {
@@ -97,7 +97,7 @@ public class KafkaPacket {
         if (channel < 0 || position < 0)
             throw new IllegalStateException("Call setChannelInfo() before parsing methods.");
 
-        return new DeletionMessage(channel, position, memory);
+        return new DeletionMessage(channel, position, owner, memory);
     }
 
     public TranslationUnitMessage asTranslationUnit(LanguageDirection language) {
@@ -120,11 +120,11 @@ public class KafkaPacket {
         ByteStream buffer = new ByteStream(data);
         byte type = buffer.readByte();
         long memory = buffer.readLong();
+        final UUID owner = buffer.readUUID();
 
         if (type == TYPE_DELETION)
-            return createDeletion(memory);
+            return createDeletion(owner, memory);
 
-        final UUID owner = buffer.readUUID();
         final LanguageDirection language = new LanguageDirection(buffer.readLanguage(), buffer.readLanguage());
         final String sentence = buffer.readString();
         final String translation = buffer.readString();
@@ -145,13 +145,15 @@ public class KafkaPacket {
 
     public byte[] toBytes() {
         ByteStream buffer = new ByteStream();
-        buffer.write(type)
-                .write(memory);
+        buffer
+                .write(type)
+                .write(memory)
+                .write(owner);
 
         if (type == TYPE_DELETION)
             return buffer.toArray();
 
-        buffer.write(owner)
+        buffer
                 .write(direction.source)
                 .write(direction.target)
                 .write(sentence)

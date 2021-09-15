@@ -63,23 +63,42 @@ public class ContextVector implements Iterable<ContextVector.Entry>, Serializabl
             if (kv.length != 2)
                 throw new IllegalArgumentException(string);
 
-            long memory;
+            long id;
+            UUID owner;
             float score;
 
             try {
-                memory = Long.parseLong(kv[0]);
+                int idx = kv[0].indexOf('@');
+                if (idx < 0) {
+                    id = Long.parseLong(kv[0]);
+                    owner = null;
+                } else {
+                    String ownerString = kv[0].substring(0, idx);
+                    String idString = kv[0].substring(idx + 1);
+
+                    id = Long.parseLong(idString);
+
+                    String[] uc = ownerString.split("/");
+                    if (uc.length != 2)
+                        throw new IllegalArgumentException(string);
+
+                    long msb = Long.parseLong(uc[0]);
+                    long lsb = Long.parseLong(uc[1]);
+                    owner = new UUID(msb, lsb);
+                }
+
                 score = Float.parseFloat(kv[1]);
             } catch (NumberFormatException e) {
                 throw new IllegalArgumentException(string);
             }
 
-            if (memory < 1)
+            if (id < 1)
                 throw new IllegalArgumentException(string);
 
             if (score < 0.f || score > 1.f)
                 throw new IllegalArgumentException(string);
 
-            builder.add(memory, score);
+            builder.add(new Memory(id, owner, null), score);
         }
 
         return builder.build();

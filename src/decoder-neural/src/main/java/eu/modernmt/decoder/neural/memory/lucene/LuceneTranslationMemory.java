@@ -163,8 +163,12 @@ public class LuceneTranslationMemory implements TranslationMemory {
         return this.indexWriter;
     }
 
+    public DocumentBuilder getDocumentBuilder() {
+        return documentBuilder;
+    }
+
     @Override
-    public int size() {
+    public long size() {
         try {
             IndexReader reader = getIndexReader();
             return Math.max(reader.numDocs(), reader.maxDoc() - 1);
@@ -175,7 +179,7 @@ public class LuceneTranslationMemory implements TranslationMemory {
     }
 
     @Override
-    public void dump(long memory, Consumer<Entry> consumer) throws IOException {
+    public void dump(UUID owner, long memory, Consumer<Entry> consumer) throws IOException {
         IndexSearcher searcher = getIndexSearcher();
         IndexReader reader = getIndexReader();
 

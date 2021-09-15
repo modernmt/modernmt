@@ -65,10 +65,10 @@ public interface TranslationMemory extends Closeable, LogDataListener {
 
     void optimize() throws IOException;
 
-    int size();
+    long size();
 
     void dumpAll(Consumer<Entry> consumer) throws IOException;
 
-    void dump(long memory, Consumer<Entry> consumer) throws IOException;
+    void dump(UUID owner, long memory, Consumer<Entry> consumer) throws IOException;
 
 }

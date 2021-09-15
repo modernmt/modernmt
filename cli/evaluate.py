@@ -36,6 +36,7 @@ class CharCutScore(Score):
             error = charcut.corpus_charcut(ref, hyp, tokenize=True)
             return 100 * (1.0 - float(error))
 
+
 class BLEUScore(Score):
     @property
     def name(self):
@@ -107,10 +108,7 @@ class EvaluateActivity(StatefulActivity):
     def __init__(self, mmt_node, args, extra_argv=None, wdir=None, log_file=None, start_step=None, delete_on_exit=True):
         super().__init__(args, extra_argv, wdir, log_file, start_step, delete_on_exit)
 
-        gt = None
-        if args.google_key is None or args.google_key.lower() != "none":
-            gt = GoogleTranslate(args.src_lang, args.tgt_lang, key=args.google_key)
-
+        gt = GoogleTranslate(args.src_lang, args.tgt_lang, args.google_key) if args.google_key is not None else None
         mmt = ModernMTTranslate(mmt_node, args.src_lang, args.tgt_lang, priority='background',
                                 context_string=args.context, context_file=args.context_file,
                                 context_vector=args.context_vector)
@@ -262,9 +260,7 @@ def parse_args(argv=None):
     parser.add_argument('-e', '--engine', dest='engine', help='the engine name, \'default\' will be used if absent',
                         default='default')
     parser.add_argument('--gt-key', dest='google_key', metavar='GT_API_KEY', default=None,
-                        help='A custom Google Translate API Key to use for evaluating GT performance. '
-                             'If not set, a default quota-limited key is used.'
-                             'If set to "none", GT performance is not computed.')
+                        help='A Google Translate API Key to use for evaluating GT performance')
     parser.add_argument('--human-eval', dest='human_eval_path', metavar='OUTPUT', default=None,
                         help='the output folder for the tab-spaced files needed to setup a Human Evaluation benchmark')
     parser.add_argument('-d', '--debug', action='store_true', dest='debug',

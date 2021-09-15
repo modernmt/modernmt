@@ -93,10 +93,11 @@ public class PostprocessorMain {
 
             stdout = new UnixLineWriter(System.out, UTF8Charset.get());
 
+            Postprocessor.Options options = new Postprocessor.Options(args.language.source, args.language.target);
             Translation translation;
 
             while ((translation = translations.next()) != null) {
-                postprocessor.process(args.language, translation);
+                postprocessor.process(args.language, translation, options);
                 stdout.writeLine(translation.toString());
             }
         } catch (IOException | ProcessingException e) {

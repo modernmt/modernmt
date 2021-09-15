@@ -10,7 +10,7 @@ public class WhitespaceTag extends Tag {
     public static WhitespaceTag fromText(String text) { return fromText(text, null, null, -1); }
 
     public static WhitespaceTag fromText(String text, String leftSpace, String rightSpace, int position) {
-        return new WhitespaceTag(NAME, text, leftSpace, rightSpace, position, Type.EMPTY_TAG);
+        return new WhitespaceTag(NAME, text, leftSpace, rightSpace, position, Type.SEPARATOR_TAG);
     }
 
     private WhitespaceTag(String name, String text, String leftSpace, String rightSpace, int position, Tag.Type type) {

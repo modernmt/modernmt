@@ -42,7 +42,7 @@ public class TestLuceneAnalyzer_onDelete {
         assertEquals(4, analyzer.getIndexSize());
         assertEquals(4, analyzer.getStorageSize());
 
-        analyzer.onDelete(TestData.deletion(1));
+        analyzer.onDelete(TestData.deletion(1, null));
 
         TLuceneAnalyzer.Entry entry = analyzer.getEntry(2, EN__IT);
 
@@ -66,7 +66,7 @@ public class TestLuceneAnalyzer_onDelete {
         assertEquals(6, analyzer.getIndexSize());
         assertEquals(6, analyzer.getStorageSize());
 
-        analyzer.onDelete(TestData.deletion(1));
+        analyzer.onDelete(TestData.deletion(1, null));
 
         TLuceneAnalyzer.Entry entry = analyzer.getEntry(2, EN__IT);
 
@@ -89,8 +89,8 @@ public class TestLuceneAnalyzer_onDelete {
         assertEquals(4, analyzer.getIndexSize());
         assertEquals(4, analyzer.getStorageSize());
 
-        analyzer.onDelete(TestData.deletion(0, 1));
-        analyzer.onDelete(TestData.deletion(1, 2));
+        analyzer.onDelete(TestData.deletion(0, 1, null));
+        analyzer.onDelete(TestData.deletion(1, 2, null));
 
         assertEquals(0, analyzer.getIndexSize());
         assertEquals(0, analyzer.getStorageSize());
@@ -110,7 +110,7 @@ public class TestLuceneAnalyzer_onDelete {
         assertEquals(4, analyzer.getIndexSize());
         assertEquals(4, analyzer.getStorageSize());
 
-        analyzer.onDelete(TestData.deletion(0, 1));
+        analyzer.onDelete(TestData.deletion(0, 1, null));
 
         TLuceneAnalyzer.Entry entry = analyzer.getEntry(2, EN__IT);
 
@@ -133,7 +133,7 @@ public class TestLuceneAnalyzer_onDelete {
         assertEquals(4, analyzer.getIndexSize());
         assertEquals(4, analyzer.getStorageSize());
 
-        analyzer.onDelete(TestData.deletion(0, 1));
+        analyzer.onDelete(TestData.deletion(0, 1, null));
 
         TLuceneAnalyzer.Entry entry1 = analyzer.getEntry(1, EN__IT);
         TLuceneAnalyzer.Entry entry2 = analyzer.getEntry(2, EN__IT);

@@ -13,6 +13,9 @@ public final class Language implements Serializable {
     private static final Pattern IS_ALPHANUM = Pattern.compile("[A-Za-z0-9]+");
     private static final Pattern IS_DIGIT = Pattern.compile("[0-9]+");
 
+    public static final String LATIN_SCRIPT = "Latn";
+    public static final String CYRILLIC_SCRIPT = "Cyrl";
+
     // sorted by ISO 639-1 codes
     public static final Language ARABIC = Language.fromString("ar");
     public static final Language BULGARIAN = Language.fromString("bg");
@@ -51,6 +54,7 @@ public final class Language implements Serializable {
     public static final Language ROMANIAN = Language.fromString("ro");
     public static final Language RUSSIAN = Language.fromString("ru");
     public static final Language NORTHERN_SAMI = Language.fromString("se");
+    public static final Language SERBIAN = Language.fromString("sr");
     public static final Language SLOVAK = Language.fromString("sk");
     public static final Language SLOVENE = Language.fromString("sl");
     public static final Language SWEDISH = Language.fromString("sv");
