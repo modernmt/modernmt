@@ -62,19 +62,25 @@ public class TranslationFacade {
     //  Translation
     // =============================
 
-    public Translation get(UUID user, LanguageDirection direction, Preprocessor.Options preprocessingOptions, String text, Priority priority, long timeout) throws ProcessingException, DecoderException {
-        return get(user, direction, preprocessingOptions, text, null, 0, priority, timeout);
+    public Translation get(UUID user, LanguageDirection direction, Preprocessor.Options preprocessingOptions, String text, Priority priority, long timeout
+    	,String[] s,String[] t,String[] w) throws ProcessingException, DecoderException {
+        return get(user, direction, preprocessingOptions, text, null, 0, priority, timeout
+        	,s,t,w);
     }
 
-    public Translation get(UUID user, LanguageDirection direction, Preprocessor.Options preprocessingOptions, String text, ContextVector translationContext, Priority priority, long timeout) throws ProcessingException, DecoderException {
-        return get(user, direction, preprocessingOptions, text, translationContext, 0, priority, timeout);
+    public Translation get(UUID user, LanguageDirection direction, Preprocessor.Options preprocessingOptions, String text, ContextVector translationContext, Priority priority, long timeout
+    	,String[] s,String[] t,String[] w) throws ProcessingException, DecoderException {
+        return get(user, direction, preprocessingOptions, text, translationContext, 0, priority, timeout
+        	,s,t,w);
     }
 
-    public Translation get(UUID user, LanguageDirection direction, Preprocessor.Options preprocessingOptions, String text, int nbest, Priority priority, long timeout) throws ProcessingException, DecoderException {
-        return get(user, direction, preprocessingOptions, text, null, nbest, priority, timeout);
+    public Translation get(UUID user, LanguageDirection direction, Preprocessor.Options preprocessingOptions, String text, int nbest, Priority priority, long timeout
+    	,String[] s,String[] t,String[] w) throws ProcessingException, DecoderException {
+        return get(user, direction, preprocessingOptions, text, null, nbest, priority, timeout,s,t,w);
     }
 
-    public Translation get(UUID user, LanguageDirection direction, Preprocessor.Options preprocessingOptions, String text, ContextVector translationContext, int nbest, Priority priority, long timeout) throws ProcessingException, DecoderException {
+    public Translation get(UUID user, LanguageDirection direction, Preprocessor.Options preprocessingOptions, String text, ContextVector translationContext, int nbest, Priority priority, long timeout
+    	,String[] s,String[] t,String[] w) throws ProcessingException, DecoderException {
         LanguageDirection normalizedDirection = mapLanguage(direction);
         if (nbest > 0)
             ensureDecoderSupportsNBest();
@@ -91,7 +97,8 @@ public class TranslationFacade {
         long expirationTimestamp = timeout > 0 ? (System.currentTimeMillis() + timeout) : 0L;
 
         try {
-            translation = insecureGet(user, normalizedDirection, sentence, translationContext, nbest, priority, expirationTimestamp);
+            translation = insecureGet(user, normalizedDirection, sentence, translationContext, nbest, priority, expirationTimestamp
+            	,s,t,w);
         } catch (DecoderException | HazelcastException e) {
             if (e instanceof TranslationTimeoutException)
                 throw e;
@@ -104,7 +111,8 @@ public class TranslationFacade {
                 // Ignore it
             }
 
-            translation = insecureGet(user, normalizedDirection, sentence, translationContext, nbest, priority, expirationTimestamp);
+            translation = insecureGet(user, normalizedDirection, sentence, translationContext, nbest, priority, expirationTimestamp
+            	,s,t,w);
         }
 
         // Post-processing translation
@@ -119,7 +127,8 @@ public class TranslationFacade {
         return translation;
     }
 
-    private Translation insecureGet(UUID user, LanguageDirection direction, Sentence sentence, ContextVector context, int nbest, Priority priority, long expirationTimestamp) throws DecoderException {
+    private Translation insecureGet(UUID user, LanguageDirection direction, Sentence sentence, ContextVector context, int nbest, Priority priority, long expirationTimestamp
+    	,String[] s,String[] t,String[] w) throws DecoderException {
         if (expirationTimestamp > 0 && expirationTimestamp < System.currentTimeMillis())
             throw new TranslationTimeoutException();
 
@@ -129,7 +138,8 @@ public class TranslationFacade {
         try {
             ClusterNode node = ModernMT.getNode();
 
-            TranslationTask task = new TranslationTaskImpl(priority, user, direction, sentence, context, nbest, expirationTimestamp);
+            TranslationTask task = new TranslationTaskImpl(priority, user, direction, sentence, context, nbest, expirationTimestamp
+            	,s,t,w);
             Future<Translation> future = node.submit(task);
             return future.get();
         } catch (InterruptedException e) {
@@ -219,8 +229,12 @@ public class TranslationFacade {
         private final int nbest;
 
         private final long expirationTimestamp;
+        private final String[] s;
+        private final String[] t;
+        private final String[] w;
 
-        TranslationTaskImpl(Priority priority, UUID user, LanguageDirection direction, Sentence sentence, ContextVector context, int nbest, long expirationTimestamp) {
+        TranslationTaskImpl(Priority priority, UUID user, LanguageDirection direction, Sentence sentence, ContextVector context, int nbest, long expirationTimestamp
+        	,String[] s,String[] t,String[] w) {
             this.priority = priority;
             this.user = user;
             this.direction = direction;
@@ -228,6 +242,9 @@ public class TranslationFacade {
             this.context = context;
             this.nbest = nbest;
             this.expirationTimestamp = expirationTimestamp;
+            this.s = s;
+            this.t = t;
+            this.w = w;
         }
 
         @Override
@@ -244,9 +261,11 @@ public class TranslationFacade {
 
             if (nbest > 0) {
                 DecoderWithNBest nBestDecoder = (DecoderWithNBest) decoder;
-                return nBestDecoder.translate(priority, user, direction, sentence, context, nbest, expirationTimestamp);
+                return nBestDecoder.translate(priority, user, direction, sentence, context, nbest, expirationTimestamp
+                	,s,t,w);
             } else {
-                return decoder.translate(priority, user, direction, sentence, context, expirationTimestamp);
+                return decoder.translate(priority, user, direction, sentence, context, expirationTimestamp
+                	,s,t,w);
             }
         }
 

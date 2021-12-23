@@ -106,12 +106,15 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
     }
 
     @Override
-    public Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, long timeout) throws DecoderException {
-        return translate(priority, user, direction, text, null, timeout);
+    public Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, long timeout
+    	,String[] s,String[] t,String[] w) throws DecoderException {
+        return translate(priority, user, direction, text, null, timeout
+        	,s,t,w);
     }
 
     @Override
-    public Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, ContextVector context, long timeout) throws DecoderException {
+    public Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, ContextVector context, long timeout
+    	,String[] s,String[] t,String[] w) throws DecoderException {
         if (!isLanguageSupported(direction))
             throw new UnsupportedLanguageException(direction);
 
@@ -120,7 +123,17 @@ public class NeuralDecoder extends Decoder implements DataListenerProvider {
 
         // Search for suggestions
         long lookupBegin = System.currentTimeMillis();
-        ScoreEntry[] suggestions = lookup(user, direction, text, context);
+        ScoreEntry[] suggestions = null;
+        if(s != null) {
+            	suggestions = new ScoreEntry[s.length];
+            	for(int e = 0;e < s.length;e++) {
+            		suggestions[e] = new ScoreEntry(-1, direction, new String[] {s[e]},  new String[] {t[e]});
+            		suggestions[e].score = Float.parseFloat(w[e]);
+            	}
+            }
+            else {
+            	suggestions = lookup(user, direction, text, context);
+            }
         long lookupTime = System.currentTimeMillis() - lookupBegin;
 
         // Scheduling translation

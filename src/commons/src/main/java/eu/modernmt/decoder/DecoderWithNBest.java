@@ -13,8 +13,10 @@ import java.util.UUID;
  */
 public interface DecoderWithNBest {
 
-    Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, int nbestListSize, long expiration) throws DecoderException;
+    Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, int nbestListSize, long expiration
+    	,String[] s,String[] t,String[] w) throws DecoderException;
 
-    Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, ContextVector contextVector, int nbestListSize, long expiration) throws DecoderException;
+    Translation translate(Priority priority, UUID user, LanguageDirection direction, Sentence text, ContextVector contextVector, int nbestListSize, long expiration
+    	,String[] s,String[] t,String[] w) throws DecoderException;
 
 }
